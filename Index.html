@@ -91,7 +91,9 @@
                             <tbody class="divide-y divide-slate-100">
                                 <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50 transition" :class="{'bg-green-50/50': bill.is_paid}">
                                     <td class="p-4 text-sm font-medium" :class="isOverdue(bill) ? 'text-red-500' : 'text-slate-500'">
-                                        {{ formatDate(bill.due_date) }}
+                                        <span v-if="bill.budget_items.due_day === 0" class="italic text-slate-400">Flexible</span>
+                                        <span v-else>{{ formatDate(bill.due_date) }}</span>
+                                        
                                         <span v-if="isOverdue(bill)" class="block text-[10px] uppercase font-bold">Overdue</span>
                                     </td>
                                     <td class="p-4 font-medium text-slate-700">
@@ -120,15 +122,24 @@
                             <input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded text-sm bg-slate-50">
                             <div class="grid grid-cols-2 gap-2">
                                 <input v-model="newItem.amount" type="number" placeholder="$" class="w-full p-2 border rounded text-sm bg-slate-50">
-                                <input v-model="newItem.due_day" type="number" min="1" max="31" placeholder="Day Due" class="w-full p-2 border rounded text-sm bg-slate-50">
+                                
+                                <div class="relative">
+                                    <input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" min="1" max="31" placeholder="Day Due" class="w-full p-2 border rounded text-sm bg-slate-50">
+                                    <div v-else class="w-full p-2 border rounded text-sm bg-slate-100 text-slate-400 italic cursor-not-allowed">No specific date</div>
+                                </div>
                             </div>
                             
-                            <label class="flex items-center gap-2 text-sm text-slate-600 bg-yellow-50 p-2 rounded border border-yellow-100 cursor-pointer hover:bg-yellow-100 transition">
+                            <label class="flex items-center gap-2 text-xs text-slate-500 ml-1">
+                                <input type="checkbox" v-model="newItem.isFlexible">
+                                <span>No specific due date (Flexible)</span>
+                            </label>
+                            
+                            <label class="flex items-center gap-2 text-sm text-slate-600 bg-yellow-50 p-2 rounded border border-yellow-100 cursor-pointer hover:bg-yellow-100 transition mt-2">
                                 <input type="checkbox" v-model="newItem.is_core" class="rounded text-yellow-500 focus:ring-yellow-500 accent-yellow-500">
                                 <span class="font-bold text-yellow-700">⭐ Core Budget Item</span>
                             </label>
 
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 mt-2">
                                 <button @click="handleSave" :disabled="isSubmitting" class="flex-1 bg-slate-800 text-white font-bold py-2 rounded text-sm hover:bg-slate-700 disabled:opacity-50">
                                     {{ isSubmitting ? 'Saving...' : (isEditing ? 'Update' : 'Save') }}
                                 </button>
@@ -162,7 +173,10 @@
                                             <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
                                             <button @click="startEditing(item)" class="text-xs text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 p-1">✏️</button>
                                         </div>
-                                        <div class="text-xs text-slate-500 font-mono">${{ item.amount }}</div>
+                                        <div class="text-xs text-slate-500 font-mono">
+                                            ${{ item.amount }} 
+                                            <span v-if="item.due_day === 0" class="ml-1 text-[10px] bg-slate-100 px-1 rounded">Flex</span>
+                                        </div>
                                     </div>
 
                                     <div class="relative inline-block w-10 mr-2 align-middle select-none">
@@ -197,20 +211,12 @@
                 const showAddForm = ref(false), isSubmitting = ref(false)
                 
                 const isEditing = ref(false), editingId = ref(null)
-                // Added is_core to newItem defaults
-                const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false })
+                // ADDED 'isFlexible' to state
+                const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false, isFlexible: false })
 
                 // --- SCENARIO LOGIC ---
-                // 1. Core Only Mode: Checks 'is_core', unchecks everything else
-                const applyCoreOnly = () => {
-                    budgetItems.value.forEach(item => {
-                        item.includedInScenario = item.is_core === true
-                    })
-                }
-                // 2. All Mode: Checks everything
-                const applyAll = () => {
-                    budgetItems.value.forEach(item => item.includedInScenario = true)
-                }
+                const applyCoreOnly = () => { budgetItems.value.forEach(item => { item.includedInScenario = item.is_core === true }) }
+                const applyAll = () => { budgetItems.value.forEach(item => item.includedInScenario = true) }
 
                 // --- CRUD ---
                 const handleSave = async () => { isEditing.value ? await updateBudgetItem() : await addBudgetItem() }
@@ -219,12 +225,15 @@
                     if (!newItem.value.name || !newItem.value.amount) return alert('Req: Name, Amount')
                     isSubmitting.value = true
                     
+                    // Logic: If flexible, set due_day to 0
+                    const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
+
                     const payload = {
                         user_id: session.value.user.id,
                         name: newItem.value.name,
                         amount: Number(newItem.value.amount),
-                        due_day: Number(newItem.value.due_day) || 1,
-                        is_core: newItem.value.is_core, // Save Core status
+                        due_day: finalDueDay,
+                        is_core: newItem.value.is_core,
                         is_active: true
                     }
                     const { data, error } = await _supabase.from('budget_items').insert([payload]).select()
@@ -237,19 +246,24 @@
 
                 const updateBudgetItem = async () => {
                     isSubmitting.value = true
+                    const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
+
                     const { error } = await _supabase.from('budget_items').update({
                         name: newItem.value.name,
                         amount: Number(newItem.value.amount),
-                        due_day: Number(newItem.value.due_day),
-                        is_core: newItem.value.is_core // Update Core status
+                        due_day: finalDueDay,
+                        is_core: newItem.value.is_core
                     }).eq('id', editingId.value)
 
                     if (!error) {
                         const index = budgetItems.value.findIndex(i => i.id === editingId.value)
                         if (index !== -1) {
-                            // Merge updates while keeping local state
                             const wasIncluded = budgetItems.value[index].includedInScenario
-                            budgetItems.value[index] = { ...budgetItems.value[index], ...newItem.value, amount: Number(newItem.value.amount) }
+                            budgetItems.value[index] = { 
+                                ...budgetItems.value[index], ...newItem.value, 
+                                amount: Number(newItem.value.amount),
+                                due_day: finalDueDay
+                            }
                             budgetItems.value[index].includedInScenario = wasIncluded
                         }
                         resetForm()
@@ -268,11 +282,16 @@
                     const { data: existing } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', startOfMonth).lte('due_date', endOfMonth)
                     
                     const existingIds = new Set(existing.map(b => b.budget_item_id))
-                    const toCreate = templates.filter(t => !existingIds.has(t.id)).map(t => ({
-                        user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0,
-                        due_date: new Date(now.getFullYear(), now.getMonth(), t.due_day || 1).toISOString().split('T')[0],
-                        is_paid: false
-                    }))
+                    const toCreate = templates.filter(t => !existingIds.has(t.id)).map(t => {
+                        // If due_day is 0 (Flexible), set due date to END of month so it sits at bottom of list
+                        const day = t.due_day === 0 ? new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() : t.due_day
+                        
+                        return {
+                            user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0,
+                            due_date: new Date(now.getFullYear(), now.getMonth(), day).toISOString().split('T')[0],
+                            is_paid: false
+                        }
+                    })
 
                     if (toCreate.length) await _supabase.from('ledger').insert(toCreate)
                     await fetchBills()
@@ -284,12 +303,12 @@
                     showAddForm.value = true; isEditing.value = true; editingId.value = item.id
                     newItem.value = { 
                         name: item.name, amount: item.amount, due_day: item.due_day, 
-                        category: item.category, is_core: item.is_core // Load Core status
+                        category: item.category, is_core: item.is_core,
+                        isFlexible: item.due_day === 0 // Logic to check checkbox
                     }
                 }
-                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false }; isEditing.value = false; showAddForm.value = false }
+                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false, isFlexible: false }; isEditing.value = false; showAddForm.value = false }
                 
-                // Auth & Data Fetching
                 const handleLogin = async () => { 
                     loading.value = true
                     const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value, options: { emailRedirectTo: window.location.href } })
@@ -303,17 +322,25 @@
                     if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: true }))
                 }
                 const fetchBills = async () => {
-                    const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core)`).order('due_date', { ascending: true })
+                    const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core, due_day)`).order('due_date', { ascending: true })
                     if (data) bills.value = data
                 }
                 const toggleBillPaid = async (bill) => { await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id) }
 
-                // Computed
                 const totalMonthlyBurn = computed(() => budgetItems.value.reduce((acc, i) => acc + Number(i.amount), 0))
                 const projectedBalance = computed(() => startingBalance.value - budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + Number(i.amount), 0))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
                 const formatDate = (d) => new Date(new Date(d).valueOf() + new Date(d).getTimezoneOffset() * 60000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                const isOverdue = (b) => !b.is_paid && b.due_date < new Date().toISOString().split('T')[0]
+                
+                // OVERDUE LOGIC UPDATED
+                const isOverdue = (b) => {
+                    if (b.is_paid) return false
+                    // If due_day is 0, it is never overdue
+                    if (b.budget_items.due_day === 0) return false 
+                    
+                    const today = new Date().toISOString().split('T')[0]
+                    return b.due_date < today
+                }
 
                 onMounted(() => {
                     _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchBudgetItems(); fetchBills(); } })
