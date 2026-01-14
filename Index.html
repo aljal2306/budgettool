@@ -137,10 +137,14 @@
 
                 <div class="space-y-6">
                     
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 transition-all duration-300" 
+                         :class="isEditing ? 'ring-2 ring-blue-500/20 border-blue-400' : ''">
+                        
                         <div class="flex justify-between items-center cursor-pointer select-none" @click="showAddForm = !showAddForm">
-                            <h3 class="font-bold text-slate-700 text-sm">➕ Add New Item</h3>
-                            <span class="text-slate-400 font-bold text-lg transition-transform" :class="showAddForm ? 'rotate-45' : ''">+</span>
+                            <h3 class="font-bold text-slate-700 text-sm">
+                                {{ isEditing ? '✏️ Edit Item' : '➕ Add New Item' }}
+                            </h3>
+                            <span class="text-slate-400 font-bold text-lg transition-transform" :class="showAddForm ? 'rotate-45' : ''" v-if="!isEditing">+</span>
                         </div>
 
                         <div v-if="showAddForm" class="mt-4 space-y-3 pt-4 border-t border-slate-100">
@@ -149,12 +153,22 @@
                                 <input v-model="newItem.amount" type="number" placeholder="$ Amount" class="w-full p-2 border rounded text-sm bg-slate-50">
                                 <input v-model="newItem.due_day" type="number" min="1" max="31" placeholder="Day Due" class="w-full p-2 border rounded text-sm bg-slate-50">
                             </div>
-                            <button 
-                                @click="addBudgetItem" 
-                                :disabled="isSubmitting"
-                                class="w-full bg-slate-800 text-white font-bold py-2 rounded text-sm hover:bg-slate-700 transition disabled:opacity-50">
-                                {{ isSubmitting ? 'Saving...' : 'Save Item' }}
-                            </button>
+                            
+                            <div class="flex gap-2">
+                                <button 
+                                    @click="handleSave" 
+                                    :disabled="isSubmitting"
+                                    class="flex-1 bg-slate-800 text-white font-bold py-2 rounded text-sm hover:bg-slate-700 transition disabled:opacity-50">
+                                    {{ isSubmitting ? 'Saving...' : (isEditing ? 'Update Item' : 'Save Item') }}
+                                </button>
+                                
+                                <button 
+                                    v-if="isEditing" 
+                                    @click="resetForm"
+                                    class="px-4 py-2 bg-slate-200 text-slate-600 font-bold rounded text-sm hover:bg-slate-300">
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -165,11 +179,16 @@
                             
                             <div class="space-y-2">
                                 <div v-for="item in budgetItems" :key="item.id" 
-                                     class="flex items-center justify-between p-3 border rounded-lg transition-all duration-300" 
+                                     class="flex items-center justify-between p-3 border rounded-lg transition-all duration-300 group" 
                                      :class="item.includedInScenario ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-50 grayscale'">
                                     
                                     <div>
-                                        <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
+                                            <button @click="startEditing(item)" class="text-xs text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity p-1">
+                                                ✏️
+                                            </button>
+                                        </div>
                                         <div class="text-xs text-slate-500 font-mono">${{ item.amount }}</div>
                                     </div>
 
@@ -195,9 +214,9 @@
         const { createClient } = supabase
 
         // --- CONFIGURATION ---
-        // ⚠️ REPLACE THESE WITH YOUR KEYS FROM SUPABASE DASHBOARD -> SETTINGS -> API
-        const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
+        // ⚠️ REPLACE THESE WITH YOUR KEYS
+        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co'
+        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'
 
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -210,11 +229,15 @@
                 const authMessage = ref('')
 
                 // --- App State ---
-                const startingBalance = ref(5000) // Default starting
+                const startingBalance = ref(5000)
                 const budgetItems = ref([])
                 const bills = ref([])
                 const showAddForm = ref(false)
                 const isSubmitting = ref(false)
+                
+                // Edit State
+                const isEditing = ref(false)
+                const editingId = ref(null)
                 const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense' })
 
                 // --- AUTH METHODS ---
@@ -243,23 +266,29 @@
                         .from('budget_items')
                         .select('*')
                         .eq('is_active', true)
-                        .order('amount', { ascending: false }) // Biggest bills first
+                        .order('amount', { ascending: false })
                     
                     if (data) {
-                        // Initialize local scenario state
                         budgetItems.value = data.map(item => ({ ...item, includedInScenario: true }))
                     }
                 }
 
                 const fetchBills = async () => {
-                    // Fetch bills for current month (simple version)
-                    // In production, you might want to filter by date range
                     const { data, error } = await _supabase
                         .from('ledger')
                         .select(`*, budget_items (name, amount)`)
                         .order('due_date', { ascending: true })
 
                     if (data) bills.value = data
+                }
+
+                // --- SAVE / UPDATE LOGIC ---
+                const handleSave = async () => {
+                    if (isEditing.value) {
+                        await updateBudgetItem()
+                    } else {
+                        await addBudgetItem()
+                    }
                 }
 
                 const addBudgetItem = async () => {
@@ -275,19 +304,63 @@
                         is_active: true
                     }
 
-                    const { data, error } = await _supabase
+                    const { data, error } = await _supabase.from('budget_items').insert([payload]).select()
+
+                    if (error) alert(error.message)
+                    else if (data) {
+                        budgetItems.value.push({ ...data[0], includedInScenario: true })
+                        resetForm()
+                    }
+                    isSubmitting.value = false
+                }
+
+                const updateBudgetItem = async () => {
+                    if (!newItem.value.name || !newItem.value.amount) return alert('Name and Amount required')
+                    isSubmitting.value = true
+                    
+                    const { error } = await _supabase
                         .from('budget_items')
-                        .insert([payload])
-                        .select()
+                        .update({
+                            name: newItem.value.name,
+                            amount: Number(newItem.value.amount),
+                            due_day: Number(newItem.value.due_day)
+                        })
+                        .eq('id', editingId.value)
 
                     if (error) {
                         alert(error.message)
-                    } else if (data) {
-                        budgetItems.value.push({ ...data[0], includedInScenario: true })
-                        newItem.value = { name: '', amount: '', due_day: '', category: 'Expense' }
-                        showAddForm.value = false
+                    } else {
+                        // Update local array instantly
+                        const index = budgetItems.value.findIndex(i => i.id === editingId.value)
+                        if (index !== -1) {
+                            budgetItems.value[index] = { 
+                                ...budgetItems.value[index], 
+                                ...newItem.value, 
+                                amount: Number(newItem.value.amount) 
+                            }
+                        }
+                        resetForm()
                     }
                     isSubmitting.value = false
+                }
+
+                const startEditing = (item) => {
+                    showAddForm.value = true
+                    isEditing.value = true
+                    editingId.value = item.id
+                    newItem.value = {
+                        name: item.name,
+                        amount: item.amount,
+                        due_day: item.due_day,
+                        category: item.category || 'Expense'
+                    }
+                }
+
+                const resetForm = () => {
+                    newItem.value = { name: '', amount: '', due_day: '', category: 'Expense' }
+                    isEditing.value = false
+                    editingId.value = null
+                    showAddForm.value = false
                 }
 
                 const toggleBillPaid = async (bill) => {
@@ -296,12 +369,10 @@
 
                 // --- COMPUTED LOGIC ---
                 const totalMonthlyBurn = computed(() => {
-                    // Sum of all active items in DB
                     return budgetItems.value.reduce((acc, item) => acc + Number(item.amount), 0)
                 })
 
                 const projectedBalance = computed(() => {
-                    // Math: Starting Balance - (Sum of ENABLED scenario items)
                     const scenarioExpenses = budgetItems.value
                         .filter(item => item.includedInScenario)
                         .reduce((acc, item) => acc + Number(item.amount), 0)
@@ -309,14 +380,12 @@
                 })
 
                 const isScenarioActive = computed(() => {
-                    // True if user has toggled anything OFF
                     return budgetItems.value.some(item => !item.includedInScenario)
                 })
 
                 // --- UTILS ---
                 const formatDate = (dateStr) => {
                     const date = new Date(dateStr)
-                    // Fix JS timezone offset issues by using UTC methods for display
                     return new Date(date.valueOf() + date.getTimezoneOffset() * 60000)
                         .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                 }
@@ -329,29 +398,23 @@
 
                 // --- LIFECYCLE ---
                 onMounted(() => {
-                    // Check Session
                     _supabase.auth.getSession().then(({ data }) => {
                         session.value = data.session
-                        if (session.value) {
-                            fetchBudgetItems()
-                            fetchBills()
-                        }
+                        if (session.value) { fetchBudgetItems(); fetchBills(); }
                     })
 
-                    // Listen for Auth Changes (Magic Link click)
                     _supabase.auth.onAuthStateChange((_event, _session) => {
                         session.value = _session
-                        if (_session) {
-                            fetchBudgetItems()
-                            fetchBills()
-                        }
+                        if (_session) { fetchBudgetItems(); fetchBills(); }
                     })
                 })
 
                 return {
                     session, authEmail, loading, authMessage,
                     startingBalance, budgetItems, bills, showAddForm, isSubmitting, newItem,
-                    handleLogin, handleLogout, addBudgetItem, toggleBillPaid, fetchBills,
+                    isEditing, // <--- New
+                    handleLogin, handleLogout, handleSave, addBudgetItem, updateBudgetItem, 
+                    startEditing, resetForm, toggleBillPaid, fetchBills,
                     totalMonthlyBurn, projectedBalance, isScenarioActive, formatDate, isOverdue
                 }
             }
