@@ -79,8 +79,8 @@
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-bold">📅 Current Bills</h3>
                         <div class="flex gap-2">
-                            <button @click="generateBills" class="text-xs bg-slate-900 text-white px-3 py-1 rounded hover:bg-slate-700">
-                                Generate {{ new Date().toLocaleString('default', { month: 'short' }) }}
+                            <button @click="openGenerateModal" class="text-xs bg-slate-900 text-white px-3 py-1 rounded hover:bg-slate-700">
+                                Review & Generate for {{ new Date().toLocaleString('default', { month: 'short' }) }}
                             </button>
                             <button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600">Refresh</button>
                         </div>
@@ -128,12 +128,9 @@
                                                     📅
                                                 </a>
                                             </div>
-                                            
                                             <div class="flex gap-1 mt-1">
                                                 <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span>
-                                                <span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">
-                                                    🔄 Auto
-                                                </span>
+                                                <span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span>
                                             </div>
                                         </div>
                                     </td>
@@ -165,9 +162,18 @@
                                     <div v-else class="w-full p-2 border rounded text-sm bg-slate-100 text-slate-400 italic cursor-not-allowed">No specific date</div>
                                 </div>
                             </div>
-                            <label class="flex items-center gap-2 text-xs text-slate-500 ml-1">
-                                <input type="checkbox" v-model="newItem.isFlexible"> <span>No specific due date (Flexible)</span>
-                            </label>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center gap-2 text-xs text-slate-500 ml-1">
+                                    <input type="checkbox" v-model="newItem.isFlexible"> <span>Flexible Date</span>
+                                </label>
+                                <select v-model="newItem.frequency" class="w-full p-2 border rounded text-xs bg-slate-50">
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Yearly">Yearly</option>
+                                    <option value="One-Time">One-Time</option>
+                                </select>
+                            </div>
                             
                             <div class="flex flex-col gap-2 mt-3 p-3 bg-slate-50 rounded border border-slate-100">
                                 <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer hover:text-slate-800">
@@ -207,7 +213,10 @@
                                             <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
                                             <button @click="startEditing(item)" class="text-xs text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 p-1">✏️</button>
                                         </div>
-                                        <div class="text-xs text-slate-500 font-mono">${{ item.amount }} <span v-if="item.due_day === 0" class="ml-1 text-[10px] bg-slate-100 px-1 rounded">Flex</span></div>
+                                        <div class="text-xs text-slate-500 font-mono">
+                                            ${{ item.amount }} 
+                                            <span v-if="item.frequency !== 'Monthly'" class="text-[10px] bg-purple-100 text-purple-700 px-1 rounded ml-1">{{ item.frequency }}</span>
+                                        </div>
                                     </div>
                                     <div class="relative inline-block w-10 mr-2 align-middle select-none">
                                         <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 transition-all duration-300 ease-in-out" style="top: 2px; left: 2px;"/>
@@ -217,10 +226,50 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
+
+        <div v-if="showGenModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="font-bold text-lg">Select Bills for {{ new Date().toLocaleString('default', { month: 'long' }) }}</h3>
+                    <button @click="showGenModal = false" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                </div>
+                
+                <div class="p-4 overflow-y-auto">
+                    <p class="text-sm text-slate-500 mb-4">Uncheck any bills that aren't due this month (like quarterly or yearly items).</p>
+                    <div class="space-y-2">
+                        <div v-for="item in potentialBills" :key="item.id" 
+                             class="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-slate-50"
+                             :class="item.selected ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200'"
+                             @click="item.selected = !item.selected">
+                            
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" v-model="item.selected" class="w-5 h-5 rounded text-blue-600 cursor-pointer pointer-events-none">
+                                <div>
+                                    <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
+                                    <div class="text-xs text-slate-500">
+                                        ${{ item.amount }} • 
+                                        <span :class="item.frequency === 'Monthly' ? 'text-slate-400' : 'text-purple-600 font-bold'">
+                                            {{ item.frequency }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-2">
+                    <button @click="showGenModal = false" class="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded font-bold">Cancel</button>
+                    <button @click="confirmGenerate" :disabled="isSubmitting" class="px-6 py-2 bg-slate-900 text-white rounded font-bold hover:bg-slate-800 disabled:opacity-50">
+                        {{ isSubmitting ? 'Creating...' : `Create ${potentialBills.filter(i=>i.selected).length} Bills` }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -240,8 +289,12 @@
                 const budgetItems = ref([]), bills = ref([])
                 const showAddForm = ref(false), isSubmitting = ref(false)
                 const isEditing = ref(false), editingId = ref(null)
-                // ADDED 'is_autopay' to state
-                const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false, is_autopay: false, isFlexible: false })
+                // ADDED 'frequency'
+                const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false, is_autopay: false, isFlexible: false, frequency: 'Monthly' })
+                
+                // NEW MODAL STATE
+                const showGenModal = ref(false)
+                const potentialBills = ref([])
 
                 // --- REMINDER LOGIC ---
                 const getDaysLeft = (dueDateStr) => {
@@ -253,61 +306,97 @@
                 }
 
                 const getCalendarLink = (bill) => {
-                    // PREFIX THE TITLE WITH [AUTO] or [MANUAL]
                     const prefix = bill.budget_items.is_autopay ? '[AUTO]' : '[MANUAL]'
                     const title = `${prefix} Pay ${bill.budget_items.name}`
                     const details = `Amount: $${bill.budget_items.amount}\nStatus: ${bill.budget_items.is_core ? 'Core' : 'Standard'}`
-                    
                     const startDate = bill.due_date.replace(/-/g, '')
                     const nextDay = new Date(bill.due_date); nextDay.setDate(nextDay.getDate() + 1)
                     const endDate = nextDay.toISOString().split('T')[0].replace(/-/g, '')
-                    
                     return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(details)}&sprop=website:budgetapp`
                 }
 
-                // --- SORT & FETCH ---
-                const fetchBills = async () => {
-                    // Added 'is_autopay' to select
-                    const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core, is_autopay, due_day)`)
-                    if (data) {
-                        bills.value = data.sort((a, b) => {
-                            const isFlexA = a.budget_items.due_day === 0; const isFlexB = b.budget_items.due_day === 0
-                            if (isFlexA && !isFlexB) return 1; if (!isFlexA && isFlexB) return -1
-                            if (a.due_date !== b.due_date) return a.due_date > b.due_date ? 1 : -1
-                            return a.budget_items.name.localeCompare(b.budget_items.name)
-                        })
+                // --- BILLS GENERATION LOGIC (UPDATED) ---
+                const openGenerateModal = async () => {
+                    isSubmitting.value = true
+                    const now = new Date()
+                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+                    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
+                    
+                    // 1. Get templates & existing bills
+                    const { data: templates } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('user_id', session.value.user.id)
+                    const { data: existing } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', startOfMonth).lte('due_date', endOfMonth)
+                    const existingIds = new Set(existing.map(b => b.budget_item_id))
+                    
+                    // 2. Filter out already generated ones
+                    const missing = templates.filter(t => !existingIds.has(t.id))
+                    
+                    if (missing.length === 0) {
+                        alert("All bills for this month are already created!")
+                        isSubmitting.value = false
+                        return
                     }
+
+                    // 3. Prepare list for Modal
+                    // Default selection: Monthly = True, Quarterly/Yearly = False (Safe default)
+                    potentialBills.value = missing.map(item => ({
+                        ...item,
+                        selected: item.frequency === 'Monthly' 
+                    }))
+                    
+                    showGenModal.value = true
+                    isSubmitting.value = false
                 }
 
-                // --- SETTINGS ---
-                const fetchSettings = async () => {
-                    const { data } = await _supabase.from('user_settings').select('base_pay').eq('user_id', session.value.user.id).single()
-                    if (data) { basePay.value = data.base_pay; startingBalance.value = data.base_pay }
-                }
-                const saveBasePay = async () => {
-                    savingBase.value = true
-                    const { error } = await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, base_pay: startingBalance.value })
-                    if (!error) { basePay.value = startingBalance.value; alert("Default Base Pay updated!") }
-                    savingBase.value = false
+                const confirmGenerate = async () => {
+                    isSubmitting.value = true
+                    const now = new Date()
+                    const selectedItems = potentialBills.value.filter(i => i.selected)
+
+                    if (selectedItems.length === 0) {
+                        showGenModal.value = false
+                        isSubmitting.value = false
+                        return
+                    }
+
+                    const toCreate = selectedItems.map(t => {
+                        const day = t.due_day === 0 ? new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() : t.due_day
+                        return { 
+                            user_id: session.value.user.id, 
+                            budget_item_id: t.id, 
+                            amount_paid: 0, 
+                            due_date: new Date(now.getFullYear(), now.getMonth(), day).toISOString().split('T')[0], 
+                            is_paid: false 
+                        }
+                    })
+
+                    const { error } = await _supabase.from('ledger').insert(toCreate)
+                    if (error) alert(error.message)
+                    else {
+                        await fetchBills()
+                        showGenModal.value = false
+                    }
+                    isSubmitting.value = false
                 }
 
                 // --- CRUD ---
                 const handleSave = async () => { isEditing.value ? await updateBudgetItem() : await addBudgetItem() }
+                
                 const addBudgetItem = async () => {
                     if (!newItem.value.name || !newItem.value.amount) return alert('Req: Name, Amount')
                     isSubmitting.value = true
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-                    // Added is_autopay
-                    const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_active: true }
+                    // Added frequency
+                    const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, frequency: newItem.value.frequency, is_active: true }
                     const { data } = await _supabase.from('budget_items').insert([payload]).select()
                     if (data) { budgetItems.value.push({ ...data[0], includedInScenario: true }); resetForm() }
                     isSubmitting.value = false
                 }
+
                 const updateBudgetItem = async () => {
                     isSubmitting.value = true
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-                    // Added is_autopay
-                    const { error } = await _supabase.from('budget_items').update({ name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay }).eq('id', editingId.value)
+                    // Added frequency
+                    const { error } = await _supabase.from('budget_items').update({ name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, frequency: newItem.value.frequency }).eq('id', editingId.value)
                     if (!error) {
                         const index = budgetItems.value.findIndex(i => i.id === editingId.value)
                         if (index !== -1) {
@@ -320,36 +409,33 @@
                     isSubmitting.value = false
                 }
 
-                // --- BILLS GENERATION ---
-                const generateBills = async () => {
-                    isSubmitting.value = true
-                    const now = new Date()
-                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-                    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
-                    const { data: templates } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('user_id', session.value.user.id)
-                    const { data: existing } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', startOfMonth).lte('due_date', endOfMonth)
-                    const existingIds = new Set(existing.map(b => b.budget_item_id))
-                    const toCreate = templates.filter(t => !existingIds.has(t.id)).map(t => {
-                        const day = t.due_day === 0 ? new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() : t.due_day
-                        return { user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(now.getFullYear(), now.getMonth(), day).toISOString().split('T')[0], is_paid: false }
-                    })
-                    if (toCreate.length) await _supabase.from('ledger').insert(toCreate)
-                    await fetchBills()
-                    isSubmitting.value = false
-                }
-
                 // --- UTILS ---
-                const applyCoreOnly = () => { budgetItems.value.forEach(item => { item.includedInScenario = item.is_core === true }) }
-                const applyAll = () => { budgetItems.value.forEach(item => item.includedInScenario = true) }
                 const startEditing = (item) => { 
                     showAddForm.value = true; isEditing.value = true; editingId.value = item.id; 
-                    newItem.value = { name: item.name, amount: item.amount, due_day: item.due_day, category: item.category, is_core: item.is_core, is_autopay: item.is_autopay, isFlexible: item.due_day === 0 } 
+                    // Load frequency
+                    newItem.value = { name: item.name, amount: item.amount, due_day: item.due_day, category: item.category, is_core: item.is_core, is_autopay: item.is_autopay, frequency: item.frequency || 'Monthly', isFlexible: item.due_day === 0 } 
                 }
-                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false, is_autopay: false, isFlexible: false }; isEditing.value = false; showAddForm.value = false }
+                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false, is_autopay: false, frequency: 'Monthly', isFlexible: false }; isEditing.value = false; showAddForm.value = false }
+                
+                // --- FETCHING ---
+                const fetchBills = async () => {
+                    const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core, is_autopay, due_day)`)
+                    if (data) bills.value = data.sort((a, b) => {
+                        const isFlexA = a.budget_items.due_day === 0; const isFlexB = b.budget_items.due_day === 0
+                        if (isFlexA && !isFlexB) return 1; if (!isFlexA && isFlexB) return -1
+                        if (a.due_date !== b.due_date) return a.due_date > b.due_date ? 1 : -1
+                        return a.budget_items.name.localeCompare(b.budget_items.name)
+                    })
+                }
+                const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: true })) }
+                const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('base_pay').eq('user_id', session.value.user.id).single(); if (data) { basePay.value = data.base_pay; startingBalance.value = data.base_pay } }
+                
+                const toggleBillPaid = async (bill) => { await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id) }
+                const saveBasePay = async () => { savingBase.value = true; const { error } = await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, base_pay: startingBalance.value }); if (!error) { basePay.value = startingBalance.value; alert("Default Base Pay updated!") }; savingBase.value = false }
+                
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value, options: { emailRedirectTo: window.location.href } }); if(error) alert(error.message); else authMessage.value = "Link sent!"; loading.value = false }
                 const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; budgetItems.value = []; bills.value = [] }
-                const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: true })) }
-                const toggleBillPaid = async (bill) => { await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id) }
+
                 const totalMonthlyBurn = computed(() => budgetItems.value.reduce((acc, i) => acc + Number(i.amount), 0))
                 const projectedBalance = computed(() => startingBalance.value - budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + Number(i.amount), 0))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
@@ -363,9 +449,9 @@
 
                 return {
                     session, authEmail, loading, authMessage, startingBalance, budgetItems, bills, showAddForm, isSubmitting, newItem, isEditing,
-                    basePay, savingBase, saveBasePay,
-                    getDaysLeft, getCalendarLink,
-                    handleLogin, handleLogout, handleSave, startEditing, resetForm, toggleBillPaid, fetchBills, generateBills,
+                    basePay, savingBase, saveBasePay, getDaysLeft, getCalendarLink,
+                    showGenModal, potentialBills, openGenerateModal, confirmGenerate, // New exports
+                    handleLogin, handleLogout, handleSave, startEditing, resetForm, toggleBillPaid, fetchBills,
                     totalMonthlyBurn, projectedBalance, isScenarioActive, formatDate, isOverdue, applyCoreOnly, applyAll
                 }
             }
