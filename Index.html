@@ -90,28 +90,52 @@
                             <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b border-slate-100">
                                 <tr>
                                     <th class="p-4">Due</th>
-                                    <th class="p-4">Bill</th>
+                                    <th class="p-4">Countdown</th> <th class="p-4">Bill</th>
                                     <th class="p-4 text-right">Amount</th>
-                                    <th class="p-4 text-center">Paid</th>
+                                    <th class="p-4 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50 transition" :class="{'bg-green-50/50': bill.is_paid}">
-                                    <td class="p-4 text-sm font-medium" :class="isOverdue(bill) ? 'text-red-500' : 'text-slate-500'">
+                                    
+                                    <td class="p-4 text-sm font-medium text-slate-500">
                                         <span v-if="bill.budget_items.due_day === 0" class="italic text-slate-400">Flexible</span>
                                         <span v-else>{{ formatDate(bill.due_date) }}</span>
-                                        <span v-if="isOverdue(bill)" class="block text-[10px] uppercase font-bold">Overdue</span>
                                     </td>
+
+                                    <td class="p-4 text-xs font-bold w-32">
+                                        <div v-if="bill.is_paid" class="text-emerald-600">PAID</div>
+                                        <div v-else-if="bill.budget_items.due_day === 0" class="text-slate-400">-</div>
+                                        <div v-else>
+                                            <span v-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 bg-red-100 px-2 py-1 rounded">OVERDUE</span>
+                                            <span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 bg-orange-100 px-2 py-1 rounded">TODAY!</span>
+                                            <span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} days</span>
+                                            <span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days left</span>
+                                        </div>
+                                    </td>
+
                                     <td class="p-4 font-medium text-slate-700">
-                                        {{ bill.budget_items.name }}
-                                        <span v-if="bill.budget_items.is_core" class="ml-1 text-[10px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span>
+                                        <div class="flex items-center gap-2">
+                                            {{ bill.budget_items.name }}
+                                            <span v-if="bill.budget_items.is_core" class="text-[10px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span>
+                                            
+                                            <a v-if="!bill.is_paid && bill.budget_items.due_day !== 0" 
+                                               :href="getCalendarLink(bill)" 
+                                               target="_blank"
+                                               title="Add to Google Calendar"
+                                               class="text-slate-300 hover:text-blue-500 transition cursor-pointer">
+                                                📅
+                                            </a>
+                                        </div>
                                     </td>
+
                                     <td class="p-4 text-right font-mono text-slate-600">${{ bill.budget_items.amount }}</td>
+
                                     <td class="p-4 text-center">
                                         <input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer accent-emerald-600">
                                     </td>
                                 </tr>
-                                <tr v-if="bills.length === 0"><td colspan="4" class="p-8 text-center text-slate-400">No bills generated yet.</td></tr>
+                                <tr v-if="bills.length === 0"><td colspan="5" class="p-8 text-center text-slate-400">No bills generated yet.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -201,21 +225,40 @@
                 const isEditing = ref(false), editingId = ref(null)
                 const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false, isFlexible: false })
 
+                // --- REMINDER LOGIC (NEW) ---
+                const getDaysLeft = (dueDateStr) => {
+                    const today = new Date(); today.setHours(0,0,0,0)
+                    const due = new Date(dueDateStr); due.setHours(0,0,0,0)
+                    // Fix timezone offset for accurate "today" check
+                    const dueUtc = new Date(due.valueOf() + due.getTimezoneOffset() * 60000)
+                    const diffTime = dueUtc - today
+                    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                }
+
+                const getCalendarLink = (bill) => {
+                    const title = `Pay ${bill.budget_items.name}`
+                    const details = `Amount: $${bill.budget_items.amount}. Status: ${bill.budget_items.is_core ? 'Core Bill' : 'Standard Bill'}`
+                    
+                    // Format dates for Google Calendar (YYYYMMDD)
+                    // Note: Due Date + 1 day for end date
+                    const start = bill.due_date.replace(/-/g, '')
+                    const endDate = new Date(bill.due_date)
+                    endDate.setDate(endDate.getDate() + 1)
+                    const end = endDate.toISOString().split('T')[0].replace(/-/g, '')
+                    
+                    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=${encodeURIComponent(details)}`
+                }
+
                 // --- SORT & FETCH ---
                 const fetchBills = async () => {
                     const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core, due_day)`)
                     if (data) {
-                        // Custom Sort: Fixed dates first (asc), then Flexible (due_day=0) at bottom
                         bills.value = data.sort((a, b) => {
                             const isFlexA = a.budget_items.due_day === 0
                             const isFlexB = b.budget_items.due_day === 0
-                            
-                            if (isFlexA && !isFlexB) return 1 // A is flex, push to bottom
-                            if (!isFlexA && isFlexB) return -1 // B is flex, keep at bottom
-                            
-                            // If both are same type, sort by date
+                            if (isFlexA && !isFlexB) return 1
+                            if (!isFlexA && isFlexB) return -1
                             if (a.due_date !== b.due_date) return a.due_date > b.due_date ? 1 : -1
-                            
                             return a.budget_items.name.localeCompare(b.budget_items.name)
                         })
                     }
@@ -301,6 +344,7 @@
                 return {
                     session, authEmail, loading, authMessage, startingBalance, budgetItems, bills, showAddForm, isSubmitting, newItem, isEditing,
                     basePay, savingBase, saveBasePay,
+                    getDaysLeft, getCalendarLink, // New Exports
                     handleLogin, handleLogout, handleSave, startEditing, resetForm, toggleBillPaid, fetchBills, generateBills,
                     totalMonthlyBurn, projectedBalance, isScenarioActive, formatDate, isOverdue, applyCoreOnly, applyAll
                 }
