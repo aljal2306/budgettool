@@ -41,23 +41,18 @@
             </div>
 
             <header class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-start">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Starting Balance</h2>
-                        <button @click="saveBasePay" class="text-[10px] text-blue-500 hover:underline" title="Save current amount as default">
+                        <button @click="saveBasePay" class="text-[10px] text-blue-500 hover:underline">
                             {{ savingBase ? 'Saving...' : 'Save as Default' }}
                         </button>
                     </div>
-                    
                     <div class="flex items-center gap-1 mt-1">
                         <span class="text-xl text-slate-400">$</span>
                         <input type="number" v-model="startingBalance" class="text-3xl font-bold w-full outline-none text-slate-700 placeholder-slate-200" placeholder="0">
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-2">
-                        Adjust manually for commissions. <br>
-                        Default Base Pay: <b>${{ basePay.toLocaleString() }}</b>
-                    </p>
+                    <p class="text-[10px] text-slate-400 mt-2">Default Base Pay: <b>${{ Number(basePay).toLocaleString() }}</b></p>
                 </div>
 
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
@@ -123,7 +118,6 @@
                 </div>
 
                 <div class="space-y-6">
-                    
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 transition-all duration-300" :class="isEditing ? 'ring-2 ring-blue-500/20 border-blue-400' : ''">
                         <div class="flex justify-between items-center cursor-pointer select-none" @click="showAddForm = !showAddForm">
                             <h3 class="font-bold text-slate-700 text-sm">{{ isEditing ? '✏️ Edit Item' : '➕ Add New Item' }}</h3>
@@ -201,65 +195,59 @@
         createApp({
             setup() {
                 const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref('')
-                
-                // STATE
-                const startingBalance = ref(0)
-                const basePay = ref(0) // New State for "Default"
-                const savingBase = ref(false)
-
+                const startingBalance = ref(0), basePay = ref(0), savingBase = ref(false)
                 const budgetItems = ref([]), bills = ref([])
                 const showAddForm = ref(false), isSubmitting = ref(false)
                 const isEditing = ref(false), editingId = ref(null)
                 const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false, isFlexible: false })
 
-                // --- SCENARIO LOGIC ---
-                const applyCoreOnly = () => { budgetItems.value.forEach(item => { item.includedInScenario = item.is_core === true }) }
-                const applyAll = () => { budgetItems.value.forEach(item => item.includedInScenario = true) }
-
-                // --- SETTINGS LOGIC (NEW) ---
-                const fetchSettings = async () => {
-                    const { data } = await _supabase.from('user_settings').select('base_pay').eq('user_id', session.value.user.id).single()
+                // --- SORT & FETCH ---
+                const fetchBills = async () => {
+                    const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core, due_day)`)
                     if (data) {
-                        basePay.value = data.base_pay
-                        startingBalance.value = data.base_pay // Auto-apply on load
+                        // Custom Sort: Fixed dates first (asc), then Flexible (due_day=0) at bottom
+                        bills.value = data.sort((a, b) => {
+                            const isFlexA = a.budget_items.due_day === 0
+                            const isFlexB = b.budget_items.due_day === 0
+                            
+                            if (isFlexA && !isFlexB) return 1 // A is flex, push to bottom
+                            if (!isFlexA && isFlexB) return -1 // B is flex, keep at bottom
+                            
+                            // If both are same type, sort by date
+                            if (a.due_date !== b.due_date) return a.due_date > b.due_date ? 1 : -1
+                            
+                            return a.budget_items.name.localeCompare(b.budget_items.name)
+                        })
                     }
                 }
 
+                // --- SETTINGS ---
+                const fetchSettings = async () => {
+                    const { data } = await _supabase.from('user_settings').select('base_pay').eq('user_id', session.value.user.id).single()
+                    if (data) { basePay.value = data.base_pay; startingBalance.value = data.base_pay }
+                }
                 const saveBasePay = async () => {
                     savingBase.value = true
-                    const { error } = await _supabase.from('user_settings').upsert({ 
-                        user_id: session.value.user.id, 
-                        base_pay: startingBalance.value 
-                    })
-                    if (!error) {
-                        basePay.value = startingBalance.value
-                        alert("Default Base Pay updated!")
-                    }
+                    const { error } = await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, base_pay: startingBalance.value })
+                    if (!error) { basePay.value = startingBalance.value; alert("Default Base Pay updated!") }
                     savingBase.value = false
                 }
 
                 // --- CRUD ---
                 const handleSave = async () => { isEditing.value ? await updateBudgetItem() : await addBudgetItem() }
-
                 const addBudgetItem = async () => {
                     if (!newItem.value.name || !newItem.value.amount) return alert('Req: Name, Amount')
                     isSubmitting.value = true
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-                    const payload = {
-                        user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount),
-                        due_day: finalDueDay, is_core: newItem.value.is_core, is_active: true
-                    }
+                    const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core, is_active: true }
                     const { data } = await _supabase.from('budget_items').insert([payload]).select()
                     if (data) { budgetItems.value.push({ ...data[0], includedInScenario: true }); resetForm() }
                     isSubmitting.value = false
                 }
-
                 const updateBudgetItem = async () => {
                     isSubmitting.value = true
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-                    const { error } = await _supabase.from('budget_items').update({
-                        name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core
-                    }).eq('id', editingId.value)
+                    const { error } = await _supabase.from('budget_items').update({ name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core }).eq('id', editingId.value)
                     if (!error) {
                         const index = budgetItems.value.findIndex(i => i.id === editingId.value)
                         if (index !== -1) {
@@ -283,10 +271,7 @@
                     const existingIds = new Set(existing.map(b => b.budget_item_id))
                     const toCreate = templates.filter(t => !existingIds.has(t.id)).map(t => {
                         const day = t.due_day === 0 ? new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() : t.due_day
-                        return {
-                            user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0,
-                            due_date: new Date(now.getFullYear(), now.getMonth(), day).toISOString().split('T')[0], is_paid: false
-                        }
+                        return { user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(now.getFullYear(), now.getMonth(), day).toISOString().split('T')[0], is_paid: false }
                     })
                     if (toCreate.length) await _supabase.from('ledger').insert(toCreate)
                     await fetchBills()
@@ -294,30 +279,14 @@
                 }
 
                 // --- UTILS ---
-                const startEditing = (item) => {
-                    showAddForm.value = true; isEditing.value = true; editingId.value = item.id
-                    newItem.value = { name: item.name, amount: item.amount, due_day: item.due_day, category: item.category, is_core: item.is_core, isFlexible: item.due_day === 0 }
-                }
+                const applyCoreOnly = () => { budgetItems.value.forEach(item => { item.includedInScenario = item.is_core === true }) }
+                const applyAll = () => { budgetItems.value.forEach(item => item.includedInScenario = true) }
+                const startEditing = (item) => { showAddForm.value = true; isEditing.value = true; editingId.value = item.id; newItem.value = { name: item.name, amount: item.amount, due_day: item.due_day, category: item.category, is_core: item.is_core, isFlexible: item.due_day === 0 } }
                 const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false, isFlexible: false }; isEditing.value = false; showAddForm.value = false }
-                
-                const handleLogin = async () => { 
-                    loading.value = true
-                    const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value, options: { emailRedirectTo: window.location.href } })
-                    if(error) alert(error.message); else authMessage.value = "Link sent!"
-                    loading.value = false
-                }
+                const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value, options: { emailRedirectTo: window.location.href } }); if(error) alert(error.message); else authMessage.value = "Link sent!"; loading.value = false }
                 const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; budgetItems.value = []; bills.value = [] }
-                
-                const fetchBudgetItems = async () => {
-                    const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false })
-                    if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: true }))
-                }
-                const fetchBills = async () => {
-                    const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core, due_day)`).order('due_date', { ascending: true })
-                    if (data) bills.value = data
-                }
+                const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: true })) }
                 const toggleBillPaid = async (bill) => { await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id) }
-
                 const totalMonthlyBurn = computed(() => budgetItems.value.reduce((acc, i) => acc + Number(i.amount), 0))
                 const projectedBalance = computed(() => startingBalance.value - budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + Number(i.amount), 0))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
@@ -325,22 +294,15 @@
                 const isOverdue = (b) => !b.is_paid && b.budget_items.due_day !== 0 && b.due_date < new Date().toISOString().split('T')[0]
 
                 onMounted(() => {
-                    _supabase.auth.getSession().then(({ data }) => { 
-                        session.value = data.session
-                        if (session.value) { fetchBudgetItems(); fetchBills(); fetchSettings(); } // Added fetchSettings
-                    })
-                    _supabase.auth.onAuthStateChange((_e, _s) => { 
-                        session.value = _s
-                        if (_s) { fetchBudgetItems(); fetchBills(); fetchSettings(); } // Added fetchSettings
-                    })
+                    _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchBudgetItems(); fetchBills(); fetchSettings(); } })
+                    _supabase.auth.onAuthStateChange((_e, _s) => { session.value = _s; if (_s) { fetchBudgetItems(); fetchBills(); fetchSettings(); } })
                 })
 
                 return {
                     session, authEmail, loading, authMessage, startingBalance, budgetItems, bills, showAddForm, isSubmitting, newItem, isEditing,
-                    basePay, savingBase, saveBasePay, // New exports
+                    basePay, savingBase, saveBasePay,
                     handleLogin, handleLogout, handleSave, startEditing, resetForm, toggleBillPaid, fetchBills, generateBills,
-                    totalMonthlyBurn, projectedBalance, isScenarioActive, formatDate, isOverdue,
-                    applyCoreOnly, applyAll
+                    totalMonthlyBurn, projectedBalance, isScenarioActive, formatDate, isOverdue, applyCoreOnly, applyAll
                 }
             }
         }).mount('#app')
