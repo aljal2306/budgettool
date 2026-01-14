@@ -90,7 +90,8 @@
                             <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b border-slate-100">
                                 <tr>
                                     <th class="p-4">Due</th>
-                                    <th class="p-4">Countdown</th> <th class="p-4">Bill</th>
+                                    <th class="p-4">Countdown</th>
+                                    <th class="p-4">Bill</th>
                                     <th class="p-4 text-right">Amount</th>
                                     <th class="p-4 text-center">Action</th>
                                 </tr>
@@ -115,17 +116,25 @@
                                     </td>
 
                                     <td class="p-4 font-medium text-slate-700">
-                                        <div class="flex items-center gap-2">
-                                            {{ bill.budget_items.name }}
-                                            <span v-if="bill.budget_items.is_core" class="text-[10px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span>
+                                        <div class="flex flex-col">
+                                            <div class="flex items-center gap-2">
+                                                {{ bill.budget_items.name }}
+                                                
+                                                <a v-if="!bill.is_paid && bill.budget_items.due_day !== 0" 
+                                                   :href="getCalendarLink(bill)" 
+                                                   target="_blank"
+                                                   title="Add to Google Calendar"
+                                                   class="text-slate-300 hover:text-blue-500 transition cursor-pointer">
+                                                    📅
+                                                </a>
+                                            </div>
                                             
-                                            <a v-if="!bill.is_paid && bill.budget_items.due_day !== 0" 
-                                               :href="getCalendarLink(bill)" 
-                                               target="_blank"
-                                               title="Add to Google Calendar"
-                                               class="text-slate-300 hover:text-blue-500 transition cursor-pointer">
-                                                📅
-                                            </a>
+                                            <div class="flex gap-1 mt-1">
+                                                <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span>
+                                                <span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">
+                                                    🔄 Auto
+                                                </span>
+                                            </div>
                                         </div>
                                     </td>
 
@@ -159,10 +168,17 @@
                             <label class="flex items-center gap-2 text-xs text-slate-500 ml-1">
                                 <input type="checkbox" v-model="newItem.isFlexible"> <span>No specific due date (Flexible)</span>
                             </label>
-                            <label class="flex items-center gap-2 text-sm text-slate-600 bg-yellow-50 p-2 rounded border border-yellow-100 cursor-pointer hover:bg-yellow-100 transition mt-2">
-                                <input type="checkbox" v-model="newItem.is_core" class="rounded text-yellow-500 focus:ring-yellow-500 accent-yellow-500">
-                                <span class="font-bold text-yellow-700">⭐ Core Budget Item</span>
-                            </label>
+                            
+                            <div class="flex flex-col gap-2 mt-3 p-3 bg-slate-50 rounded border border-slate-100">
+                                <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer hover:text-slate-800">
+                                    <input type="checkbox" v-model="newItem.is_core" class="rounded text-yellow-500 focus:ring-yellow-500 accent-yellow-500">
+                                    <span class="font-bold text-yellow-700">⭐ Core Budget Item</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer hover:text-slate-800">
+                                    <input type="checkbox" v-model="newItem.is_autopay" class="rounded text-blue-500 focus:ring-blue-500 accent-blue-500">
+                                    <span class="font-bold text-blue-700">🔄 Set to Autopay</span>
+                                </label>
+                            </div>
 
                             <div class="flex gap-2 mt-2">
                                 <button @click="handleSave" :disabled="isSubmitting" class="flex-1 bg-slate-800 text-white font-bold py-2 rounded text-sm hover:bg-slate-700 disabled:opacity-50">
@@ -187,6 +203,7 @@
                                     <div>
                                         <div class="flex items-center gap-1">
                                             <span v-if="item.is_core" class="text-xs" title="Core Item">⭐</span>
+                                            <span v-if="item.is_autopay" class="text-xs" title="Autopay">🔄</span>
                                             <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
                                             <button @click="startEditing(item)" class="text-xs text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 p-1">✏️</button>
                                         </div>
@@ -223,41 +240,39 @@
                 const budgetItems = ref([]), bills = ref([])
                 const showAddForm = ref(false), isSubmitting = ref(false)
                 const isEditing = ref(false), editingId = ref(null)
-                const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false, isFlexible: false })
+                // ADDED 'is_autopay' to state
+                const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false, is_autopay: false, isFlexible: false })
 
-                // --- REMINDER LOGIC (NEW) ---
+                // --- REMINDER LOGIC ---
                 const getDaysLeft = (dueDateStr) => {
                     const today = new Date(); today.setHours(0,0,0,0)
                     const due = new Date(dueDateStr); due.setHours(0,0,0,0)
-                    // Fix timezone offset for accurate "today" check
                     const dueUtc = new Date(due.valueOf() + due.getTimezoneOffset() * 60000)
                     const diffTime = dueUtc - today
                     return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
                 }
 
                 const getCalendarLink = (bill) => {
-                    const title = `Pay ${bill.budget_items.name}`
-                    const details = `Amount: $${bill.budget_items.amount}. Status: ${bill.budget_items.is_core ? 'Core Bill' : 'Standard Bill'}`
+                    // PREFIX THE TITLE WITH [AUTO] or [MANUAL]
+                    const prefix = bill.budget_items.is_autopay ? '[AUTO]' : '[MANUAL]'
+                    const title = `${prefix} Pay ${bill.budget_items.name}`
+                    const details = `Amount: $${bill.budget_items.amount}\nStatus: ${bill.budget_items.is_core ? 'Core' : 'Standard'}`
                     
-                    // Format dates for Google Calendar (YYYYMMDD)
-                    // Note: Due Date + 1 day for end date
-                    const start = bill.due_date.replace(/-/g, '')
-                    const endDate = new Date(bill.due_date)
-                    endDate.setDate(endDate.getDate() + 1)
-                    const end = endDate.toISOString().split('T')[0].replace(/-/g, '')
+                    const startDate = bill.due_date.replace(/-/g, '')
+                    const nextDay = new Date(bill.due_date); nextDay.setDate(nextDay.getDate() + 1)
+                    const endDate = nextDay.toISOString().split('T')[0].replace(/-/g, '')
                     
-                    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=${encodeURIComponent(details)}`
+                    return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(details)}&sprop=website:budgetapp`
                 }
 
                 // --- SORT & FETCH ---
                 const fetchBills = async () => {
-                    const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core, due_day)`)
+                    // Added 'is_autopay' to select
+                    const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core, is_autopay, due_day)`)
                     if (data) {
                         bills.value = data.sort((a, b) => {
-                            const isFlexA = a.budget_items.due_day === 0
-                            const isFlexB = b.budget_items.due_day === 0
-                            if (isFlexA && !isFlexB) return 1
-                            if (!isFlexA && isFlexB) return -1
+                            const isFlexA = a.budget_items.due_day === 0; const isFlexB = b.budget_items.due_day === 0
+                            if (isFlexA && !isFlexB) return 1; if (!isFlexA && isFlexB) return -1
                             if (a.due_date !== b.due_date) return a.due_date > b.due_date ? 1 : -1
                             return a.budget_items.name.localeCompare(b.budget_items.name)
                         })
@@ -282,7 +297,8 @@
                     if (!newItem.value.name || !newItem.value.amount) return alert('Req: Name, Amount')
                     isSubmitting.value = true
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-                    const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core, is_active: true }
+                    // Added is_autopay
+                    const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_active: true }
                     const { data } = await _supabase.from('budget_items').insert([payload]).select()
                     if (data) { budgetItems.value.push({ ...data[0], includedInScenario: true }); resetForm() }
                     isSubmitting.value = false
@@ -290,7 +306,8 @@
                 const updateBudgetItem = async () => {
                     isSubmitting.value = true
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-                    const { error } = await _supabase.from('budget_items').update({ name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core }).eq('id', editingId.value)
+                    // Added is_autopay
+                    const { error } = await _supabase.from('budget_items').update({ name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay }).eq('id', editingId.value)
                     if (!error) {
                         const index = budgetItems.value.findIndex(i => i.id === editingId.value)
                         if (index !== -1) {
@@ -324,8 +341,11 @@
                 // --- UTILS ---
                 const applyCoreOnly = () => { budgetItems.value.forEach(item => { item.includedInScenario = item.is_core === true }) }
                 const applyAll = () => { budgetItems.value.forEach(item => item.includedInScenario = true) }
-                const startEditing = (item) => { showAddForm.value = true; isEditing.value = true; editingId.value = item.id; newItem.value = { name: item.name, amount: item.amount, due_day: item.due_day, category: item.category, is_core: item.is_core, isFlexible: item.due_day === 0 } }
-                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false, isFlexible: false }; isEditing.value = false; showAddForm.value = false }
+                const startEditing = (item) => { 
+                    showAddForm.value = true; isEditing.value = true; editingId.value = item.id; 
+                    newItem.value = { name: item.name, amount: item.amount, due_day: item.due_day, category: item.category, is_core: item.is_core, is_autopay: item.is_autopay, isFlexible: item.due_day === 0 } 
+                }
+                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false, is_autopay: false, isFlexible: false }; isEditing.value = false; showAddForm.value = false }
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value, options: { emailRedirectTo: window.location.href } }); if(error) alert(error.message); else authMessage.value = "Link sent!"; loading.value = false }
                 const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; budgetItems.value = []; bills.value = [] }
                 const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: true })) }
@@ -344,7 +364,7 @@
                 return {
                     session, authEmail, loading, authMessage, startingBalance, budgetItems, bills, showAddForm, isSubmitting, newItem, isEditing,
                     basePay, savingBase, saveBasePay,
-                    getDaysLeft, getCalendarLink, // New Exports
+                    getDaysLeft, getCalendarLink,
                     handleLogin, handleLogout, handleSave, startEditing, resetForm, toggleBillPaid, fetchBills, generateBills,
                     totalMonthlyBurn, projectedBalance, isScenarioActive, formatDate, isOverdue, applyCoreOnly, applyAll
                 }
