@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Core Budget & Bills</title>
+    <title>Budget & Scenarios App</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -23,17 +23,15 @@
             <div class="bg-white p-8 rounded-xl shadow-xl max-w-md w-full border border-slate-200 text-center">
                 <div class="text-5xl mb-4">🔐</div>
                 <h1 class="text-2xl font-bold mb-2">Budget Login</h1>
-                <p class="text-slate-500 mb-6">Enter email for Magic Link</p>
-                <input v-model="authEmail" type="email" placeholder="email@example.com" class="w-full p-3 border rounded-lg mb-4 bg-slate-50" @keyup.enter="handleLogin">
-                <button @click="handleLogin" :disabled="loading" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition">
+                <input v-model="authEmail" type="email" placeholder="name@example.com" class="w-full p-3 border rounded-lg mb-4 bg-slate-50" @keyup.enter="handleLogin">
+                <button @click="handleLogin" :disabled="loading" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition disabled:opacity-50">
                     {{ loading ? 'Sending...' : 'Send Magic Link' }}
                 </button>
-                <p v-if="authMessage" class="mt-4 text-emerald-600 text-sm font-medium bg-emerald-50 p-2 rounded">{{ authMessage }}</p>
+                <p v-if="authMessage" class="mt-4 text-emerald-600 text-sm p-2 bg-emerald-50 rounded">{{ authMessage }}</p>
             </div>
         </div>
 
         <div v-else>
-            
             <div class="flex justify-between items-end mb-8 pb-4 border-b border-slate-200">
                 <div>
                     <h1 class="text-2xl font-bold text-slate-900">Household Budget</h1>
@@ -47,16 +45,20 @@
                     <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Starting Balance</h2>
                     <div class="flex items-center gap-1 mt-1">
                         <span class="text-xl text-slate-400">$</span>
-                        <input type="number" v-model="startingBalance" class="text-3xl font-bold w-full outline-none text-slate-700 placeholder-slate-200">
+                        <input type="number" v-model="startingBalance" class="text-3xl font-bold w-full outline-none text-slate-700 placeholder-slate-200" placeholder="0">
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Monthly Core Burn</h2>
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Commitments</h2>
                     <div class="text-3xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString() }}</div>
                 </div>
-                <div class="bg-slate-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden group">
+                <div class="bg-slate-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
                     <div class="relative z-10">
-                        <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Projected Free Cash</h2>
+                        <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                            <span :class="isScenarioActive ? 'text-emerald-400' : 'text-slate-400'">
+                                {{ isScenarioActive ? '⚡ Scenario Active' : 'Projected End Balance' }}
+                            </span>
+                        </h2>
                         <div class="text-4xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">
                             ${{ projectedBalance.toLocaleString() }}
                         </div>
@@ -66,34 +68,266 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                <div class="lg:col-span-2 space-y-8">
+                <div class="lg:col-span-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold">📅 Current Bills</h3>
+                        <div class="flex gap-2">
+                            <button @click="generateBills" class="text-xs bg-slate-900 text-white px-3 py-1 rounded hover:bg-slate-700">
+                                Generate {{ new Date().toLocaleString('default', { month: 'short' }) }}
+                            </button>
+                            <button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600">Refresh</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b border-slate-100">
+                                <tr>
+                                    <th class="p-4">Due</th>
+                                    <th class="p-4">Bill</th>
+                                    <th class="p-4 text-right">Amount</th>
+                                    <th class="p-4 text-center">Paid</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50 transition" :class="{'bg-green-50/50': bill.is_paid}">
+                                    <td class="p-4 text-sm font-medium" :class="isOverdue(bill) ? 'text-red-500' : 'text-slate-500'">
+                                        {{ formatDate(bill.due_date) }}
+                                        <span v-if="isOverdue(bill)" class="block text-[10px] uppercase font-bold">Overdue</span>
+                                    </td>
+                                    <td class="p-4 font-medium text-slate-700">
+                                        {{ bill.budget_items.name }}
+                                        <span v-if="bill.budget_items.is_core" class="ml-1 text-[10px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span>
+                                    </td>
+                                    <td class="p-4 text-right font-mono text-slate-600">${{ bill.budget_items.amount }}</td>
+                                    <td class="p-4 text-center">
+                                        <input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer accent-emerald-600">
+                                    </td>
+                                </tr>
+                                <tr v-if="bills.length === 0"><td colspan="4" class="p-8 text-center text-slate-400">No bills generated yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
                     
-                    <div>
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-bold flex items-center gap-2">📅 Current Month Bills</h3>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 transition-all duration-300" :class="isEditing ? 'ring-2 ring-blue-500/20 border-blue-400' : ''">
+                        <div class="flex justify-between items-center cursor-pointer select-none" @click="showAddForm = !showAddForm">
+                            <h3 class="font-bold text-slate-700 text-sm">{{ isEditing ? '✏️ Edit Item' : '➕ Add New Item' }}</h3>
+                            <span class="text-slate-400 font-bold text-lg transition-transform" :class="showAddForm ? 'rotate-45' : ''" v-if="!isEditing">+</span>
+                        </div>
+                        <div v-if="showAddForm" class="mt-4 space-y-3 pt-4 border-t border-slate-100">
+                            <input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded text-sm bg-slate-50">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input v-model="newItem.amount" type="number" placeholder="$" class="w-full p-2 border rounded text-sm bg-slate-50">
+                                <input v-model="newItem.due_day" type="number" min="1" max="31" placeholder="Day Due" class="w-full p-2 border rounded text-sm bg-slate-50">
+                            </div>
+                            
+                            <label class="flex items-center gap-2 text-sm text-slate-600 bg-yellow-50 p-2 rounded border border-yellow-100 cursor-pointer hover:bg-yellow-100 transition">
+                                <input type="checkbox" v-model="newItem.is_core" class="rounded text-yellow-500 focus:ring-yellow-500 accent-yellow-500">
+                                <span class="font-bold text-yellow-700">⭐ Core Budget Item</span>
+                            </label>
+
                             <div class="flex gap-2">
-                                <button @click="generateCoreBills" class="text-xs bg-indigo-600 text-white font-bold px-3 py-1 rounded hover:bg-indigo-700 shadow-sm transition">
-                                    ⚡ Generate Core
+                                <button @click="handleSave" :disabled="isSubmitting" class="flex-1 bg-slate-800 text-white font-bold py-2 rounded text-sm hover:bg-slate-700 disabled:opacity-50">
+                                    {{ isSubmitting ? 'Saving...' : (isEditing ? 'Update' : 'Save') }}
                                 </button>
-                                <button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600">Refresh</button>
+                                <button v-if="isEditing" @click="resetForm" class="px-4 py-2 bg-slate-200 text-slate-600 font-bold rounded text-sm hover:bg-slate-300">Cancel</button>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                            <table class="w-full text-left">
-                                <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b border-slate-100">
-                                    <tr>
-                                        <th class="p-4 w-32">Due</th>
-                                        <th class="p-4">Bill</th>
-                                        <th class="p-4 text-right">Amount</th>
-                                        <th class="p-4 text-center w-16">Paid</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50 transition" :class="{'bg-green-50/50': bill.is_paid}">
-                                        <td class="p-4 text-sm font-medium" :class="isOverdue(bill) ? 'text-red-500' : 'text-slate-500'">
-                                            {{ formatDate(bill.due_date) }}
-                                        </td>
-                                        <td class="p-4 font-medium text-slate-700">
-                                            {{ bill.budget_items.name }}
-                                            <span v-if="bill.budget_items.is_core" class="ml-1 text-[10px] bg-indigo-100 text-
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold flex items-center gap-2">🔮 Planner</h3>
+                            <div class="flex gap-1">
+                                <button @click="applyCoreOnly" class="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200 border border-yellow-300 shadow-sm">
+                                    APPLY CORE
+                                </button>
+                                <button @click="applyAll" class="text-[10px] font-bold bg-slate-200 text-slate-600 px-3 py-1 rounded hover:bg-slate-300 shadow-sm">
+                                    RESET ALL
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 max-h-[600px] overflow-y-auto">
+                            <div class="space-y-2">
+                                <div v-for="item in budgetItems" :key="item.id" 
+                                     class="flex items-center justify-between p-3 border rounded-lg transition-all duration-300 group" 
+                                     :class="item.includedInScenario ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-50 grayscale'">
+                                    
+                                    <div>
+                                        <div class="flex items-center gap-1">
+                                            <span v-if="item.is_core" class="text-xs" title="Core Item">⭐</span>
+                                            <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
+                                            <button @click="startEditing(item)" class="text-xs text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 p-1">✏️</button>
+                                        </div>
+                                        <div class="text-xs text-slate-500 font-mono">${{ item.amount }}</div>
+                                    </div>
+
+                                    <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                                        <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 transition-all duration-300 ease-in-out" style="top: 2px; left: 2px;"/>
+                                        <label :for="'toggle-'+item.id" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue
+        const { createClient } = supabase
+
+        // ⚠️ REPLACE WITH YOUR KEYS
+        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co'
+        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'
+
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        createApp({
+            setup() {
+                const session = ref(null)
+                const authEmail = ref(''), loading = ref(false), authMessage = ref('')
+                const startingBalance = ref(5000), budgetItems = ref([]), bills = ref([])
+                const showAddForm = ref(false), isSubmitting = ref(false)
+                
+                const isEditing = ref(false), editingId = ref(null)
+                // Added is_core to newItem defaults
+                const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false })
+
+                // --- SCENARIO LOGIC ---
+                // 1. Core Only Mode: Checks 'is_core', unchecks everything else
+                const applyCoreOnly = () => {
+                    budgetItems.value.forEach(item => {
+                        item.includedInScenario = item.is_core === true
+                    })
+                }
+                // 2. All Mode: Checks everything
+                const applyAll = () => {
+                    budgetItems.value.forEach(item => item.includedInScenario = true)
+                }
+
+                // --- CRUD ---
+                const handleSave = async () => { isEditing.value ? await updateBudgetItem() : await addBudgetItem() }
+
+                const addBudgetItem = async () => {
+                    if (!newItem.value.name || !newItem.value.amount) return alert('Req: Name, Amount')
+                    isSubmitting.value = true
+                    
+                    const payload = {
+                        user_id: session.value.user.id,
+                        name: newItem.value.name,
+                        amount: Number(newItem.value.amount),
+                        due_day: Number(newItem.value.due_day) || 1,
+                        is_core: newItem.value.is_core, // Save Core status
+                        is_active: true
+                    }
+                    const { data, error } = await _supabase.from('budget_items').insert([payload]).select()
+                    if (data) {
+                        budgetItems.value.push({ ...data[0], includedInScenario: true })
+                        resetForm()
+                    }
+                    isSubmitting.value = false
+                }
+
+                const updateBudgetItem = async () => {
+                    isSubmitting.value = true
+                    const { error } = await _supabase.from('budget_items').update({
+                        name: newItem.value.name,
+                        amount: Number(newItem.value.amount),
+                        due_day: Number(newItem.value.due_day),
+                        is_core: newItem.value.is_core // Update Core status
+                    }).eq('id', editingId.value)
+
+                    if (!error) {
+                        const index = budgetItems.value.findIndex(i => i.id === editingId.value)
+                        if (index !== -1) {
+                            // Merge updates while keeping local state
+                            const wasIncluded = budgetItems.value[index].includedInScenario
+                            budgetItems.value[index] = { ...budgetItems.value[index], ...newItem.value, amount: Number(newItem.value.amount) }
+                            budgetItems.value[index].includedInScenario = wasIncluded
+                        }
+                        resetForm()
+                    }
+                    isSubmitting.value = false
+                }
+
+                // --- BILLS GENERATION ---
+                const generateBills = async () => {
+                    isSubmitting.value = true
+                    const now = new Date()
+                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+                    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
+
+                    const { data: templates } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('user_id', session.value.user.id)
+                    const { data: existing } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', startOfMonth).lte('due_date', endOfMonth)
+                    
+                    const existingIds = new Set(existing.map(b => b.budget_item_id))
+                    const toCreate = templates.filter(t => !existingIds.has(t.id)).map(t => ({
+                        user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0,
+                        due_date: new Date(now.getFullYear(), now.getMonth(), t.due_day || 1).toISOString().split('T')[0],
+                        is_paid: false
+                    }))
+
+                    if (toCreate.length) await _supabase.from('ledger').insert(toCreate)
+                    await fetchBills()
+                    isSubmitting.value = false
+                }
+
+                // --- UTILS ---
+                const startEditing = (item) => {
+                    showAddForm.value = true; isEditing.value = true; editingId.value = item.id
+                    newItem.value = { 
+                        name: item.name, amount: item.amount, due_day: item.due_day, 
+                        category: item.category, is_core: item.is_core // Load Core status
+                    }
+                }
+                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false }; isEditing.value = false; showAddForm.value = false }
+                
+                // Auth & Data Fetching
+                const handleLogin = async () => { 
+                    loading.value = true
+                    const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value, options: { emailRedirectTo: window.location.href } })
+                    if(error) alert(error.message); else authMessage.value = "Link sent!"
+                    loading.value = false
+                }
+                const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; budgetItems.value = []; bills.value = [] }
+                
+                const fetchBudgetItems = async () => {
+                    const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false })
+                    if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: true }))
+                }
+                const fetchBills = async () => {
+                    const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core)`).order('due_date', { ascending: true })
+                    if (data) bills.value = data
+                }
+                const toggleBillPaid = async (bill) => { await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id) }
+
+                // Computed
+                const totalMonthlyBurn = computed(() => budgetItems.value.reduce((acc, i) => acc + Number(i.amount), 0))
+                const projectedBalance = computed(() => startingBalance.value - budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + Number(i.amount), 0))
+                const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
+                const formatDate = (d) => new Date(new Date(d).valueOf() + new Date(d).getTimezoneOffset() * 60000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                const isOverdue = (b) => !b.is_paid && b.due_date < new Date().toISOString().split('T')[0]
+
+                onMounted(() => {
+                    _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchBudgetItems(); fetchBills(); } })
+                    _supabase.auth.onAuthStateChange((_e, _s) => { session.value = _s; if (_s) { fetchBudgetItems(); fetchBills(); } })
+                })
+
+                return {
+                    session, authEmail, loading, authMessage, startingBalance, budgetItems, bills, showAddForm, isSubmitting, newItem, isEditing,
+                    handleLogin, handleLogout, handleSave, startEditing, resetForm, toggleBillPaid, fetchBills, generateBills,
+                    totalMonthlyBurn, projectedBalance, isScenarioActive, formatDate, isOverdue,
+                    applyCoreOnly, applyAll
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
