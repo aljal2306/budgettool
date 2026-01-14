@@ -41,13 +41,25 @@
             </div>
 
             <header class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Starting Balance</h2>
+                    <div class="flex justify-between items-start">
+                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Starting Balance</h2>
+                        <button @click="saveBasePay" class="text-[10px] text-blue-500 hover:underline" title="Save current amount as default">
+                            {{ savingBase ? 'Saving...' : 'Save as Default' }}
+                        </button>
+                    </div>
+                    
                     <div class="flex items-center gap-1 mt-1">
                         <span class="text-xl text-slate-400">$</span>
                         <input type="number" v-model="startingBalance" class="text-3xl font-bold w-full outline-none text-slate-700 placeholder-slate-200" placeholder="0">
                     </div>
+                    <p class="text-[10px] text-slate-400 mt-2">
+                        Adjust manually for commissions. <br>
+                        Default Base Pay: <b>${{ basePay.toLocaleString() }}</b>
+                    </p>
                 </div>
+
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Commitments</h2>
                     <div class="text-3xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString() }}</div>
@@ -93,7 +105,6 @@
                                     <td class="p-4 text-sm font-medium" :class="isOverdue(bill) ? 'text-red-500' : 'text-slate-500'">
                                         <span v-if="bill.budget_items.due_day === 0" class="italic text-slate-400">Flexible</span>
                                         <span v-else>{{ formatDate(bill.due_date) }}</span>
-                                        
                                         <span v-if="isOverdue(bill)" class="block text-[10px] uppercase font-bold">Overdue</span>
                                     </td>
                                     <td class="p-4 font-medium text-slate-700">
@@ -122,18 +133,14 @@
                             <input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded text-sm bg-slate-50">
                             <div class="grid grid-cols-2 gap-2">
                                 <input v-model="newItem.amount" type="number" placeholder="$" class="w-full p-2 border rounded text-sm bg-slate-50">
-                                
                                 <div class="relative">
                                     <input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" min="1" max="31" placeholder="Day Due" class="w-full p-2 border rounded text-sm bg-slate-50">
                                     <div v-else class="w-full p-2 border rounded text-sm bg-slate-100 text-slate-400 italic cursor-not-allowed">No specific date</div>
                                 </div>
                             </div>
-                            
                             <label class="flex items-center gap-2 text-xs text-slate-500 ml-1">
-                                <input type="checkbox" v-model="newItem.isFlexible">
-                                <span>No specific due date (Flexible)</span>
+                                <input type="checkbox" v-model="newItem.isFlexible"> <span>No specific due date (Flexible)</span>
                             </label>
-                            
                             <label class="flex items-center gap-2 text-sm text-slate-600 bg-yellow-50 p-2 rounded border border-yellow-100 cursor-pointer hover:bg-yellow-100 transition mt-2">
                                 <input type="checkbox" v-model="newItem.is_core" class="rounded text-yellow-500 focus:ring-yellow-500 accent-yellow-500">
                                 <span class="font-bold text-yellow-700">⭐ Core Budget Item</span>
@@ -152,33 +159,21 @@
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-bold flex items-center gap-2">🔮 Planner</h3>
                             <div class="flex gap-1">
-                                <button @click="applyCoreOnly" class="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200 border border-yellow-300 shadow-sm">
-                                    APPLY CORE
-                                </button>
-                                <button @click="applyAll" class="text-[10px] font-bold bg-slate-200 text-slate-600 px-3 py-1 rounded hover:bg-slate-300 shadow-sm">
-                                    RESET ALL
-                                </button>
+                                <button @click="applyCoreOnly" class="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200 border border-yellow-300 shadow-sm">APPLY CORE</button>
+                                <button @click="applyAll" class="text-[10px] font-bold bg-slate-200 text-slate-600 px-3 py-1 rounded hover:bg-slate-300 shadow-sm">RESET ALL</button>
                             </div>
                         </div>
-                        
                         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 max-h-[600px] overflow-y-auto">
                             <div class="space-y-2">
-                                <div v-for="item in budgetItems" :key="item.id" 
-                                     class="flex items-center justify-between p-3 border rounded-lg transition-all duration-300 group" 
-                                     :class="item.includedInScenario ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-50 grayscale'">
-                                    
+                                <div v-for="item in budgetItems" :key="item.id" class="flex items-center justify-between p-3 border rounded-lg transition-all duration-300 group" :class="item.includedInScenario ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-50 grayscale'">
                                     <div>
                                         <div class="flex items-center gap-1">
                                             <span v-if="item.is_core" class="text-xs" title="Core Item">⭐</span>
                                             <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
                                             <button @click="startEditing(item)" class="text-xs text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 p-1">✏️</button>
                                         </div>
-                                        <div class="text-xs text-slate-500 font-mono">
-                                            ${{ item.amount }} 
-                                            <span v-if="item.due_day === 0" class="ml-1 text-[10px] bg-slate-100 px-1 rounded">Flex</span>
-                                        </div>
+                                        <div class="text-xs text-slate-500 font-mono">${{ item.amount }} <span v-if="item.due_day === 0" class="ml-1 text-[10px] bg-slate-100 px-1 rounded">Flex</span></div>
                                     </div>
-
                                     <div class="relative inline-block w-10 mr-2 align-middle select-none">
                                         <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 transition-all duration-300 ease-in-out" style="top: 2px; left: 2px;"/>
                                         <label :for="'toggle-'+item.id" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300 ease-in-out"></label>
@@ -205,18 +200,43 @@
 
         createApp({
             setup() {
-                const session = ref(null)
-                const authEmail = ref(''), loading = ref(false), authMessage = ref('')
-                const startingBalance = ref(5000), budgetItems = ref([]), bills = ref([])
-                const showAddForm = ref(false), isSubmitting = ref(false)
+                const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref('')
                 
+                // STATE
+                const startingBalance = ref(0)
+                const basePay = ref(0) // New State for "Default"
+                const savingBase = ref(false)
+
+                const budgetItems = ref([]), bills = ref([])
+                const showAddForm = ref(false), isSubmitting = ref(false)
                 const isEditing = ref(false), editingId = ref(null)
-                // ADDED 'isFlexible' to state
                 const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false, isFlexible: false })
 
                 // --- SCENARIO LOGIC ---
                 const applyCoreOnly = () => { budgetItems.value.forEach(item => { item.includedInScenario = item.is_core === true }) }
                 const applyAll = () => { budgetItems.value.forEach(item => item.includedInScenario = true) }
+
+                // --- SETTINGS LOGIC (NEW) ---
+                const fetchSettings = async () => {
+                    const { data } = await _supabase.from('user_settings').select('base_pay').eq('user_id', session.value.user.id).single()
+                    if (data) {
+                        basePay.value = data.base_pay
+                        startingBalance.value = data.base_pay // Auto-apply on load
+                    }
+                }
+
+                const saveBasePay = async () => {
+                    savingBase.value = true
+                    const { error } = await _supabase.from('user_settings').upsert({ 
+                        user_id: session.value.user.id, 
+                        base_pay: startingBalance.value 
+                    })
+                    if (!error) {
+                        basePay.value = startingBalance.value
+                        alert("Default Base Pay updated!")
+                    }
+                    savingBase.value = false
+                }
 
                 // --- CRUD ---
                 const handleSave = async () => { isEditing.value ? await updateBudgetItem() : await addBudgetItem() }
@@ -224,46 +244,27 @@
                 const addBudgetItem = async () => {
                     if (!newItem.value.name || !newItem.value.amount) return alert('Req: Name, Amount')
                     isSubmitting.value = true
-                    
-                    // Logic: If flexible, set due_day to 0
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-
                     const payload = {
-                        user_id: session.value.user.id,
-                        name: newItem.value.name,
-                        amount: Number(newItem.value.amount),
-                        due_day: finalDueDay,
-                        is_core: newItem.value.is_core,
-                        is_active: true
+                        user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount),
+                        due_day: finalDueDay, is_core: newItem.value.is_core, is_active: true
                     }
-                    const { data, error } = await _supabase.from('budget_items').insert([payload]).select()
-                    if (data) {
-                        budgetItems.value.push({ ...data[0], includedInScenario: true })
-                        resetForm()
-                    }
+                    const { data } = await _supabase.from('budget_items').insert([payload]).select()
+                    if (data) { budgetItems.value.push({ ...data[0], includedInScenario: true }); resetForm() }
                     isSubmitting.value = false
                 }
 
                 const updateBudgetItem = async () => {
                     isSubmitting.value = true
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-
                     const { error } = await _supabase.from('budget_items').update({
-                        name: newItem.value.name,
-                        amount: Number(newItem.value.amount),
-                        due_day: finalDueDay,
-                        is_core: newItem.value.is_core
+                        name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, is_core: newItem.value.is_core
                     }).eq('id', editingId.value)
-
                     if (!error) {
                         const index = budgetItems.value.findIndex(i => i.id === editingId.value)
                         if (index !== -1) {
                             const wasIncluded = budgetItems.value[index].includedInScenario
-                            budgetItems.value[index] = { 
-                                ...budgetItems.value[index], ...newItem.value, 
-                                amount: Number(newItem.value.amount),
-                                due_day: finalDueDay
-                            }
+                            budgetItems.value[index] = { ...budgetItems.value[index], ...newItem.value, amount: Number(newItem.value.amount), due_day: finalDueDay }
                             budgetItems.value[index].includedInScenario = wasIncluded
                         }
                         resetForm()
@@ -277,22 +278,16 @@
                     const now = new Date()
                     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
                     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
-
                     const { data: templates } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('user_id', session.value.user.id)
                     const { data: existing } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', startOfMonth).lte('due_date', endOfMonth)
-                    
                     const existingIds = new Set(existing.map(b => b.budget_item_id))
                     const toCreate = templates.filter(t => !existingIds.has(t.id)).map(t => {
-                        // If due_day is 0 (Flexible), set due date to END of month so it sits at bottom of list
                         const day = t.due_day === 0 ? new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() : t.due_day
-                        
                         return {
                             user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0,
-                            due_date: new Date(now.getFullYear(), now.getMonth(), day).toISOString().split('T')[0],
-                            is_paid: false
+                            due_date: new Date(now.getFullYear(), now.getMonth(), day).toISOString().split('T')[0], is_paid: false
                         }
                     })
-
                     if (toCreate.length) await _supabase.from('ledger').insert(toCreate)
                     await fetchBills()
                     isSubmitting.value = false
@@ -301,11 +296,7 @@
                 // --- UTILS ---
                 const startEditing = (item) => {
                     showAddForm.value = true; isEditing.value = true; editingId.value = item.id
-                    newItem.value = { 
-                        name: item.name, amount: item.amount, due_day: item.due_day, 
-                        category: item.category, is_core: item.is_core,
-                        isFlexible: item.due_day === 0 // Logic to check checkbox
-                    }
+                    newItem.value = { name: item.name, amount: item.amount, due_day: item.due_day, category: item.category, is_core: item.is_core, isFlexible: item.due_day === 0 }
                 }
                 const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false, isFlexible: false }; isEditing.value = false; showAddForm.value = false }
                 
@@ -331,24 +322,22 @@
                 const projectedBalance = computed(() => startingBalance.value - budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + Number(i.amount), 0))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
                 const formatDate = (d) => new Date(new Date(d).valueOf() + new Date(d).getTimezoneOffset() * 60000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                
-                // OVERDUE LOGIC UPDATED
-                const isOverdue = (b) => {
-                    if (b.is_paid) return false
-                    // If due_day is 0, it is never overdue
-                    if (b.budget_items.due_day === 0) return false 
-                    
-                    const today = new Date().toISOString().split('T')[0]
-                    return b.due_date < today
-                }
+                const isOverdue = (b) => !b.is_paid && b.budget_items.due_day !== 0 && b.due_date < new Date().toISOString().split('T')[0]
 
                 onMounted(() => {
-                    _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchBudgetItems(); fetchBills(); } })
-                    _supabase.auth.onAuthStateChange((_e, _s) => { session.value = _s; if (_s) { fetchBudgetItems(); fetchBills(); } })
+                    _supabase.auth.getSession().then(({ data }) => { 
+                        session.value = data.session
+                        if (session.value) { fetchBudgetItems(); fetchBills(); fetchSettings(); } // Added fetchSettings
+                    })
+                    _supabase.auth.onAuthStateChange((_e, _s) => { 
+                        session.value = _s
+                        if (_s) { fetchBudgetItems(); fetchBills(); fetchSettings(); } // Added fetchSettings
+                    })
                 })
 
                 return {
                     session, authEmail, loading, authMessage, startingBalance, budgetItems, bills, showAddForm, isSubmitting, newItem, isEditing,
+                    basePay, savingBase, saveBasePay, // New exports
                     handleLogin, handleLogout, handleSave, startEditing, resetForm, toggleBillPaid, fetchBills, generateBills,
                     totalMonthlyBurn, projectedBalance, isScenarioActive, formatDate, isOverdue,
                     applyCoreOnly, applyAll
