@@ -49,7 +49,7 @@
             <header class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-start">
-                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Starting Balance</h2>
+                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Monthly Pay</h2>
                         <button @click="saveBasePay" class="text-[10px] text-blue-500 hover:underline">{{ savingBase ? 'Saving...' : 'Save Default' }}</button>
                     </div>
                     <div class="flex items-center gap-1 mt-1">
@@ -59,7 +59,7 @@
                 </div>
 
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Burn</h2>
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
                     <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString() }}</div>
                 </div>
 
@@ -120,9 +120,14 @@
                                 </div>
                             </div>
 
-                            <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 h-fit">
-                                <h4 class="text-sm font-bold text-slate-700 mb-3">{{ isEditing ? '✏️ Edit Item' : '➕ Add New Item' }}</h4>
-                                <div class="space-y-3">
+                            <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 h-fit transition-all duration-300" :class="isEditing ? 'ring-2 ring-blue-500/20 border-blue-400 bg-white' : ''">
+                                
+                                <div class="flex justify-between items-center cursor-pointer select-none" @click="showAddForm = !showAddForm">
+                                    <h4 class="text-sm font-bold text-slate-700">{{ isEditing ? '✏️ Edit Item' : '➕ Add New Item' }}</h4>
+                                    <span class="text-slate-400 font-bold text-lg transition-transform" :class="showAddForm ? 'rotate-45' : ''" v-if="!isEditing">+</span>
+                                </div>
+
+                                <div v-if="showAddForm" class="mt-4 space-y-3 pt-4 border-t border-slate-200">
                                     <input v-model="newItem.name" type="text" placeholder="Name (e.g. Rent)" class="w-full p-2 border rounded text-sm bg-white">
                                     <div class="grid grid-cols-2 gap-2">
                                         <input v-model="newItem.amount" type="number" placeholder="$ Amount" class="w-full p-2 border rounded text-sm bg-white">
@@ -333,7 +338,7 @@
                 
                 // Form & Planner State
                 const showPlanner = ref(false) // Default Collapsed
-                const showAddForm = ref(true) // Always visible inside planner
+                const showAddForm = ref(false) // Default Collapsed inside planner
                 const isSubmitting = ref(false)
                 const isEditing = ref(false), editingId = ref(null)
                 const newItem = ref({ name: '', amount: '', due_day: '', category: 'Expense', is_core: false, is_autopay: false, isFlexible: false, frequency: 'Monthly' })
@@ -451,7 +456,7 @@
                     showAddForm.value = true; isEditing.value = true; editingId.value = item.id; 
                     newItem.value = { name: item.name, amount: item.amount, due_day: item.due_day, category: item.category, is_core: item.is_core, is_autopay: item.is_autopay, frequency: item.frequency || 'Monthly', isFlexible: item.due_day === 0 } 
                 }
-                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false, is_autopay: false, frequency: 'Monthly', isFlexible: false }; isEditing.value = false; showAddForm.value = true }
+                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', is_core: false, is_autopay: false, frequency: 'Monthly', isFlexible: false }; isEditing.value = false; showAddForm.value = false }
                 
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value, options: { emailRedirectTo: window.location.href } }); if(error) alert(error.message); else authMessage.value = "Link sent!"; loading.value = false }
                 const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; budgetItems.value = []; bills.value = [] }
