@@ -14,7 +14,6 @@
         .toggle-checkbox:checked + .toggle-label { background-color: #10B981; }
         [v-cloak] { display: none; }
         
-        /* Smooth fade for modal */
         .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
@@ -45,7 +44,6 @@
             </div>
 
             <header class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-start">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Starting Balance</h2>
@@ -86,7 +84,7 @@
                         <h3 class="text-lg font-bold">📅 Current Bills</h3>
                         <div class="flex gap-2">
                             <button @click="openGenerateModal" class="text-xs bg-slate-900 text-white px-3 py-1 rounded hover:bg-slate-700 transition shadow">
-                                Review & Generate for {{ new Date().toLocaleString('default', { month: 'short' }) }}
+                                + Review & Add Bills
                             </button>
                             <button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600">Refresh</button>
                         </div>
@@ -100,7 +98,7 @@
                                     <th class="p-4 w-32">Status</th>
                                     <th class="p-4">Bill</th>
                                     <th class="p-4 text-right">Amount</th>
-                                    <th class="p-4 text-center">Paid</th>
+                                    <th class="p-4 text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -126,14 +124,9 @@
                                         <div class="flex flex-col">
                                             <div class="flex items-center gap-2">
                                                 {{ bill.budget_items.name }}
-                                                
                                                 <a v-if="!bill.is_paid && bill.budget_items.due_day !== 0" 
-                                                   :href="getCalendarLink(bill)" 
-                                                   target="_blank"
-                                                   title="Add to Google Calendar"
-                                                   class="text-slate-300 hover:text-blue-500 transition cursor-pointer">
-                                                    📅
-                                                </a>
+                                                   :href="getCalendarLink(bill)" target="_blank" title="Add to Google Calendar"
+                                                   class="text-slate-300 hover:text-blue-500 transition cursor-pointer">📅</a>
                                             </div>
                                             <div class="flex gap-1 mt-1">
                                                 <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span>
@@ -144,8 +137,16 @@
 
                                     <td class="p-4 text-right font-mono text-slate-600">${{ bill.budget_items.amount }}</td>
 
-                                    <td class="p-4 text-center">
-                                        <input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer accent-emerald-600">
+                                    <td class="p-4">
+                                        <div class="flex items-center justify-center gap-4">
+                                            <input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" 
+                                                   class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                                                   title="Mark as Paid">
+                                            
+                                            <button @click="deleteBill(bill)" class="text-slate-300 hover:text-red-500 transition" title="Remove from this month">
+                                                🗑️
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr v-if="bills.length === 0"><td colspan="5" class="p-8 text-center text-slate-400">No bills generated yet.</td></tr>
@@ -155,7 +156,6 @@
                 </div>
 
                 <div class="space-y-6">
-                    
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 transition-all duration-300" :class="isEditing ? 'ring-2 ring-blue-500/20 border-blue-400' : ''">
                         <div class="flex justify-between items-center cursor-pointer select-none" @click="showAddForm = !showAddForm">
                             <h3 class="font-bold text-slate-700 text-sm">{{ isEditing ? '✏️ Edit Item' : '➕ Add New Item' }}</h3>
@@ -164,16 +164,13 @@
                         
                         <div v-if="showAddForm" class="mt-4 space-y-3 pt-4 border-t border-slate-100">
                             <input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded text-sm bg-slate-50">
-                            
                             <div class="grid grid-cols-2 gap-2">
                                 <input v-model="newItem.amount" type="number" placeholder="$" class="w-full p-2 border rounded text-sm bg-slate-50">
-                                
                                 <div class="relative">
                                     <input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" min="1" max="31" placeholder="Day Due" class="w-full p-2 border rounded text-sm bg-slate-50">
                                     <div v-else class="w-full p-2 border rounded text-sm bg-slate-100 text-slate-400 italic cursor-not-allowed">No specific date</div>
                                 </div>
                             </div>
-
                             <div class="grid grid-cols-2 gap-2">
                                 <label class="flex items-center gap-2 text-xs text-slate-500 ml-1">
                                     <input type="checkbox" v-model="newItem.isFlexible"> <span>Flexible Date</span>
@@ -185,7 +182,6 @@
                                     <option value="One-Time">One-Time</option>
                                 </select>
                             </div>
-                            
                             <div class="flex flex-col gap-2 mt-3 p-3 bg-slate-50 rounded border border-slate-100">
                                 <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer hover:text-slate-800">
                                     <input type="checkbox" v-model="newItem.is_core" class="rounded text-yellow-500 focus:ring-yellow-500 accent-yellow-500">
@@ -196,7 +192,6 @@
                                     <span class="font-bold text-blue-700">🔄 Set to Autopay</span>
                                 </label>
                             </div>
-
                             <div class="flex gap-2 mt-2">
                                 <button @click="handleSave" :disabled="isSubmitting" class="flex-1 bg-slate-800 text-white font-bold py-2 rounded text-sm hover:bg-slate-700 disabled:opacity-50">
                                     {{ isSubmitting ? 'Saving...' : (isEditing ? 'Update' : 'Save') }}
@@ -253,13 +248,11 @@
                         <p class="text-sm text-slate-500 mb-4 bg-blue-50 text-blue-700 p-3 rounded border border-blue-100">
                             ℹ️ We selected your <b>Monthly</b> bills automatically. Please review and check any <b>Quarterly</b> or <b>Yearly</b> bills due this month.
                         </p>
-                        
                         <div class="space-y-2">
                             <div v-for="item in potentialBills" :key="item.id" 
                                  class="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"
                                  :class="item.selected ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200'"
                                  @click="item.selected = !item.selected">
-                                
                                 <div class="flex items-center gap-3 w-full">
                                     <input type="checkbox" v-model="item.selected" class="w-5 h-5 rounded text-blue-600 cursor-pointer pointer-events-none">
                                     <div class="flex-1">
@@ -331,7 +324,6 @@
                     const prefix = bill.budget_items.is_autopay ? '[AUTO]' : '[MANUAL]'
                     const title = `${prefix} Pay ${bill.budget_items.name}`
                     const details = `Amount: $${bill.budget_items.amount}\nStatus: ${bill.budget_items.is_core ? 'Core' : 'Standard'}`
-                    // All Day Event Logic
                     const startDate = bill.due_date.replace(/-/g, '')
                     const nextDay = new Date(bill.due_date); nextDay.setDate(nextDay.getDate() + 1)
                     const endDate = nextDay.toISOString().split('T')[0].replace(/-/g, '')
@@ -345,12 +337,10 @@
                     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
                     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
                     
-                    // Fetch Active Templates & Existing Bills for this month
                     const { data: templates } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('user_id', session.value.user.id)
                     const { data: existing } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', startOfMonth).lte('due_date', endOfMonth)
                     const existingIds = new Set(existing.map(b => b.budget_item_id))
                     
-                    // Filter: Only show what hasn't been created yet
                     const missing = templates.filter(t => !existingIds.has(t.id))
                     
                     if (missing.length === 0) {
@@ -359,7 +349,6 @@
                         return
                     }
 
-                    // Pre-Select Logic: Monthly = Checked. Others = Unchecked.
                     potentialBills.value = missing.map(item => ({
                         ...item,
                         selected: item.frequency === 'Monthly' 
@@ -374,19 +363,13 @@
                     const now = new Date()
                     const selectedItems = potentialBills.value.filter(i => i.selected)
 
-                    if (selectedItems.length === 0) {
-                        showGenModal.value = false; isSubmitting.value = false; return
-                    }
+                    if (selectedItems.length === 0) { showGenModal.value = false; isSubmitting.value = false; return }
 
                     const toCreate = selectedItems.map(t => {
-                        // If flexible (0), use last day of month. Else use due_day.
                         const day = t.due_day === 0 ? new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() : t.due_day
                         return { 
-                            user_id: session.value.user.id, 
-                            budget_item_id: t.id, 
-                            amount_paid: 0, 
-                            due_date: new Date(now.getFullYear(), now.getMonth(), day).toISOString().split('T')[0], 
-                            is_paid: false 
+                            user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, 
+                            due_date: new Date(now.getFullYear(), now.getMonth(), day).toISOString().split('T')[0], is_paid: false 
                         }
                     })
 
@@ -394,6 +377,13 @@
                     if (error) alert(error.message)
                     else { await fetchBills(); showGenModal.value = false }
                     isSubmitting.value = false
+                }
+
+                const deleteBill = async (bill) => {
+                    if (!confirm(`Remove ${bill.budget_items.name} from this month's list?`)) return
+                    const { error } = await _supabase.from('ledger').delete().eq('id', bill.id)
+                    if(error) alert(error.message)
+                    else await fetchBills()
                 }
 
                 // --- 3. CRUD (ADD/EDIT) ---
@@ -437,7 +427,6 @@
                 const fetchBills = async () => {
                     const { data } = await _supabase.from('ledger').select(`*, budget_items (name, amount, is_core, is_autopay, due_day)`)
                     if (data) bills.value = data.sort((a, b) => {
-                        // Sort: Fixed Dates Top, Flexible Bottom. Within groups, by Date.
                         const isFlexA = a.budget_items.due_day === 0; const isFlexB = b.budget_items.due_day === 0
                         if (isFlexA && !isFlexB) return 1; if (!isFlexA && isFlexB) return -1
                         if (a.due_date !== b.due_date) return a.due_date > b.due_date ? 1 : -1
@@ -485,7 +474,7 @@
                     showAddForm, isSubmitting, newItem, isEditing, basePay, savingBase, 
                     showGenModal, potentialBills, // Modal State
                     handleLogin, handleLogout, handleSave, startEditing, resetForm, toggleBillPaid, 
-                    fetchBills, openGenerateModal, confirmGenerate, saveBasePay, applyCoreOnly, applyAll,
+                    fetchBills, openGenerateModal, confirmGenerate, saveBasePay, applyCoreOnly, applyAll, deleteBill,
                     totalMonthlyBurn, projectedBalance, isScenarioActive, formatDate, getDaysLeft, getCalendarLink
                 }
             }
