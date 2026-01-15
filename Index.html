@@ -445,7 +445,11 @@
                         return a.budget_items.name.localeCompare(b.budget_items.name)
                     })
                 }
-                const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: true })) }
+                const fetchBudgetItems = async () => { 
+                    const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
+                    // DEFAULT: Load only Core Items toggled ON
+                    if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: i.is_core === true })) 
+                }
                 const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('base_pay').eq('user_id', session.value.user.id).single(); if (data) { basePay.value = data.base_pay; startingBalance.value = data.base_pay } }
 
                 // --- 5. HELPERS ---
