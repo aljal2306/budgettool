@@ -196,13 +196,31 @@
                 <div class="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead>
-                        <tbody class="divide-y divide-slate-100"><tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" :class="{'bg-green-50': bill.is_paid}"><td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td><td class="p-4 text-xs font-bold"><span v-if="bill.is_paid" class="text-emerald-600">PAID</span><span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-500">OVERDUE</span><span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span></td><td class="p-4 font-medium">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td><td class="p-4 text-right font-mono">${{ bill.budget_items.amount }}</td><td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td></tr></tbody>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" 
+                                :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
+                                
+                                <td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td>
+                                
+                                <td class="p-4 text-xs font-bold">
+                                    <span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span>
+                                    <span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span>
+                                    <span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 px-2 py-1 bg-orange-100 rounded">TODAY</span>
+                                    <span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span>
+                                    <span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span>
+                                </td>
+
+                                <td class="p-4 font-medium">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td>
+                                <td class="p-4 text-right font-mono">${{ bill.budget_items.amount }}</td>
+                                <td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
                 <div class="md:hidden space-y-3">
-                    <div v-for="bill in bills" :key="bill.id" class="bg-white p-4 rounded-xl shadow-sm border" :class="{'bg-green-50 border-green-200': bill.is_paid}">
+                    <div v-for="bill in bills" :key="bill.id" class="bg-white p-4 rounded-xl shadow-sm border" :class="{'bg-green-50 border-green-200': bill.is_paid, 'bg-red-50 border-red-200': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
                         <div class="flex justify-between items-start mb-2"><div><div class="font-bold text-slate-800">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a></div><div class="flex gap-1 mt-1"><span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span><span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span></div></div><div class="font-mono text-lg text-slate-700">${{ bill.budget_items.amount }}</div></div>
-                        <div class="flex justify-between items-center text-sm mb-3 text-slate-500"><span>{{ bill.budget_items.due_day === 0 ? 'Flexible' : formatDate(bill.due_date) }}</span><span v-if="!bill.is_paid" :class="getDaysLeft(bill.due_date) < 0 ? 'text-red-500' : 'text-slate-400'">{{ getDaysLeft(bill.due_date) < 0 ? 'Overdue' : getDaysLeft(bill.due_date) + ' days' }}</span></div>
+                        <div class="flex justify-between items-center text-sm mb-3 text-slate-500"><span>{{ bill.budget_items.due_day === 0 ? 'Flexible' : formatDate(bill.due_date) }}</span><span v-if="!bill.is_paid" :class="getDaysLeft(bill.due_date) < 0 ? 'text-red-600 font-bold' : (getDaysLeft(bill.due_date) <= 3 ? 'text-orange-500 font-bold' : 'text-slate-400')">{{ getDaysLeft(bill.due_date) < 0 ? 'Overdue' : getDaysLeft(bill.due_date) + ' days' }}</span></div>
                         <div class="flex justify-between pt-3 border-t"><button @click="deleteBill(bill)" class="text-slate-300">🗑️ Remove</button><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5"></div>
                     </div>
                 </div>
@@ -258,7 +276,7 @@
                                     </div>
                                 </div>
                                 <div v-if="month.isOpen" class="p-3 bg-slate-50 text-xs border-t">
-                                    <div class="grid grid-cols-2 gap-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                         <div>
                                             <div class="flex justify-between items-center mb-1">
                                                 <label class="block font-bold text-slate-400">Total Income</label>
@@ -267,13 +285,38 @@
                                             </div>
                                             <input type="number" v-model.number="month.income" @change="runForecast" class="p-1 border rounded w-full">
                                         </div>
-                                        <div>
-                                            <label class="block font-bold text-slate-400 mb-1">One-Time Expense</label>
-                                            <input type="number" v-model.number="month.extraExpense" @change="runForecast" class="p-1 border rounded w-full">
+                                        <div class="flex flex-col justify-center">
+                                            <div class="text-slate-500">Core Burn: <span class="font-mono text-red-400">-${{ coreExpenses.toLocaleString() }}</span></div>
+                                            <div class="text-slate-500">Optional: <span class="font-mono text-orange-400">-${{ month.extraExpenses.reduce((a,b)=>a+b.amount,0).toLocaleString() }}</span></div>
                                         </div>
                                     </div>
-                                    <div class="mt-2 text-slate-500">
-                                        Core Burn: <span class="font-mono text-red-400">-${{ coreExpenses.toLocaleString() }}</span> (Auto)
+                                    
+                                    <div class="bg-orange-50/50 p-2 rounded border border-orange-100">
+                                        <h6 class="font-bold text-orange-400 mb-2">Optional Expenses</h6>
+                                        <div class="space-y-2 mb-2">
+                                            <div v-for="(exp, eIdx) in month.extraExpenses" :key="eIdx" class="flex justify-between items-center bg-white p-1 px-2 rounded border border-orange-100 shadow-sm">
+                                                <span>{{ exp.name }}</span>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-mono">${{ exp.amount }}</span>
+                                                    <button @click="month.extraExpenses.splice(eIdx, 1); runForecast()" class="text-red-400 hover:text-red-600 font-bold">&times;</button>
+                                                </div>
+                                            </div>
+                                            <div v-if="month.extraExpenses.length === 0" class="text-slate-400 italic text-center py-1">None added</div>
+                                        </div>
+                                        
+                                        <div class="flex gap-2 items-end">
+                                            <div class="flex-1">
+                                                <select v-model="month.newExpenseId" @change="fillExpense(month)" class="w-full p-1 border rounded text-xs mb-1">
+                                                    <option value="">-- Pick from Budget --</option>
+                                                    <option v-for="item in budgetItems" :value="item.id">{{ item.name }} (${{ item.amount }})</option>
+                                                </select>
+                                                <input v-model="month.newExpenseName" placeholder="Name" class="w-full p-1 border rounded">
+                                            </div>
+                                            <div class="w-20">
+                                                <input v-model.number="month.newExpenseAmount" type="number" placeholder="$" class="w-full p-1 border rounded">
+                                            </div>
+                                            <button @click="addExpense(month)" class="bg-orange-400 text-white px-3 py-1 rounded font-bold hover:bg-orange-500">Add</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -285,7 +328,6 @@
         </div>
 
         <transition name="fade"><div v-if="showGenModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg"><div class="p-4 border-b flex justify-between"><h3 class="font-bold">Select Bills</h3><button @click="showGenModal=false">&times;</button></div><div class="p-4 max-h-[60vh] overflow-y-auto space-y-2"><div v-for="item in potentialBills" :key="item.id" class="flex justify-between p-3 border rounded cursor-pointer" :class="item.selected?'border-blue-500 bg-blue-50':''" @click="item.selected=!item.selected"><div>{{ item.name }}</div><input type="checkbox" v-model="item.selected"></div></div><div class="p-4 border-t flex justify-end gap-2"><button @click="showGenModal=false" class="px-4 py-2">Cancel</button><button @click="confirmGenerate" class="px-6 py-2 bg-slate-900 text-white rounded">Add</button></div></div></div></transition>
-
         <transition name="fade"><div v-if="showProjectModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Add Project Goal</h3><input v-model="newProject.name" placeholder="Project Name" class="w-full p-2 border rounded mb-2"><input v-model="newProject.cost" type="number" placeholder="Total Cost" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button @click="saveProject" class="flex-1 bg-slate-900 text-white py-2 rounded font-bold">Save</button><button @click="showProjectModal=false" class="px-4 py-2 bg-slate-200 rounded">Cancel</button></div></div></div></div></transition>
 
     </div>
@@ -308,24 +350,20 @@
                 const session=ref(null), authEmail=ref(''), loading=ref(false), authMessage=ref('')
                 const currentView = ref('budget') 
                 
-                // SHARED STATE
-                const dbBasePay = ref(0) // The Saved Default
-                const tempCalculatedPay = ref(0) // The Commission Calculation
-                const useTempPay = ref(false) // Toggle State
+                // SHARED
+                const dbBasePay = ref(0), tempCalculatedPay = ref(0), useTempPay = ref(false)
+                const budgetItems = ref([]), bills = ref([])
 
-                const budgetItems = ref([])
-                const bills = ref([])
-
-                // CALCULATOR
+                // CALC
                 const calcInputs = ref({ salary: 0, commission: 0, medical: 0, dental: 0, fsa: 0, postTax: 0, trad401k: 0, roth401k: 0, match401k: 0 })
                 const calcResult = ref(null), savingBase = ref(false)
 
-                // BUDGET UI
+                // BUDGET
                 const showPlanner=ref(false), showAddForm=ref(false), isSubmitting=ref(false), isEditing=ref(false), editingId=ref(null)
                 const newItem = ref({ name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false })
                 const showGenModal=ref(false), potentialBills=ref([])
 
-                // FORECAST UI
+                // FORECAST
                 const forecastSettings = ref({ currentBalance: 5000, safetyMargin: 2000, months: 12 })
                 const forecastData = ref([]) 
                 const project = ref(null), showProjectModal = ref(false), newProject = ref({name:'', cost:''})
@@ -347,27 +385,19 @@
                     const annualTaxable = Math.max(0, (taxable * payPeriods) - 30000)
                     const taxPerPeriod = calculateFederalTax(annualTaxable) / payPeriods
                     const net = taxable - taxPerPeriod - postTax - rothAmt - ssTax - medTax
-                    
-                    const finalPay = (net - 2.25)
-                    const monthly = finalPay * 2
+                    const finalPay = (net - 2.25); const monthly = finalPay * 2
 
                     calcResult.value = { gross: grossPay, preTaxTotal: preTax + tradAmt, taxes: taxPerPeriod + ssTax + medTax, postTaxTotal: postTax + rothAmt, netPay: finalPay }
                     
                     if (mode === 'default') {
-                        // SAVE TO DB
-                        dbBasePay.value = monthly
-                        useTempPay.value = false
+                        dbBasePay.value = monthly; useTempPay.value = false
                         await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, base_pay: dbBasePay.value, salary, commission, medical, dental, fsa, post_tax: postTax, trad_401k: trad401k, roth_401k: roth401k, match_401k: match401k })
                         alert("Saved as Default Base Pay!")
                     } else {
-                        // USE TEMPORARILY
-                        tempCalculatedPay.value = monthly
-                        useTempPay.value = true // Switch budget view to this new amount
+                        tempCalculatedPay.value = monthly; useTempPay.value = true
                         alert("Applied Commission Pay to Session!")
                     }
-                    
-                    savingBase.value = false
-                    currentView.value = 'budget'
+                    savingBase.value = false; currentView.value = 'budget'
                 }
 
                 // --- 2. FORECAST LOGIC ---
@@ -376,90 +406,75 @@
                     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
                     const now = new Date()
                     
-                    // Init data if empty or length changed
                     if (forecastData.value.length !== forecastSettings.value.months) {
                         forecastData.value = []
                         for(let i=0; i<forecastSettings.value.months; i++) {
                             const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
                             forecastData.value.push({
                                 name: `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
-                                income: dbBasePay.value, // Default to Base
-                                extraExpense: 0,
+                                income: dbBasePay.value, 
+                                extraExpenses: [],
+                                newExpenseId: '', newExpenseName: '', newExpenseAmount: '', // New Fields
                                 isOpen: false
                             })
                         }
                     }
 
-                    // Calculate
                     forecastResults.value.affordableMonth = null
                     forecastData.value.forEach(m => {
-                        const monthlyNet = m.income - coreExpenses.value - m.extraExpense
+                        const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0)
+                        const monthlyNet = m.income - coreExpenses.value - totalExtra
                         balance += monthlyNet
                         m.endBalance = balance
-                        
-                        // Check Project affordability
                         if(project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) {
                             forecastResults.value.affordableMonth = m.name
                         }
                     })
-
                     renderChart()
                 }
 
+                const addExpense = (month) => {
+                    if(month.newExpenseName && month.newExpenseAmount) {
+                        month.extraExpenses.push({ name: month.newExpenseName, amount: Number(month.newExpenseAmount) })
+                        month.newExpenseName = ''; month.newExpenseAmount = ''; month.newExpenseId = ''
+                        runForecast()
+                    }
+                }
+
+                const fillExpense = (month) => {
+                    const item = budgetItems.value.find(i => i.id === month.newExpenseId)
+                    if(item) { month.newExpenseName = item.name; month.newExpenseAmount = item.amount }
+                }
+
                 const renderChart = () => {
-                    const ctx = document.getElementById('forecastChart')
-                    if(!ctx) return
+                    const ctx = document.getElementById('forecastChart'); if(!ctx) return;
                     if(chartInstance) chartInstance.destroy()
-                    
                     chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: forecastData.value.map(m => m.name.split(' ')[0]),
-                            datasets: [{
-                                label: 'Projected Balance',
-                                data: forecastData.value.map(m => m.endBalance),
-                                borderColor: '#10B981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                fill: true,
-                                tension: 0.3
-                            }]
+                            datasets: [{ label: 'Projected Balance', data: forecastData.value.map(m => m.endBalance), borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }]
                         },
                         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
                     })
                 }
 
-                const saveProject = () => {
-                    if(newProject.value.name && newProject.value.cost) {
-                        project.value = { ...newProject.value }
-                        showProjectModal.value = false
-                        runForecast()
-                    }
-                }
-
-                // --- 3. BUDGET & SHARED ---
+                // --- 3. SHARED & BUDGET ---
                 const activeMonthlyPay = computed(() => useTempPay.value ? tempCalculatedPay.value : dbBasePay.value)
-
                 const coreExpenses = computed(() => budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + Number(i.amount), 0))
                 const totalMonthlyBurn = computed(() => budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + Number(item.amount), 0))
                 const projectedBalance = computed(() => activeMonthlyPay.value - totalMonthlyBurn.value)
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
 
-                // --- 4. FETCHING & CRUD ---
+                // --- 4. DATA ---
                 const fetchSettings = async () => {
                     const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single()
-                    if (data) {
-                        dbBasePay.value = data.base_pay
-                        calcInputs.value = { salary: data.salary||0, commission: data.commission||0, medical: data.medical||0, dental: data.dental||0, fsa: data.fsa||0, postTax: data.post_tax||0, trad401k: data.trad_401k||0, roth401k: data.roth_401k||0, match401k: data.match_401k||0 }
-                    }
+                    if (data) { dbBasePay.value = data.base_pay; calcInputs.value = { salary: data.salary||0, commission: data.commission||0, medical: data.medical||0, dental: data.dental||0, fsa: data.fsa||0, postTax: data.post_tax||0, trad401k: data.trad_401k||0, roth401k: data.roth_401k||0, match401k: data.match_401k||0 } }
                 }
                 const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: i.is_core === true })) }
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if(data) bills.value = data.sort((a,b) => a.due_date > b.due_date ? 1 : -1) }
                 
-                const openGenerateModal = async () => { 
-                    const now = new Date(); const { data: t } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('user_id', session.value.user.id);
-                    const { data: e } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', new Date(now.getFullYear(), now.getMonth(), 1).toISOString()).lte('due_date', new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString());
-                    const existingIds = new Set(e.map(b => b.budget_item_id)); potentialBills.value = t.filter(x => !existingIds.has(x.id)).map(x => ({...x, selected: x.frequency === 'Monthly'})); showGenModal.value = true;
-                }
+                const openGenerateModal = async () => { /* Same as previous */ const now = new Date(); const { data: t } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('user_id', session.value.user.id); const { data: e } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', new Date(now.getFullYear(), now.getMonth(), 1).toISOString()).lte('due_date', new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()); const existingIds = new Set(e.map(b => b.budget_item_id)); potentialBills.value = t.filter(x => !existingIds.has(x.id)).map(x => ({...x, selected: x.frequency === 'Monthly'})); showGenModal.value = true; }
                 const confirmGenerate = async () => { const now = new Date(); const toCreate = potentialBills.value.filter(i=>i.selected).map(t => ({user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(now.getFullYear(), now.getMonth(), t.due_day||1).toISOString(), is_paid: false})); await _supabase.from('ledger').insert(toCreate); await fetchBills(); showGenModal.value = false; }
                 
                 const handleSave = async () => { isEditing.value ? updateItem() : addItem() }
@@ -479,8 +494,8 @@
                 const getDaysLeft = (d) => Math.ceil((new Date(d) - new Date().setHours(0,0,0,0)) / (86400000))
                 const getCalendarLink = (b) => `https://www.google.com/calendar/render?action=TEMPLATE&text=Pay ${b.budget_items.name}&dates=${b.due_date.replace(/-/g,'')}/${new Date(new Date(b.due_date).setDate(new Date(b.due_date).getDate()+1)).toISOString().split('T')[0].replace(/-/g,'')}`
                 const formatDate = (d) => new Date(new Date(d).valueOf() + new Date(d).getTimezoneOffset() * 60000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-
-                const watchView = (newVal) => { if(newVal === 'forecast') nextTick(runForecast) }
+                
+                const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { ...newProject.value }; showProjectModal.value = false; runForecast() } }
 
                 onMounted(() => { 
                     _supabase.auth.getSession().then(({data})=>{ session.value=data.session; if(session.value){ fetchSettings(); fetchBudgetItems(); fetchBills(); }}); 
@@ -489,19 +504,14 @@
 
                 return { 
                     session, authEmail, loading, authMessage, currentView, 
-                    // Shared
-                    dbBasePay, tempCalculatedPay, useTempPay, activeMonthlyPay,
-                    budgetItems, bills, coreExpenses, 
-                    // Calc
+                    dbBasePay, tempCalculatedPay, useTempPay, activeMonthlyPay, budgetItems, bills, coreExpenses, 
                     calcInputs, calcResult, savingBase, calculateAndSave,
-                    // Budget
                     showPlanner, showAddForm, isSubmitting, newItem, isEditing, showGenModal, potentialBills, projectedBalance, totalMonthlyBurn, isScenarioActive, openGenerateModal, confirmGenerate, deleteBill, toggleBillPaid, handleSave, resetForm, startEditing, applyCoreOnly, applyAll, formatDate, getDaysLeft, getCalendarLink, fetchBills, saveBasePay,
-                    // Forecast
-                    forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject,
+                    forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject, addExpense, fillExpense,
                     handleLogin, handleLogout
                 }
             },
-            watch: { currentView(val) { if(val==='forecast') setTimeout(this.runForecast, 100) } }
+            watch: { currentView(val) { if(val==='forecast') nextTick(this.runForecast) } }
         }).mount('#app')
     </script>
 </body>
