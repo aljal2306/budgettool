@@ -458,7 +458,12 @@
                 const applyCoreOnly = () => { budgetItems.value.forEach(item => { item.includedInScenario = item.is_core === true }) }
                 const applyAll = () => { budgetItems.value.forEach(item => item.includedInScenario = true) }
                 
-                const totalMonthlyBurn = computed(() => budgetItems.value.reduce((acc, i) => acc + Number(i.amount), 0))
+                // UPDATED: Only sums items that are toggled ON in the planner
+const totalMonthlyBurn = computed(() => {
+    return budgetItems.value
+        .filter(item => item.includedInScenario) // <--- This is the magic filter
+        .reduce((acc, item) => acc + Number(item.amount), 0)
+})
                 const projectedBalance = computed(() => startingBalance.value - budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + Number(i.amount), 0))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
                 const formatDate = (d) => new Date(new Date(d).valueOf() + new Date(d).getTimezoneOffset() * 60000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
