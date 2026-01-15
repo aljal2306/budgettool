@@ -13,7 +13,6 @@
         .toggle-checkbox:checked { right: 0; border-color: #10B981; }
         .toggle-checkbox:checked + .toggle-label { background-color: #10B981; }
         [v-cloak] { display: none; }
-        
         .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
@@ -35,16 +34,16 @@
         </div>
 
         <div v-else>
-            <div class="flex justify-between items-end mb-8 pb-4 border-b border-slate-200">
+            <div class="flex justify-between items-end mb-6 pb-4 border-b border-slate-200">
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-900">Household Budget</h1>
+                    <h1 class="text-xl md:text-2xl font-bold text-slate-900">Household Budget</h1>
                     <div class="text-xs text-slate-400">User: {{ session.user.email }}</div>
                 </div>
                 <button @click="handleLogout" class="text-xs font-semibold text-red-500 hover:text-red-700">Sign Out</button>
             </div>
 
             <header class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-start">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Starting Balance</h2>
                         <button @click="saveBasePay" class="text-[10px] text-blue-500 hover:underline">
@@ -53,24 +52,23 @@
                     </div>
                     <div class="flex items-center gap-1 mt-1">
                         <span class="text-xl text-slate-400">$</span>
-                        <input type="number" v-model="startingBalance" class="text-3xl font-bold w-full outline-none text-slate-700 placeholder-slate-200" placeholder="0">
+                        <input type="number" v-model="startingBalance" class="text-2xl md:text-3xl font-bold w-full outline-none text-slate-700 placeholder-slate-200" placeholder="0">
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-2">Default Base Pay: <b>${{ Number(basePay).toLocaleString() }}</b></p>
                 </div>
 
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Commitments</h2>
-                    <div class="text-3xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString() }}</div>
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
+                    <div class="text-2xl md:text-3xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString() }}</div>
                 </div>
 
-                <div class="bg-slate-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
+                <div class="bg-slate-900 text-white p-4 md:p-6 rounded-xl shadow-lg relative overflow-hidden">
                     <div class="relative z-10">
                         <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                             <span :class="isScenarioActive ? 'text-emerald-400' : 'text-slate-400'">
                                 {{ isScenarioActive ? '⚡ Scenario Active' : 'Projected End Balance' }}
                             </span>
                         </h2>
-                        <div class="text-4xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">
+                        <div class="text-3xl md:text-4xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">
                             ${{ projectedBalance.toLocaleString() }}
                         </div>
                     </div>
@@ -80,17 +78,59 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 <div class="lg:col-span-2">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
                         <h3 class="text-lg font-bold">📅 Current Bills</h3>
                         <div class="flex gap-2">
-                            <button @click="openGenerateModal" class="text-xs bg-slate-900 text-white px-3 py-1 rounded hover:bg-slate-700 transition shadow">
-                                + Review & Add Bills
+                            <button @click="openGenerateModal" class="flex-1 md:flex-none text-xs bg-slate-900 text-white px-3 py-2 rounded hover:bg-slate-700 transition shadow text-center">
+                                + Review & Add
                             </button>
-                            <button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600">Refresh</button>
+                            <button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600 px-2">Refresh</button>
                         </div>
                     </div>
                     
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="md:hidden space-y-3">
+                        <div v-if="bills.length === 0" class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">No bills yet.</div>
+                        
+                        <div v-for="bill in bills" :key="bill.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200" :class="{'bg-green-50 border-green-200': bill.is_paid}">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="font-bold text-slate-800 flex items-center gap-2">
+                                        {{ bill.budget_items.name }}
+                                        <a v-if="!bill.is_paid && bill.budget_items.due_day !== 0" :href="getCalendarLink(bill)" target="_blank" class="text-slate-300 hover:text-blue-500">📅</a>
+                                    </div>
+                                    <div class="flex gap-1 mt-1">
+                                        <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span>
+                                        <span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span>
+                                    </div>
+                                </div>
+                                <div class="font-mono text-lg text-slate-700">${{ bill.budget_items.amount }}</div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center text-sm mb-3">
+                                <div class="text-slate-500">
+                                    <span v-if="bill.budget_items.due_day === 0" class="italic">Flexible</span>
+                                    <span v-else>{{ formatDate(bill.due_date) }}</span>
+                                </div>
+                                <div v-if="!bill.is_paid && bill.budget_items.due_day !== 0">
+                                    <span v-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 bg-red-100 px-2 py-1 rounded text-xs font-bold">OVERDUE</span>
+                                    <span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 bg-orange-100 px-2 py-1 rounded text-xs font-bold">TODAY</span>
+                                    <span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500 text-xs font-bold">{{ getDaysLeft(bill.due_date) }} days</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                                <button @click="deleteBill(bill)" class="text-slate-300 hover:text-red-500 transition text-sm flex items-center gap-1">
+                                    🗑️ <span class="text-xs">Remove</span>
+                                </button>
+                                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                                    <span class="text-xs font-bold" :class="bill.is_paid ? 'text-emerald-600' : 'text-slate-500'">{{ bill.is_paid ? 'PAID' : 'Mark Paid' }}</span>
+                                    <input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 accent-emerald-600">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <table class="w-full text-left">
                             <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b border-slate-100">
                                 <tr>
@@ -103,12 +143,10 @@
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50 transition" :class="{'bg-green-50/50': bill.is_paid}">
-                                    
                                     <td class="p-4 text-sm font-medium text-slate-500">
                                         <span v-if="bill.budget_items.due_day === 0" class="italic text-slate-400">Flexible</span>
                                         <span v-else>{{ formatDate(bill.due_date) }}</span>
                                     </td>
-
                                     <td class="p-4 text-xs font-bold">
                                         <div v-if="bill.is_paid" class="text-emerald-600">PAID</div>
                                         <div v-else-if="bill.budget_items.due_day === 0" class="text-slate-400">-</div>
@@ -119,14 +157,11 @@
                                             <span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span>
                                         </div>
                                     </td>
-
                                     <td class="p-4 font-medium text-slate-700">
                                         <div class="flex flex-col">
                                             <div class="flex items-center gap-2">
                                                 {{ bill.budget_items.name }}
-                                                <a v-if="!bill.is_paid && bill.budget_items.due_day !== 0" 
-                                                   :href="getCalendarLink(bill)" target="_blank" title="Add to Google Calendar"
-                                                   class="text-slate-300 hover:text-blue-500 transition cursor-pointer">📅</a>
+                                                <a v-if="!bill.is_paid && bill.budget_items.due_day !== 0" :href="getCalendarLink(bill)" target="_blank" class="text-slate-300 hover:text-blue-500">📅</a>
                                             </div>
                                             <div class="flex gap-1 mt-1">
                                                 <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span>
@@ -134,18 +169,11 @@
                                             </div>
                                         </div>
                                     </td>
-
                                     <td class="p-4 text-right font-mono text-slate-600">${{ bill.budget_items.amount }}</td>
-
                                     <td class="p-4">
                                         <div class="flex items-center justify-center gap-4">
-                                            <input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" 
-                                                   class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer accent-emerald-600"
-                                                   title="Mark as Paid">
-                                            
-                                            <button @click="deleteBill(bill)" class="text-slate-300 hover:text-red-500 transition" title="Remove from this month">
-                                                🗑️
-                                            </button>
+                                            <input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer accent-emerald-600">
+                                            <button @click="deleteBill(bill)" class="text-slate-300 hover:text-red-500 transition">🗑️</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -205,8 +233,8 @@
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-bold flex items-center gap-2">🔮 Planner</h3>
                             <div class="flex gap-1">
-                                <button @click="applyCoreOnly" class="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200 border border-yellow-300 shadow-sm">APPLY CORE</button>
-                                <button @click="applyAll" class="text-[10px] font-bold bg-slate-200 text-slate-600 px-3 py-1 rounded hover:bg-slate-300 shadow-sm">RESET ALL</button>
+                                <button @click="applyCoreOnly" class="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200 border border-yellow-300 shadow-sm">CORE</button>
+                                <button @click="applyAll" class="text-[10px] font-bold bg-slate-200 text-slate-600 px-3 py-1 rounded hover:bg-slate-300 shadow-sm">ALL</button>
                             </div>
                         </div>
                         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 max-h-[600px] overflow-y-auto">
@@ -246,7 +274,7 @@
                     
                     <div class="p-4 overflow-y-auto">
                         <p class="text-sm text-slate-500 mb-4 bg-blue-50 text-blue-700 p-3 rounded border border-blue-100">
-                            ℹ️ We selected your <b>Monthly</b> bills automatically. Please review and check any <b>Quarterly</b> or <b>Yearly</b> bills due this month.
+                            ℹ️ We pre-selected your <b>Monthly</b> bills. Review and check any other bills due this month.
                         </p>
                         <div class="space-y-2">
                             <div v-for="item in potentialBills" :key="item.id" 
@@ -273,7 +301,7 @@
                     <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-2">
                         <button @click="showGenModal = false" class="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded font-bold text-sm">Cancel</button>
                         <button @click="confirmGenerate" :disabled="isSubmitting" class="px-6 py-2 bg-slate-900 text-white rounded font-bold hover:bg-slate-800 disabled:opacity-50 text-sm shadow">
-                            {{ isSubmitting ? 'Creating...' : `Generate ${potentialBills.filter(i=>i.selected).length} Bills` }}
+                            {{ isSubmitting ? 'Creating...' : `Add ${potentialBills.filter(i=>i.selected).length} Bills` }}
                         </button>
                     </div>
                 </div>
@@ -458,12 +486,13 @@
                 const applyCoreOnly = () => { budgetItems.value.forEach(item => { item.includedInScenario = item.is_core === true }) }
                 const applyAll = () => { budgetItems.value.forEach(item => item.includedInScenario = true) }
                 
-                // UPDATED: Only sums items that are toggled ON in the planner
-const totalMonthlyBurn = computed(() => {
-    return budgetItems.value
-        .filter(item => item.includedInScenario) // <--- This is the magic filter
-        .reduce((acc, item) => acc + Number(item.amount), 0)
-})
+                // UPDATED TOTAL BURN LOGIC (OPTION A)
+                const totalMonthlyBurn = computed(() => {
+                    return budgetItems.value
+                        .filter(item => item.includedInScenario) // Only sum active scenario items
+                        .reduce((acc, item) => acc + Number(item.amount), 0)
+                })
+
                 const projectedBalance = computed(() => startingBalance.value - budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + Number(i.amount), 0))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
                 const formatDate = (d) => new Date(new Date(d).valueOf() + new Date(d).getTimezoneOffset() * 60000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
