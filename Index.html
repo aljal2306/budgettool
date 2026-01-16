@@ -18,6 +18,12 @@
         .fade-enter-from, .fade-leave-to { opacity: 0; }
         .accordion-enter-active, .accordion-leave-active { transition: max-height 0.3s ease-in-out, opacity 0.3s; max-height: 1000px; opacity: 1; overflow: hidden; }
         .accordion-enter-from, .accordion-leave-to { max-height: 0; opacity: 0; }
+
+        /* Print Specifics */
+        @media print {
+            body { background-color: white; color: black; }
+            .no-break { page-break-inside: avoid; }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -37,7 +43,7 @@
         </div>
 
         <div v-else>
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 pb-4 border-b border-slate-200 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 pb-4 border-b border-slate-200 gap-4 print:hidden">
                 <div>
                     <h1 class="text-xl font-bold text-slate-900">Household Finance</h1>
                     <div class="text-xs text-slate-400">User: {{ session.user.email }}</div>
@@ -58,7 +64,12 @@
                 <button @click="handleLogout" class="text-xs font-semibold text-red-500 hover:text-red-700">Sign Out</button>
             </div>
 
-            <div v-if="currentView === 'calculator'" class="animate-fade-in">
+            <div class="hidden print:block mb-8">
+                <h1 class="text-3xl font-bold text-slate-900">Financial Forecast Report</h1>
+                <p class="text-slate-500">Generated on {{ new Date().toLocaleDateString() }}</p>
+            </div>
+
+            <div v-if="currentView === 'calculator'" class="animate-fade-in print:hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                         <h2 class="text-lg font-bold mb-4 flex items-center gap-2">📝 Paycheck Inputs <span class="text-xs font-normal text-slate-400">(Semi-Monthly)</span></h2>
@@ -121,7 +132,7 @@
                 </div>
             </div>
 
-            <div v-if="currentView === 'budget'" class="animate-fade-in">
+            <div v-if="currentView === 'budget'" class="animate-fade-in print:hidden">
                 <header class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-start">
@@ -199,9 +210,7 @@
                         <tbody class="divide-y divide-slate-100">
                             <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" 
                                 :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
-                                
                                 <td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td>
-                                
                                 <td class="p-4 text-xs font-bold">
                                     <span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span>
                                     <span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span>
@@ -209,7 +218,6 @@
                                     <span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span>
                                     <span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span>
                                 </td>
-
                                 <td class="p-4 font-medium">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td>
                                 <td class="p-4 text-right font-mono">${{ bill.budget_items.amount }}</td>
                                 <td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td>
@@ -229,7 +237,7 @@
             <div v-if="currentView === 'forecast'" class="animate-fade-in">
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     
-                    <div class="lg:col-span-1 space-y-4">
+                    <div class="lg:col-span-1 space-y-4 print:hidden">
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                             <h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3>
                             <label class="block text-xs mb-1">Bank Balance Now</label>
@@ -259,25 +267,30 @@
                         </div>
                     </div>
 
-                    <div class="lg:col-span-3 space-y-6">
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                            <canvas id="forecastChart" style="max-height: 300px;"></canvas>
+                    <div class="lg:col-span-3 print:col-span-4 space-y-6">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 print:border-0 print:shadow-none">
+                            <div class="flex justify-between items-center mb-2 print:hidden">
+                                <h3 class="font-bold">Projection</h3>
+                                <button @click="printReport" class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🖨️ Print Report</button>
+                            </div>
+                            <canvas id="forecastChart" style="max-height: 300px; width: 100%;"></canvas>
                         </div>
 
-                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div class="p-4 border-b bg-slate-50 font-bold text-sm text-slate-500">Monthly Details</div>
-                            <div v-for="(month, idx) in forecastData" :key="idx" class="border-b last:border-0">
-                                <div @click="month.isOpen = !month.isOpen" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50">
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none">
+                            <div class="p-4 border-b bg-slate-50 font-bold text-sm text-slate-500 print:bg-white print:border-b-2 print:text-black">Monthly Details</div>
+                            <div v-for="(month, idx) in forecastData" :key="idx" class="border-b last:border-0 print:border-slate-200 no-break">
+                                <div @click="month.isOpen = !month.isOpen" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 print:cursor-default">
                                     <div class="font-bold text-sm text-slate-700">{{ month.name }}</div>
                                     <div class="flex gap-4 text-sm font-mono">
                                         <span class="text-slate-400">In: ${{ month.income.toLocaleString() }}</span>
                                         <span :class="month.endBalance < 0 ? 'text-red-500' : 'text-emerald-600'">End: ${{ month.endBalance.toLocaleString() }}</span>
-                                        <span class="text-slate-300 text-xs transform transition" :class="month.isOpen ? 'rotate-180' : ''">▼</span>
+                                        <span class="text-slate-300 text-xs transform transition print:hidden" :class="month.isOpen ? 'rotate-180' : ''">▼</span>
                                     </div>
                                 </div>
-                                <div v-if="month.isOpen" class="p-3 bg-slate-50 text-xs border-t">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div>
+                                
+                                <div v-if="month.isOpen" class="p-3 bg-slate-50 text-xs border-t print:bg-white print:block">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 print:grid-cols-2">
+                                        <div class="print:hidden">
                                             <div class="flex justify-between items-center mb-1">
                                                 <label class="block font-bold text-slate-400">Total Income</label>
                                                 <button v-if="tempCalculatedPay && tempCalculatedPay !== month.income" @click="month.income = tempCalculatedPay; runForecast()" class="text-[10px] text-emerald-600 font-bold hover:underline">Apply Calc Pay (${{ tempCalculatedPay.toLocaleString() }})</button>
@@ -291,20 +304,20 @@
                                         </div>
                                     </div>
                                     
-                                    <div class="bg-orange-50/50 p-2 rounded border border-orange-100">
-                                        <h6 class="font-bold text-orange-400 mb-2">Optional Expenses</h6>
+                                    <div class="bg-orange-50/50 p-2 rounded border border-orange-100 print:bg-white print:border-0">
+                                        <h6 class="font-bold text-orange-400 mb-2 print:text-black">Optional Expenses</h6>
                                         <div class="space-y-2 mb-2">
-                                            <div v-for="(exp, eIdx) in month.extraExpenses" :key="eIdx" class="flex justify-between items-center bg-white p-1 px-2 rounded border border-orange-100 shadow-sm">
+                                            <div v-for="(exp, eIdx) in month.extraExpenses" :key="eIdx" class="flex justify-between items-center bg-white p-1 px-2 rounded border border-orange-100 shadow-sm print:border-0 print:shadow-none print:px-0">
                                                 <span>{{ exp.name }}</span>
                                                 <div class="flex items-center gap-2">
                                                     <span class="font-mono">${{ exp.amount }}</span>
-                                                    <button @click="month.extraExpenses.splice(eIdx, 1); runForecast()" class="text-red-400 hover:text-red-600 font-bold">&times;</button>
+                                                    <button @click="month.extraExpenses.splice(eIdx, 1); runForecast()" class="text-red-400 hover:text-red-600 font-bold print:hidden">&times;</button>
                                                 </div>
                                             </div>
                                             <div v-if="month.extraExpenses.length === 0" class="text-slate-400 italic text-center py-1">None added</div>
                                         </div>
                                         
-                                        <div class="flex gap-2 items-end">
+                                        <div class="flex gap-2 items-end print:hidden">
                                             <div class="flex-1">
                                                 <select v-model="month.newExpenseId" @change="fillExpense(month)" class="w-full p-1 border rounded text-xs mb-1">
                                                     <option value="">-- Pick from Budget --</option>
@@ -414,7 +427,7 @@
                                 name: `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
                                 income: dbBasePay.value, 
                                 extraExpenses: [],
-                                newExpenseId: '', newExpenseName: '', newExpenseAmount: '', // New Fields
+                                newExpenseId: '', newExpenseName: '', newExpenseAmount: '', 
                                 isOpen: false
                             })
                         }
@@ -458,6 +471,8 @@
                         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
                     })
                 }
+                
+                const printReport = () => window.print()
 
                 // --- 3. SHARED & BUDGET ---
                 const activeMonthlyPay = computed(() => useTempPay.value ? tempCalculatedPay.value : dbBasePay.value)
@@ -507,7 +522,7 @@
                     dbBasePay, tempCalculatedPay, useTempPay, activeMonthlyPay, budgetItems, bills, coreExpenses, 
                     calcInputs, calcResult, savingBase, calculateAndSave,
                     showPlanner, showAddForm, isSubmitting, newItem, isEditing, showGenModal, potentialBills, projectedBalance, totalMonthlyBurn, isScenarioActive, openGenerateModal, confirmGenerate, deleteBill, toggleBillPaid, handleSave, resetForm, startEditing, applyCoreOnly, applyAll, formatDate, getDaysLeft, getCalendarLink, fetchBills, saveBasePay,
-                    forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject, addExpense, fillExpense,
+                    forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject, addExpense, fillExpense, printReport,
                     handleLogin, handleLogout
                 }
             },
