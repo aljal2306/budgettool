@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <style>
         .toggle-checkbox:checked { right: 0; border-color: #10B981; }
@@ -18,6 +19,11 @@
         .fade-enter-from, .fade-leave-to { opacity: 0; }
         .accordion-enter-active, .accordion-leave-active { transition: max-height 0.3s ease-in-out, opacity 0.3s; max-height: 1000px; opacity: 1; overflow: hidden; }
         .accordion-enter-from, .accordion-leave-to { max-height: 0; opacity: 0; }
+
+        /* Drag & Drop Styling */
+        .sortable-ghost { opacity: 0.4; background: #e2e8f0; }
+        .sortable-drag { cursor: grabbing; }
+        .cursor-grab { cursor: grab; }
 
         @media print {
             body { background-color: white; color: black; }
@@ -152,21 +158,9 @@
                             <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <div>
                                     <div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-lg">
-                                        <button @click="setScenarioMode('survival')" 
-                                                class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1"
-                                                :class="currentScenarioMode === 'survival' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-white'">
-                                            🛡️ Survival
-                                        </button>
-                                        <button @click="setScenarioMode('standard')" 
-                                                class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1"
-                                                :class="currentScenarioMode === 'standard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">
-                                            ⚖️ Standard
-                                        </button>
-                                        <button @click="setScenarioMode('dream')" 
-                                                class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1"
-                                                :class="currentScenarioMode === 'dream' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">
-                                            🚀 Dream
-                                        </button>
+                                        <button @click="setScenarioMode('survival')" class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'survival' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🛡️ Survival</button>
+                                        <button @click="setScenarioMode('standard')" class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'standard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">⚖️ Standard</button>
+                                        <button @click="setScenarioMode('dream')" class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'dream' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🚀 Dream</button>
                                     </div>
 
                                     <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Active Bills</h4>
@@ -179,10 +173,7 @@
                                                 </div>
                                                 <div class="text-xs text-slate-500 font-mono flex gap-1">
                                                     ${{ item.amount.toFixed(2) }} 
-                                                    <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded flex items-center gap-1">
-                                                        {{ item.frequency }} 
-                                                        <span class="text-purple-400 font-normal">(~${{ getMonthlyCost(item).toFixed(0) }}/mo)</span>
-                                                    </span>
+                                                    <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded flex items-center gap-1">{{ item.frequency }} <span class="text-purple-400 font-normal">(~${{ getMonthlyCost(item).toFixed(0) }}/mo)</span></span>
                                                 </div>
                                             </div>
                                             <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 cursor-pointer">
@@ -229,16 +220,9 @@
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead>
                         <tbody class="divide-y divide-slate-100">
-                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" 
-                                :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
+                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
                                 <td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td>
-                                <td class="p-4 text-xs font-bold">
-                                    <span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span>
-                                    <span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span>
-                                    <span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 px-2 py-1 bg-orange-100 rounded">TODAY</span>
-                                    <span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span>
-                                    <span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span>
-                                </td>
+                                <td class="p-4 text-xs font-bold"><span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span><span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span><span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 px-2 py-1 bg-orange-100 rounded">TODAY</span><span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span><span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span></td>
                                 <td class="p-4 font-medium">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td>
                                 <td class="p-4 text-right font-mono">${{ bill.budget_items.amount.toFixed(2) }}</td>
                                 <td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td>
@@ -375,9 +359,11 @@
                             </div>
                         </div>
 
-                        <div class="space-y-3">
-                            <div v-for="debt in debts" :key="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group">
-                                <div class="flex justify-between items-start">
+                        <div class="space-y-3" id="debt-list-container">
+                            <div v-for="(debt, index) in debts" :key="debt.id" :data-id="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group cursor-default">
+                                <div class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 cursor-grab sortable-handle p-2 hover:text-slate-500">⋮⋮</div>
+                                
+                                <div class="pl-6 flex justify-between items-start">
                                     <div>
                                         <div class="font-bold text-slate-800">{{ debt.name }}</div>
                                         <div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div>
@@ -395,7 +381,7 @@
                             <div class="flex justify-between items-end mb-4">
                                 <div>
                                     <h2 class="text-2xl font-bold">⚔️ Attack Plan</h2>
-                                    <p class="text-slate-400 text-sm">Avalanche Method (Highest Rate First)</p>
+                                    <p class="text-slate-400 text-sm">Drag cards on left to prioritize payoff order.</p>
                                 </div>
                                 <div class="text-right">
                                     <div class="text-xs text-slate-400 uppercase">Debt Free By</div>
@@ -431,9 +417,9 @@
                             <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Payoff Timeline</h3>
                             <div class="max-h-[300px] overflow-y-auto space-y-2">
                                 <div v-for="(log, idx) in debtPlan.timeline" :key="idx" class="flex justify-between text-xs border-b pb-2 last:border-0">
-                                    <span class="font-bold w-20">{{ log.date }}</span>
-                                    <span class="text-slate-500 flex-1">{{ log.action }}</span>
-                                    <span class="font-mono text-slate-700">rem: ${{ log.remaining.toLocaleString() }}</span>
+                                    <span class="font-bold w-20 text-slate-400">{{ log.date }}</span>
+                                    <span class="text-slate-700 font-bold flex-1">{{ log.action }}</span>
+                                    <span class="font-mono text-slate-500 text-[10px]">rem: ${{ log.remaining.toLocaleString() }}</span>
                                 </div>
                             </div>
                         </div>
@@ -498,46 +484,40 @@
                 const forecastResults = ref({ affordableMonth: null })
                 let chartInstance = null
 
-                // --- DEBT LOGIC ---
+                // --- DEBT LOGIC (SORTABLE) ---
                 const debtPlan = computed(() => {
                     if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }
 
-                    // Simulation Helper
                     const simulate = (extra) => {
-                        // Deep clone to simulate without changing real data
-                        let simDebts = debts.value.map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment) }))
-                        // Sort: Highest Rate First (Avalanche)
-                        simDebts.sort((a,b) => b.rate - a.rate)
+                        // Use Current Sort Order
+                        let simDebts = JSON.parse(JSON.stringify(debts.value)).map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment) }))
                         
                         let totalInterest = 0
                         let months = 0
                         let timeline = []
                         let active = true
 
-                        while (active && months < 360) { // Cap at 30 years to prevent infinite loops
+                        while (active && months < 360) {
                             months++
-                            let monthlyBudget = extra // The "Snowball" amount available
+                            let monthlyBudget = extra 
                             let monthTotalInterest = 0
                             let anyBalanceLeft = false
 
-                            // 1. Charge Interest & Pay Minimums
+                            // Interest & Mins
                             for (let d of simDebts) {
                                 if (d.balance > 0) {
                                     anyBalanceLeft = true
                                     let interest = d.balance * (d.rate / 100 / 12)
                                     monthTotalInterest += interest
-                                    d.balance += interest // Add interest
-                                    
+                                    d.balance += interest
                                     let payment = Math.min(d.balance, d.min)
-                                    d.balance -= payment // Pay minimum
-                                    
-                                    // If Minimum paid off the debt, add remainder to snowball
-                                    if (payment > d.balance) monthlyBudget += (payment - d.balance) // logic simplification for simulation speed, close enough
+                                    d.balance -= payment
+                                    if (payment > d.balance) monthlyBudget += (payment - d.balance) 
                                 }
                             }
                             totalInterest += monthTotalInterest
 
-                            // 2. Attack with Snowball (Extra + Rollovers)
+                            // Attack (In Order)
                             for (let d of simDebts) {
                                 if (d.balance > 0 && monthlyBudget > 0) {
                                     let payment = Math.min(d.balance, monthlyBudget)
@@ -545,35 +525,29 @@
                                     monthlyBudget -= payment
                                     if (d.balance < 0.01) {
                                         d.balance = 0
-                                        monthlyBudget += d.min // Rollover this debt's min payment to the next one!
+                                        monthlyBudget += d.min 
                                         timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 })
                                     }
                                 }
                             }
-
                             if (!anyBalanceLeft) active = false
                         }
                         return { months, totalInterest, timeline }
                     }
 
-                    const base = simulate(0) // Scenario 1: Minimums only
-                    const attack = simulate(extraDebtPayment.value) // Scenario 2: With Attack
-
-                    const now = new Date()
-                    now.setMonth(now.getMonth() + attack.months)
+                    const base = simulate(0)
+                    const attack = simulate(extraDebtPayment.value)
+                    const now = new Date(); now.setMonth(now.getMonth() + attack.months)
                     const payoffDate = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
-                    return {
-                        payoffDate,
-                        totalInterest: round(attack.totalInterest),
-                        savedInterest: round(base.totalInterest - attack.totalInterest),
-                        timeline: attack.timeline
-                    }
+                    return { payoffDate, totalInterest: round(attack.totalInterest), savedInterest: round(base.totalInterest - attack.totalInterest), timeline: attack.timeline }
                 })
 
                 const addDebt = async () => {
+                    // New items go to end (max order_index + 1)
+                    const maxOrder = debts.value.length > 0 ? Math.max(...debts.value.map(d => d.order_index || 0)) : 0
                     if (newDebt.value.name && newDebt.value.balance) {
-                        const { data } = await _supabase.from('debts').insert([{ user_id: session.value.user.id, name: newDebt.value.name, balance: newDebt.value.balance, rate: newDebt.value.rate, min_payment: newDebt.value.min_payment }]).select()
+                        const { data } = await _supabase.from('debts').insert([{ user_id: session.value.user.id, name: newDebt.value.name, balance: newDebt.value.balance, rate: newDebt.value.rate, min_payment: newDebt.value.min_payment, order_index: maxOrder + 1 }]).select()
                         if (data) debts.value.push(data[0])
                         newDebt.value = { name: '', balance: '', rate: '', min_payment: '' }
                     }
@@ -582,6 +556,13 @@
                     if (confirm('Delete debt?')) {
                         await _supabase.from('debts').delete().eq('id', debt.id)
                         debts.value = debts.value.filter(d => d.id !== debt.id)
+                    }
+                }
+                const updateDebtOrder = async () => {
+                    // Update all items in DB with new index
+                    const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index }))
+                    for (const u of updates) {
+                        await _supabase.from('debts').update({ order_index: u.order_index }).eq('id', u.id)
                     }
                 }
 
@@ -716,7 +697,11 @@
                     currentScenarioMode.value = 'survival';
                 }
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if(data) bills.value = data.sort((a,b) => a.due_date > b.due_date ? 1 : -1) }
-                const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('rate', { ascending: false }); if(data) debts.value = data }
+                
+                const fetchDebts = async () => { 
+                    const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }) // Sort by user order
+                    if(data) debts.value = data 
+                }
 
                 const openGenerateModal = async () => { 
                     const now = new Date(); const { data: t } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('is_wishlist', false).eq('user_id', session.value.user.id);
@@ -724,6 +709,7 @@
                 }
                 const confirmGenerate = async () => { const now = new Date(); const toCreate = potentialBills.value.filter(i=>i.selected).map(t => ({user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(now.getFullYear(), now.getMonth(), t.due_day||1).toISOString(), is_paid: false})); await _supabase.from('ledger').insert(toCreate); await fetchBills(); showGenModal.value = false; }
                 
+                // --- FIXED SAVE ITEM LOGIC ---
                 const handleSave = async () => { isEditing.value ? updateItem() : addItem() }
                 const addItem = async () => { 
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
@@ -757,6 +743,27 @@
                     _supabase.auth.onAuthStateChange((_e,_s)=>{ session.value=_s; if(_s){ fetchSettings(); fetchBudgetItems(); fetchBills(); fetchDebts(); } })
                 })
 
+                // INIT SORTABLE (DRAG AND DROP)
+                watch(currentView, (val) => {
+                    if (val === 'debt') {
+                        nextTick(() => {
+                            const el = document.getElementById('debt-list-container')
+                            if (el) {
+                                new Sortable(el, {
+                                    handle: '.sortable-handle',
+                                    animation: 150,
+                                    onEnd: (evt) => {
+                                        const item = debts.value.splice(evt.oldIndex, 1)[0]
+                                        debts.value.splice(evt.newIndex, 0, item)
+                                        updateDebtOrder()
+                                    }
+                                })
+                            }
+                        })
+                    }
+                    if (val === 'forecast') nextTick(runForecast)
+                })
+
                 return { 
                     session, authEmail, loading, authMessage, currentView, 
                     dbBasePay, tempCalculatedPay, useTempPay, activeMonthlyPay, budgetItems, bills, coreExpenses, debts,
@@ -768,7 +775,6 @@
                     handleLogin, handleLogout
                 }
             },
-            watch: { currentView(val) { if(val==='forecast') nextTick(this.runForecast) } }
         }).mount('#app')
     </script>
 </body>
