@@ -133,6 +133,7 @@
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
                         <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
+                        <div class="text-[10px] text-slate-400 mt-1">Includes smoothed Quarterly/Yearly items</div>
                     </div>
                     <div class="bg-slate-900 text-white p-4 rounded-xl shadow-lg relative overflow-hidden">
                         <div class="relative z-10">
@@ -174,12 +175,18 @@
                                     <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Active Bills</h4>
                                     <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-6">
                                         <div v-for="item in standardItems" :key="item.id" class="flex items-center justify-between p-3 border rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-white' : 'bg-slate-50 opacity-50 grayscale'">
-                                            <div>
+                                            <div class="flex-1">
                                                 <div class="flex items-center gap-1"><span v-if="item.is_core" class="text-xs">⭐</span><div class="font-bold text-sm">{{ item.name }}</div>
                                                     <button @click="startEditing(item)" class="text-xs text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 px-1">✏️</button>
                                                     <button @click="deleteBudgetItem(item)" class="text-xs text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1">🗑️</button>
                                                 </div>
-                                                <div class="text-xs text-slate-500 font-mono">${{ item.amount.toFixed(2) }} <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded">{{ item.frequency }}</span></div>
+                                                <div class="text-xs text-slate-500 font-mono flex gap-1">
+                                                    ${{ item.amount.toFixed(2) }} 
+                                                    <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded flex items-center gap-1">
+                                                        {{ item.frequency }} 
+                                                        <span class="text-purple-400 font-normal">(~${{ getMonthlyCost(item).toFixed(0) }}/mo)</span>
+                                                    </span>
+                                                </div>
                                             </div>
                                             <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 cursor-pointer">
                                         </div>
@@ -206,7 +213,7 @@
                                     <div v-if="showAddForm" class="mt-3 space-y-3 pt-3 border-t">
                                         <input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded text-sm">
                                         <div class="grid grid-cols-2 gap-2"><input v-model="newItem.amount" type="number" step="0.01" placeholder="$" class="w-full p-2 border rounded text-sm"><input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" placeholder="Day" class="w-full p-2 border rounded text-sm"><div v-else class="text-center text-sm text-slate-400 p-2 border bg-slate-100">Flex</div></div>
-                                        <div class="grid grid-cols-2 gap-2"><label class="flex items-center gap-2 text-xs"><input type="checkbox" v-model="newItem.isFlexible"> Flexible Date</label><select v-model="newItem.frequency" class="w-full p-2 border rounded text-xs"><option>Monthly</option><option>Quarterly</option><option>Yearly</option></select></div>
+                                        <div class="grid grid-cols-2 gap-2"><label class="flex items-center gap-2 text-xs"><input type="checkbox" v-model="newItem.isFlexible"> Flexible Date</label><select v-model="newItem.frequency" class="w-full p-2 border rounded text-xs"><option>Monthly</option><option>Quarterly</option><option>Yearly</option><option>One-Time</option></select></div>
                                         <div class="flex flex-col gap-2 p-2 bg-white rounded border">
                                             <label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_core"> Core Item</label>
                                             <label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_autopay"> Autopay</label>
@@ -225,8 +232,7 @@
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead>
                         <tbody class="divide-y divide-slate-100">
-                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" 
-                                :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
+                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
                                 <td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td>
                                 <td class="p-4 text-xs font-bold">
                                     <span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span>
@@ -374,6 +380,15 @@
         // ROUNDING HELPER
         const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100
 
+        // HELPERS
+        const getMonthlyCost = (item) => {
+            const amount = Number(item.amount)
+            if (item.frequency === 'Quarterly') return amount / 3
+            if (item.frequency === 'Yearly') return amount / 12
+            if (item.frequency === 'One-Time') return 0 
+            return amount
+        }
+
         // Tax Logic
         const taxBrackets = [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}];
         const calculateFederalTax = (annualInc) => { let tax=0, lower=0; for(const b of taxBrackets){ if(annualInc>b.limit){ tax+=(b.limit-lower)*b.rate; lower=b.limit; } else { tax+=(annualInc-lower)*b.rate; break; } } return tax; }
@@ -395,7 +410,7 @@
                 const showPlanner=ref(false), showAddForm=ref(false), isSubmitting=ref(false), isEditing=ref(false), editingId=ref(null)
                 const newItem = ref({ name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false })
                 const showGenModal=ref(false), potentialBills=ref([])
-                const currentScenarioMode = ref('survival') // Track active scenario mode
+                const currentScenarioMode = ref('survival') 
 
                 // FORECAST
                 const forecastSettings = ref({ currentBalance: 5000, safetyMargin: 2000, months: 12 })
@@ -504,15 +519,20 @@
 
                 // --- 3. SHARED & BUDGET ---
                 const activeMonthlyPay = computed(() => round(useTempPay.value ? tempCalculatedPay.value : dbBasePay.value))
-                const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + Number(i.amount), 0)))
-                const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + Number(item.amount), 0)))
+                
+                // CORE EXPENSES (Uses Smoothed Monthly Cost)
+                const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + getMonthlyCost(i), 0)))
+                
+                // SCENARIO BURN (Uses Smoothed Monthly Cost)
+                const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + getMonthlyCost(item), 0)))
+                
                 const projectedBalance = computed(() => round(activeMonthlyPay.value - totalMonthlyBurn.value))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
                 const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist))
                 const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist))
 
                 const setScenarioMode = (mode) => {
-                    currentScenarioMode.value = mode // Track Active State
+                    currentScenarioMode.value = mode
                     budgetItems.value.forEach(i => {
                         if (mode === 'survival') i.includedInScenario = i.is_core === true
                         if (mode === 'standard') i.includedInScenario = i.is_wishlist === false
@@ -528,7 +548,7 @@
                 const fetchBudgetItems = async () => { 
                     const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
                     if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: i.is_core === true })); 
-                    currentScenarioMode.value = 'survival'; // Reset UI state on fetch
+                    currentScenarioMode.value = 'survival';
                 }
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if(data) bills.value = data.sort((a,b) => a.due_date > b.due_date ? 1 : -1) }
                 
@@ -538,7 +558,7 @@
                 }
                 const confirmGenerate = async () => { const now = new Date(); const toCreate = potentialBills.value.filter(i=>i.selected).map(t => ({user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(now.getFullYear(), now.getMonth(), t.due_day||1).toISOString(), is_paid: false})); await _supabase.from('ledger').insert(toCreate); await fetchBills(); showGenModal.value = false; }
                 
-                // --- FIXED SAVE ITEM LOGIC (RESTORED DUE DAY FIX) ---
+                // --- CRUD ---
                 const handleSave = async () => { isEditing.value ? updateItem() : addItem() }
                 const addItem = async () => { 
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
@@ -606,7 +626,7 @@
                     calcInputs, calcResult, savingBase, calculateAndSave,
                     showPlanner, showAddForm, isSubmitting, newItem, isEditing, showGenModal, potentialBills, projectedBalance, totalMonthlyBurn, isScenarioActive, openGenerateModal, confirmGenerate, deleteBill, toggleBillPaid, handleSave, resetForm, startEditing, deleteBudgetItem, applyCoreOnly, applyAll, formatDate, getDaysLeft, getCalendarLink, fetchBills, saveBasePay,
                     forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject, addExpense, fillExpense, printReport,
-                    standardItems, wishlistItems, setScenarioMode, currentScenarioMode,
+                    standardItems, wishlistItems, setScenarioMode, currentScenarioMode, getMonthlyCost,
                     handleLogin, handleLogout
                 }
             },
