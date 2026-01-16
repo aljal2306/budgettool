@@ -65,7 +65,7 @@
             </div>
 
             <div class="hidden print:block mb-8">
-                <h1 class="text-3xl font-bold text-slate-900">Financial Forecast Report</h1>
+                <h1 class="text-3xl font-bold text-slate-900">{{ project ? project.name + ' Plan' : 'Financial Forecast Report' }}</h1>
                 <p class="text-slate-500">Generated on {{ new Date().toLocaleDateString() }}</p>
             </div>
 
@@ -273,7 +273,7 @@
                     <div class="lg:col-span-3 print:col-span-4 space-y-6">
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 print:border-0 print:shadow-none">
                             <div class="flex justify-between items-center mb-2 print:hidden">
-                                <h3 class="font-bold">Projection</h3>
+                                <h3 class="font-bold">{{ project ? project.name + ' Projection' : 'Financial Projection' }}</h3>
                                 <button @click="printReport" class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🖨️ Print Report</button>
                             </div>
                             <canvas id="forecastChart" style="max-height: 300px; width: 100%;"></canvas>
