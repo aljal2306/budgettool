@@ -22,6 +22,8 @@
         @media print {
             body { background-color: white; color: black; }
             .no-break { page-break-inside: avoid; }
+            .print\:hidden { display: none !important; }
+            .print\:block { display: block !important; }
         }
     </style>
 </head>
@@ -49,22 +51,17 @@
                 </div>
                 
                 <div class="flex bg-slate-200 p-1 rounded-lg">
-                    <button @click="currentView = 'calculator'" class="px-4 py-1.5 text-sm font-bold rounded-md transition flex items-center gap-2" :class="currentView === 'calculator' ? 'bg-white text-slate-900 shadow' : 'text-slate-500 hover:text-slate-700'">
-                        <span>🧮</span> Paycheck
-                    </button>
-                    <button @click="currentView = 'budget'" class="px-4 py-1.5 text-sm font-bold rounded-md transition flex items-center gap-2" :class="currentView === 'budget' ? 'bg-white text-slate-900 shadow' : 'text-slate-500 hover:text-slate-700'">
-                        <span>💸</span> Budget
-                    </button>
-                    <button @click="currentView = 'forecast'" class="px-4 py-1.5 text-sm font-bold rounded-md transition flex items-center gap-2" :class="currentView === 'forecast' ? 'bg-white text-slate-900 shadow' : 'text-slate-500 hover:text-slate-700'">
-                        <span>📈</span> Forecast
-                    </button>
+                    <button @click="currentView = 'calculator'" class="px-3 py-1.5 text-xs md:text-sm font-bold rounded-md transition flex items-center gap-1 md:gap-2" :class="currentView === 'calculator' ? 'bg-white text-slate-900 shadow' : 'text-slate-500 hover:text-slate-700'"><span>🧮</span> Paycheck</button>
+                    <button @click="currentView = 'budget'" class="px-3 py-1.5 text-xs md:text-sm font-bold rounded-md transition flex items-center gap-1 md:gap-2" :class="currentView === 'budget' ? 'bg-white text-slate-900 shadow' : 'text-slate-500 hover:text-slate-700'"><span>💸</span> Budget</button>
+                    <button @click="currentView = 'forecast'" class="px-3 py-1.5 text-xs md:text-sm font-bold rounded-md transition flex items-center gap-1 md:gap-2" :class="currentView === 'forecast' ? 'bg-white text-slate-900 shadow' : 'text-slate-500 hover:text-slate-700'"><span>📈</span> Forecast</button>
+                    <button @click="currentView = 'debt'" class="px-3 py-1.5 text-xs md:text-sm font-bold rounded-md transition flex items-center gap-1 md:gap-2" :class="currentView === 'debt' ? 'bg-white text-red-600 shadow' : 'text-slate-500 hover:text-red-600'"><span>⚔️</span> Debt Attack</button>
                 </div>
 
                 <button @click="handleLogout" class="text-xs font-semibold text-red-500 hover:text-red-700">Sign Out</button>
             </div>
 
             <div class="hidden print:block mb-8">
-                <h1 class="text-3xl font-bold text-slate-900">{{ project ? project.name + ' Plan' : 'Financial Forecast Report' }}</h1>
+                <h1 class="text-3xl font-bold text-slate-900">{{ getPrintTitle() }}</h1>
                 <p class="text-slate-500">Generated on {{ new Date().toLocaleDateString() }}</p>
             </div>
 
@@ -133,6 +130,7 @@
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
                         <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
+                        <div class="text-[10px] text-slate-400 mt-1">Includes smoothed Quarterly/Yearly items</div>
                     </div>
                     <div class="bg-slate-900 text-white p-4 rounded-xl shadow-lg relative overflow-hidden">
                         <div class="relative z-10">
@@ -361,6 +359,88 @@
                 </div>
             </div>
 
+            <div v-if="currentView === 'debt'" class="animate-fade-in print:hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Add Debt</h3>
+                            <div class="space-y-3">
+                                <input v-model="newDebt.name" type="text" placeholder="Debt Name (e.g. Visa)" class="w-full p-2 border rounded text-sm">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input v-model="newDebt.balance" type="number" step="0.01" placeholder="Balance ($)" class="w-full p-2 border rounded text-sm">
+                                    <input v-model="newDebt.rate" type="number" step="0.01" placeholder="Rate (%)" class="w-full p-2 border rounded text-sm">
+                                </div>
+                                <input v-model="newDebt.min_payment" type="number" step="0.01" placeholder="Min Monthly Payment ($)" class="w-full p-2 border rounded text-sm">
+                                <button @click="addDebt" class="w-full bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700 text-sm">Add Debt</button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div v-for="debt in debts" :key="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="font-bold text-slate-800">{{ debt.name }}</div>
+                                        <div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div>
+                                    </div>
+                                    <div class="font-mono text-lg font-bold text-slate-700">${{ debt.balance.toLocaleString() }}</div>
+                                </div>
+                                <button @click="deleteDebt(debt)" class="absolute top-2 right-2 text-xs text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">Delete</button>
+                            </div>
+                            <div v-if="debts.length === 0" class="text-center text-slate-400 py-8 italic">No debts added yet.</div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <div class="bg-slate-900 text-white p-6 rounded-xl shadow-lg mb-6">
+                            <div class="flex justify-between items-end mb-4">
+                                <div>
+                                    <h2 class="text-2xl font-bold">⚔️ Attack Plan</h2>
+                                    <p class="text-slate-400 text-sm">Avalanche Method (Highest Rate First)</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xs text-slate-400 uppercase">Debt Free By</div>
+                                    <div class="text-3xl font-bold text-emerald-400">{{ debtPlan.payoffDate }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="font-bold text-slate-300">Extra Monthly Attack</span>
+                                    <span class="font-mono text-emerald-300">${{ extraDebtPayment }}</span>
+                                </div>
+                                <input type="range" v-model.number="extraDebtPayment" min="0" max="2000" step="50" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                                <div class="flex justify-between text-xs text-slate-500 mt-2">
+                                    <span>$0</span>
+                                    <span>$2,000</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mt-6">
+                                <div class="bg-slate-800/50 p-3 rounded">
+                                    <div class="text-xs text-slate-400 uppercase">Total Interest</div>
+                                    <div class="text-xl font-bold text-red-300">${{ debtPlan.totalInterest.toLocaleString() }}</div>
+                                </div>
+                                <div class="bg-emerald-900/30 p-3 rounded border border-emerald-900">
+                                    <div class="text-xs text-emerald-400 uppercase">Interest Saved</div>
+                                    <div class="text-xl font-bold text-emerald-300">${{ debtPlan.savedInterest.toLocaleString() }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Payoff Timeline</h3>
+                            <div class="max-h-[300px] overflow-y-auto space-y-2">
+                                <div v-for="(log, idx) in debtPlan.timeline" :key="idx" class="flex justify-between text-xs border-b pb-2 last:border-0">
+                                    <span class="font-bold w-20">{{ log.date }}</span>
+                                    <span class="text-slate-500 flex-1">{{ log.action }}</span>
+                                    <span class="font-mono text-slate-700">rem: ${{ log.remaining.toLocaleString() }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <transition name="fade"><div v-if="showGenModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg"><div class="p-4 border-b flex justify-between"><h3 class="font-bold">Select Bills</h3><button @click="showGenModal=false">&times;</button></div><div class="p-4 max-h-[60vh] overflow-y-auto space-y-2"><div v-for="item in potentialBills" :key="item.id" class="flex justify-between p-3 border rounded cursor-pointer" :class="item.selected?'border-blue-500 bg-blue-50':''" @click="item.selected=!item.selected"><div>{{ item.name }}</div><input type="checkbox" v-model="item.selected"></div></div><div class="p-4 border-t flex justify-end gap-2"><button @click="showGenModal=false" class="px-4 py-2">Cancel</button><button @click="confirmGenerate" class="px-6 py-2 bg-slate-900 text-white rounded">Add</button></div></div></div></transition>
@@ -369,7 +449,7 @@
     </div>
 
     <script>
-        const { createApp, ref, computed, onMounted, nextTick } = Vue
+        const { createApp, ref, computed, onMounted, nextTick, watch } = Vue
         const { createClient } = supabase
 
         // ⚠️ REPLACE KEYS BELOW
@@ -377,10 +457,8 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-        // ROUNDING HELPER
         const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100
 
-        // HELPERS
         const getMonthlyCost = (item) => {
             const amount = Number(item.amount)
             if (item.frequency === 'Quarterly') return amount / 3
@@ -389,7 +467,6 @@
             return amount
         }
 
-        // Tax Logic
         const taxBrackets = [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}];
         const calculateFederalTax = (annualInc) => { let tax=0, lower=0; for(const b of taxBrackets){ if(annualInc>b.limit){ tax+=(b.limit-lower)*b.rate; lower=b.limit; } else { tax+=(annualInc-lower)*b.rate; break; } } return tax; }
 
@@ -398,15 +475,17 @@
                 const session=ref(null), authEmail=ref(''), loading=ref(false), authMessage=ref('')
                 const currentView = ref('budget') 
                 
-                // SHARED
+                // DATA
                 const dbBasePay = ref(0), tempCalculatedPay = ref(0), useTempPay = ref(false)
-                const budgetItems = ref([]), bills = ref([])
+                const budgetItems = ref([]), bills = ref([]), debts = ref([])
 
-                // CALC
+                // INPUTS
                 const calcInputs = ref({ salary: 0, commission: 0, medical: 0, dental: 0, fsa: 0, postTax: 0, trad401k: 0, roth401k: 0, match401k: 0 })
                 const calcResult = ref(null), savingBase = ref(false)
+                const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' })
+                const extraDebtPayment = ref(0)
 
-                // BUDGET
+                // UI STATE
                 const showPlanner=ref(false), showAddForm=ref(false), isSubmitting=ref(false), isEditing=ref(false), editingId=ref(null)
                 const newItem = ref({ name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false })
                 const showGenModal=ref(false), potentialBills=ref([])
@@ -419,7 +498,94 @@
                 const forecastResults = ref({ affordableMonth: null })
                 let chartInstance = null
 
-                // --- 1. CALCULATOR LOGIC ---
+                // --- DEBT LOGIC ---
+                const debtPlan = computed(() => {
+                    if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }
+
+                    // Simulation Helper
+                    const simulate = (extra) => {
+                        // Deep clone to simulate without changing real data
+                        let simDebts = debts.value.map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment) }))
+                        // Sort: Highest Rate First (Avalanche)
+                        simDebts.sort((a,b) => b.rate - a.rate)
+                        
+                        let totalInterest = 0
+                        let months = 0
+                        let timeline = []
+                        let active = true
+
+                        while (active && months < 360) { // Cap at 30 years to prevent infinite loops
+                            months++
+                            let monthlyBudget = extra // The "Snowball" amount available
+                            let monthTotalInterest = 0
+                            let anyBalanceLeft = false
+
+                            // 1. Charge Interest & Pay Minimums
+                            for (let d of simDebts) {
+                                if (d.balance > 0) {
+                                    anyBalanceLeft = true
+                                    let interest = d.balance * (d.rate / 100 / 12)
+                                    monthTotalInterest += interest
+                                    d.balance += interest // Add interest
+                                    
+                                    let payment = Math.min(d.balance, d.min)
+                                    d.balance -= payment // Pay minimum
+                                    
+                                    // If Minimum paid off the debt, add remainder to snowball
+                                    if (payment > d.balance) monthlyBudget += (payment - d.balance) // logic simplification for simulation speed, close enough
+                                }
+                            }
+                            totalInterest += monthTotalInterest
+
+                            // 2. Attack with Snowball (Extra + Rollovers)
+                            for (let d of simDebts) {
+                                if (d.balance > 0 && monthlyBudget > 0) {
+                                    let payment = Math.min(d.balance, monthlyBudget)
+                                    d.balance -= payment
+                                    monthlyBudget -= payment
+                                    if (d.balance < 0.01) {
+                                        d.balance = 0
+                                        monthlyBudget += d.min // Rollover this debt's min payment to the next one!
+                                        timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 })
+                                    }
+                                }
+                            }
+
+                            if (!anyBalanceLeft) active = false
+                        }
+                        return { months, totalInterest, timeline }
+                    }
+
+                    const base = simulate(0) // Scenario 1: Minimums only
+                    const attack = simulate(extraDebtPayment.value) // Scenario 2: With Attack
+
+                    const now = new Date()
+                    now.setMonth(now.getMonth() + attack.months)
+                    const payoffDate = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+                    return {
+                        payoffDate,
+                        totalInterest: round(attack.totalInterest),
+                        savedInterest: round(base.totalInterest - attack.totalInterest),
+                        timeline: attack.timeline
+                    }
+                })
+
+                const addDebt = async () => {
+                    if (newDebt.value.name && newDebt.value.balance) {
+                        const { data } = await _supabase.from('debts').insert([{ user_id: session.value.user.id, name: newDebt.value.name, balance: newDebt.value.balance, rate: newDebt.value.rate, min_payment: newDebt.value.min_payment }]).select()
+                        if (data) debts.value.push(data[0])
+                        newDebt.value = { name: '', balance: '', rate: '', min_payment: '' }
+                    }
+                }
+                const deleteDebt = async (debt) => {
+                    if (confirm('Delete debt?')) {
+                        await _supabase.from('debts').delete().eq('id', debt.id)
+                        debts.value = debts.value.filter(d => d.id !== debt.id)
+                    }
+                }
+
+                // --- EXISTING LOGIC ---
                 const calculateAndSave = async (mode) => {
                     savingBase.value = true
                     const { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k } = calcInputs.value
@@ -449,7 +615,6 @@
                     savingBase.value = false; currentView.value = 'budget'
                 }
 
-                // --- 2. FORECAST LOGIC ---
                 const runForecast = () => {
                     let balance = round(forecastSettings.value.currentBalance)
                     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -516,14 +681,15 @@
                 }
                 
                 const printReport = () => window.print()
+                const getPrintTitle = () => {
+                    if (currentView.value === 'debt') return 'Debt Payoff Plan'
+                    return project.value ? project.value.name + ' Plan' : 'Financial Forecast Report'
+                }
 
-                // --- 3. SHARED & BUDGET ---
+                // SHARED & BUDGET
                 const activeMonthlyPay = computed(() => round(useTempPay.value ? tempCalculatedPay.value : dbBasePay.value))
                 const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + getMonthlyCost(i), 0)))
-                
-                // SCENARIO BURN (UPDATED to exclude one-times from recurring month total)
                 const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + getMonthlyCost(item), 0)))
-                
                 const projectedBalance = computed(() => round(activeMonthlyPay.value - totalMonthlyBurn.value))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
                 const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist))
@@ -532,19 +698,14 @@
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode
                     budgetItems.value.forEach(i => {
-                        // FIXED LOGIC: One-Time items are NEVER auto-included in presets
-                        if (i.frequency === 'One-Time') {
-                            i.includedInScenario = false
-                            return
-                        }
-
+                        if (i.frequency === 'One-Time') { i.includedInScenario = false; return; }
                         if (mode === 'survival') i.includedInScenario = i.is_core === true
                         if (mode === 'standard') i.includedInScenario = i.is_wishlist === false
                         if (mode === 'dream') i.includedInScenario = true
                     })
                 }
 
-                // --- 4. DATA ---
+                // DATA FETCHING
                 const fetchSettings = async () => {
                     const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single()
                     if (data) { dbBasePay.value = data.base_pay; calcInputs.value = { salary: data.salary||0, commission: data.commission||0, medical: data.medical||0, dental: data.dental||0, fsa: data.fsa||0, postTax: data.post_tax||0, trad401k: data.trad_401k||0, roth401k: data.roth_401k||0, match401k: data.match_401k||0 } }
@@ -555,56 +716,29 @@
                     currentScenarioMode.value = 'survival';
                 }
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if(data) bills.value = data.sort((a,b) => a.due_date > b.due_date ? 1 : -1) }
-                
+                const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('rate', { ascending: false }); if(data) debts.value = data }
+
                 const openGenerateModal = async () => { 
                     const now = new Date(); const { data: t } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('is_wishlist', false).eq('user_id', session.value.user.id);
                     const { data: e } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', new Date(now.getFullYear(), now.getMonth(), 1).toISOString()).lte('due_date', new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()); const existingIds = new Set(e.map(b => b.budget_item_id)); potentialBills.value = t.filter(x => !existingIds.has(x.id)).map(x => ({...x, selected: x.frequency === 'Monthly'})); showGenModal.value = true; 
                 }
                 const confirmGenerate = async () => { const now = new Date(); const toCreate = potentialBills.value.filter(i=>i.selected).map(t => ({user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(now.getFullYear(), now.getMonth(), t.due_day||1).toISOString(), is_paid: false})); await _supabase.from('ledger').insert(toCreate); await fetchBills(); showGenModal.value = false; }
                 
-                // --- FIXED SAVE ITEM LOGIC ---
                 const handleSave = async () => { isEditing.value ? updateItem() : addItem() }
                 const addItem = async () => { 
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-                    const payload = { 
-                        user_id: session.value.user.id, 
-                        name: newItem.value.name, 
-                        amount: Number(newItem.value.amount),
-                        due_day: finalDueDay,
-                        frequency: newItem.value.frequency,
-                        is_core: newItem.value.is_core,
-                        is_autopay: newItem.value.is_autopay,
-                        is_wishlist: newItem.value.is_wishlist,
-                        is_active: true 
-                    }; 
+                    const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, frequency: newItem.value.frequency, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, is_active: true }; 
                     const { data } = await _supabase.from('budget_items').insert([payload]).select(); 
                     if(data) { budgetItems.value.push({...data[0], includedInScenario: true}); resetForm(); }
                 }
                 const updateItem = async () => { 
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
-                    const updates = {
-                        name: newItem.value.name,
-                        amount: Number(newItem.value.amount),
-                        due_day: finalDueDay,
-                        frequency: newItem.value.frequency,
-                        is_core: newItem.value.is_core,
-                        is_autopay: newItem.value.is_autopay,
-                        is_wishlist: newItem.value.is_wishlist
-                    }
-                    await _supabase.from('budget_items').update(updates).eq('id', editingId.value); 
-                    fetchBudgetItems(); 
-                    resetForm(); 
+                    const updates = { name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, frequency: newItem.value.frequency, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist }
+                    await _supabase.from('budget_items').update(updates).eq('id', editingId.value); fetchBudgetItems(); resetForm(); 
                 }
-                
-                const deleteBudgetItem = async (item) => {
-                    if(!confirm('Delete this budget item? History of paid bills will remain.')) return
-                    const { error } = await _supabase.from('budget_items').update({ is_active: false }).eq('id', item.id)
-                    if(!error) fetchBudgetItems()
-                }
-
+                const deleteBudgetItem = async (item) => { if(!confirm('Delete this budget item? History of paid bills will remain.')) return; const { error } = await _supabase.from('budget_items').update({ is_active: false }).eq('id', item.id); if(!error) fetchBudgetItems() }
                 const startEditing = (i) => { showAddForm.value=true; isEditing.value=true; editingId.value=i.id; newItem.value={...i, isFlexible: i.due_day === 0}; }
                 const resetForm = () => { newItem.value={name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false}; isEditing.value=false; showAddForm.value=false; }
-                
                 const deleteBill = async (bill) => { if(confirm('Delete?')) { await _supabase.from('ledger').delete().eq('id', bill.id); fetchBills(); } }
                 const toggleBillPaid = async (bill) => { await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id) }
                 const saveBasePay = async () => { savingBase.value=true; await _supabase.from('user_settings').upsert({user_id: session.value.user.id, base_pay: dbBasePay.value}); savingBase.value=false; }
@@ -616,21 +750,21 @@
                 const getDaysLeft = (d) => Math.ceil((new Date(d) - new Date().setHours(0,0,0,0)) / (86400000))
                 const getCalendarLink = (b) => `https://www.google.com/calendar/render?action=TEMPLATE&text=Pay ${b.budget_items.name}&dates=${b.due_date.replace(/-/g,'')}/${new Date(new Date(b.due_date).setDate(new Date(b.due_date).getDate()+1)).toISOString().split('T')[0].replace(/-/g,'')}`
                 const formatDate = (d) => new Date(new Date(d).valueOf() + new Date(d).getTimezoneOffset() * 60000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                
                 const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { ...newProject.value }; showProjectModal.value = false; runForecast() } }
 
                 onMounted(() => { 
-                    _supabase.auth.getSession().then(({data})=>{ session.value=data.session; if(session.value){ fetchSettings(); fetchBudgetItems(); fetchBills(); }}); 
-                    _supabase.auth.onAuthStateChange((_e,_s)=>{ session.value=_s; if(_s){ fetchSettings(); fetchBudgetItems(); fetchBills(); } })
+                    _supabase.auth.getSession().then(({data})=>{ session.value=data.session; if(session.value){ fetchSettings(); fetchBudgetItems(); fetchBills(); fetchDebts(); }}); 
+                    _supabase.auth.onAuthStateChange((_e,_s)=>{ session.value=_s; if(_s){ fetchSettings(); fetchBudgetItems(); fetchBills(); fetchDebts(); } })
                 })
 
                 return { 
                     session, authEmail, loading, authMessage, currentView, 
-                    dbBasePay, tempCalculatedPay, useTempPay, activeMonthlyPay, budgetItems, bills, coreExpenses, 
+                    dbBasePay, tempCalculatedPay, useTempPay, activeMonthlyPay, budgetItems, bills, coreExpenses, debts,
                     calcInputs, calcResult, savingBase, calculateAndSave,
                     showPlanner, showAddForm, isSubmitting, newItem, isEditing, showGenModal, potentialBills, projectedBalance, totalMonthlyBurn, isScenarioActive, openGenerateModal, confirmGenerate, deleteBill, toggleBillPaid, handleSave, resetForm, startEditing, deleteBudgetItem, applyCoreOnly, applyAll, formatDate, getDaysLeft, getCalendarLink, fetchBills, saveBasePay,
                     forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject, addExpense, fillExpense, printReport,
-                    standardItems, wishlistItems, setScenarioMode, currentScenarioMode, getMonthlyCost,
+                    standardItems, wishlistItems, setScenarioMode, currentScenarioMode, getMonthlyCost, getPrintTitle,
+                    newDebt, extraDebtPayment, addDebt, deleteDebt, debtPlan,
                     handleLogin, handleLogout
                 }
             },
