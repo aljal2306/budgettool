@@ -145,7 +145,7 @@
                         </div>
                         <div class="flex items-center gap-1 mt-1">
                             <span class="text-xl text-slate-400">$</span>
-                            <div class="text-2xl font-bold w-full text-slate-700">{{ activeMonthlyPay.toLocaleString() }}</div>
+                            <div class="text-2xl font-bold w-full text-slate-700">{{ activeMonthlyPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
                         </div>
                         <div v-if="useTempPay" class="text-[10px] text-emerald-600 mt-1 font-bold">Using Calculated Commission Pay</div>
                         <div v-else class="text-[10px] text-slate-400 mt-1">Using Default Base Pay</div>
@@ -153,14 +153,14 @@
 
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
-                        <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString() }}</div>
+                        <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
                     </div>
                     <div class="bg-slate-900 text-white p-4 rounded-xl shadow-lg relative overflow-hidden">
                         <div class="relative z-10">
                             <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                                 <span :class="isScenarioActive ? 'text-emerald-400' : 'text-slate-400'">{{ isScenarioActive ? '⚡ Active' : 'Projected End' }}</span>
                             </h2>
-                            <div class="text-3xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">${{ projectedBalance.toLocaleString() }}</div>
+                            <div class="text-3xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">${{ projectedBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
                         </div>
                     </div>
                 </header>
@@ -182,7 +182,7 @@
                                         <div v-for="item in budgetItems" :key="item.id" class="flex items-center justify-between p-3 border rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-white' : 'bg-slate-50 opacity-50 grayscale'">
                                             <div>
                                                 <div class="flex items-center gap-1"><span v-if="item.is_core" class="text-xs">⭐</span><div class="font-bold text-sm">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs opacity-0 group-hover:opacity-100">✏️</button></div>
-                                                <div class="text-xs text-slate-500 font-mono">${{ item.amount }} <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded">{{ item.frequency }}</span></div>
+                                                <div class="text-xs text-slate-500 font-mono">${{ item.amount.toFixed(2) }} <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded">{{ item.frequency }}</span></div>
                                             </div>
                                             <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 cursor-pointer">
                                         </div>
@@ -192,7 +192,7 @@
                                     <div class="flex justify-between items-center cursor-pointer" @click="showAddForm = !showAddForm"><h4 class="text-sm font-bold text-slate-700">{{ isEditing ? 'Edit Item' : 'Add Item' }}</h4><span>{{ showAddForm ? '-' : '+' }}</span></div>
                                     <div v-if="showAddForm" class="mt-3 space-y-3 pt-3 border-t">
                                         <input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded text-sm">
-                                        <div class="grid grid-cols-2 gap-2"><input v-model="newItem.amount" type="number" placeholder="$" class="w-full p-2 border rounded text-sm"><input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" placeholder="Day" class="w-full p-2 border rounded text-sm"><div v-else class="text-center text-sm text-slate-400 p-2 border bg-slate-100">Flex</div></div>
+                                        <div class="grid grid-cols-2 gap-2"><input v-model="newItem.amount" type="number" step="0.01" placeholder="$" class="w-full p-2 border rounded text-sm"><input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" placeholder="Day" class="w-full p-2 border rounded text-sm"><div v-else class="text-center text-sm text-slate-400 p-2 border bg-slate-100">Flex</div></div>
                                         <div class="grid grid-cols-2 gap-2"><label class="flex items-center gap-2 text-xs"><input type="checkbox" v-model="newItem.isFlexible"> Flexible Date</label><select v-model="newItem.frequency" class="w-full p-2 border rounded text-xs"><option>Monthly</option><option>Quarterly</option><option>Yearly</option></select></div>
                                         <div class="flex flex-col gap-2 p-2 bg-white rounded border"><label class="text-sm flex gap-2"><input type="checkbox" v-model="newItem.is_core"> Core</label><label class="text-sm flex gap-2"><input type="checkbox" v-model="newItem.is_autopay"> Auto</label></div>
                                         <div class="flex gap-2"><button @click="handleSave" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded text-sm">Save</button><button v-if="isEditing" @click="resetForm" class="px-4 bg-slate-200 rounded text-sm">Cancel</button></div>
@@ -210,7 +210,9 @@
                         <tbody class="divide-y divide-slate-100">
                             <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" 
                                 :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
+                                
                                 <td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td>
+                                
                                 <td class="p-4 text-xs font-bold">
                                     <span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span>
                                     <span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span>
@@ -218,8 +220,9 @@
                                     <span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span>
                                     <span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span>
                                 </td>
+
                                 <td class="p-4 font-medium">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td>
-                                <td class="p-4 text-right font-mono">${{ bill.budget_items.amount }}</td>
+                                <td class="p-4 text-right font-mono">${{ bill.budget_items.amount.toFixed(2) }}</td>
                                 <td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td>
                             </tr>
                         </tbody>
@@ -227,7 +230,7 @@
                 </div>
                 <div class="md:hidden space-y-3">
                     <div v-for="bill in bills" :key="bill.id" class="bg-white p-4 rounded-xl shadow-sm border" :class="{'bg-green-50 border-green-200': bill.is_paid, 'bg-red-50 border-red-200': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
-                        <div class="flex justify-between items-start mb-2"><div><div class="font-bold text-slate-800">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a></div><div class="flex gap-1 mt-1"><span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span><span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span></div></div><div class="font-mono text-lg text-slate-700">${{ bill.budget_items.amount }}</div></div>
+                        <div class="flex justify-between items-start mb-2"><div><div class="font-bold text-slate-800">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a></div><div class="flex gap-1 mt-1"><span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span><span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span></div></div><div class="font-mono text-lg text-slate-700">${{ bill.budget_items.amount.toFixed(2) }}</div></div>
                         <div class="flex justify-between items-center text-sm mb-3 text-slate-500"><span>{{ bill.budget_items.due_day === 0 ? 'Flexible' : formatDate(bill.due_date) }}</span><span v-if="!bill.is_paid" :class="getDaysLeft(bill.due_date) < 0 ? 'text-red-600 font-bold' : (getDaysLeft(bill.due_date) <= 3 ? 'text-orange-500 font-bold' : 'text-slate-400')">{{ getDaysLeft(bill.due_date) < 0 ? 'Overdue' : getDaysLeft(bill.due_date) + ' days' }}</span></div>
                         <div class="flex justify-between pt-3 border-t"><button @click="deleteBill(bill)" class="text-slate-300">🗑️ Remove</button><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5"></div>
                     </div>
@@ -241,9 +244,9 @@
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                             <h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3>
                             <label class="block text-xs mb-1">Bank Balance Now</label>
-                            <input v-model="forecastSettings.currentBalance" type="number" class="w-full p-2 border rounded mb-2 bg-slate-50">
+                            <input v-model="forecastSettings.currentBalance" type="number" step="0.01" class="w-full p-2 border rounded mb-2 bg-slate-50">
                             <label class="block text-xs mb-1">Safety Margin</label>
-                            <input v-model="forecastSettings.safetyMargin" type="number" class="w-full p-2 border rounded mb-2 bg-slate-50">
+                            <input v-model="forecastSettings.safetyMargin" type="number" step="0.01" class="w-full p-2 border rounded mb-2 bg-slate-50">
                             <label class="block text-xs mb-1">Months to Forecast</label>
                             <select v-model="forecastSettings.months" class="w-full p-2 border rounded bg-slate-50">
                                 <option v-for="n in 24" :value="n">{{ n }} Months</option>
@@ -255,11 +258,11 @@
                             <div class="flex justify-between items-center mb-2">
                                 <h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3>
                                 <button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button>
-                                <button v-if="project" @click="project = null" class="text-xs text-red-400">Remove</button>
+                                <button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button>
                             </div>
                             <div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100">
                                 <div class="font-bold text-blue-900">{{ project.name }}</div>
-                                <div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString() }}</div>
+                                <div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
                                 <div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div>
                                 <div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div>
                             </div>
@@ -282,8 +285,8 @@
                                 <div @click="month.isOpen = !month.isOpen" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 print:cursor-default">
                                     <div class="font-bold text-sm text-slate-700">{{ month.name }}</div>
                                     <div class="flex gap-4 text-sm font-mono">
-                                        <span class="text-slate-400">In: ${{ month.income.toLocaleString() }}</span>
-                                        <span :class="month.endBalance < 0 ? 'text-red-500' : 'text-emerald-600'">End: ${{ month.endBalance.toLocaleString() }}</span>
+                                        <span class="text-slate-400">In: ${{ month.income.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span>
+                                        <span :class="month.endBalance < 0 ? 'text-red-500' : 'text-emerald-600'">End: ${{ month.endBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span>
                                         <span class="text-slate-300 text-xs transform transition print:hidden" :class="month.isOpen ? 'rotate-180' : ''">▼</span>
                                     </div>
                                 </div>
@@ -293,14 +296,14 @@
                                         <div class="print:hidden">
                                             <div class="flex justify-between items-center mb-1">
                                                 <label class="block font-bold text-slate-400">Total Income</label>
-                                                <button v-if="tempCalculatedPay && tempCalculatedPay !== month.income" @click="month.income = tempCalculatedPay; runForecast()" class="text-[10px] text-emerald-600 font-bold hover:underline">Apply Calc Pay (${{ tempCalculatedPay.toLocaleString() }})</button>
+                                                <button v-if="tempCalculatedPay && tempCalculatedPay !== month.income" @click="month.income = tempCalculatedPay; runForecast()" class="text-[10px] text-emerald-600 font-bold hover:underline">Apply Calc Pay (${{ tempCalculatedPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }})</button>
                                                 <button v-else-if="dbBasePay !== month.income" @click="month.income = dbBasePay; runForecast()" class="text-[10px] text-blue-500 hover:underline">Reset to Base</button>
                                             </div>
-                                            <input type="number" v-model.number="month.income" @change="runForecast" class="p-1 border rounded w-full">
+                                            <input type="number" v-model.number="month.income" @change="runForecast" step="0.01" class="p-1 border rounded w-full">
                                         </div>
                                         <div class="flex flex-col justify-center">
-                                            <div class="text-slate-500">Core Burn: <span class="font-mono text-red-400">-${{ coreExpenses.toLocaleString() }}</span></div>
-                                            <div class="text-slate-500">Optional: <span class="font-mono text-orange-400">-${{ month.extraExpenses.reduce((a,b)=>a+b.amount,0).toLocaleString() }}</span></div>
+                                            <div class="text-slate-500">Core Burn: <span class="font-mono text-red-400">-${{ coreExpenses.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
+                                            <div class="text-slate-500">Optional: <span class="font-mono text-orange-400">-${{ month.extraExpenses.reduce((a,b)=>a+b.amount,0).toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
                                         </div>
                                     </div>
                                     
@@ -310,7 +313,7 @@
                                             <div v-for="(exp, eIdx) in month.extraExpenses" :key="eIdx" class="flex justify-between items-center bg-white p-1 px-2 rounded border border-orange-100 shadow-sm print:border-0 print:shadow-none print:px-0">
                                                 <span>{{ exp.name }}</span>
                                                 <div class="flex items-center gap-2">
-                                                    <span class="font-mono">${{ exp.amount }}</span>
+                                                    <span class="font-mono">${{ exp.amount.toFixed(2) }}</span>
                                                     <button @click="month.extraExpenses.splice(eIdx, 1); runForecast()" class="text-red-400 hover:text-red-600 font-bold print:hidden">&times;</button>
                                                 </div>
                                             </div>
@@ -321,12 +324,12 @@
                                             <div class="flex-1">
                                                 <select v-model="month.newExpenseId" @change="fillExpense(month)" class="w-full p-1 border rounded text-xs mb-1">
                                                     <option value="">-- Pick from Budget --</option>
-                                                    <option v-for="item in budgetItems" :value="item.id">{{ item.name }} (${{ item.amount }})</option>
+                                                    <option v-for="item in budgetItems" :value="item.id">{{ item.name }} (${{ item.amount.toFixed(2) }})</option>
                                                 </select>
                                                 <input v-model="month.newExpenseName" placeholder="Name" class="w-full p-1 border rounded">
                                             </div>
                                             <div class="w-20">
-                                                <input v-model.number="month.newExpenseAmount" type="number" placeholder="$" class="w-full p-1 border rounded">
+                                                <input v-model.number="month.newExpenseAmount" type="number" step="0.01" placeholder="$" class="w-full p-1 border rounded">
                                             </div>
                                             <button @click="addExpense(month)" class="bg-orange-400 text-white px-3 py-1 rounded font-bold hover:bg-orange-500">Add</button>
                                         </div>
@@ -341,7 +344,7 @@
         </div>
 
         <transition name="fade"><div v-if="showGenModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg"><div class="p-4 border-b flex justify-between"><h3 class="font-bold">Select Bills</h3><button @click="showGenModal=false">&times;</button></div><div class="p-4 max-h-[60vh] overflow-y-auto space-y-2"><div v-for="item in potentialBills" :key="item.id" class="flex justify-between p-3 border rounded cursor-pointer" :class="item.selected?'border-blue-500 bg-blue-50':''" @click="item.selected=!item.selected"><div>{{ item.name }}</div><input type="checkbox" v-model="item.selected"></div></div><div class="p-4 border-t flex justify-end gap-2"><button @click="showGenModal=false" class="px-4 py-2">Cancel</button><button @click="confirmGenerate" class="px-6 py-2 bg-slate-900 text-white rounded">Add</button></div></div></div></transition>
-        <transition name="fade"><div v-if="showProjectModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Add Project Goal</h3><input v-model="newProject.name" placeholder="Project Name" class="w-full p-2 border rounded mb-2"><input v-model="newProject.cost" type="number" placeholder="Total Cost" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button @click="saveProject" class="flex-1 bg-slate-900 text-white py-2 rounded font-bold">Save</button><button @click="showProjectModal=false" class="px-4 py-2 bg-slate-200 rounded">Cancel</button></div></div></div></div></transition>
+        <transition name="fade"><div v-if="showProjectModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Add Project Goal</h3><input v-model="newProject.name" placeholder="Project Name" class="w-full p-2 border rounded mb-2"><input v-model="newProject.cost" type="number" step="0.01" placeholder="Total Cost" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button @click="saveProject" class="flex-1 bg-slate-900 text-white py-2 rounded font-bold">Save</button><button @click="showProjectModal=false" class="px-4 py-2 bg-slate-200 rounded">Cancel</button></div></div></div></div></transition>
 
     </div>
 
@@ -353,6 +356,9 @@
         const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        // ROUNDING HELPER
+        const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100
 
         // Tax Logic
         const taxBrackets = [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}];
@@ -398,9 +404,9 @@
                     const annualTaxable = Math.max(0, (taxable * payPeriods) - 30000)
                     const taxPerPeriod = calculateFederalTax(annualTaxable) / payPeriods
                     const net = taxable - taxPerPeriod - postTax - rothAmt - ssTax - medTax
-                    const finalPay = (net - 2.25); const monthly = finalPay * 2
+                    const finalPay = round(net - 2.25); const monthly = round(finalPay * 2)
 
-                    calcResult.value = { gross: grossPay, preTaxTotal: preTax + tradAmt, taxes: taxPerPeriod + ssTax + medTax, postTaxTotal: postTax + rothAmt, netPay: finalPay }
+                    calcResult.value = { gross: round(grossPay), preTaxTotal: round(preTax + tradAmt), taxes: round(taxPerPeriod + ssTax + medTax), postTaxTotal: round(postTax + rothAmt), netPay: finalPay }
                     
                     if (mode === 'default') {
                         dbBasePay.value = monthly; useTempPay.value = false
@@ -415,7 +421,7 @@
 
                 // --- 2. FORECAST LOGIC ---
                 const runForecast = () => {
-                    let balance = forecastSettings.value.currentBalance
+                    let balance = round(forecastSettings.value.currentBalance)
                     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
                     const now = new Date()
                     
@@ -434,13 +440,17 @@
                     }
 
                     forecastResults.value.affordableMonth = null
-                    forecastData.value.forEach(m => {
+                    forecastData.value.forEach((m, idx) => {
                         const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0)
                         const monthlyNet = m.income - coreExpenses.value - totalExtra
-                        balance += monthlyNet
+                        balance = round(balance + monthlyNet)
                         m.endBalance = balance
+                        m.monthIndex = idx // track index for chart
+                        
+                        // Check Project affordability
                         if(project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) {
                             forecastResults.value.affordableMonth = m.name
+                            forecastResults.value.affordableIndex = idx // Save index for star
                         }
                     })
                     renderChart()
@@ -462,11 +472,29 @@
                 const renderChart = () => {
                     const ctx = document.getElementById('forecastChart'); if(!ctx) return;
                     if(chartInstance) chartInstance.destroy()
+
+                    // PREPARE STAR LOGIC
+                    const goalIndex = forecastResults.value.affordableMonth ? forecastResults.value.affordableIndex : -1
+                    const pointStyles = forecastData.value.map((_, i) => i === goalIndex ? 'star' : 'circle')
+                    const pointRadii = forecastData.value.map((_, i) => i === goalIndex ? 10 : 4)
+                    const pointColors = forecastData.value.map((_, i) => i === goalIndex ? '#F59E0B' : '#10B981') // Gold for star, Green for dots
+
                     chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: forecastData.value.map(m => m.name.split(' ')[0]),
-                            datasets: [{ label: 'Projected Balance', data: forecastData.value.map(m => m.endBalance), borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }]
+                            datasets: [{ 
+                                label: 'Projected Balance', 
+                                data: forecastData.value.map(m => m.endBalance), 
+                                borderColor: '#10B981', 
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                                fill: true, 
+                                tension: 0.3,
+                                pointStyle: pointStyles,
+                                pointRadius: pointRadii,
+                                pointBackgroundColor: pointColors,
+                                pointBorderColor: pointColors
+                            }]
                         },
                         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
                     })
@@ -475,10 +503,10 @@
                 const printReport = () => window.print()
 
                 // --- 3. SHARED & BUDGET ---
-                const activeMonthlyPay = computed(() => useTempPay.value ? tempCalculatedPay.value : dbBasePay.value)
-                const coreExpenses = computed(() => budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + Number(i.amount), 0))
-                const totalMonthlyBurn = computed(() => budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + Number(item.amount), 0))
-                const projectedBalance = computed(() => activeMonthlyPay.value - totalMonthlyBurn.value)
+                const activeMonthlyPay = computed(() => round(useTempPay.value ? tempCalculatedPay.value : dbBasePay.value))
+                const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + Number(i.amount), 0)))
+                const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + Number(item.amount), 0)))
+                const projectedBalance = computed(() => round(activeMonthlyPay.value - totalMonthlyBurn.value))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
 
                 // --- 4. DATA ---
