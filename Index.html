@@ -133,7 +133,6 @@
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
                         <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
-                        <div class="text-[10px] text-slate-400 mt-1">Includes smoothed Quarterly/Yearly items</div>
                     </div>
                     <div class="bg-slate-900 text-white p-4 rounded-xl shadow-lg relative overflow-hidden">
                         <div class="relative z-10">
@@ -232,7 +231,8 @@
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead>
                         <tbody class="divide-y divide-slate-100">
-                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
+                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" 
+                                :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
                                 <td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td>
                                 <td class="p-4 text-xs font-bold">
                                     <span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span>
@@ -519,11 +519,9 @@
 
                 // --- 3. SHARED & BUDGET ---
                 const activeMonthlyPay = computed(() => round(useTempPay.value ? tempCalculatedPay.value : dbBasePay.value))
-                
-                // CORE EXPENSES (Uses Smoothed Monthly Cost)
                 const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + getMonthlyCost(i), 0)))
                 
-                // SCENARIO BURN (Uses Smoothed Monthly Cost)
+                // SCENARIO BURN (UPDATED to exclude one-times from recurring month total)
                 const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + getMonthlyCost(item), 0)))
                 
                 const projectedBalance = computed(() => round(activeMonthlyPay.value - totalMonthlyBurn.value))
@@ -534,6 +532,12 @@
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode
                     budgetItems.value.forEach(i => {
+                        // FIXED LOGIC: One-Time items are NEVER auto-included in presets
+                        if (i.frequency === 'One-Time') {
+                            i.includedInScenario = false
+                            return
+                        }
+
                         if (mode === 'survival') i.includedInScenario = i.is_core === true
                         if (mode === 'standard') i.includedInScenario = i.is_wishlist === false
                         if (mode === 'dream') i.includedInScenario = true
@@ -558,7 +562,7 @@
                 }
                 const confirmGenerate = async () => { const now = new Date(); const toCreate = potentialBills.value.filter(i=>i.selected).map(t => ({user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(now.getFullYear(), now.getMonth(), t.due_day||1).toISOString(), is_paid: false})); await _supabase.from('ledger').insert(toCreate); await fetchBills(); showGenModal.value = false; }
                 
-                // --- CRUD ---
+                // --- FIXED SAVE ITEM LOGIC ---
                 const handleSave = async () => { isEditing.value ? updateItem() : addItem() }
                 const addItem = async () => { 
                     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1)
