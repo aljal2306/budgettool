@@ -19,7 +19,6 @@
         .accordion-enter-active, .accordion-leave-active { transition: max-height 0.3s ease-in-out, opacity 0.3s; max-height: 1000px; opacity: 1; overflow: hidden; }
         .accordion-enter-from, .accordion-leave-to { max-height: 0; opacity: 0; }
 
-        /* Print Specifics */
         @media print {
             body { background-color: white; color: black; }
             .no-break { page-break-inside: avoid; }
@@ -74,10 +73,7 @@
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                         <h2 class="text-lg font-bold mb-4 flex items-center gap-2">📝 Paycheck Inputs <span class="text-xs font-normal text-slate-400">(Semi-Monthly)</span></h2>
                         <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase">Annual Salary</label>
-                                <input v-model="calcInputs.salary" type="number" class="w-full p-2 border rounded bg-slate-50">
-                            </div>
+                            <div><label class="block text-xs font-bold text-slate-500 uppercase">Annual Salary</label><input v-model="calcInputs.salary" type="number" class="w-full p-2 border rounded bg-slate-50"></div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div><label class="block text-xs font-bold text-slate-500 uppercase">Commission (Period)</label><input v-model="calcInputs.commission" type="number" class="w-full p-2 border rounded bg-slate-50"></div>
                                 <div><label class="block text-xs font-bold text-slate-500 uppercase">Post-Tax Deductions</label><input v-model="calcInputs.postTax" type="number" class="w-full p-2 border rounded bg-slate-50"></div>
@@ -92,22 +88,12 @@
                                 <div><label class="block text-[10px] font-bold text-blue-700 uppercase">Roth 401k %</label><input v-model="calcInputs.roth401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div>
                                 <div><label class="block text-[10px] font-bold text-blue-700 uppercase">Match %</label><input v-model="calcInputs.match401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div>
                             </div>
-                            
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                                <button @click="calculateAndSave('default')" :disabled="savingBase" class="bg-slate-900 text-white font-bold py-3 rounded hover:bg-slate-800 transition text-sm">
-                                    {{ savingBase ? 'Saving...' : '💾 Save as Base Pay' }}
-                                </button>
-                                <button @click="calculateAndSave('temp')" class="bg-emerald-600 text-white font-bold py-3 rounded hover:bg-emerald-500 transition text-sm">
-                                    ⚡ Use for This Session
-                                </button>
+                                <button @click="calculateAndSave('default')" :disabled="savingBase" class="bg-slate-900 text-white font-bold py-3 rounded hover:bg-slate-800 transition text-sm">{{ savingBase ? 'Saving...' : '💾 Save as Base Pay' }}</button>
+                                <button @click="calculateAndSave('temp')" class="bg-emerald-600 text-white font-bold py-3 rounded hover:bg-emerald-500 transition text-sm">⚡ Use for Session</button>
                             </div>
-                            <p class="text-[10px] text-slate-400 text-center">
-                                "Save as Base" updates your database default.<br>
-                                "Use for Session" applies commission only for now.
-                            </p>
                         </div>
                     </div>
-
                     <div class="bg-slate-900 text-white p-6 rounded-xl shadow-lg">
                         <h2 class="text-lg font-bold mb-4 text-emerald-400">💰 Results Per Paycheck</h2>
                         <div v-if="calcResult" class="space-y-4 text-sm font-mono">
@@ -115,13 +101,7 @@
                             <div class="flex justify-between text-slate-400"><span>- Pre-Tax / 401k:</span> <span>${{ calcResult.preTaxTotal.toFixed(2) }}</span></div>
                             <div class="flex justify-between text-slate-400"><span>- Taxes (Fed/FICA):</span> <span>${{ calcResult.taxes.toFixed(2) }}</span></div>
                             <div class="flex justify-between text-slate-400 pb-2 border-b border-slate-700"><span>- Post-Tax Ded:</span> <span>${{ calcResult.postTaxTotal.toFixed(2) }}</span></div>
-                            
-                            <div class="flex justify-between text-xl font-bold text-emerald-300 pt-2">
-                                <span>Net Pay:</span> 
-                                <span>${{ calcResult.netPay.toFixed(2) }}</span>
-                            </div>
-                            <div class="text-xs text-center text-slate-500 mt-2">Adjusted by -$2.25 fee</div>
-
+                            <div class="flex justify-between text-xl font-bold text-emerald-300 pt-2"><span>Net Pay:</span> <span>${{ calcResult.netPay.toFixed(2) }}</span></div>
                             <div class="bg-slate-800 p-4 rounded mt-6 text-center border border-slate-700">
                                 <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Monthly Income (x2)</div>
                                 <div class="text-3xl font-bold text-white">${{ (calcResult.netPay * 2).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}</div>
@@ -137,7 +117,6 @@
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-start">
                             <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Monthly Pay</h2>
-                            
                             <div v-if="tempCalculatedPay && tempCalculatedPay !== dbBasePay" class="flex items-center gap-1 bg-slate-100 rounded p-0.5">
                                 <button @click="useTempPay = false" class="text-[10px] px-2 py-0.5 rounded" :class="!useTempPay ? 'bg-white shadow text-slate-900 font-bold' : 'text-slate-400'">Base</button>
                                 <button @click="useTempPay = true" class="text-[10px] px-2 py-0.5 rounded" :class="useTempPay ? 'bg-emerald-100 text-emerald-700 font-bold' : 'text-slate-400'">Comm.</button>
@@ -174,12 +153,15 @@
                         <div v-if="showPlanner" class="border-t border-slate-200 bg-white">
                             <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <div>
-                                    <div class="flex items-center justify-between mb-4">
-                                        <h4 class="text-sm font-bold text-slate-400 uppercase">Budget Items</h4>
-                                        <div class="flex gap-1"><button @click="applyCoreOnly" class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-1 rounded">CORE</button><button @click="applyAll" class="text-[10px] bg-slate-200 px-2 py-1 rounded">ALL</button></div>
+                                    <div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-lg">
+                                        <button @click="setScenarioMode('survival')" class="flex-1 text-xs py-1.5 rounded font-bold hover:bg-white hover:shadow transition text-slate-500">🛡️ Survival</button>
+                                        <button @click="setScenarioMode('standard')" class="flex-1 text-xs py-1.5 rounded font-bold hover:bg-white hover:shadow transition text-slate-500">⚖️ Standard</button>
+                                        <button @click="setScenarioMode('dream')" class="flex-1 text-xs py-1.5 rounded font-bold hover:bg-white hover:shadow transition text-slate-500">🚀 Dream</button>
                                     </div>
-                                    <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                                        <div v-for="item in budgetItems" :key="item.id" class="flex items-center justify-between p-3 border rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-white' : 'bg-slate-50 opacity-50 grayscale'">
+
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Active Bills</h4>
+                                    <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-6">
+                                        <div v-for="item in standardItems" :key="item.id" class="flex items-center justify-between p-3 border rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-white' : 'bg-slate-50 opacity-50 grayscale'">
                                             <div>
                                                 <div class="flex items-center gap-1"><span v-if="item.is_core" class="text-xs">⭐</span><div class="font-bold text-sm">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs opacity-0 group-hover:opacity-100">✏️</button></div>
                                                 <div class="text-xs text-slate-500 font-mono">${{ item.amount.toFixed(2) }} <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded">{{ item.frequency }}</span></div>
@@ -187,14 +169,31 @@
                                             <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 cursor-pointer">
                                         </div>
                                     </div>
+
+                                    <h4 class="text-xs font-bold text-purple-400 uppercase mb-2 flex items-center gap-2">✨ Wishlist / Sandbox <span class="text-[9px] bg-purple-100 text-purple-600 px-1 rounded">Not Billed</span></h4>
+                                    <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                        <div v-for="item in wishlistItems" :key="item.id" class="flex items-center justify-between p-3 border border-purple-100 rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-purple-50' : 'bg-slate-50 opacity-50 grayscale'">
+                                            <div>
+                                                <div class="flex items-center gap-1"><div class="font-bold text-sm text-purple-900">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs opacity-0 group-hover:opacity-100">✏️</button></div>
+                                                <div class="text-xs text-purple-700 font-mono">${{ item.amount.toFixed(2) }}</div>
+                                            </div>
+                                            <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 border-purple-200 cursor-pointer">
+                                        </div>
+                                        <div v-if="wishlistItems.length === 0" class="text-xs text-slate-400 italic p-2 text-center">No items. Create one and check "Wishlist".</div>
+                                    </div>
                                 </div>
+
                                 <div class="bg-slate-50 p-4 rounded-lg border h-fit transition-all" :class="isEditing ? 'bg-white border-blue-300 ring-2 ring-blue-100' : ''">
                                     <div class="flex justify-between items-center cursor-pointer" @click="showAddForm = !showAddForm"><h4 class="text-sm font-bold text-slate-700">{{ isEditing ? 'Edit Item' : 'Add Item' }}</h4><span>{{ showAddForm ? '-' : '+' }}</span></div>
                                     <div v-if="showAddForm" class="mt-3 space-y-3 pt-3 border-t">
                                         <input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded text-sm">
                                         <div class="grid grid-cols-2 gap-2"><input v-model="newItem.amount" type="number" step="0.01" placeholder="$" class="w-full p-2 border rounded text-sm"><input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" placeholder="Day" class="w-full p-2 border rounded text-sm"><div v-else class="text-center text-sm text-slate-400 p-2 border bg-slate-100">Flex</div></div>
                                         <div class="grid grid-cols-2 gap-2"><label class="flex items-center gap-2 text-xs"><input type="checkbox" v-model="newItem.isFlexible"> Flexible Date</label><select v-model="newItem.frequency" class="w-full p-2 border rounded text-xs"><option>Monthly</option><option>Quarterly</option><option>Yearly</option></select></div>
-                                        <div class="flex flex-col gap-2 p-2 bg-white rounded border"><label class="text-sm flex gap-2"><input type="checkbox" v-model="newItem.is_core"> Core</label><label class="text-sm flex gap-2"><input type="checkbox" v-model="newItem.is_autopay"> Auto</label></div>
+                                        <div class="flex flex-col gap-2 p-2 bg-white rounded border">
+                                            <label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_core"> Core Item</label>
+                                            <label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_autopay"> Autopay</label>
+                                            <label class="text-sm flex gap-2 cursor-pointer text-purple-700 font-bold"><input type="checkbox" v-model="newItem.is_wishlist"> ✨ Wishlist / Sandbox</label>
+                                        </div>
                                         <div class="flex gap-2"><button @click="handleSave" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded text-sm">Save</button><button v-if="isEditing" @click="resetForm" class="px-4 bg-slate-200 rounded text-sm">Cancel</button></div>
                                     </div>
                                 </div>
@@ -208,11 +207,8 @@
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead>
                         <tbody class="divide-y divide-slate-100">
-                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" 
-                                :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
-                                
+                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
                                 <td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td>
-                                
                                 <td class="p-4 text-xs font-bold">
                                     <span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span>
                                     <span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span>
@@ -220,7 +216,6 @@
                                     <span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span>
                                     <span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span>
                                 </td>
-
                                 <td class="p-4 font-medium">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td>
                                 <td class="p-4 text-right font-mono">${{ bill.budget_items.amount.toFixed(2) }}</td>
                                 <td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td>
@@ -379,7 +374,7 @@
 
                 // BUDGET
                 const showPlanner=ref(false), showAddForm=ref(false), isSubmitting=ref(false), isEditing=ref(false), editingId=ref(null)
-                const newItem = ref({ name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false })
+                const newItem = ref({ name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false })
                 const showGenModal=ref(false), potentialBills=ref([])
 
                 // FORECAST
@@ -445,12 +440,10 @@
                         const monthlyNet = m.income - coreExpenses.value - totalExtra
                         balance = round(balance + monthlyNet)
                         m.endBalance = balance
-                        m.monthIndex = idx // track index for chart
-                        
-                        // Check Project affordability
+                        m.monthIndex = idx 
                         if(project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) {
                             forecastResults.value.affordableMonth = m.name
-                            forecastResults.value.affordableIndex = idx // Save index for star
+                            forecastResults.value.affordableIndex = idx
                         }
                     })
                     renderChart()
@@ -472,29 +465,16 @@
                 const renderChart = () => {
                     const ctx = document.getElementById('forecastChart'); if(!ctx) return;
                     if(chartInstance) chartInstance.destroy()
-
-                    // PREPARE STAR LOGIC
                     const goalIndex = forecastResults.value.affordableMonth ? forecastResults.value.affordableIndex : -1
                     const pointStyles = forecastData.value.map((_, i) => i === goalIndex ? 'star' : 'circle')
                     const pointRadii = forecastData.value.map((_, i) => i === goalIndex ? 10 : 4)
-                    const pointColors = forecastData.value.map((_, i) => i === goalIndex ? '#F59E0B' : '#10B981') // Gold for star, Green for dots
+                    const pointColors = forecastData.value.map((_, i) => i === goalIndex ? '#F59E0B' : '#10B981')
 
                     chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: forecastData.value.map(m => m.name.split(' ')[0]),
-                            datasets: [{ 
-                                label: 'Projected Balance', 
-                                data: forecastData.value.map(m => m.endBalance), 
-                                borderColor: '#10B981', 
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)', 
-                                fill: true, 
-                                tension: 0.3,
-                                pointStyle: pointStyles,
-                                pointRadius: pointRadii,
-                                pointBackgroundColor: pointColors,
-                                pointBorderColor: pointColors
-                            }]
+                            datasets: [{ label: 'Projected Balance', data: forecastData.value.map(m => m.endBalance), borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3, pointStyle: pointStyles, pointRadius: pointRadii, pointBackgroundColor: pointColors, pointBorderColor: pointColors }]
                         },
                         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
                     })
@@ -508,6 +488,16 @@
                 const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + Number(item.amount), 0)))
                 const projectedBalance = computed(() => round(activeMonthlyPay.value - totalMonthlyBurn.value))
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
+                const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist))
+                const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist))
+
+                const setScenarioMode = (mode) => {
+                    budgetItems.value.forEach(i => {
+                        if (mode === 'survival') i.includedInScenario = i.is_core === true
+                        if (mode === 'standard') i.includedInScenario = i.is_wishlist === false
+                        if (mode === 'dream') i.includedInScenario = true
+                    })
+                }
 
                 // --- 4. DATA ---
                 const fetchSettings = async () => {
@@ -517,14 +507,17 @@
                 const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: i.is_core === true })) }
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if(data) bills.value = data.sort((a,b) => a.due_date > b.due_date ? 1 : -1) }
                 
-                const openGenerateModal = async () => { /* Same as previous */ const now = new Date(); const { data: t } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('user_id', session.value.user.id); const { data: e } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', new Date(now.getFullYear(), now.getMonth(), 1).toISOString()).lte('due_date', new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()); const existingIds = new Set(e.map(b => b.budget_item_id)); potentialBills.value = t.filter(x => !existingIds.has(x.id)).map(x => ({...x, selected: x.frequency === 'Monthly'})); showGenModal.value = true; }
+                const openGenerateModal = async () => { 
+                    const now = new Date(); const { data: t } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('is_wishlist', false).eq('user_id', session.value.user.id);
+                    const { data: e } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', new Date(now.getFullYear(), now.getMonth(), 1).toISOString()).lte('due_date', new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()); const existingIds = new Set(e.map(b => b.budget_item_id)); potentialBills.value = t.filter(x => !existingIds.has(x.id)).map(x => ({...x, selected: x.frequency === 'Monthly'})); showGenModal.value = true; 
+                }
                 const confirmGenerate = async () => { const now = new Date(); const toCreate = potentialBills.value.filter(i=>i.selected).map(t => ({user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(now.getFullYear(), now.getMonth(), t.due_day||1).toISOString(), is_paid: false})); await _supabase.from('ledger').insert(toCreate); await fetchBills(); showGenModal.value = false; }
                 
                 const handleSave = async () => { isEditing.value ? updateItem() : addItem() }
                 const addItem = async () => { const payload = { user_id: session.value.user.id, ...newItem.value, amount: Number(newItem.value.amount), is_active: true }; const { data } = await _supabase.from('budget_items').insert([payload]).select(); budgetItems.value.push({...data[0], includedInScenario: true}); resetForm(); }
                 const updateItem = async () => { await _supabase.from('budget_items').update({...newItem.value}).eq('id', editingId.value); fetchBudgetItems(); resetForm(); }
                 const startEditing = (i) => { showAddForm.value=true; isEditing.value=true; editingId.value=i.id; newItem.value={...i}; }
-                const resetForm = () => { newItem.value={name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly'}; isEditing.value=false; showAddForm.value=false; }
+                const resetForm = () => { newItem.value={name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false}; isEditing.value=false; showAddForm.value=false; }
                 
                 const deleteBill = async (bill) => { if(confirm('Delete?')) { await _supabase.from('ledger').delete().eq('id', bill.id); fetchBills(); } }
                 const toggleBillPaid = async (bill) => { await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id) }
@@ -551,6 +544,7 @@
                     calcInputs, calcResult, savingBase, calculateAndSave,
                     showPlanner, showAddForm, isSubmitting, newItem, isEditing, showGenModal, potentialBills, projectedBalance, totalMonthlyBurn, isScenarioActive, openGenerateModal, confirmGenerate, deleteBill, toggleBillPaid, handleSave, resetForm, startEditing, applyCoreOnly, applyAll, formatDate, getDaysLeft, getCalendarLink, fetchBills, saveBasePay,
                     forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject, addExpense, fillExpense, printReport,
+                    standardItems, wishlistItems, setScenarioMode,
                     handleLogin, handleLogout
                 }
             },
