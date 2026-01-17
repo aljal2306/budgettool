@@ -158,9 +158,21 @@
                             <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <div>
                                     <div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-lg">
-                                        <button @click="setScenarioMode('survival')" class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'survival' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🛡️ Survival</button>
-                                        <button @click="setScenarioMode('standard')" class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'standard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">⚖️ Standard</button>
-                                        <button @click="setScenarioMode('dream')" class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'dream' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🚀 Dream</button>
+                                        <button @click="setScenarioMode('survival')" 
+                                                class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1"
+                                                :class="currentScenarioMode === 'survival' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-white'">
+                                            🛡️ Survival
+                                        </button>
+                                        <button @click="setScenarioMode('standard')" 
+                                                class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1"
+                                                :class="currentScenarioMode === 'standard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">
+                                            ⚖️ Standard
+                                        </button>
+                                        <button @click="setScenarioMode('dream')" 
+                                                class="flex-1 text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1"
+                                                :class="currentScenarioMode === 'dream' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">
+                                            🚀 Dream
+                                        </button>
                                     </div>
 
                                     <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Active Bills</h4>
@@ -173,7 +185,10 @@
                                                 </div>
                                                 <div class="text-xs text-slate-500 font-mono flex gap-1">
                                                     ${{ item.amount.toFixed(2) }} 
-                                                    <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded flex items-center gap-1">{{ item.frequency }} <span class="text-purple-400 font-normal">(~${{ getMonthlyCost(item).toFixed(0) }}/mo)</span></span>
+                                                    <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded flex items-center gap-1">
+                                                        {{ item.frequency }} 
+                                                        <span class="text-purple-400 font-normal">(~${{ getMonthlyCost(item).toFixed(0) }}/mo)</span>
+                                                    </span>
                                                 </div>
                                             </div>
                                             <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 cursor-pointer">
@@ -215,14 +230,31 @@
                     </transition>
                 </div>
 
-                <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold">📅 Current Bills</h3><div class="flex gap-2"><button @click="openGenerateModal" class="text-xs bg-slate-900 text-white px-3 py-2 rounded shadow">+ Review & Add</button><button @click="fetchBills" class="text-xs text-slate-400">Refresh</button></div></div>
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
+                    <h3 class="text-lg font-bold">📅 Current Bills</h3>
+                    <div class="flex gap-2 items-center">
+                        <button @click="showPaidBills = !showPaidBills" class="text-xs px-2 py-1 rounded border border-slate-200 text-slate-500 hover:bg-slate-100 transition">
+                            {{ showPaidBills ? 'Hide Paid' : 'Show Paid' }}
+                        </button>
+                        <button @click="openGenerateModal" class="flex-1 md:flex-none text-xs bg-slate-900 text-white px-3 py-2 rounded shadow">+ Review & Add</button>
+                        <button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600 px-2">Refresh</button>
+                    </div>
+                </div>
                 <div class="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead>
                         <tbody class="divide-y divide-slate-100">
-                            <tr v-for="bill in bills" :key="bill.id" class="group hover:bg-slate-50" :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
+                            <tr v-if="visibleBills.length === 0"><td colspan="5" class="p-8 text-center text-slate-400">All bills paid! 🎉</td></tr>
+                            <tr v-for="bill in visibleBills" :key="bill.id" class="group hover:bg-slate-50" 
+                                :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
                                 <td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td>
-                                <td class="p-4 text-xs font-bold"><span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span><span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span><span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 px-2 py-1 bg-orange-100 rounded">TODAY</span><span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span><span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span></td>
+                                <td class="p-4 text-xs font-bold">
+                                    <span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span>
+                                    <span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span>
+                                    <span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 px-2 py-1 bg-orange-100 rounded">TODAY</span>
+                                    <span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span>
+                                    <span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span>
+                                </td>
                                 <td class="p-4 font-medium">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td>
                                 <td class="p-4 text-right font-mono">${{ bill.budget_items.amount.toFixed(2) }}</td>
                                 <td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td>
@@ -231,7 +263,8 @@
                     </table>
                 </div>
                 <div class="md:hidden space-y-3">
-                    <div v-for="bill in bills" :key="bill.id" class="bg-white p-4 rounded-xl shadow-sm border" :class="{'bg-green-50 border-green-200': bill.is_paid, 'bg-red-50 border-red-200': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
+                    <div v-if="visibleBills.length === 0" class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">All bills paid! 🎉</div>
+                    <div v-for="bill in visibleBills" :key="bill.id" class="bg-white p-4 rounded-xl shadow-sm border" :class="{'bg-green-50 border-green-200': bill.is_paid, 'bg-red-50 border-red-200': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
                         <div class="flex justify-between items-start mb-2"><div><div class="font-bold text-slate-800">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a></div><div class="flex gap-1 mt-1"><span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span><span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span></div></div><div class="font-mono text-lg text-slate-700">${{ bill.budget_items.amount.toFixed(2) }}</div></div>
                         <div class="flex justify-between items-center text-sm mb-3 text-slate-500"><span>{{ bill.budget_items.due_day === 0 ? 'Flexible' : formatDate(bill.due_date) }}</span><span v-if="!bill.is_paid" :class="getDaysLeft(bill.due_date) < 0 ? 'text-red-600 font-bold' : (getDaysLeft(bill.due_date) <= 3 ? 'text-orange-500 font-bold' : 'text-slate-400')">{{ getDaysLeft(bill.due_date) < 0 ? 'Overdue' : getDaysLeft(bill.due_date) + ' days' }}</span></div>
                         <div class="flex justify-between pt-3 border-t"><button @click="deleteBill(bill)" class="text-slate-300">🗑️ Remove</button><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5"></div>
@@ -470,6 +503,7 @@
                 const calcResult = ref(null), savingBase = ref(false)
                 const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' })
                 const extraDebtPayment = ref(0)
+                const showPaidBills = ref(false)
 
                 // UI STATE
                 const showPlanner=ref(false), showAddForm=ref(false), isSubmitting=ref(false), isEditing=ref(false), editingId=ref(null)
@@ -484,52 +518,70 @@
                 const forecastResults = ref({ affordableMonth: null })
                 let chartInstance = null
 
-                // --- DEBT LOGIC (SORTABLE) ---
+                // --- DEBT LOGIC (SORTABLE & FIXED LOGGING) ---
                 const debtPlan = computed(() => {
                     if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }
 
                     const simulate = (extra) => {
-                        // Use Current Sort Order
-                        let simDebts = JSON.parse(JSON.stringify(debts.value)).map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment) }))
+                        let simDebts = JSON.parse(JSON.stringify(debts.value)).map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment), paid_off: false }))
                         
                         let totalInterest = 0
                         let months = 0
                         let timeline = []
                         let active = true
+                        
+                        // Available snowball grows as debts are paid off
+                        let permanentSnowball = extra
 
-                        while (active && months < 360) {
+                        while (active && months < 480) { // 40 Year Cap
                             months++
-                            let monthlyBudget = extra 
-                            let monthTotalInterest = 0
                             let anyBalanceLeft = false
+                            let monthlySurplus = permanentSnowball
 
-                            // Interest & Mins
+                            // PHASE 1: INTEREST & MINIMUMS
                             for (let d of simDebts) {
-                                if (d.balance > 0) {
-                                    anyBalanceLeft = true
-                                    let interest = d.balance * (d.rate / 100 / 12)
-                                    monthTotalInterest += interest
-                                    d.balance += interest
-                                    let payment = Math.min(d.balance, d.min)
-                                    d.balance -= payment
-                                    if (payment > d.balance) monthlyBudget += (payment - d.balance) 
+                                if (d.paid_off) {
+                                    // Dead debt contributes its min payment to the cause
+                                    monthlySurplus += d.min
+                                    continue
+                                }
+
+                                anyBalanceLeft = true
+                                let interest = d.balance * (d.rate / 100 / 12)
+                                totalInterest += interest
+                                d.balance += interest
+                                
+                                let payment = Math.min(d.balance, d.min)
+                                d.balance -= payment
+                                
+                                // CHECK DEATH BY MINIMUM
+                                if (d.balance < 0.01) {
+                                    d.balance = 0
+                                    d.paid_off = true
+                                    timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 })
+                                    // Surplus calculation: If min was $50 and we only owed $10, we have $40 extra NOW + $50 permanent from next month
+                                    // Simplified: Just add the unused portion to THIS month's surplus
+                                    monthlySurplus += (d.min - payment)
                                 }
                             }
-                            totalInterest += monthTotalInterest
 
-                            // Attack (In Order)
+                            // PHASE 2: ATTACK (SURPLUS)
                             for (let d of simDebts) {
-                                if (d.balance > 0 && monthlyBudget > 0) {
-                                    let payment = Math.min(d.balance, monthlyBudget)
-                                    d.balance -= payment
-                                    monthlyBudget -= payment
-                                    if (d.balance < 0.01) {
-                                        d.balance = 0
-                                        monthlyBudget += d.min 
-                                        timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 })
-                                    }
+                                if (d.paid_off) continue
+                                if (monthlySurplus <= 0) break
+
+                                let payment = Math.min(d.balance, monthlySurplus)
+                                d.balance -= payment
+                                monthlySurplus -= payment
+
+                                // CHECK DEATH BY SNOWBALL
+                                if (d.balance < 0.01) {
+                                    d.balance = 0
+                                    d.paid_off = true
+                                    timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 })
                                 }
                             }
+
                             if (!anyBalanceLeft) active = false
                         }
                         return { months, totalInterest, timeline }
@@ -537,6 +589,7 @@
 
                     const base = simulate(0)
                     const attack = simulate(extraDebtPayment.value)
+                    
                     const now = new Date(); now.setMonth(now.getMonth() + attack.months)
                     const payoffDate = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
@@ -544,7 +597,6 @@
                 })
 
                 const addDebt = async () => {
-                    // New items go to end (max order_index + 1)
                     const maxOrder = debts.value.length > 0 ? Math.max(...debts.value.map(d => d.order_index || 0)) : 0
                     if (newDebt.value.name && newDebt.value.balance) {
                         const { data } = await _supabase.from('debts').insert([{ user_id: session.value.user.id, name: newDebt.value.name, balance: newDebt.value.balance, rate: newDebt.value.rate, min_payment: newDebt.value.min_payment, order_index: maxOrder + 1 }]).select()
@@ -559,7 +611,6 @@
                     }
                 }
                 const updateDebtOrder = async () => {
-                    // Update all items in DB with new index
                     const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index }))
                     for (const u of updates) {
                         await _supabase.from('debts').update({ order_index: u.order_index }).eq('id', u.id)
@@ -675,6 +726,12 @@
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
                 const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist))
                 const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist))
+                
+                const visibleBills = computed(() => {
+                    let sorted = bills.value
+                    if (!showPaidBills.value) sorted = sorted.filter(b => !b.is_paid)
+                    return sorted
+                })
 
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode
@@ -697,7 +754,6 @@
                     currentScenarioMode.value = 'survival';
                 }
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if(data) bills.value = data.sort((a,b) => a.due_date > b.due_date ? 1 : -1) }
-                
                 const fetchDebts = async () => { 
                     const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }) // Sort by user order
                     if(data) debts.value = data 
@@ -772,6 +828,7 @@
                     forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject, addExpense, fillExpense, printReport,
                     standardItems, wishlistItems, setScenarioMode, currentScenarioMode, getMonthlyCost, getPrintTitle,
                     newDebt, extraDebtPayment, addDebt, deleteDebt, debtPlan,
+                    showPaidBills, visibleBills, // New Exports
                     handleLogin, handleLogout
                 }
             },
