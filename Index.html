@@ -22,12 +22,12 @@
         .accordion-enter-from, .accordion-leave-to { max-height: 0; opacity: 0; }
         .cursor-grab { cursor: grab; }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Chat Bubbles */
+        /* Chat Styling */
         .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 0.9rem; line-height: 1.5; }
         .chat-user { background-color: #3b82f6; color: white; border-bottom-right-radius: 4px; margin-left: auto; }
         .chat-ai { background-color: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; margin-right: auto; }
@@ -65,25 +65,29 @@
         <div v-else>
             
             <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 print:hidden">
-                <div>
-                    <h1 class="text-2xl font-black text-slate-900 tracking-tight">Finance<span class="text-emerald-500">Master</span></h1>
-                    <div class="text-xs text-slate-400 font-medium">{{ session.user.email }}</div>
+                <div class="w-full md:w-auto flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Finance<span class="text-emerald-500">Master</span></h1>
+                        <div class="text-xs text-slate-400 font-medium">{{ session.user.email }}</div>
+                    </div>
+                    <button @click="handleLogout" class="md:hidden text-xs font-bold text-red-400 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition">Sign Out</button>
                 </div>
                 
-                <div class="flex items-center gap-2">
-                    <div class="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-100 overflow-x-auto w-full md:w-auto">
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <div class="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-100 overflow-x-auto w-full md:w-auto no-scrollbar">
                         <button @click="currentView = 'dashboard'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'dashboard' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>🏠</span> Home</button>
-                        <button @click="currentView = 'calculator'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'calculator' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>🧮</span> Paycheck</button>
                         <button @click="currentView = 'budget'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'budget' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>💸</span> Budget</button>
+                        <button @click="currentView = 'calculator'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'calculator' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>🧮</span> Paycheck</button>
                         <button @click="currentView = 'forecast'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'forecast' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>📈</span> Forecast</button>
                         <button @click="currentView = 'debt'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'debt' ? 'bg-red-500 text-white shadow-md shadow-red-200' : 'text-slate-500 hover:text-red-600 hover:bg-red-50'"><span>⚔️</span> Debt</button>
+                        
+                        <div class="w-px h-6 bg-slate-200 mx-1 self-center"></div>
+                        <button @click="openConsultant" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap bg-indigo-600 text-white shadow-md shadow-indigo-200 hover:bg-indigo-700">
+                            <span>🤖</span> Advisor
+                        </button>
                     </div>
-                    
-                    <button @click="openConsultant" class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition flex items-center gap-2">
-                        <span class="text-lg">🤖</span> <span class="hidden md:inline text-xs font-bold">Advisor</span>
-                    </button>
 
-                    <button @click="handleLogout" class="text-xs font-bold text-red-400 hover:text-red-600 whitespace-nowrap px-3 py-2 rounded-lg hover:bg-red-50 transition">Sign Out</button>
+                    <button @click="handleLogout" class="hidden md:block text-xs font-bold text-red-400 hover:text-red-600 whitespace-nowrap px-3 py-2 rounded-lg hover:bg-red-50 transition">Sign Out</button>
                 </div>
             </div>
 
@@ -171,6 +175,7 @@
                                 <input type="number" v-model.number="forecastSettings.currentBalance" @input="renderDashboardChart" class="w-24 p-1 bg-white border border-slate-200 rounded text-right font-mono font-bold text-sm text-slate-700 outline-none focus:border-blue-500">
                             </div>
                         </div>
+                        
                         <div class="h-64 w-full relative"><canvas id="dashboardChart"></canvas></div>
                         
                         <div v-if="cashFlowLowPoint && !impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="cashFlowLowPoint.amount < 0 ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'">
@@ -243,6 +248,7 @@
                         </div>
                     </div>
                 </header>
+
                 <div class="mb-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div @click="showPlanner = !showPlanner" class="p-4 bg-slate-50 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition select-none">
                         <h3 class="font-bold text-slate-700 flex items-center gap-2"><span>🔮</span> Manage Budget & Scenarios</h3>
@@ -298,6 +304,7 @@
                         </div>
                     </transition>
                 </div>
+
                 <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
                     <h3 class="text-lg font-bold">📅 Current Bills</h3>
                     <div class="flex gap-2 items-center">
@@ -456,6 +463,7 @@
             return amount
         }
 
+        // Tax Logic
         const taxBrackets = [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}];
         const calculateFederalTax = (annualInc) => { let tax=0, lower=0; for(const b of taxBrackets){ if(annualInc>b.limit){ tax+=(b.limit-lower)*b.rate; lower=b.limit; } else { tax+=(annualInc-lower)*b.rate; break; } } return tax; }
 
@@ -731,22 +739,32 @@
                     return bills.value.filter(b => !b.is_paid && b.due_date <= limitStr).sort((a,b) => a.due_date > b.due_date ? 1 : -1)
                 })
                 
+                // DASHBOARD COMPUTED (FIXED DREAM LOGIC)
                 const safeToSpend = computed(() => {
                     if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value)
+                    
                     if (dashboardMode.value === 'dream') {
                         let burn = 0
                         budgetItems.value.forEach(i => {
-                            if (i.is_wishlist) { burn += getMonthlyCost(i) } 
-                            else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i) }
+                            if (i.is_wishlist) {
+                                burn += getMonthlyCost(i)
+                            } else {
+                                // Add Standard Items ONLY if they are NOT replaced by an active wishlist item
+                                const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id)
+                                if (!replacedBy) burn += getMonthlyCost(i)
+                            }
                         })
                         return round(activeMonthlyPay.value - burn)
                     }
+
+                    // Standard (Default)
                     const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc, i) => acc + getMonthlyCost(i), 0)
                     return round(activeMonthlyPay.value - standardBurn)
                 })
 
                 const dashboardBurn = computed(() => round(activeMonthlyPay.value - safeToSpend.value))
                 const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0)
+                
                 const cashFlowLowPoint = computed(() => {
                     if (!dashboardChartInstance) return null
                     const data = dashboardChartInstance.data.datasets[0].data
@@ -766,11 +784,16 @@
                     })
                     if (mode === 'dream') {
                         const activeWishlist = budgetItems.value.filter(i => i.is_wishlist && i.includedInScenario)
-                        activeWishlist.forEach(w => { if (w.replaces_id) { const target = budgetItems.value.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false } })
+                        activeWishlist.forEach(w => {
+                            if (w.replaces_id) {
+                                const target = budgetItems.value.find(t => t.id === w.replaces_id)
+                                if (target) target.includedInScenario = false 
+                            }
+                        })
                     }
                 }
                 
-                const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { dbBasePay.value = data.base_pay; calcInputs.value = { salary: data.salary||0, commission: data.commission||0, medical: data.medical||0, dental: data.dental||0, fsa: data.fsa||0, postTax: data.post_tax||0, trad401k: data.trad_401k||0, roth401k: data.roth_401k||0, match401k: data.match_401k||0, next_pay_date: data.next_pay_date, pay_frequency: data.pay_frequency||'Semi-Monthly' }; forecastSettings.value.currentBalance = data.current_balance || 5000; } }
+                const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { dbBasePay.value = data.base_pay; calcInputs.value = { salary: data.salary||0, commission: data.commission||0, medical: data.medical||0, dental: data.dental||0, fsa: data.fsa||0, postTax: data.post_tax||0, trad401k: data.trad_401k||0, roth401k: data.roth_401k||0, match401k: data.match_401k||0, nextPayDate: data.next_pay_date, payFrequency: data.pay_frequency||'Semi-Monthly' }; forecastSettings.value.currentBalance = data.current_balance || 5000; } }
                 const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: i.is_core === true })); currentScenarioMode.value = 'survival'; }
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if(data) bills.value = data.sort((a,b) => a.due_date > b.due_date ? 1 : -1) }
                 const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if(data) debts.value = data }
