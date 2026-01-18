@@ -12,19 +12,14 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <style>
-        /* Custom Styles */
         .toggle-checkbox:checked { right: 0; border-color: #10B981; }
         .toggle-checkbox:checked + .toggle-label { background-color: #10B981; }
         [v-cloak] { display: none; }
-        
         .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
-        
         .accordion-enter-active, .accordion-leave-active { transition: max-height 0.3s ease-in-out, opacity 0.3s; max-height: 1000px; opacity: 1; overflow: hidden; }
         .accordion-enter-from, .accordion-leave-to { max-height: 0; opacity: 0; }
-
         .cursor-grab { cursor: grab; }
-        .cursor-grabbing { cursor: grabbing; }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -96,7 +91,7 @@
                                 </div>
                             </div>
                             <div class="text-4xl font-black tracking-tight mt-1" :class="safeToSpend >= 0 ? '' : 'text-red-200'">${{ safeToSpend.toLocaleString() }}</div>
-                            <div class="text-xs text-emerald-100 mt-2 font-medium opacity-80">{{ dashboardMode === 'survival' ? 'Income - Core Bills' : (dashboardMode === 'dream' ? 'Income - (All + Wishlist)' : 'Income - Standard Bills') }}</div>
+                            <div class="text-xs text-emerald-100 mt-2 font-medium opacity-80">{{ dashboardMode === 'survival' ? 'Net Pay - Core Bills' : (dashboardMode === 'dream' ? 'Net Pay - (Actual + Dreams - Replaced)' : 'Net Pay - Standard Bills') }}</div>
                         </div>
                     </div>
 
@@ -274,13 +269,7 @@
                                             <label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_core"> Core Item</label>
                                             <label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_autopay"> Autopay</label>
                                             <label class="text-sm flex gap-2 cursor-pointer text-purple-700 font-bold"><input type="checkbox" v-model="newItem.is_wishlist"> ✨ Wishlist / Sandbox</label>
-                                            <div v-if="newItem.is_wishlist" class="mt-2 pt-2 border-t">
-                                                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Replaces existing bill?</label>
-                                                <select v-model="newItem.replaces_id" class="w-full p-1.5 border rounded text-xs">
-                                                    <option :value="null">-- None --</option>
-                                                    <option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option>
-                                                </select>
-                                            </div>
+                                            <div v-if="newItem.is_wishlist" class="mt-2 pt-2 border-t"><label class="text-xs font-bold text-slate-500 uppercase block mb-1">Replaces existing bill?</label><select v-model="newItem.replaces_id" class="w-full p-1.5 border rounded text-xs"><option :value="null">-- None --</option><option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option></select></div>
                                         </div>
                                         <div class="flex gap-2"><button @click="handleSave" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Save</button><button v-if="isEditing" @click="resetForm" class="px-4 bg-slate-200 rounded-lg text-sm">Cancel</button></div>
                                     </div>
@@ -326,32 +315,8 @@
             <div v-if="currentView === 'forecast'" class="animate-fade-in">
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <div class="lg:col-span-1 space-y-4 print:hidden">
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3>
-                            <label class="block text-xs mb-1">Bank Balance Now</label>
-                            <input v-model="forecastSettings.currentBalance" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50">
-                            <label class="block text-xs mb-1">Safety Margin</label>
-                            <input v-model="forecastSettings.safetyMargin" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50">
-                            <label class="block text-xs mb-1">Months to Forecast</label>
-                            <select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg bg-slate-50">
-                                <option v-for="n in 24" :value="n">{{ n }} Months</option>
-                            </select>
-                            <button @click="runForecast" class="w-full mt-3 bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800">Refresh Forecast</button>
-                        </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <div class="flex justify-between items-center mb-2">
-                                <h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3>
-                                <button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button>
-                                <button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button>
-                            </div>
-                            <div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100">
-                                <div class="font-bold text-blue-900">{{ project.name }}</div>
-                                <div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
-                                <div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div>
-                                <div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div>
-                            </div>
-                            <div v-else class="text-xs text-slate-400 italic text-center py-2">No active goals</div>
-                        </div>
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3><label class="block text-xs mb-1">Bank Balance Now</label><input v-model="forecastSettings.currentBalance" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Safety Margin</label><input v-model="forecastSettings.safetyMargin" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Months to Forecast</label><select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg bg-slate-50"><option v-for="n in 24" :value="n">{{ n }} Months</option></select><button @click="runForecast" class="w-full mt-3 bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800">Refresh Forecast</button></div>
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3><button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button><button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button></div><div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100"><div class="font-bold text-blue-900">{{ project.name }}</div><div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div><div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div></div><div v-else class="text-xs text-slate-400 italic text-center py-2">No active goals</div></div>
                     </div>
                     <div class="lg:col-span-3 print:col-span-4 space-y-6">
                         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 print:border-0 print:shadow-none"><div class="flex justify-between items-center mb-2 print:hidden"><h3 class="font-bold">{{ project ? project.name + ' Projection' : 'Financial Projection' }}</h3><button @click="printReport" class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🖨️ Print Report</button></div><canvas id="forecastChart" style="max-height: 300px; width: 100%;"></canvas></div>
@@ -369,59 +334,7 @@
                 </div>
             </div>
 
-            <div v-if="currentView === 'debt'" class="animate-fade-in print:hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-1 space-y-6">
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Add Debt</h3>
-                            <div class="space-y-3">
-                                <input v-model="newDebt.name" type="text" placeholder="Debt Name (e.g. Visa)" class="w-full p-2 border rounded-lg text-sm">
-                                <div class="grid grid-cols-2 gap-2"><input v-model="newDebt.balance" type="number" step="0.01" placeholder="Balance ($)" class="w-full p-2 border rounded-lg text-sm"><input v-model="newDebt.rate" type="number" step="0.01" placeholder="Rate (%)" class="w-full p-2 border rounded-lg text-sm"></div>
-                                <input v-model="newDebt.min_payment" type="number" step="0.01" placeholder="Min Monthly Payment ($)" class="w-full p-2 border rounded-lg text-sm">
-                                <button @click="addDebt" class="w-full bg-red-600 text-white font-bold py-2 rounded-lg hover:bg-red-700 text-sm">Add Debt</button>
-                            </div>
-                        </div>
-                        <div class="space-y-3" id="debt-list-container">
-                            <div v-for="(debt, index) in debts" :key="debt.id" :data-id="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group cursor-default">
-                                <div class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 cursor-grab sortable-handle p-2 hover:text-slate-500">⋮⋮</div>
-                                <div class="pl-6 flex justify-between items-start">
-                                    <div><div class="font-bold text-slate-800">{{ debt.name }}</div><div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div></div>
-                                    <div class="font-mono text-lg font-bold text-slate-700">${{ debt.balance.toLocaleString() }}</div>
-                                </div>
-                                <button @click="deleteDebt(debt)" class="absolute top-2 right-2 text-xs text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">Delete</button>
-                            </div>
-                            <div v-if="debts.length === 0" class="text-center text-slate-400 py-8 italic">No debts added yet.</div>
-                        </div>
-                    </div>
-                    <div class="lg:col-span-2">
-                        <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300 mb-6">
-                            <div class="flex justify-between items-end mb-4">
-                                <div><h2 class="text-2xl font-bold">⚔️ Attack Plan</h2><p class="text-slate-400 text-sm">Drag cards on left to prioritize payoff order.</p></div>
-                                <div class="text-right"><div class="text-xs text-slate-400 uppercase">Debt Free By</div><div class="text-3xl font-bold text-emerald-400">{{ debtPlan.payoffDate }}</div></div>
-                            </div>
-                            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
-                                <div class="flex justify-between text-sm mb-2"><span class="font-bold text-slate-300">Extra Monthly Attack</span><span class="font-mono text-emerald-300">${{ extraDebtPayment }}</span></div>
-                                <input type="range" v-model.number="extraDebtPayment" min="0" max="2000" step="50" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500">
-                                <div class="flex justify-between text-xs text-slate-500 mt-2"><span>$0</span><span>$2,000</span></div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4 mt-6">
-                                <div class="bg-slate-800/50 p-3 rounded"><div class="text-xs text-slate-400 uppercase">Total Interest</div><div class="text-xl font-bold text-red-300">${{ debtPlan.totalInterest.toLocaleString() }}</div></div>
-                                <div class="bg-emerald-900/30 p-3 rounded border border-emerald-900"><div class="text-xs text-emerald-400 uppercase">Interest Saved</div><div class="text-xl font-bold text-emerald-300">${{ debtPlan.savedInterest.toLocaleString() }}</div></div>
-                            </div>
-                        </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Payoff Timeline</h3>
-                            <div class="max-h-[300px] overflow-y-auto space-y-2">
-                                <div v-for="(log, idx) in debtPlan.timeline" :key="idx" class="flex justify-between text-xs border-b pb-2 last:border-0">
-                                    <span class="font-bold w-20 text-slate-400">{{ log.date }}</span>
-                                    <span class="text-slate-700 font-bold flex-1">{{ log.action }}</span>
-                                    <span class="font-mono text-slate-500 text-[10px]">rem: ${{ log.remaining.toLocaleString() }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div v-if="currentView === 'debt'" class="animate-fade-in print:hidden"><div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="lg:col-span-1 space-y-6"><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Add Debt</h3><div class="space-y-3"><input v-model="newDebt.name" type="text" placeholder="Debt Name (e.g. Visa)" class="w-full p-2 border rounded-lg text-sm"><div class="grid grid-cols-2 gap-2"><input v-model="newDebt.balance" type="number" step="0.01" placeholder="Balance ($)" class="w-full p-2 border rounded-lg text-sm"><input v-model="newDebt.rate" type="number" step="0.01" placeholder="Rate (%)" class="w-full p-2 border rounded-lg text-sm"></div><input v-model="newDebt.min_payment" type="number" step="0.01" placeholder="Min Monthly Payment ($)" class="w-full p-2 border rounded-lg text-sm"><button @click="addDebt" class="w-full bg-red-600 text-white font-bold py-2 rounded-lg hover:bg-red-700 text-sm">Add Debt</button></div></div><div class="space-y-3" id="debt-list-container"><div v-for="(debt, index) in debts" :key="debt.id" :data-id="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group cursor-default"><div class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 cursor-grab sortable-handle p-2 hover:text-slate-500">⋮⋮</div><div class="pl-6 flex justify-between items-start"><div><div class="font-bold text-slate-800">{{ debt.name }}</div><div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div></div><div class="font-mono text-lg font-bold text-slate-700">${{ debt.balance.toLocaleString() }}</div></div><button @click="deleteDebt(debt)" class="absolute top-2 right-2 text-xs text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">Delete</button></div><div v-if="debts.length === 0" class="text-center text-slate-400 py-8 italic">No debts added yet.</div></div></div><div class="lg:col-span-2"><div class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300 mb-6"><div class="flex justify-between items-end mb-4"><div><h2 class="text-2xl font-bold">⚔️ Attack Plan</h2><p class="text-slate-400 text-sm">Drag cards on left to prioritize payoff order.</p></div><div class="text-right"><div class="text-xs text-slate-400 uppercase">Debt Free By</div><div class="text-3xl font-bold text-emerald-400">{{ debtPlan.payoffDate }}</div></div></div><div class="bg-slate-800 p-4 rounded-lg border border-slate-700"><div class="flex justify-between text-sm mb-2"><span class="font-bold text-slate-300">Extra Monthly Attack</span><span class="font-mono text-emerald-300">${{ extraDebtPayment }}</span></div><input type="range" v-model.number="extraDebtPayment" min="0" max="2000" step="50" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500"><div class="flex justify-between text-xs text-slate-500 mt-2"><span>$0</span><span>$2,000</span></div></div><div class="grid grid-cols-2 gap-4 mt-6"><div class="bg-slate-800/50 p-3 rounded"><div class="text-xs text-slate-400 uppercase">Total Interest</div><div class="text-xl font-bold text-red-300">${{ debtPlan.totalInterest.toLocaleString() }}</div></div><div class="bg-emerald-900/30 p-3 rounded border border-emerald-900"><div class="text-xs text-emerald-400 uppercase">Interest Saved</div><div class="text-xl font-bold text-emerald-300">${{ debtPlan.savedInterest.toLocaleString() }}</div></div></div></div><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Payoff Timeline</h3><div class="max-h-[300px] overflow-y-auto space-y-2"><div v-for="(log, idx) in debtPlan.timeline" :key="idx" class="flex justify-between text-xs border-b pb-2 last:border-0"><span class="font-bold w-20 text-slate-400">{{ log.date }}</span><span class="text-slate-700 font-bold flex-1">{{ log.action }}</span><span class="font-mono text-slate-500 text-[10px]">rem: ${{ log.remaining.toLocaleString() }}</span></div></div></div></div></div></div>
 
         </div>
 
@@ -439,10 +352,8 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-        // ROUNDING HELPER
         const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100
 
-        // HELPERS
         const getMonthlyCost = (item) => {
             const amount = Number(item.amount)
             if (item.frequency === 'Quarterly') return amount / 3
@@ -451,7 +362,6 @@
             return amount
         }
 
-        // Tax Logic
         const taxBrackets = [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}];
         const calculateFederalTax = (annualInc) => { let tax=0, lower=0; for(const b of taxBrackets){ if(annualInc>b.limit){ tax+=(b.limit-lower)*b.rate; lower=b.limit; } else { tax+=(annualInc-lower)*b.rate; break; } } return tax; }
 
@@ -460,7 +370,7 @@
                 const session=ref(null), authEmail=ref(''), loading=ref(false), authMessage=ref('')
                 const currentView = ref('dashboard') 
                 
-                // SHARED
+                // DATA
                 const dbBasePay = ref(0), tempCalculatedPay = ref(0), useTempPay = ref(false)
                 const budgetItems = ref([]), bills = ref([]), debts = ref([])
 
@@ -628,7 +538,7 @@
                     return bills.value.filter(b => !b.is_paid && b.due_date <= limitStr).sort((a,b) => a.due_date > b.due_date ? 1 : -1)
                 })
                 
-                // DASHBOARD COMPUTED
+                // DASHBOARD COMPUTED (FIXED DREAM LOGIC)
                 const safeToSpend = computed(() => {
                     if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value)
                     
@@ -636,12 +546,11 @@
                         let burn = 0
                         budgetItems.value.forEach(i => {
                             if (i.is_wishlist) {
+                                // 1. Add ALL Wishlist items
                                 burn += getMonthlyCost(i)
-                                if (i.replaces_id) {
-                                    const target = budgetItems.value.find(t => t.id === i.replaces_id)
-                                    if (target) burn -= getMonthlyCost(target)
-                                }
                             } else {
+                                // 2. Add Standard Items ONLY if they are NOT replaced by an active wishlist item
+                                // (Corrected logic: Don't subtract from wishlist, just ignore the standard one)
                                 const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id)
                                 if (!replacedBy) burn += getMonthlyCost(i)
                             }
@@ -654,13 +563,8 @@
                     return round(activeMonthlyPay.value - standardBurn)
                 })
 
-                // Dashboard Burn for Progress Bar
-                const dashboardBurn = computed(() => {
-                    return round(activeMonthlyPay.value - safeToSpend.value)
-                })
-
+                const dashboardBurn = computed(() => round(activeMonthlyPay.value - safeToSpend.value))
                 const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0)
-                
                 const cashFlowLowPoint = computed(() => {
                     if (!dashboardChartInstance) return null
                     const data = dashboardChartInstance.data.datasets[0].data
