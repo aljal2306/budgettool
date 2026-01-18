@@ -491,7 +491,7 @@
                 const session=ref(null), authEmail=ref(''), loading=ref(false), authMessage=ref('')
                 const currentView = ref('dashboard') 
                 
-                // SHARED
+                // DATA
                 const dbBasePay = ref(0), tempCalculatedPay = ref(0), useTempPay = ref(false)
                 const budgetItems = ref([]), bills = ref([]), debts = ref([])
 
@@ -502,21 +502,11 @@
                 const extraDebtPayment = ref(0)
                 const showPaidBills = ref(false)
 
-                // IMPULSE & AI
-                const showImpulseModal = ref(false)
-                const impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] })
-                const impulseResult = ref(null)
-                
-                const showConsultant = ref(false)
-                const chatMessages = ref([])
-                const userQuery = ref('')
-                const isThinking = ref(false)
-
                 // UI STATE
                 const showPlanner=ref(false), showAddForm=ref(false), isSubmitting=ref(false), isEditing=ref(false), editingId=ref(null)
                 const newItem = ref({ name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false, replaces_id: null })
                 const showGenModal=ref(false), potentialBills=ref([])
-                const generateMonthOffset = ref(0) // 0 = This Month, 1 = Next Month
+                const generateMonthOffset = ref(0) // Fixed: Declared only once here
                 const currentScenarioMode = ref('survival') 
                 const dashboardMode = ref('standard')
                 const showDebtForm = ref(false)
@@ -529,100 +519,17 @@
                 let chartInstance = null
                 let dashboardChartInstance = null
 
-                // --- 1. AI ADVISOR LOGIC ---
-                const openConsultant = () => { showConsultant.value = true; nextTick(() => scrollChat()) }
+                // IMPULSE & AI
+                const showImpulseModal = ref(false)
+                const impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] })
+                const impulseResult = ref(null)
                 
-                const getFinancialSnapshot = () => {
-                    // Packages current state for the "AI"
-                    return {
-                        income: activeMonthlyPay.value,
-                        savings: forecastSettings.value.currentBalance,
-                        total_debt: debts.value.reduce((a,b)=>a+Number(b.balance), 0),
-                        core_burn: budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),
-                        discretionary_burn: budgetItems.value.filter(i=>!i.is_core && !i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),
-                        debt_list: debts.value,
-                        budget_list: budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name, amt:i.amount, core:i.is_core})),
-                        survival_months: (forecastSettings.value.currentBalance / (budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)
-                    }
-                }
+                const showConsultant = ref(false)
+                const chatMessages = ref([])
+                const userQuery = ref('')
+                const isThinking = ref(false)
 
-                const sendQuery = async (text) => {
-                    if(!text) return
-                    chatMessages.value.push({ role: 'user', text })
-                    userQuery.value = ''
-                    isThinking.value = true
-                    nextTick(scrollChat)
-
-                    // SIMULATED AI LATENCY & LOGIC
-                    setTimeout(() => {
-                        const snapshot = getFinancialSnapshot()
-                        const response = generateMockResponse(text, snapshot)
-                        chatMessages.value.push({ role: 'assistant', text: response })
-                        isThinking.value = false
-                        nextTick(scrollChat)
-                    }, 1200)
-                }
-
-                const generateMockResponse = (query, data) => {
-                    const q = query.toLowerCase()
-                    
-                    // 1. RUTHLESS REVIEW
-                    if (q.includes('ruthless') || q.includes('cut')) {
-                        const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt)
-                        if (nonCore.length === 0) return "You are already running extremely lean. All your listed expenses are marked as 'Core'. Consider increasing income instead."
-                        
-                        let totalWaste = nonCore.reduce((a,b)=>a+b.amt,0)
-                        let top3 = nonCore.slice(0,3).map(i => `• **${i.name}**: $${i.amt}`).join('<br>')
-                        return `I've analyzed your spending. You are spending **$${totalWaste.toLocaleString()}** monthly on non-essentials.<br><br>Here are your top 3 targets to cut:<br>${top3}<br><br>If you cut these by just 50%, you'd save **$${(totalWaste/2).toLocaleString()}** per year.`
-                    }
-
-                    // 2. DEBT STRATEGY
-                    if (q.includes('debt')) {
-                        if (data.debt_list.length === 0) return "You have no debts listed! You are in a great position to build wealth. Focus on maximizing your savings rate."
-                        
-                        const highestRate = [...data.debt_list].sort((a,b)=>b.rate - a.rate)[0]
-                        const totalInterest = data.debt_list.reduce((acc, d) => acc + (d.balance * (d.rate/100/365)), 0)
-                        
-                        return `You currently owe **$${data.total_debt.toLocaleString()}**. <br><br>🚨 **Emergency:** You are losing approximately **$${totalInterest.toFixed(2)} per day** in interest.<br><br>My recommendation: Attack **${highestRate.name}** (${highestRate.rate}%) first. It is mathematically the most expensive liability you own.`
-                    }
-
-                    // 3. STRESS TEST
-                    if (q.includes('stress') || q.includes('survive')) {
-                        return `**Stress Test Results:**<br>Based on your current savings of $${data.savings.toLocaleString()} and a "Survival" burn rate of $${data.core_burn.toLocaleString()}/mo...<br><br>🛑 You have **${data.survival_months} months** of runway.<br><br>${Number(data.survival_months) < 3 ? '⚠️ **Warning:** This is below the recommended 3-6 month safety net. Pause all investing and "Dream" goals immediately.' : '✅ **Good:** You have a healthy safety buffer.'}`
-                    }
-
-                    // DEFAULT
-                    return "I can help with that. Based on your data, your monthly net income is **$" + data.income.toLocaleString() + "** and your core expenses are **$" + data.core_burn.toLocaleString() + "**. <br><br>Try asking for a **Ruthless Review** or a **Stress Test** for more specific advice."
-                }
-
-                const scrollChat = () => {
-                    const el = document.getElementById('chat-container')
-                    if(el) el.scrollTop = el.scrollHeight
-                }
-                
-                const renderMarkdown = (text) => {
-                    return marked.parse(text)
-                }
-
-                // --- 2. IMPULSE CHECK ---
-                const checkImpulse = () => {
-                    if (!impulseItem.value.cost) return
-                    showImpulseModal.value = false
-                    renderDashboardChart() 
-                    if (cashFlowLowPoint.value) {
-                       const futureLow = cashFlowLowPoint.value.amount
-                       if (futureLow < 0) impulseResult.value = { safe: false, message: `Dangerous! You will hit $${futureLow}!` }
-                       else if (futureLow < forecastSettings.value.safetyMargin) impulseResult.value = { safe: false, message: `Risky. You dip below safety margin ($${futureLow}).` }
-                       else impulseResult.value = { safe: true, message: `Safe! Lowest balance: $${futureLow}` }
-                    }
-                }
-                const clearImpulse = () => {
-                    impulseItem.value = { name: '', cost: '', date: new Date().toISOString().split('T')[0] }
-                    impulseResult.value = null
-                    renderDashboardChart()
-                }
-
-                // --- 3. DEBT LOGIC ---
+                // --- 1. DEBT LOGIC ---
                 const debtPlan = computed(() => {
                     if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }
                     const simulate = (extra) => {
@@ -655,7 +562,7 @@
                 const deleteDebt = async (debt) => { if (confirm('Delete debt?')) { await _supabase.from('debts').delete().eq('id', debt.id); debts.value = debts.value.filter(d => d.id !== debt.id) } }
                 const updateDebtOrder = async () => { const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index })); for (const u of updates) { await _supabase.from('debts').update({ order_index: u.order_index }).eq('id', u.id) } }
 
-                // --- 4. CALCULATOR ---
+                // --- 2. CALCULATOR ---
                 const calculateAndSave = async (mode) => {
                     savingBase.value = true
                     const { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency } = calcInputs.value
@@ -681,7 +588,7 @@
                     savingBase.value = false; currentView.value = 'budget'
                 }
 
-                // --- 5. FORECAST & DASHBOARD ---
+                // --- 3. FORECAST & DASHBOARD ---
                 const runForecast = () => {
                     let balance = round(forecastSettings.value.currentBalance)
                     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -716,87 +623,102 @@
                 const renderDashboardChart = () => {
                     const ctx = document.getElementById('dashboardChart'); if(!ctx) return;
                     if(dashboardChartInstance) dashboardChartInstance.destroy()
-                    
-                    const labels = []; 
-                    const dataCurrent = []
-                    const dataImpulse = [] 
-                    
-                    let currentSimBalance = forecastSettings.value.currentBalance || 0
-                    let impulseSimBalance = currentSimBalance 
-                    
-                    const today = new Date(); 
-                    let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null
+                    const labels = []; const dataCurrent = []; const dataImpulse = []
+                    let currentSimBalance = forecastSettings.value.currentBalance || 0; let impulseSimBalance = currentSimBalance
+                    const today = new Date(); let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null
                     const freq = calcInputs.value.payFrequency || 'Bi-Weekly'
                     const payAmount = calcResult.value ? calcResult.value.netPay : (dbBasePay.value / (freq === 'Monthly' ? 1 : 2))
                     const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false) 
                     const impulseCost = Number(impulseItem.value.cost); const impulseDate = impulseItem.value.date
 
                     for(let i=0; i<30; i++) {
-                        const d = new Date(); d.setDate(today.getDate() + i); 
-                        const dayOfMonth = d.getDate();
-                        const dStr = d.toISOString().split('T')[0]; 
-                        labels.push(dayOfMonth)
-                        
-                        // HYBRID BILL LOGIC
-                        // 1. Check Real Ledger (Bills that EXIST and are UNPAID)
+                        const d = new Date(); d.setDate(today.getDate() + i); const dStr = d.toISOString().split('T')[0]; labels.push(d.getDate())
                         const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr)
-                        const realDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0)
+                        const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0)
                         
-                        // 2. Check Virtual Bills (Budget Items that fall on this day, BUT have no ledger entry)
-                        // This allows future months to populate without "Generating" bills
+                        // Check virtual bills (Budget items without real bills)
+                        const dayOfMonth = d.getDate()
                         const virtualDrop = budgetItems.value.reduce((sum, item) => {
                             if (item.frequency === 'Monthly' && item.due_day === dayOfMonth) {
-                                // Is there already a bill for this item on this day?
                                 const hasRealBill = bills.value.some(b => b.budget_item_id === item.id && b.due_date === dStr)
                                 if (!hasRealBill) return sum + item.amount
                             }
                             return sum
                         }, 0)
 
-                        const dailyDrop = realDrop + virtualDrop
-
-                        currentSimBalance -= dailyDrop
-                        impulseSimBalance -= dailyDrop
+                        const totalDrop = dailyDrop + virtualDrop
                         
-                        // Income
+                        currentSimBalance -= totalDrop; impulseSimBalance -= totalDrop
                         if (nextPay && dStr === nextPay.toISOString().split('T')[0]) {
-                            currentSimBalance += payAmount
-                            impulseSimBalance += payAmount
+                            currentSimBalance += payAmount; impulseSimBalance += payAmount
                             if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14)
                             else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15)
                             else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1)
                         }
-                        
-                        // Impulse Event
-                        if (runImpulse && dStr === impulseDate) {
-                            impulseSimBalance -= impulseCost
-                        }
-
-                        dataCurrent.push(currentSimBalance)
-                        dataImpulse.push(impulseSimBalance)
+                        if (runImpulse && dStr === impulseDate) impulseSimBalance -= impulseCost
+                        dataCurrent.push(currentSimBalance); dataImpulse.push(impulseSimBalance)
                     }
-                    
-                    const datasets = [
-                        { label: 'Current', data: dataCurrent, borderColor: '#3B82F6', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.1 }
-                    ]
-                    
-                    if (runImpulse) {
-                        datasets.push({
-                            label: 'With Purchase',
-                            data: dataImpulse,
-                            borderColor: '#9333EA', 
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            fill: false,
-                            tension: 0.1
-                        })
-                    }
-
+                    const datasets = [{ label: 'Current', data: dataCurrent, borderColor: '#3B82F6', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.1 }]
+                    if (runImpulse) datasets.push({ label: 'With Purchase', data: dataImpulse, borderColor: '#9333EA', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0.1 })
                     dashboardChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { display: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, color: '#94a3b8', callback: (val) => '$' + val } } }, plugins: { legend: { display: runImpulse }, tooltip: { enabled: true } } } })
                 }
 
-                // --- 6. COMPUTED ---
+                // --- 4. AI ADVISOR ---
+                const openConsultant = () => { showConsultant.value = true; nextTick(() => scrollChat()) }
+                
+                const getFinancialSnapshot = () => {
+                    return {
+                        income: activeMonthlyPay.value,
+                        savings: forecastSettings.value.currentBalance,
+                        total_debt: debts.value.reduce((a,b)=>a+Number(b.balance), 0),
+                        core_burn: budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),
+                        discretionary_burn: budgetItems.value.filter(i=>!i.is_core && !i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),
+                        debt_list: debts.value,
+                        budget_list: budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name, amt:i.amount, core:i.is_core})),
+                        survival_months: (forecastSettings.value.currentBalance / (budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)
+                    }
+                }
+
+                const sendQuery = async (text) => {
+                    if(!text) return
+                    chatMessages.value.push({ role: 'user', text })
+                    userQuery.value = ''
+                    isThinking.value = true
+                    nextTick(scrollChat)
+                    setTimeout(() => {
+                        const snapshot = getFinancialSnapshot()
+                        const response = generateMockResponse(text, snapshot)
+                        chatMessages.value.push({ role: 'assistant', text: response })
+                        isThinking.value = false
+                        nextTick(scrollChat)
+                    }, 1200)
+                }
+
+                const generateMockResponse = (query, data) => {
+                    const q = query.toLowerCase()
+                    if (q.includes('ruthless') || q.includes('cut')) {
+                        const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt)
+                        if (nonCore.length === 0) return "You are already running extremely lean. All your listed expenses are marked as 'Core'. Consider increasing income instead."
+                        let totalWaste = nonCore.reduce((a,b)=>a+b.amt,0)
+                        let top3 = nonCore.slice(0,3).map(i => `• **${i.name}**: $${i.amt}`).join('<br>')
+                        return `I've analyzed your spending. You are spending **$${totalWaste.toLocaleString()}** monthly on non-essentials.<br><br>Here are your top 3 targets to cut:<br>${top3}<br><br>If you cut these by just 50%, you'd save **$${(totalWaste/2).toLocaleString()}** per year.`
+                    }
+                    if (q.includes('debt')) {
+                        if (data.debt_list.length === 0) return "You have no debts listed! You are in a great position to build wealth. Focus on maximizing your savings rate."
+                        const highestRate = [...data.debt_list].sort((a,b)=>b.rate - a.rate)[0]
+                        const totalInterest = data.debt_list.reduce((acc, d) => acc + (d.balance * (d.rate/100/365)), 0)
+                        return `You currently owe **$${data.total_debt.toLocaleString()}**. <br><br>🚨 **Emergency:** You are losing approximately **$${totalInterest.toFixed(2)} per day** in interest.<br><br>My recommendation: Attack **${highestRate.name}** (${highestRate.rate}%) first. It is mathematically the most expensive liability you own.`
+                    }
+                    if (q.includes('stress') || q.includes('survive')) {
+                        return `**Stress Test Results:**<br>Based on your current savings of $${data.savings.toLocaleString()} and a "Survival" burn rate of $${data.core_burn.toLocaleString()}/mo...<br><br>🛑 You have **${data.survival_months} months** of runway.<br><br>${Number(data.survival_months) < 3 ? '⚠️ **Warning:** This is below the recommended 3-6 month safety net. Pause all investing and "Dream" goals immediately.' : '✅ **Good:** You have a healthy safety buffer.'}`
+                    }
+                    return "I can help with that. Based on your data, your monthly net income is **$" + data.income.toLocaleString() + "** and your core expenses are **$" + data.core_burn.toLocaleString() + "**. <br><br>Try asking for a **Ruthless Review** or a **Stress Test** for more specific advice."
+                }
+
+                const scrollChat = () => { const el = document.getElementById('chat-container'); if(el) el.scrollTop = el.scrollHeight }
+                const renderMarkdown = (text) => { return marked.parse(text) }
+
+                // --- 5. COMPUTED ---
                 const activeMonthlyPay = computed(() => round(useTempPay.value ? tempCalculatedPay.value : dbBasePay.value))
                 const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + getMonthlyCost(i), 0)))
                 const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + getMonthlyCost(item), 0)))
@@ -814,20 +736,14 @@
                 
                 const safeToSpend = computed(() => {
                     if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value)
-                    
                     if (dashboardMode.value === 'dream') {
                         let burn = 0
                         budgetItems.value.forEach(i => {
-                            if (i.is_wishlist) {
-                                burn += getMonthlyCost(i)
-                            } else {
-                                const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id)
-                                if (!replacedBy) burn += getMonthlyCost(i)
-                            }
+                            if (i.is_wishlist) { burn += getMonthlyCost(i) } 
+                            else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i) }
                         })
                         return round(activeMonthlyPay.value - burn)
                     }
-
                     const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc, i) => acc + getMonthlyCost(i), 0)
                     return round(activeMonthlyPay.value - standardBurn)
                 })
@@ -843,7 +759,7 @@
                     return { amount: min, date: d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) }
                 })
 
-                // --- 7. HELPERS ---
+                // --- 6. HELPERS ---
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode
                     budgetItems.value.forEach(i => {
@@ -869,45 +785,31 @@
                 const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if(data) debts.value = data }
                 
                 // CRUD
-                const generateMonthOffset = ref(0) // 0 = This Month, 1 = Next Month
                 const openGenerateModal = async (offset = 0) => { 
                     generateMonthOffset.value = offset
                     const targetDate = new Date()
                     targetDate.setMonth(targetDate.getMonth() + offset)
-                    
                     const startOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1).toISOString()
                     const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).toISOString()
 
                     const { data: budgetItemsData } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('is_wishlist', false).eq('user_id', session.value.user.id);
-                    
                     const { data: existingLedger } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', startOfMonth).lte('due_date', endOfMonth);
-                        
                     const existingIds = new Set(existingLedger.map(b => b.budget_item_id)); 
-                    
                     potentialBills.value = budgetItemsData.filter(x => !existingIds.has(x.id)).map(x => ({...x, selected: x.frequency === 'Monthly'})); 
-                        
                     showGenModal.value = true; 
                 }
 
                 const confirmGenerate = async () => { 
                     const targetDate = new Date()
                     targetDate.setMonth(targetDate.getMonth() + generateMonthOffset.value) // Use offset
-
                     const toCreate = potentialBills.value.filter(i=>i.selected).map(t => ({
-                        user_id: session.value.user.id, 
-                        budget_item_id: t.id, 
-                        amount_paid: 0, 
-                        // CRITICAL FIX: Use target month, not 'now'
-                        due_date: new Date(targetDate.getFullYear(), targetDate.getMonth(), t.due_day||1).toISOString(), 
-                        is_paid: false
+                        user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, 
+                        due_date: new Date(targetDate.getFullYear(), targetDate.getMonth(), t.due_day||1).toISOString(), is_paid: false
                     })); 
-                    
-                    if(toCreate.length > 0) {
-                        await _supabase.from('ledger').insert(toCreate); 
-                        await fetchBills(); 
-                    }
+                    if(toCreate.length > 0) { await _supabase.from('ledger').insert(toCreate); await fetchBills(); }
                     showGenModal.value = false; 
                 }
+
                 const handleSave = async () => { isEditing.value ? updateItem() : addItem() }
                 const addItem = async () => { const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1); const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, frequency: newItem.value.frequency, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, replaces_id: newItem.value.replaces_id || null, is_active: true }; const { data } = await _supabase.from('budget_items').insert([payload]).select(); if(data) { budgetItems.value.push({...data[0], includedInScenario: true}); resetForm(); } }
                 const updateItem = async () => { const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1); const updates = { name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, frequency: newItem.value.frequency, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, replaces_id: newItem.value.replaces_id || null }; await _supabase.from('budget_items').update(updates).eq('id', editingId.value); fetchBudgetItems(); resetForm(); }
