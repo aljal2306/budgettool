@@ -10,6 +10,7 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
         .toggle-checkbox:checked { right: 0; border-color: #10B981; }
@@ -25,6 +26,15 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Chat Bubbles */
+        .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 0.9rem; line-height: 1.5; }
+        .chat-user { background-color: #3b82f6; color: white; border-bottom-right-radius: 4px; margin-left: auto; }
+        .chat-ai { background-color: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; margin-right: auto; }
+        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
         @media print {
             body { background-color: white; color: black; }
@@ -60,15 +70,21 @@
                     <div class="text-xs text-slate-400 font-medium">{{ session.user.email }}</div>
                 </div>
                 
-                <div class="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-100 overflow-x-auto w-full md:w-auto">
-                    <button @click="currentView = 'dashboard'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'dashboard' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>🏠</span> Home</button>
-                    <button @click="currentView = 'calculator'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'calculator' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>🧮</span> Paycheck</button>
-                    <button @click="currentView = 'budget'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'budget' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>💸</span> Budget</button>
-                    <button @click="currentView = 'forecast'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'forecast' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>📈</span> Forecast</button>
-                    <button @click="currentView = 'debt'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'debt' ? 'bg-red-500 text-white shadow-md shadow-red-200' : 'text-slate-500 hover:text-red-600 hover:bg-red-50'"><span>⚔️</span> Debt</button>
-                </div>
+                <div class="flex items-center gap-2">
+                    <div class="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-100 overflow-x-auto w-full md:w-auto">
+                        <button @click="currentView = 'dashboard'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'dashboard' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>🏠</span> Home</button>
+                        <button @click="currentView = 'calculator'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'calculator' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>🧮</span> Paycheck</button>
+                        <button @click="currentView = 'budget'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'budget' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>💸</span> Budget</button>
+                        <button @click="currentView = 'forecast'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'forecast' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"><span>📈</span> Forecast</button>
+                        <button @click="currentView = 'debt'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition flex items-center gap-2 whitespace-nowrap" :class="currentView === 'debt' ? 'bg-red-500 text-white shadow-md shadow-red-200' : 'text-slate-500 hover:text-red-600 hover:bg-red-50'"><span>⚔️</span> Debt</button>
+                    </div>
+                    
+                    <button @click="openConsultant" class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition flex items-center gap-2">
+                        <span class="text-lg">🤖</span> <span class="hidden md:inline text-xs font-bold">Advisor</span>
+                    </button>
 
-                <button @click="handleLogout" class="text-xs font-bold text-red-400 hover:text-red-600 whitespace-nowrap px-3 py-2 rounded-lg hover:bg-red-50 transition">Sign Out</button>
+                    <button @click="handleLogout" class="text-xs font-bold text-red-400 hover:text-red-600 whitespace-nowrap px-3 py-2 rounded-lg hover:bg-red-50 transition">Sign Out</button>
+                </div>
             </div>
 
             <div class="hidden print:block mb-8">
@@ -91,7 +107,7 @@
                                 </div>
                             </div>
                             <div class="text-4xl font-black tracking-tight mt-1" :class="safeToSpend >= 0 ? '' : 'text-red-200'">${{ safeToSpend.toLocaleString() }}</div>
-                            <div class="text-xs text-emerald-100 mt-2 font-medium opacity-80">{{ dashboardMode === 'survival' ? 'Net Pay - Core Bills' : (dashboardMode === 'dream' ? 'Net Pay - (Bills - Replaced + Wishlist)' : 'Net Pay - Standard Bills') }}</div>
+                            <div class="text-xs text-emerald-100 mt-2 font-medium opacity-80">{{ dashboardMode === 'survival' ? 'Income - Core Bills' : (dashboardMode === 'dream' ? 'Income - (Bills - Replaced + Wishlist)' : 'Income - Standard Bills') }}</div>
                         </div>
                     </div>
 
@@ -155,17 +171,13 @@
                                 <input type="number" v-model.number="forecastSettings.currentBalance" @input="renderDashboardChart" class="w-24 p-1 bg-white border border-slate-200 rounded text-right font-mono font-bold text-sm text-slate-700 outline-none focus:border-blue-500">
                             </div>
                         </div>
-                        
                         <div class="h-64 w-full relative"><canvas id="dashboardChart"></canvas></div>
                         
                         <div v-if="cashFlowLowPoint && !impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="cashFlowLowPoint.amount < 0 ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'">
                             <span class="text-lg">{{ cashFlowLowPoint.amount < 0 ? '⚠️' : '✅' }}</span> Lowest projected balance: <span class="font-mono font-bold text-sm">${{ cashFlowLowPoint.amount.toLocaleString() }}</span> on {{ cashFlowLowPoint.date }}
                         </div>
-
                         <div v-if="impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="impulseResult.safe ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'">
-                            <span class="text-lg">{{ impulseResult.safe ? '✅' : '❌' }}</span> 
-                            <span>{{ impulseResult.message }}</span>
-                            <button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button>
+                            <span class="text-lg">{{ impulseResult.safe ? '✅' : '❌' }}</span> <span>{{ impulseResult.message }}</span><button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button>
                         </div>
                     </div>
                 </div>
@@ -216,10 +228,7 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-1 mt-1"><span class="text-xl text-slate-400">$</span><div class="text-2xl font-bold w-full text-slate-700">{{ activeMonthlyPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div>
-                        <div v-if="useTempPay" class="text-[10px] text-emerald-600 mt-1 font-bold">Using Calculated Commission Pay</div>
-                        <div v-else class="text-[10px] text-slate-400 mt-1">Using Default Base Pay</div>
                     </div>
-
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
                         <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
@@ -234,7 +243,6 @@
                         </div>
                     </div>
                 </header>
-
                 <div class="mb-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div @click="showPlanner = !showPlanner" class="p-4 bg-slate-50 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition select-none">
                         <h3 class="font-bold text-slate-700 flex items-center gap-2"><span>🔮</span> Manage Budget & Scenarios</h3>
@@ -290,7 +298,6 @@
                         </div>
                     </transition>
                 </div>
-
                 <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
                     <h3 class="text-lg font-bold">📅 Current Bills</h3>
                     <div class="flex gap-2 items-center">
@@ -346,62 +353,7 @@
                 </div>
             </div>
 
-            <div v-if="currentView === 'debt'" class="animate-fade-in print:hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-1 space-y-6">
-                        <button v-if="!showDebtForm" @click="showDebtForm = true" class="w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-dashed text-slate-500 font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2">+ Add New Liability</button>
-                        
-                        <div v-else class="bg-white p-6 rounded-2xl shadow-lg border border-blue-200 ring-2 ring-blue-50">
-                            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm text-slate-800 uppercase">Add Liability</h3><button @click="showDebtForm = false" class="text-slate-400 hover:text-slate-600">&times;</button></div>
-                            <div class="space-y-3">
-                                <input v-model="newDebt.name" type="text" placeholder="Debt Name (e.g. Visa)" class="w-full p-3 border rounded-lg text-sm bg-slate-50">
-                                <div class="grid grid-cols-2 gap-2"><input v-model="newDebt.balance" type="number" step="0.01" placeholder="Balance ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><input v-model="newDebt.rate" type="number" step="0.01" placeholder="Rate (%)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"></div>
-                                <input v-model="newDebt.min_payment" type="number" step="0.01" placeholder="Min Payment ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50">
-                                <div class="flex gap-2 pt-2"><button @click="addDebt" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Save Debt</button><button @click="showDebtForm = false" class="px-4 bg-slate-100 text-slate-500 font-bold py-2 rounded-lg text-sm">Cancel</button></div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-3" id="debt-list-container">
-                            <div v-for="(debt, index) in debts" :key="debt.id" :data-id="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group cursor-default">
-                                <div class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 cursor-grab sortable-handle p-2 hover:text-slate-500">⋮⋮</div>
-                                <div class="pl-6 flex justify-between items-start">
-                                    <div><div class="font-bold text-slate-800">{{ debt.name }}</div><div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div></div>
-                                    <div class="font-mono text-lg font-bold text-slate-700">${{ debt.balance.toLocaleString() }}</div>
-                                </div>
-                                <button @click="deleteDebt(debt)" class="absolute top-2 right-2 text-xs text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">Delete</button>
-                            </div>
-                            <div v-if="debts.length === 0" class="text-center text-slate-400 py-8 italic">No debts added yet.</div>
-                        </div>
-                    </div>
-                    <div class="lg:col-span-2">
-                        <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300 mb-6">
-                            <div class="flex justify-between items-end mb-4">
-                                <div><h2 class="text-2xl font-bold">⚔️ Attack Plan</h2><p class="text-slate-400 text-sm">Drag cards on left to prioritize payoff order.</p></div>
-                                <div class="text-right"><div class="text-xs text-slate-400 uppercase">Debt Free By</div><div class="text-3xl font-bold text-emerald-400">{{ debtPlan.payoffDate }}</div></div>
-                            </div>
-                            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
-                                <div class="flex justify-between text-sm mb-2"><span class="font-bold text-slate-300">Extra Monthly Attack</span><span class="font-mono text-emerald-300">${{ extraDebtPayment }}</span></div>
-                                <input type="range" v-model.number="extraDebtPayment" min="0" max="2000" step="50" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500">
-                                <div class="flex justify-between text-xs text-slate-500 mt-2"><span>$0</span><span>$2,000</span></div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4 mt-6">
-                                <div class="bg-slate-800/50 p-3 rounded"><div class="text-xs text-slate-400 uppercase">Total Interest</div><div class="text-xl font-bold text-red-300">${{ debtPlan.totalInterest.toLocaleString() }}</div></div>
-                                <div class="bg-emerald-900/30 p-3 rounded border border-emerald-900"><div class="text-xs text-emerald-400 uppercase">Interest Saved</div><div class="text-xl font-bold text-emerald-300">${{ debtPlan.savedInterest.toLocaleString() }}</div></div>
-                            </div>
-                        </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Payoff Timeline</h3>
-                            <div class="max-h-[300px] overflow-y-auto space-y-2">
-                                <div v-for="(log, idx) in debtPlan.timeline" :key="idx" class="flex justify-between text-xs border-b pb-2 last:border-0">
-                                    <span class="font-bold w-20 text-slate-400">{{ log.date }}</span>
-                                    <span class="text-slate-700 font-bold flex-1">{{ log.action }}</span>
-                                    <span class="font-mono text-slate-500 text-[10px]">rem: ${{ log.remaining.toLocaleString() }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div v-if="currentView === 'debt'" class="animate-fade-in print:hidden"><div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="lg:col-span-1 space-y-6"><button v-if="!showDebtForm" @click="showDebtForm = true" class="w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-dashed text-slate-500 font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2">+ Add New Liability</button><div v-else class="bg-white p-6 rounded-2xl shadow-lg border border-blue-200 ring-2 ring-blue-50"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm text-slate-800 uppercase">Add Liability</h3><button @click="showDebtForm = false" class="text-slate-400 hover:text-slate-600">&times;</button></div><div class="space-y-3"><input v-model="newDebt.name" type="text" placeholder="Debt Name (e.g. Visa)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><div class="grid grid-cols-2 gap-2"><input v-model="newDebt.balance" type="number" step="0.01" placeholder="Balance ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><input v-model="newDebt.rate" type="number" step="0.01" placeholder="Rate (%)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"></div><input v-model="newDebt.min_payment" type="number" step="0.01" placeholder="Min Payment ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><div class="flex gap-2 pt-2"><button @click="addDebt" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Save Debt</button><button @click="showDebtForm = false" class="px-4 bg-slate-100 text-slate-500 font-bold py-2 rounded-lg text-sm">Cancel</button></div></div></div><div class="space-y-3" id="debt-list-container"><div v-for="(debt, index) in debts" :key="debt.id" :data-id="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group cursor-default"><div class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 cursor-grab sortable-handle p-2 hover:text-slate-500">⋮⋮</div><div class="pl-6 flex justify-between items-start"><div><div class="font-bold text-slate-800">{{ debt.name }}</div><div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div></div><div class="font-mono text-lg font-bold text-slate-700">${{ debt.balance.toLocaleString() }}</div></div><button @click="deleteDebt(debt)" class="absolute top-2 right-2 text-xs text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">Delete</button></div><div v-if="debts.length === 0" class="text-center text-slate-400 py-8 italic">No debts added yet.</div></div></div><div class="lg:col-span-2"><div class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300 mb-6"><div class="flex justify-between items-end mb-4"><div><h2 class="text-2xl font-bold">⚔️ Attack Plan</h2><p class="text-slate-400 text-sm">Drag cards on left to prioritize payoff order.</p></div><div class="text-right"><div class="text-xs text-slate-400 uppercase">Debt Free By</div><div class="text-3xl font-bold text-emerald-400">{{ debtPlan.payoffDate }}</div></div></div><div class="bg-slate-800 p-4 rounded-lg border border-slate-700"><div class="flex justify-between text-sm mb-2"><span class="font-bold text-slate-300">Extra Monthly Attack</span><span class="font-mono text-emerald-300">${{ extraDebtPayment }}</span></div><input type="range" v-model.number="extraDebtPayment" min="0" max="2000" step="50" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500"><div class="flex justify-between text-xs text-slate-500 mt-2"><span>$0</span><span>$2,000</span></div></div><div class="grid grid-cols-2 gap-4 mt-6"><div class="bg-slate-800/50 p-3 rounded"><div class="text-xs text-slate-400 uppercase">Total Interest</div><div class="text-xl font-bold text-red-300">${{ debtPlan.totalInterest.toLocaleString() }}</div></div><div class="bg-emerald-900/30 p-3 rounded border border-emerald-900"><div class="text-xs text-emerald-400 uppercase">Interest Saved</div><div class="text-xl font-bold text-emerald-300">${{ debtPlan.savedInterest.toLocaleString() }}</div></div></div></div><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Payoff Timeline</h3><div class="max-h-[300px] overflow-y-auto space-y-2"><div v-for="(log, idx) in debtPlan.timeline" :key="idx" class="flex justify-between text-xs border-b pb-2 last:border-0"><span class="font-bold w-20 text-slate-400">{{ log.date }}</span><span class="text-slate-700 font-bold flex-1">{{ log.action }}</span><span class="font-mono text-slate-500 text-[10px]">rem: ${{ log.remaining.toLocaleString() }}</span></div></div></div></div></div></div>
 
         </div>
 
@@ -421,6 +373,58 @@
                         <button @click="checkImpulse" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700 transition shadow-lg shadow-purple-200">
                             Run Simulation
                         </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <transition name="fade">
+            <div v-if="showConsultant" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[600px] flex flex-col overflow-hidden">
+                    <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-lg">🤖</div>
+                            <div>
+                                <h3 class="font-bold text-slate-800">Financial Consultant</h3>
+                                <div class="text-[10px] text-slate-400 flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Online
+                                </div>
+                            </div>
+                        </div>
+                        <button @click="showConsultant = false" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" id="chat-container">
+                        <div v-if="chatMessages.length === 0" class="text-center py-8">
+                            <div class="text-4xl mb-2">👋</div>
+                            <p class="text-slate-500 text-sm">I have analyzed your finances.<br>How can I help you today?</p>
+                        </div>
+                        
+                        <div v-for="(msg, i) in chatMessages" :key="i" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+                            <div class="chat-bubble shadow-sm" :class="msg.role === 'user' ? 'chat-user' : 'chat-ai'">
+                                <div v-html="renderMarkdown(msg.text)"></div>
+                            </div>
+                        </div>
+
+                        <div v-if="isThinking" class="flex justify-start">
+                            <div class="chat-bubble chat-ai flex gap-1 items-center h-10">
+                                <div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div>
+                                <div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div>
+                                <div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="chatMessages.length === 0" class="p-4 border-t bg-white grid grid-cols-2 gap-2">
+                        <button @click="sendQuery('Review my budget strictly. Identify non-essential spending and suggest a 15% cut strategy.')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">✂️ Ruthless Review</button>
+                        <button @click="sendQuery('Analyze my debt situation. What is the most efficient payoff method and how much interest is it costing me daily?')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">🔥 Debt Strategy</button>
+                        <button @click="sendQuery('If I lost my main income today, how long could I survive on my current savings based on my survival budget?')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">🛡️ Stress Test</button>
+                        <button @click="sendQuery('Analyze my Safe-to-Spend number. Is it healthy for my income level?')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">💰 Cash Flow Check</button>
+                    </div>
+
+                    <div class="p-3 border-t bg-white flex gap-2">
+                        <input v-model="userQuery" @keyup.enter="sendQuery(userQuery)" type="text" placeholder="Ask anything..." class="flex-1 p-2 border rounded-lg text-sm outline-none focus:border-indigo-500">
+                        <button @click="sendQuery(userQuery)" :disabled="!userQuery" class="bg-indigo-600 text-white px-4 rounded-lg font-bold disabled:opacity-50 hover:bg-indigo-700 transition">Send</button>
                     </div>
                 </div>
             </div>
@@ -452,7 +456,6 @@
             return amount
         }
 
-        // Tax Logic
         const taxBrackets = [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}];
         const calculateFederalTax = (annualInc) => { let tax=0, lower=0; for(const b of taxBrackets){ if(annualInc>b.limit){ tax+=(b.limit-lower)*b.rate; lower=b.limit; } else { tax+=(annualInc-lower)*b.rate; break; } } return tax; }
 
@@ -472,10 +475,15 @@
                 const extraDebtPayment = ref(0)
                 const showPaidBills = ref(false)
 
-                // IMPULSE
+                // IMPULSE & AI
                 const showImpulseModal = ref(false)
                 const impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] })
                 const impulseResult = ref(null)
+                
+                const showConsultant = ref(false)
+                const chatMessages = ref([])
+                const userQuery = ref('')
+                const isThinking = ref(false)
 
                 // UI STATE
                 const showPlanner=ref(false), showAddForm=ref(false), isSubmitting=ref(false), isEditing=ref(false), editingId=ref(null)
@@ -493,33 +501,91 @@
                 let chartInstance = null
                 let dashboardChartInstance = null
 
-                // --- 1. IMPULSE CHECK ---
+                // --- 1. AI ADVISOR LOGIC ---
+                const openConsultant = () => { showConsultant.value = true; nextTick(() => scrollChat()) }
+                
+                const getFinancialSnapshot = () => {
+                    // Packages current state for the "AI"
+                    return {
+                        income: activeMonthlyPay.value,
+                        savings: forecastSettings.value.currentBalance,
+                        total_debt: debts.value.reduce((a,b)=>a+Number(b.balance), 0),
+                        core_burn: budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),
+                        discretionary_burn: budgetItems.value.filter(i=>!i.is_core && !i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),
+                        debt_list: debts.value,
+                        budget_list: budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name, amt:i.amount, core:i.is_core})),
+                        survival_months: (forecastSettings.value.currentBalance / (budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)
+                    }
+                }
+
+                const sendQuery = async (text) => {
+                    if(!text) return
+                    chatMessages.value.push({ role: 'user', text })
+                    userQuery.value = ''
+                    isThinking.value = true
+                    nextTick(scrollChat)
+
+                    // SIMULATED AI LATENCY & LOGIC
+                    setTimeout(() => {
+                        const snapshot = getFinancialSnapshot()
+                        const response = generateMockResponse(text, snapshot)
+                        chatMessages.value.push({ role: 'assistant', text: response })
+                        isThinking.value = false
+                        nextTick(scrollChat)
+                    }, 1200)
+                }
+
+                const generateMockResponse = (query, data) => {
+                    const q = query.toLowerCase()
+                    
+                    // 1. RUTHLESS REVIEW
+                    if (q.includes('ruthless') || q.includes('cut')) {
+                        const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt)
+                        if (nonCore.length === 0) return "You are already running extremely lean. All your listed expenses are marked as 'Core'. Consider increasing income instead."
+                        
+                        let totalWaste = nonCore.reduce((a,b)=>a+b.amt,0)
+                        let top3 = nonCore.slice(0,3).map(i => `• **${i.name}**: $${i.amt}`).join('<br>')
+                        return `I've analyzed your spending. You are spending **$${totalWaste.toLocaleString()}** monthly on non-essentials.<br><br>Here are your top 3 targets to cut:<br>${top3}<br><br>If you cut these by just 50%, you'd save **$${(totalWaste/2).toLocaleString()}** per year.`
+                    }
+
+                    // 2. DEBT STRATEGY
+                    if (q.includes('debt')) {
+                        if (data.debt_list.length === 0) return "You have no debts listed! You are in a great position to build wealth. Focus on maximizing your savings rate."
+                        
+                        const highestRate = [...data.debt_list].sort((a,b)=>b.rate - a.rate)[0]
+                        const totalInterest = data.debt_list.reduce((acc, d) => acc + (d.balance * (d.rate/100/365)), 0)
+                        
+                        return `You currently owe **$${data.total_debt.toLocaleString()}**. <br><br>🚨 **Emergency:** You are losing approximately **$${totalInterest.toFixed(2)} per day** in interest.<br><br>My recommendation: Attack **${highestRate.name}** (${highestRate.rate}%) first. It is mathematically the most expensive liability you own.`
+                    }
+
+                    // 3. STRESS TEST
+                    if (q.includes('stress') || q.includes('survive')) {
+                        return `**Stress Test Results:**<br>Based on your current savings of $${data.savings.toLocaleString()} and a "Survival" burn rate of $${data.core_burn.toLocaleString()}/mo...<br><br>🛑 You have **${data.survival_months} months** of runway.<br><br>${Number(data.survival_months) < 3 ? '⚠️ **Warning:** This is below the recommended 3-6 month safety net. Pause all investing and "Dream" goals immediately.' : '✅ **Good:** You have a healthy safety buffer.'}`
+                    }
+
+                    // DEFAULT
+                    return "I can help with that. Based on your data, your monthly net income is **$" + data.income.toLocaleString() + "** and your core expenses are **$" + data.core_burn.toLocaleString() + "**. <br><br>Try asking for a **Ruthless Review** or a **Stress Test** for more specific advice."
+                }
+
+                const scrollChat = () => {
+                    const el = document.getElementById('chat-container')
+                    if(el) el.scrollTop = el.scrollHeight
+                }
+                
+                const renderMarkdown = (text) => {
+                    return marked.parse(text)
+                }
+
+                // --- 2. IMPULSE CHECK ---
                 const checkImpulse = () => {
                     if (!impulseItem.value.cost) return
-                    
-                    // Simulate
-                    let balance = forecastSettings.value.currentBalance
-                    let minBalance = balance
-                    let safe = true
-                    
-                    // Run a 30-day loop just like the chart
-                    // ... (Simplification: Just check if lowest point in chart - cost < 0)
-                    // Better: re-run logic.
-                    
-                    // Let's defer to the chart rendering logic to visualize it
                     showImpulseModal.value = false
-                    renderDashboardChart() // Will pick up the impulse item if set
-                    
-                    // Calculate Result Text
+                    renderDashboardChart() 
                     if (cashFlowLowPoint.value) {
-                       const futureLow = cashFlowLowPoint.value.amount // This is WITH the impulse now
-                       if (futureLow < 0) {
-                           impulseResult.value = { safe: false, message: `Dangerous! You will hit $${futureLow}!` }
-                       } else if (futureLow < forecastSettings.value.safetyMargin) {
-                           impulseResult.value = { safe: false, message: `Risky. You dip below safety margin ($${futureLow}).` }
-                       } else {
-                           impulseResult.value = { safe: true, message: `Safe! Lowest balance: $${futureLow}` }
-                       }
+                       const futureLow = cashFlowLowPoint.value.amount
+                       if (futureLow < 0) impulseResult.value = { safe: false, message: `Dangerous! You will hit $${futureLow}!` }
+                       else if (futureLow < forecastSettings.value.safetyMargin) impulseResult.value = { safe: false, message: `Risky. You dip below safety margin ($${futureLow}).` }
+                       else impulseResult.value = { safe: true, message: `Safe! Lowest balance: $${futureLow}` }
                     }
                 }
                 const clearImpulse = () => {
@@ -528,7 +594,7 @@
                     renderDashboardChart()
                 }
 
-                // --- 2. DEBT LOGIC ---
+                // --- 3. DEBT LOGIC ---
                 const debtPlan = computed(() => {
                     if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }
                     const simulate = (extra) => {
@@ -561,7 +627,7 @@
                 const deleteDebt = async (debt) => { if (confirm('Delete debt?')) { await _supabase.from('debts').delete().eq('id', debt.id); debts.value = debts.value.filter(d => d.id !== debt.id) } }
                 const updateDebtOrder = async () => { const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index })); for (const u of updates) { await _supabase.from('debts').update({ order_index: u.order_index }).eq('id', u.id) } }
 
-                // --- 3. CALCULATOR ---
+                // --- 4. CALCULATOR ---
                 const calculateAndSave = async (mode) => {
                     savingBase.value = true
                     const { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency } = calcInputs.value
@@ -587,7 +653,7 @@
                     savingBase.value = false; currentView.value = 'budget'
                 }
 
-                // --- 4. FORECAST & DASHBOARD ---
+                // --- 5. FORECAST & DASHBOARD ---
                 const runForecast = () => {
                     let balance = round(forecastSettings.value.currentBalance)
                     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -622,77 +688,34 @@
                 const renderDashboardChart = () => {
                     const ctx = document.getElementById('dashboardChart'); if(!ctx) return;
                     if(dashboardChartInstance) dashboardChartInstance.destroy()
-                    
-                    const labels = []; 
-                    const dataCurrent = []
-                    const dataImpulse = [] // Second line
-                    
-                    let currentSimBalance = forecastSettings.value.currentBalance || 0
-                    let impulseSimBalance = currentSimBalance // Start same
-                    
-                    const today = new Date(); 
-                    let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null
+                    const labels = []; const dataCurrent = []; const dataImpulse = []
+                    let currentSimBalance = forecastSettings.value.currentBalance || 0; let impulseSimBalance = currentSimBalance
+                    const today = new Date(); let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null
                     const freq = calcInputs.value.payFrequency || 'Bi-Weekly'
                     const payAmount = calcResult.value ? calcResult.value.netPay : (dbBasePay.value / (freq === 'Monthly' ? 1 : 2))
-
-                    // Clone pay date for second loop or handle in single pass? Single pass.
-                    // Actually, simpler to run two simulations if we want two distinct lines
-                    
-                    // IMPULSE CONFIG
                     const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false) 
-                    const impulseCost = Number(impulseItem.value.cost)
-                    const impulseDate = impulseItem.value.date
+                    const impulseCost = Number(impulseItem.value.cost); const impulseDate = impulseItem.value.date
 
                     for(let i=0; i<30; i++) {
                         const d = new Date(); d.setDate(today.getDate() + i); const dStr = d.toISOString().split('T')[0]; labels.push(d.getDate())
-                        
-                        // Bills
                         const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr)
                         const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0)
-                        
-                        currentSimBalance -= dailyDrop
-                        impulseSimBalance -= dailyDrop
-                        
-                        // Income
+                        currentSimBalance -= dailyDrop; impulseSimBalance -= dailyDrop
                         if (nextPay && dStr === nextPay.toISOString().split('T')[0]) {
-                            currentSimBalance += payAmount
-                            impulseSimBalance += payAmount
+                            currentSimBalance += payAmount; impulseSimBalance += payAmount
                             if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14)
                             else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15)
                             else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1)
                         }
-                        
-                        // Impulse Event
-                        if (runImpulse && dStr === impulseDate) {
-                            impulseSimBalance -= impulseCost
-                        }
-
-                        dataCurrent.push(currentSimBalance)
-                        dataImpulse.push(impulseSimBalance)
+                        if (runImpulse && dStr === impulseDate) impulseSimBalance -= impulseCost
+                        dataCurrent.push(currentSimBalance); dataImpulse.push(impulseSimBalance)
                     }
-                    
-                    const datasets = [
-                        { label: 'Current', data: dataCurrent, borderColor: '#3B82F6', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.1 }
-                    ]
-                    
-                    // Add Impulse Line if active
-                    if (runImpulse) {
-                        datasets.push({
-                            label: 'With Purchase',
-                            data: dataImpulse,
-                            borderColor: '#9333EA', // Purple
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            fill: false,
-                            tension: 0.1
-                        })
-                    }
-
+                    const datasets = [{ label: 'Current', data: dataCurrent, borderColor: '#3B82F6', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.1 }]
+                    if (runImpulse) datasets.push({ label: 'With Purchase', data: dataImpulse, borderColor: '#9333EA', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0.1 })
                     dashboardChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { display: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, color: '#94a3b8', callback: (val) => '$' + val } } }, plugins: { legend: { display: runImpulse }, tooltip: { enabled: true } } } })
                 }
 
-                // --- 4. COMPUTED ---
+                // --- 6. COMPUTED ---
                 const activeMonthlyPay = computed(() => round(useTempPay.value ? tempCalculatedPay.value : dbBasePay.value))
                 const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + getMonthlyCost(i), 0)))
                 const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + getMonthlyCost(item), 0)))
@@ -710,43 +733,29 @@
                 
                 const safeToSpend = computed(() => {
                     if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value)
-                    
                     if (dashboardMode.value === 'dream') {
                         let burn = 0
                         budgetItems.value.forEach(i => {
-                            if (i.is_wishlist) {
-                                // Add Wishlist Item Cost
-                                burn += getMonthlyCost(i)
-                            } else {
-                                // Add Standard Item Cost UNLESS it is replaced by an active wishlist item
-                                const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id)
-                                if (!replacedBy) burn += getMonthlyCost(i)
-                            }
+                            if (i.is_wishlist) { burn += getMonthlyCost(i) } 
+                            else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i) }
                         })
                         return round(activeMonthlyPay.value - burn)
                     }
-
                     const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc, i) => acc + getMonthlyCost(i), 0)
                     return round(activeMonthlyPay.value - standardBurn)
                 })
 
                 const dashboardBurn = computed(() => round(activeMonthlyPay.value - safeToSpend.value))
                 const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0)
-                
                 const cashFlowLowPoint = computed(() => {
                     if (!dashboardChartInstance) return null
-                    // Get data from the FIRST dataset (Current)
                     const data = dashboardChartInstance.data.datasets[0].data
-                    
-                    // If Impulse is active, we might want to show the impulse low point instead?
-                    // Let's default to showing the 'With Purchase' low point if active
                     const activeData = impulseResult.value ? dashboardChartInstance.data.datasets[1].data : data
-                    
                     const min = Math.min(...activeData); const index = activeData.indexOf(min); const d = new Date(); d.setDate(d.getDate() + index)
                     return { amount: min, date: d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) }
                 })
 
-                // --- 5. HELPERS ---
+                // --- 7. HELPERS ---
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode
                     budgetItems.value.forEach(i => {
@@ -757,16 +766,11 @@
                     })
                     if (mode === 'dream') {
                         const activeWishlist = budgetItems.value.filter(i => i.is_wishlist && i.includedInScenario)
-                        activeWishlist.forEach(w => {
-                            if (w.replaces_id) {
-                                const target = budgetItems.value.find(t => t.id === w.replaces_id)
-                                if (target) target.includedInScenario = false 
-                            }
-                        })
+                        activeWishlist.forEach(w => { if (w.replaces_id) { const target = budgetItems.value.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false } })
                     }
                 }
                 
-                const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { dbBasePay.value = data.base_pay; calcInputs.value = { salary: data.salary||0, commission: data.commission||0, medical: data.medical||0, dental: data.dental||0, fsa: data.fsa||0, postTax: data.post_tax||0, trad401k: data.trad_401k||0, roth401k: data.roth_401k||0, match401k: data.match_401k||0, nextPayDate: data.next_pay_date, payFrequency: data.pay_frequency||'Semi-Monthly' }; forecastSettings.value.currentBalance = data.current_balance || 5000; } }
+                const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { dbBasePay.value = data.base_pay; calcInputs.value = { salary: data.salary||0, commission: data.commission||0, medical: data.medical||0, dental: data.dental||0, fsa: data.fsa||0, postTax: data.post_tax||0, trad401k: data.trad_401k||0, roth401k: data.roth_401k||0, match401k: data.match_401k||0, next_pay_date: data.next_pay_date, pay_frequency: data.pay_frequency||'Semi-Monthly' }; forecastSettings.value.currentBalance = data.current_balance || 5000; } }
                 const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: i.is_core === true })); currentScenarioMode.value = 'survival'; }
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if(data) bills.value = data.sort((a,b) => a.due_date > b.due_date ? 1 : -1) }
                 const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if(data) debts.value = data }
@@ -829,6 +833,7 @@
                     showPaidBills, visibleBills,
                     upcomingBills, safeToSpend, burnRate, cashFlowLowPoint, renderDashboardChart, dashboardMode, dashboardBurn, showDebtForm,
                     showImpulseModal, impulseItem, impulseResult, checkImpulse, clearImpulse,
+                    showConsultant, chatMessages, userQuery, isThinking, openConsultant, sendQuery, renderMarkdown,
                     handleLogin, handleLogout
                 }
             },
