@@ -91,7 +91,7 @@
                                 </div>
                             </div>
                             <div class="text-4xl font-black tracking-tight mt-1" :class="safeToSpend >= 0 ? '' : 'text-red-200'">${{ safeToSpend.toLocaleString() }}</div>
-                            <div class="text-xs text-emerald-100 mt-2 font-medium opacity-80">{{ dashboardMode === 'survival' ? 'Income - Core Bills' : (dashboardMode === 'dream' ? 'Income - (Bills - Replaced + Wishlist)' : 'Income - Standard Bills') }}</div>
+                            <div class="text-xs text-emerald-100 mt-2 font-medium opacity-80">{{ dashboardMode === 'survival' ? 'Net Pay - Core Bills' : (dashboardMode === 'dream' ? 'Net Pay - (Bills - Replaced + Wishlist)' : 'Net Pay - Standard Bills') }}</div>
                         </div>
                     </div>
 
@@ -146,15 +146,26 @@
 
                     <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                         <div class="flex flex-wrap justify-between items-center mb-6 gap-2">
-                            <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-blue-100 text-blue-600 p-1 rounded">📉</span> 30-Day Cash Flow</h3>
+                            <div class="flex items-center gap-3">
+                                <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-blue-100 text-blue-600 p-1 rounded">📉</span> 30-Day Cash Flow</h3>
+                                <button @click="showImpulseModal = true" class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition">🤔 Can I Afford It?</button>
+                            </div>
                             <div class="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase px-2">Balance Now:</span>
                                 <input type="number" v-model.number="forecastSettings.currentBalance" @input="renderDashboardChart" class="w-24 p-1 bg-white border border-slate-200 rounded text-right font-mono font-bold text-sm text-slate-700 outline-none focus:border-blue-500">
                             </div>
                         </div>
+                        
                         <div class="h-64 w-full relative"><canvas id="dashboardChart"></canvas></div>
-                        <div v-if="cashFlowLowPoint" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="cashFlowLowPoint.amount < 0 ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'">
+                        
+                        <div v-if="cashFlowLowPoint && !impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="cashFlowLowPoint.amount < 0 ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'">
                             <span class="text-lg">{{ cashFlowLowPoint.amount < 0 ? '⚠️' : '✅' }}</span> Lowest projected balance: <span class="font-mono font-bold text-sm">${{ cashFlowLowPoint.amount.toLocaleString() }}</span> on {{ cashFlowLowPoint.date }}
+                        </div>
+
+                        <div v-if="impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="impulseResult.safe ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'">
+                            <span class="text-lg">{{ impulseResult.safe ? '✅' : '❌' }}</span> 
+                            <span>{{ impulseResult.message }}</span>
+                            <button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button>
                         </div>
                     </div>
                 </div>
@@ -205,7 +216,10 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-1 mt-1"><span class="text-xl text-slate-400">$</span><div class="text-2xl font-bold w-full text-slate-700">{{ activeMonthlyPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div>
+                        <div v-if="useTempPay" class="text-[10px] text-emerald-600 mt-1 font-bold">Using Calculated Commission Pay</div>
+                        <div v-else class="text-[10px] text-slate-400 mt-1">Using Default Base Pay</div>
                     </div>
+
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
                         <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
@@ -220,6 +234,7 @@
                         </div>
                     </div>
                 </header>
+
                 <div class="mb-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div @click="showPlanner = !showPlanner" class="p-4 bg-slate-50 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition select-none">
                         <h3 class="font-bold text-slate-700 flex items-center gap-2"><span>🔮</span> Manage Budget & Scenarios</h3>
@@ -275,6 +290,7 @@
                         </div>
                     </transition>
                 </div>
+
                 <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
                     <h3 class="text-lg font-bold">📅 Current Bills</h3>
                     <div class="flex gap-2 items-center">
@@ -389,6 +405,27 @@
 
         </div>
 
+        <transition name="fade">
+            <div v-if="showImpulseModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-800">🤔 Impulse Check</h3>
+                        <button @click="showImpulseModal=false" class="text-slate-400 hover:text-slate-600">&times;</button>
+                    </div>
+                    <div class="space-y-4">
+                        <input v-model="impulseItem.name" type="text" placeholder="What is it?" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
+                        <div class="grid grid-cols-2 gap-3">
+                            <input v-model="impulseItem.cost" type="number" placeholder="Price ($)" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
+                            <input v-model="impulseItem.date" type="date" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
+                        </div>
+                        <button @click="checkImpulse" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700 transition shadow-lg shadow-purple-200">
+                            Run Simulation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <transition name="fade"><div v-if="showGenModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg"><div class="p-4 border-b flex justify-between"><h3 class="font-bold">Select Bills</h3><button @click="showGenModal=false">&times;</button></div><div class="p-4 max-h-[60vh] overflow-y-auto space-y-2"><div v-for="item in potentialBills" :key="item.id" class="flex justify-between p-3 border rounded cursor-pointer" :class="item.selected?'border-blue-500 bg-blue-50':''" @click="item.selected=!item.selected"><div>{{ item.name }}</div><input type="checkbox" v-model="item.selected"></div></div><div class="p-4 border-t flex justify-end gap-2"><button @click="showGenModal=false" class="px-4 py-2">Cancel</button><button @click="confirmGenerate" class="px-6 py-2 bg-slate-900 text-white rounded">Add</button></div></div></div></transition>
         <transition name="fade"><div v-if="showProjectModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Add Project Goal</h3><input v-model="newProject.name" placeholder="Project Name" class="w-full p-2 border rounded mb-2"><input v-model="newProject.cost" type="number" step="0.01" placeholder="Total Cost" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button @click="saveProject" class="flex-1 bg-slate-900 text-white py-2 rounded font-bold">Save</button><button @click="showProjectModal=false" class="px-4 py-2 bg-slate-200 rounded">Cancel</button></div></div></div></div></transition>
 
@@ -435,6 +472,11 @@
                 const extraDebtPayment = ref(0)
                 const showPaidBills = ref(false)
 
+                // IMPULSE
+                const showImpulseModal = ref(false)
+                const impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] })
+                const impulseResult = ref(null)
+
                 // UI STATE
                 const showPlanner=ref(false), showAddForm=ref(false), isSubmitting=ref(false), isEditing=ref(false), editingId=ref(null)
                 const newItem = ref({ name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false, replaces_id: null })
@@ -451,7 +493,42 @@
                 let chartInstance = null
                 let dashboardChartInstance = null
 
-                // --- 1. DEBT LOGIC ---
+                // --- 1. IMPULSE CHECK ---
+                const checkImpulse = () => {
+                    if (!impulseItem.value.cost) return
+                    
+                    // Simulate
+                    let balance = forecastSettings.value.currentBalance
+                    let minBalance = balance
+                    let safe = true
+                    
+                    // Run a 30-day loop just like the chart
+                    // ... (Simplification: Just check if lowest point in chart - cost < 0)
+                    // Better: re-run logic.
+                    
+                    // Let's defer to the chart rendering logic to visualize it
+                    showImpulseModal.value = false
+                    renderDashboardChart() // Will pick up the impulse item if set
+                    
+                    // Calculate Result Text
+                    if (cashFlowLowPoint.value) {
+                       const futureLow = cashFlowLowPoint.value.amount // This is WITH the impulse now
+                       if (futureLow < 0) {
+                           impulseResult.value = { safe: false, message: `Dangerous! You will hit $${futureLow}!` }
+                       } else if (futureLow < forecastSettings.value.safetyMargin) {
+                           impulseResult.value = { safe: false, message: `Risky. You dip below safety margin ($${futureLow}).` }
+                       } else {
+                           impulseResult.value = { safe: true, message: `Safe! Lowest balance: $${futureLow}` }
+                       }
+                    }
+                }
+                const clearImpulse = () => {
+                    impulseItem.value = { name: '', cost: '', date: new Date().toISOString().split('T')[0] }
+                    impulseResult.value = null
+                    renderDashboardChart()
+                }
+
+                // --- 2. DEBT LOGIC ---
                 const debtPlan = computed(() => {
                     if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }
                     const simulate = (extra) => {
@@ -484,7 +561,7 @@
                 const deleteDebt = async (debt) => { if (confirm('Delete debt?')) { await _supabase.from('debts').delete().eq('id', debt.id); debts.value = debts.value.filter(d => d.id !== debt.id) } }
                 const updateDebtOrder = async () => { const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index })); for (const u of updates) { await _supabase.from('debts').update({ order_index: u.order_index }).eq('id', u.id) } }
 
-                // --- 2. CALCULATOR ---
+                // --- 3. CALCULATOR ---
                 const calculateAndSave = async (mode) => {
                     savingBase.value = true
                     const { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency } = calcInputs.value
@@ -510,7 +587,7 @@
                     savingBase.value = false; currentView.value = 'budget'
                 }
 
-                // --- 3. FORECAST & DASHBOARD ---
+                // --- 4. FORECAST & DASHBOARD ---
                 const runForecast = () => {
                     let balance = round(forecastSettings.value.currentBalance)
                     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -545,14 +622,26 @@
                 const renderDashboardChart = () => {
                     const ctx = document.getElementById('dashboardChart'); if(!ctx) return;
                     if(dashboardChartInstance) dashboardChartInstance.destroy()
-                    const labels = []; const data = []
-                    let currentSimBalance = forecastSettings.value.currentBalance || 0
-                    const today = new Date(); 
                     
-                    // Payday logic
+                    const labels = []; 
+                    const dataCurrent = []
+                    const dataImpulse = [] // Second line
+                    
+                    let currentSimBalance = forecastSettings.value.currentBalance || 0
+                    let impulseSimBalance = currentSimBalance // Start same
+                    
+                    const today = new Date(); 
                     let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null
                     const freq = calcInputs.value.payFrequency || 'Bi-Weekly'
                     const payAmount = calcResult.value ? calcResult.value.netPay : (dbBasePay.value / (freq === 'Monthly' ? 1 : 2))
+
+                    // Clone pay date for second loop or handle in single pass? Single pass.
+                    // Actually, simpler to run two simulations if we want two distinct lines
+                    
+                    // IMPULSE CONFIG
+                    const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false) 
+                    const impulseCost = Number(impulseItem.value.cost)
+                    const impulseDate = impulseItem.value.date
 
                     for(let i=0; i<30; i++) {
                         const d = new Date(); d.setDate(today.getDate() + i); const dStr = d.toISOString().split('T')[0]; labels.push(d.getDate())
@@ -560,21 +649,47 @@
                         // Bills
                         const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr)
                         const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0)
-                        currentSimBalance -= dailyDrop
                         
-                        // Income Event
+                        currentSimBalance -= dailyDrop
+                        impulseSimBalance -= dailyDrop
+                        
+                        // Income
                         if (nextPay && dStr === nextPay.toISOString().split('T')[0]) {
                             currentSimBalance += payAmount
+                            impulseSimBalance += payAmount
                             if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14)
-                            else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15) // Approx
+                            else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15)
                             else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1)
                         }
+                        
+                        // Impulse Event
+                        if (runImpulse && dStr === impulseDate) {
+                            impulseSimBalance -= impulseCost
+                        }
 
-                        data.push(currentSimBalance)
+                        dataCurrent.push(currentSimBalance)
+                        dataImpulse.push(impulseSimBalance)
                     }
                     
-                    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400); gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)'); gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
-                    dashboardChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Balance', data: data, borderColor: '#3B82F6', borderWidth: 2, pointRadius: 0, backgroundColor: gradient, fill: true, tension: 0.1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { display: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, color: '#94a3b8', callback: (val) => '$' + val } } }, plugins: { legend: { display: false }, tooltip: { enabled: true } } } })
+                    const datasets = [
+                        { label: 'Current', data: dataCurrent, borderColor: '#3B82F6', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.1 }
+                    ]
+                    
+                    // Add Impulse Line if active
+                    if (runImpulse) {
+                        datasets.push({
+                            label: 'With Purchase',
+                            data: dataImpulse,
+                            borderColor: '#9333EA', // Purple
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.1
+                        })
+                    }
+
+                    dashboardChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { display: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, color: '#94a3b8', callback: (val) => '$' + val } } }, plugins: { legend: { display: runImpulse }, tooltip: { enabled: true } } } })
                 }
 
                 // --- 4. COMPUTED ---
@@ -593,7 +708,6 @@
                     return bills.value.filter(b => !b.is_paid && b.due_date <= limitStr).sort((a,b) => a.due_date > b.due_date ? 1 : -1)
                 })
                 
-                // DASHBOARD COMPUTED (FIXED DREAM LOGIC)
                 const safeToSpend = computed(() => {
                     if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value)
                     
@@ -601,11 +715,10 @@
                         let burn = 0
                         budgetItems.value.forEach(i => {
                             if (i.is_wishlist) {
-                                // 1. Add ALL Wishlist items
+                                // Add Wishlist Item Cost
                                 burn += getMonthlyCost(i)
                             } else {
-                                // 2. Add Standard Items ONLY if they are NOT replaced by an active wishlist item
-                                // (Corrected logic: Don't subtract from wishlist, just ignore the standard one)
+                                // Add Standard Item Cost UNLESS it is replaced by an active wishlist item
                                 const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id)
                                 if (!replacedBy) burn += getMonthlyCost(i)
                             }
@@ -613,7 +726,6 @@
                         return round(activeMonthlyPay.value - burn)
                     }
 
-                    // Standard (Default)
                     const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc, i) => acc + getMonthlyCost(i), 0)
                     return round(activeMonthlyPay.value - standardBurn)
                 })
@@ -623,8 +735,14 @@
                 
                 const cashFlowLowPoint = computed(() => {
                     if (!dashboardChartInstance) return null
+                    // Get data from the FIRST dataset (Current)
                     const data = dashboardChartInstance.data.datasets[0].data
-                    const min = Math.min(...data); const index = data.indexOf(min); const d = new Date(); d.setDate(d.getDate() + index)
+                    
+                    // If Impulse is active, we might want to show the impulse low point instead?
+                    // Let's default to showing the 'With Purchase' low point if active
+                    const activeData = impulseResult.value ? dashboardChartInstance.data.datasets[1].data : data
+                    
+                    const min = Math.min(...activeData); const index = activeData.indexOf(min); const d = new Date(); d.setDate(d.getDate() + index)
                     return { amount: min, date: d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) }
                 })
 
@@ -710,6 +828,7 @@
                     newDebt, extraDebtPayment, addDebt, deleteDebt, debtPlan,
                     showPaidBills, visibleBills,
                     upcomingBills, safeToSpend, burnRate, cashFlowLowPoint, renderDashboardChart, dashboardMode, dashboardBurn, showDebtForm,
+                    showImpulseModal, impulseItem, impulseResult, checkImpulse, clearImpulse,
                     handleLogin, handleLogout
                 }
             },
