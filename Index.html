@@ -17,19 +17,30 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans selection:bg-emerald-100">
     <div id="app" v-cloak class="max-w-6xl mx-auto p-4 md:p-8 pb-20">
+        
         <div v-if="!session" class="min-h-[80vh] flex flex-col items-center justify-center">
             <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-100 text-center">
-                <div class="text-6xl mb-6">🔐</div><h1 class="text-2xl font-black mb-2 text-slate-900">Finance Master</h1><p class="text-slate-400 text-sm mb-6">Enter your email to access your dashboard.</p>
-                <input v-model="authEmail" type="email" placeholder="name@example.com" class="w-full p-4 border border-slate-200 rounded-xl mb-4 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500" @keyup.enter="handleLogin">
-                <button @click="handleLogin" :disabled="loading" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 disabled:opacity-50 shadow-lg">{{ loading?'Sending...':'Send Magic Link' }}</button>
-                <p v-if="authMessage" class="mt-4 text-emerald-600 text-sm p-2 bg-emerald-50 rounded">{{ authMessage }}</p>
+                <div class="text-6xl mb-6">🔐</div>
+                <h1 class="text-2xl font-black mb-2 text-slate-900">Finance Master</h1>
+                <p class="text-slate-400 text-sm mb-6">Login or Create Account</p>
+                <div class="space-y-3">
+                    <input v-model="authEmail" type="email" placeholder="Email" class="w-full p-4 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-emerald-500">
+                    <input v-model="authPassword" type="password" placeholder="Password" class="w-full p-4 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <button @click="handleLogin" :disabled="loading" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800">Log In</button>
+                    <button @click="handleSignUp" :disabled="loading" class="w-full bg-white text-slate-900 border font-bold py-4 rounded-xl hover:bg-slate-50">Sign Up</button>
+                </div>
+                <p v-if="authMessage" class="mt-4 text-emerald-600 text-sm p-2 bg-emerald-50 rounded font-bold">{{ authMessage }}</p>
             </div>
         </div>
+
         <div v-else>
             <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 print:hidden">
                 <div class="w-full md:w-auto flex justify-between items-center"><div><h1 class="text-2xl font-black text-slate-900 tracking-tight">Finance<span class="text-emerald-500">Master</span></h1><div class="text-xs text-slate-400 font-medium">{{ session.user.email }}</div></div><button @click="handleLogout" class="md:hidden text-xs font-bold text-red-400 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition">Sign Out</button></div>
                 <div class="flex items-center gap-4 w-full md:w-auto"><div class="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-100 overflow-x-auto w-full md:w-auto no-scrollbar"><button @click="currentView='dashboard'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='dashboard'?'bg-slate-900 text-white shadow':'text-slate-500 hover:text-slate-900'"><span>🏠</span> Home</button><button @click="currentView='calculator'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='calculator'?'bg-slate-900 text-white shadow':'text-slate-500 hover:text-slate-900'"><span>🧮</span> Paycheck</button><button @click="currentView='budget'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='budget'?'bg-slate-900 text-white shadow':'text-slate-500 hover:text-slate-900'"><span>💸</span> Budget</button><button @click="currentView='forecast'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='forecast'?'bg-slate-900 text-white shadow':'text-slate-500 hover:text-slate-900'"><span>📈</span> Forecast</button><button @click="currentView='debt'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='debt'?'bg-red-500 text-white shadow':'text-slate-500 hover:text-red-600'"><span>⚔️</span> Debt</button><div class="w-px h-6 bg-slate-200 mx-1 self-center"></div><button @click="openConsultant" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap bg-indigo-600 text-white shadow hover:bg-indigo-700"><span>🤖</span> Advisor</button></div><button @click="handleLogout" class="hidden md:block text-xs font-bold text-red-400 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition">Sign Out</button></div>
             </div>
+
             <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 text-white relative overflow-hidden group"><div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">💰</div><div class="relative z-10"><div class="flex justify-between items-start mb-2"><h3 class="text-xs font-bold text-emerald-100 uppercase tracking-widest">Safe To Spend</h3><div class="flex bg-black/20 rounded-lg p-0.5 backdrop-blur-sm"><button @click="dashboardMode='survival'" class="px-2 py-0.5 text-[10px] rounded font-bold" :class="dashboardMode==='survival'?'bg-white text-emerald-600':'text-emerald-100'">🛡️</button><button @click="dashboardMode='standard'" class="px-2 py-0.5 text-[10px] rounded font-bold" :class="dashboardMode==='standard'?'bg-white text-emerald-600':'text-emerald-100'">⚖️</button><button @click="dashboardMode='dream'" class="px-2 py-0.5 text-[10px] rounded font-bold" :class="dashboardMode==='dream'?'bg-white text-emerald-600':'text-emerald-100'">🚀</button></div></div><div class="text-4xl font-black tracking-tight mt-1" :class="safeToSpend>=0?'':'text-red-200'">${{safeToSpend.toLocaleString()}}</div><div class="text-xs text-emerald-100 mt-2 font-medium opacity-80">{{dashboardMode==='survival'?'Net Pay - Core Bills':(dashboardMode==='dream'?'Net Pay - (Bills - Replaced + Wishlist)':'Net Pay - Standard Bills')}}</div></div></div>
@@ -42,6 +53,7 @@
                 </div>
                 <div class="mt-12 mb-8 text-center border-t border-slate-200 pt-8 opacity-50 hover:opacity-100 transition"><p class="text-[10px] text-slate-400 uppercase font-bold mb-2">Development Tools</p><button @click="resetDemo" class="text-xs bg-red-50 text-red-500 border border-red-100 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition">⚠️ Reset Account & Test Onboarding</button></div>
             </div>
+
             <div v-if="currentView==='calculator'" class="animate-fade-in print:hidden"><div class="grid grid-cols-1 md:grid-cols-2 gap-8"><div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200"><h2 class="text-lg font-bold mb-4 flex items-center gap-2">📝 Paycheck Inputs</h2><div class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Next Pay Date</label><input v-model="calcInputs.nextPayDate" type="date" class="w-full h-11 px-3 border border-slate-300 rounded-lg bg-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Frequency</label><select v-model="calcInputs.payFrequency" class="w-full h-11 px-3 border border-slate-300 rounded-lg bg-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Semi-Monthly">Semi-Monthly (15th/30th)</option><option value="Bi-Weekly">Bi-Weekly (Every 2w)</option><option value="Monthly">Monthly</option></select></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Annual Salary</label><input v-model="calcInputs.salary" type="number" class="w-full p-3 border border-slate-200 rounded-lg bg-slate-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Commission</label><input v-model="calcInputs.commission" type="number" class="w-full p-3 border border-slate-200 rounded-lg bg-slate-50"></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Post-Tax</label><input v-model="calcInputs.postTax" type="number" class="w-full p-3 border border-slate-200 rounded-lg bg-slate-50"></div></div><div class="grid grid-cols-3 gap-2"><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Medical</label><input v-model="calcInputs.medical" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dental</label><input v-model="calcInputs.dental" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">FSA</label><input v-model="calcInputs.fsa" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div></div><div class="grid grid-cols-3 gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100"><div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Trad 401k %</label><input v-model="calcInputs.trad401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div><div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Roth 401k %</label><input v-model="calcInputs.roth401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div><div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Match %</label><input v-model="calcInputs.match401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2"><button @click="calculateAndSave('default')" :disabled="savingBase" class="bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition text-sm">{{ savingBase?'Saving...':'💾 Save as Base Pay' }}</button><button @click="calculateAndSave('temp')" class="bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-emerald-500 transition text-sm">⚡ Use for Session</button></div></div></div><div class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300"><h2 class="text-lg font-bold mb-4 text-emerald-400">💰 Results Per Paycheck</h2><div v-if="calcResult" class="space-y-4 text-sm font-mono"><div class="flex justify-between border-b border-slate-700 pb-2"><span>Gross Pay:</span> <span>${{ calcResult.gross.toFixed(2) }}</span></div><div class="flex justify-between text-slate-400"><span>- Pre-Tax / 401k:</span> <span>${{ calcResult.preTaxTotal.toFixed(2) }}</span></div><div class="flex justify-between text-slate-400"><span>- Taxes (Fed/FICA):</span> <span>${{ calcResult.taxes.toFixed(2) }}</span></div><div class="flex justify-between text-slate-400 pb-2 border-b border-slate-700"><span>- Post-Tax Ded:</span> <span>${{ calcResult.postTaxTotal.toFixed(2) }}</span></div><div class="flex justify-between text-xl font-bold text-emerald-300 pt-2"><span>Net Pay:</span> <span>${{ calcResult.netPay.toFixed(2) }}</span></div><div class="bg-slate-800 p-4 rounded-xl mt-6 text-center border border-slate-700"><div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Monthly Income (approx)</div><div class="text-3xl font-bold text-white">${{ (calcResult.netPay * (calcInputs.payFrequency === 'Monthly' ? 1 : 2)).toLocaleString(undefined,{minimumFractionDigits:2}) }}</div></div></div><div v-else class="text-center text-slate-500 py-12">Click a button to calculate.</div></div></div></div>
             <div v-if="currentView==='budget'" class="animate-fade-in print:hidden"><header class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4"><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><div class="flex justify-between items-start"><h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Monthly Pay</h2><div v-if="tempCalculatedPay && tempCalculatedPay !== dbBasePay" class="flex items-center gap-1 bg-slate-100 rounded p-0.5"><button @click="useTempPay = false" class="text-[10px] px-2 py-0.5 rounded" :class="!useTempPay ? 'bg-white shadow text-slate-900 font-bold' : 'text-slate-400'">Base</button><button @click="useTempPay = true" class="text-[10px] px-2 py-0.5 rounded" :class="useTempPay ? 'bg-emerald-100 text-emerald-700 font-bold' : 'text-slate-400'">Comm.</button></div></div><div class="flex items-center gap-1 mt-1"><span class="text-xl text-slate-400">$</span><div class="text-2xl font-bold w-full text-slate-700">{{ activeMonthlyPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div><div v-if="useTempPay" class="text-[10px] text-emerald-600 mt-1 font-bold">Using Calculated Commission Pay</div><div v-else class="text-[10px] text-slate-400 mt-1">Using Default Base Pay</div></div><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2><div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div class="text-[10px] text-slate-400 mt-1">Includes smoothed Quarterly/Yearly items</div></div><div class="bg-slate-900 text-white p-4 rounded-2xl shadow-xl shadow-slate-300 relative overflow-hidden"><div class="relative z-10"><h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2"><span :class="isScenarioActive ? 'text-emerald-400' : 'text-slate-400'">{{ isScenarioActive ? '⚡ Active' : 'Projected End' }}</span></h2><div class="text-3xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">${{ projectedBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div></div></header><div class="mb-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div @click="showPlanner = !showPlanner" class="p-4 bg-slate-50 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition select-none"><h3 class="font-bold text-slate-700 flex items-center gap-2"><span>🔮</span> Manage Budget & Scenarios</h3><div class="text-slate-400 transform transition-transform" :class="showPlanner ? 'rotate-180' : ''">▼</div></div><transition name="accordion"><div v-if="showPlanner" class="border-t border-slate-200 bg-white"><div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-8"><div><div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-lg"><button @click="setScenarioMode('survival')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'survival' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🛡️ Survival</button><button @click="setScenarioMode('standard')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'standard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">⚖️ Standard</button><button @click="setScenarioMode('dream')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'dream' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🚀 Dream</button></div><h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Active Bills</h4><div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-6"><div v-for="item in standardItems" :key="item.id" class="flex items-center justify-between p-3 border rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-white' : 'bg-slate-50 opacity-50 grayscale'"><div class="flex-1"><div class="flex items-center gap-1"><span v-if="item.is_core" class="text-xs">⭐</span><div class="font-bold text-sm">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 px-1">✏️</button><button @click="deleteBudgetItem(item)" class="text-xs text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1">🗑️</button></div><div class="text-xs text-slate-500 font-mono flex gap-1">${{ item.amount.toFixed(2) }} <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded flex items-center gap-1">{{ item.frequency }} <span class="text-purple-400 font-normal">(~${{ getMonthlyCost(item).toFixed(0) }}/mo)</span></span></div></div><input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 cursor-pointer"></div></div><h4 class="text-xs font-bold text-purple-400 uppercase mb-2 flex items-center gap-2">✨ Wishlist / Sandbox <span class="text-[9px] bg-purple-100 text-purple-600 px-1 rounded">Not Billed</span></h4><div class="space-y-2 max-h-[300px] overflow-y-auto pr-2"><div v-for="item in wishlistItems" :key="item.id" class="flex items-center justify-between p-3 border border-purple-100 rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-purple-50' : 'bg-slate-50 opacity-50 grayscale'"><div><div class="flex items-center gap-1"><div class="font-bold text-sm text-purple-900">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 px-1">✏️</button><button @click="deleteBudgetItem(item)" class="text-xs text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1">🗑️</button></div><div class="text-xs text-purple-700 font-mono">${{ item.amount.toFixed(2) }}</div></div><input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 border-purple-200 cursor-pointer"></div><div v-if="wishlistItems.length === 0" class="text-xs text-slate-400 italic p-2 text-center">No items. Create one and check "Wishlist".</div></div></div><div class="bg-slate-50 p-4 rounded-xl border h-fit transition-all" :class="isEditing ? 'bg-white border-blue-300 ring-2 ring-blue-100' : ''"><div class="flex justify-between items-center cursor-pointer" @click="showAddForm = !showAddForm"><h4 class="text-sm font-bold text-slate-700">{{ isEditing ? 'Edit Item' : 'Add Item' }}</h4><span>{{ showAddForm ? '-' : '+' }}</span></div><div v-if="showAddForm" class="mt-3 space-y-3 pt-3 border-t"><input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded-lg text-sm"><div class="grid grid-cols-2 gap-2"><input v-model="newItem.amount" type="number" step="0.01" placeholder="$" class="w-full p-2 border rounded-lg text-sm"><input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" placeholder="Day" class="w-full p-2 border rounded-lg text-sm"><div v-else class="text-center text-sm text-slate-400 p-2 border bg-slate-100 rounded-lg">Flex</div></div><div class="grid grid-cols-2 gap-2"><label class="flex items-center gap-2 text-xs"><input type="checkbox" v-model="newItem.isFlexible"> Flexible Date</label><select v-model="newItem.frequency" class="w-full p-2 border rounded-lg text-xs"><option>Monthly</option><option>Quarterly</option><option>Yearly</option><option>One-Time</option></select></div><div class="flex flex-col gap-2 p-2 bg-white rounded-lg border"><label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_core"> Core Item</label><label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_autopay"> Autopay</label><label class="text-sm flex gap-2 cursor-pointer text-purple-700 font-bold"><input type="checkbox" v-model="newItem.is_wishlist"> ✨ Wishlist / Sandbox</label><div v-if="newItem.is_wishlist" class="mt-2 pt-2 border-t"><label class="text-xs font-bold text-slate-500 uppercase block mb-1">Replaces existing bill?</label><select v-model="newItem.replaces_id" class="w-full p-1.5 border rounded text-xs"><option :value="null">-- None --</option><option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option></select></div></div><div class="flex gap-2"><button @click="handleSave" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Save</button><button v-if="isEditing" @click="resetForm" class="px-4 bg-slate-200 rounded-lg text-sm">Cancel</button></div></div></div></div></div></transition></div><div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2"><h3 class="text-lg font-bold">📅 Current Bills</h3><div class="flex gap-2 items-center"><button @click="showPaidBills = !showPaidBills" class="text-xs px-2 py-1 rounded border border-slate-200 text-slate-500 hover:bg-slate-100 transition">{{ showPaidBills ? 'Hide Paid' : 'Show Paid' }}</button><button @click="openGenerateModal(0)" class="flex-1 md:flex-none text-xs bg-slate-900 text-white px-3 py-2 rounded shadow">+ Review & Add</button><button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600 px-2">Refresh</button></div></div><div class="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><table class="w-full text-left"><thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead><tbody class="divide-y divide-slate-100"><tr v-if="visibleBills.length === 0"><td colspan="5" class="p-8 text-center text-slate-400">All bills paid! 🎉</td></tr><tr v-for="bill in visibleBills" :key="bill.id" class="group hover:bg-slate-50" :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}"><td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td><td class="p-4 text-xs font-bold"><span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span><span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span><span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 px-2 py-1 bg-orange-100 rounded">TODAY</span><span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span><span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span></td><td class="p-4 font-medium">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td><td class="p-4 text-right font-mono">${{ bill.budget_items.amount.toFixed(2) }}</td><td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td></tr></tbody></table></div><div class="md:hidden space-y-3"><div v-if="visibleBills.length === 0" class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">All bills paid! 🎉</div><div v-for="bill in visibleBills" :key="bill.id" class="bg-white p-4 rounded-xl shadow-sm border" :class="{'bg-green-50 border-green-200': bill.is_paid, 'bg-red-50 border-red-200': !bill.is_paid && getDaysLeft(bill.due_date) < 0}"><div class="flex justify-between items-start mb-2"><div><div class="font-bold text-slate-800">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a></div><div class="flex gap-1 mt-1"><span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span><span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span></div></div><div class="font-mono text-lg text-slate-700">${{ bill.budget_items.amount.toFixed(2) }}</div></div><div class="flex justify-between items-center text-sm mb-3 text-slate-500"><span>{{ bill.budget_items.due_day === 0 ? 'Flexible' : formatDate(bill.due_date) }}</span><span v-if="!bill.is_paid" :class="getDaysLeft(bill.due_date) < 0 ? 'text-red-600 font-bold' : (getDaysLeft(bill.due_date) <= 3 ? 'text-orange-500 font-bold' : 'text-slate-400')">{{ getDaysLeft(bill.due_date) < 0 ? 'Overdue' : getDaysLeft(bill.due_date) + ' days' }}</span></div><div class="flex justify-between pt-3 border-t"><button @click="deleteBill(bill)" class="text-slate-300">🗑️ Remove</button><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5"></div></div></div></div>
             <div v-if="currentView==='forecast'" class="animate-fade-in"><div class="grid grid-cols-1 lg:grid-cols-4 gap-6"><div class="lg:col-span-1 space-y-4 print:hidden"><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3><label class="block text-xs mb-1">Bank Balance Now</label><input v-model="forecastSettings.currentBalance" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Safety Margin</label><input v-model="forecastSettings.safetyMargin" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Months to Forecast</label><select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg bg-slate-50"><option v-for="n in 24" :value="n">{{ n }} Months</option></select><button @click="runForecast" class="w-full mt-3 bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800">Refresh Forecast</button></div><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3><button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button><button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button></div><div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100"><div class="font-bold text-blue-900">{{ project.name }}</div><div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div><div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div></div><div v-else class="text-xs text-slate-400 italic text-center py-2">No active goals</div></div></div><div class="lg:col-span-3 print:col-span-4 space-y-6"><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 print:border-0 print:shadow-none"><div class="flex justify-between items-center mb-2 print:hidden"><h3 class="font-bold">{{ project ? project.name + ' Projection' : 'Financial Projection' }}</h3><button @click="printReport" class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🖨️ Print Report</button></div><canvas id="forecastChart" style="max-height: 300px; width: 100%;"></canvas></div><div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none"><div class="p-4 border-b bg-slate-50 font-bold text-sm text-slate-500 print:bg-white print:border-b-2 print:text-black">Monthly Details</div><div v-for="(month, idx) in forecastData" :key="idx" class="border-b last:border-0 print:border-slate-200 no-break"><div @click="month.isOpen = !month.isOpen" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 print:cursor-default"><div class="font-bold text-sm text-slate-700">{{ month.name }}</div><div class="flex gap-4 text-sm font-mono"><span class="text-slate-400">In: ${{ month.income.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span><span :class="month.endBalance < 0 ? 'text-red-500' : 'text-emerald-600'">End: ${{ month.endBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span><span class="text-slate-300 text-xs transform transition print:hidden" :class="month.isOpen ? 'rotate-180' : ''">▼</span></div></div><div v-if="month.isOpen" class="p-3 bg-slate-50 text-xs border-t print:bg-white print:block"><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 print:grid-cols-2"><div class="print:hidden"><div class="flex justify-between items-center mb-1"><label class="block font-bold text-slate-400">Total Income</label><button v-if="tempCalculatedPay && tempCalculatedPay !== month.income" @click="month.income = tempCalculatedPay; runForecast()" class="text-[10px] text-emerald-600 font-bold hover:underline">Apply Calc Pay (${{ tempCalculatedPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }})</button><button v-else-if="dbBasePay !== month.income" @click="month.income = dbBasePay; runForecast()" class="text-[10px] text-blue-500 hover:underline">Reset to Base</button></div><input type="number" v-model.number="month.income" @change="runForecast" step="0.01" class="p-1 border rounded w-full"></div><div class="flex flex-col justify-center"><div class="text-slate-500">Core Burn: <span class="font-mono text-red-400">-${{ coreExpenses.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div><div class="text-slate-500">Optional: <span class="font-mono text-orange-400">-${{ month.extraExpenses.reduce((a,b)=>a+b.amount,0).toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div></div></div><div class="bg-orange-50/50 p-2 rounded border border-orange-100 print:bg-white print:border-0"><h6 class="font-bold text-orange-400 mb-2 print:text-black">Optional Expenses</h6><div class="space-y-2 mb-2"><div v-for="(exp, eIdx) in month.extraExpenses" :key="eIdx" class="flex justify-between items-center bg-white p-1 px-2 rounded border border-orange-100 shadow-sm print:border-0 print:shadow-none print:px-0"><span>{{ exp.name }}</span><div class="flex items-center gap-2"><span class="font-mono">${{ exp.amount.toFixed(2) }}</span><button @click="month.extraExpenses.splice(eIdx, 1); runForecast()" class="text-red-400 hover:text-red-600 font-bold print:hidden">&times;</button></div></div><div v-if="month.extraExpenses.length === 0" class="text-slate-400 italic text-center py-1">None added</div></div><div class="flex gap-2 items-end print:hidden"><div class="flex-1"><select v-model="month.newExpenseId" @change="fillExpense(month)" class="w-full p-1 border rounded text-xs mb-1"><option value="">-- Pick from Budget --</option><option v-for="item in budgetItems" :value="item.id">{{ item.name }} (${{ item.amount.toFixed(2) }})</option></select><input v-model="month.newExpenseName" placeholder="Name" class="w-full p-1 border rounded"></div><div class="w-20"><input v-model.number="month.newExpenseAmount" type="number" step="0.01" placeholder="$" class="w-full p-1 border rounded"></div><button @click="addExpense(month)" class="bg-orange-400 text-white px-3 py-1 rounded font-bold hover:bg-orange-500">Add</button></div></div></div></div></div></div></div></div>
@@ -53,13 +65,12 @@
         <transition name="fade"><div v-if="showGenModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]"><div class="p-4 border-b bg-slate-50 flex justify-between items-center"><h3 class="font-bold">Generate Bills</h3><button @click="showGenModal=false" class="text-slate-400 hover:text-slate-600">&times;</button></div><div class="flex p-2 bg-slate-100 border-b"><button @click="openGenerateModal(0)" class="flex-1 py-1 text-xs font-bold rounded transition" :class="generateMonthOffset === 0 ? 'bg-white shadow text-slate-800' : 'text-slate-400'">This Month</button><button @click="openGenerateModal(1)" class="flex-1 py-1 text-xs font-bold rounded transition" :class="generateMonthOffset === 1 ? 'bg-white shadow text-slate-800' : 'text-slate-400'">Next Month</button></div><div class="p-4 overflow-y-auto flex-1 space-y-2"><div v-if="potentialBills.length === 0" class="text-center text-slate-400 py-8 text-sm">No missing bills found for this month! 🎉</div><div v-for="item in potentialBills" :key="item.id" class="flex justify-between p-3 border rounded cursor-pointer hover:bg-slate-50" :class="item.selected?'border-blue-500 bg-blue-50':''" @click="item.selected=!item.selected"><div>{{ item.name }}</div><div class="flex items-center gap-3"><span class="text-slate-400 text-sm">${{ item.amount }}</span><input type="checkbox" v-model="item.selected" class="accent-blue-600"></div></div></div><div class="p-4 border-t flex justify-end gap-2 bg-white"><button @click="showGenModal=false" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded">Cancel</button><button @click="confirmGenerate" class="px-6 py-2 bg-slate-900 text-white rounded font-bold hover:bg-slate-800">Add {{ potentialBills.filter(i=>i.selected).length }} Bills</button></div></div></div></transition>
         <transition name="fade"><div v-if="showProjectModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Add Project Goal</h3><input v-model="newProject.name" placeholder="Project Name" class="w-full p-2 border rounded mb-2"><input v-model="newProject.cost" type="number" step="0.01" placeholder="Total Cost" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button @click="saveProject" class="flex-1 bg-slate-900 text-white py-2 rounded font-bold">Save</button><button @click="showProjectModal=false" class="px-4 py-2 bg-slate-200 rounded">Cancel</button></div></div></div></div></transition>
     </div>
-
     <script>
         const {createApp,ref,computed,onMounted,nextTick,watch}=Vue;const{createClient}=supabase;
         
         // ⚠️ REPLACE KEYS BELOW ⚠️
-        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co'
-        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'
+        const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
         
         const _supabase = createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
         const round=(n)=>Math.round((n+Number.EPSILON)*100)/100;
@@ -69,7 +80,7 @@
         
         createApp({
             setup(){
-                const session=ref(null),authEmail=ref(''),loading=ref(false),authMessage=ref(''),currentView=ref('dashboard');
+                const session=ref(null),authEmail=ref(''),authPassword=ref(''),loading=ref(false),authMessage=ref(''),currentView=ref('dashboard');
                 const dbBasePay=ref(0),tempCalculatedPay=ref(0),useTempPay=ref(false),budgetItems=ref([]),bills=ref([]),debts=ref([]);
                 const showOnboarding=ref(false),onboardingStep=ref(1),onboardingData=ref({balance:'',safety:'',billName:'',billAmount:'',wishName:'',wishAmount:'',goalName:'',goalCost:''});
                 const calcInputs=ref({salary:0,commission:0,medical:0,dental:0,fsa:0,postTax:0,trad401k:0,roth401k:0,match401k:0,nextPayDate:'',payFrequency:'Semi-Monthly'});
@@ -82,7 +93,6 @@
                 const showConsultant=ref(false),chatMessages=ref([]),userQuery=ref(''),isThinking=ref(false),lowPointData=ref({amount:0,date:'-'});
                 let chartInstance=null,dashboardChartInstance=null;
                 
-                const resetDemo=async()=>{if(!confirm("⚠️ WARNING: This will DELETE ALL DATA to reset the demo. Are you sure?"))return;loading.value=true;await _supabase.from('ledger').delete().neq('id',0);await _supabase.from('budget_items').delete().neq('id',0);await _supabase.from('debts').delete().neq('id',0);await _supabase.from('user_settings').delete().neq('user_id','0000');window.location.reload()};
                 const nextOnboardingStep=async()=>{if(onboardingStep.value===4)await finishOnboarding();else onboardingStep.value++};
                 const finishOnboarding=async()=>{isSubmitting.value=true;const{balance,safety,billName,billAmount,wishName,wishAmount,goalName,goalCost}=onboardingData.value;
                     if(balance||safety){forecastSettings.value.currentBalance=balance||0;forecastSettings.value.safetyMargin=safety||0;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,current_balance:balance,safety_margin:safety})}
@@ -123,6 +133,7 @@
                 const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
                 const clearImpulse=()=>{impulseItem.value={name:'',cost:'',date:new Date().toISOString().split('T')[0]};impulseResult.value=null;renderDashboardChart()};
                 const setScenarioMode=(mode)=>{currentScenarioMode.value=mode;budgetItems.value.forEach(i=>{if(i.frequency==='One-Time'){i.includedInScenario=false;return}if(mode==='survival')i.includedInScenario=i.is_core===true;if(mode==='standard')i.includedInScenario=i.is_wishlist===false;if(mode==='dream')i.includedInScenario=true});if(mode==='dream'){const activeWishlist=budgetItems.value.filter(i=>i.is_wishlist&&i.includedInScenario);activeWishlist.forEach(w=>{if(w.replaces_id){const target=budgetItems.value.find(t=>t.id===w.replaces_id);if(target)target.includedInScenario=false}})}};
+                const resetDemo=async()=>{if(!confirm("⚠️ WARNING: This will DELETE ALL DATA to reset the demo. Are you sure?"))return;loading.value=true;await _supabase.from('ledger').delete().neq('id',0);await _supabase.from('budget_items').delete().neq('id',0);await _supabase.from('debts').delete().neq('id',0);await _supabase.from('user_settings').delete().neq('user_id','0000');window.location.reload()};
                 const fetchSettings=async()=>{const{data}=await _supabase.from('user_settings').select('*').eq('user_id',session.value.user.id).single();if(data){dbBasePay.value=data.base_pay;calcInputs.value={salary:data.salary||0,commission:data.commission||0,medical:data.medical||0,dental:data.dental||0,fsa:data.fsa||0,postTax:data.post_tax||0,trad401k:data.trad_401k||0,roth401k:data.roth_401k||0,match401k:data.match_401k||0,nextPayDate:data.next_pay_date,payFrequency:data.pay_frequency||'Semi-Monthly'};forecastSettings.value.currentBalance=data.current_balance||5000;forecastSettings.value.safetyMargin=data.safety_margin||2000}};
                 const fetchBudgetItems=async()=>{const{data}=await _supabase.from('budget_items').select('*').eq('is_active',true).order('amount',{ascending:false});if(data)budgetItems.value=data.map(i=>({...i,includedInScenario:i.is_core===true}));currentScenarioMode.value='survival'};
                 const fetchBills=async()=>{const{data}=await _supabase.from('ledger').select('*, budget_items(*)');if(data)bills.value=data.sort((a,b)=>a.due_date>b.due_date?1:-1)};
@@ -138,8 +149,11 @@
                 const deleteBill=async(bill)=>{if(confirm('Delete?')){await _supabase.from('ledger').delete().eq('id',bill.id);fetchBills()}};
                 const toggleBillPaid=async(bill)=>{await _supabase.from('ledger').update({is_paid:bill.is_paid}).eq('id',bill.id)};
                 const saveBasePay=async()=>{savingBase.value=true;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,base_pay:dbBasePay.value});savingBase.value=false};
-                const handleLogin=async()=>{loading.value=true;await _supabase.auth.signInWithOtp({email:authEmail.value,options:{emailRedirectTo:window.location.href}});authMessage.value="Link Sent!";loading.value=false};
+                
+                const handleLogin=async()=>{loading.value=true;const{error}=await _supabase.auth.signInWithPassword({email:authEmail.value,password:authPassword.value});if(error)authMessage.value=error.message;loading.value=false};
+                const handleSignUp=async()=>{loading.value=true;const{error}=await _supabase.auth.signUp({email:authEmail.value,password:authPassword.value});if(error)authMessage.value=error.message;else authMessage.value="Success! Log in now.";loading.value=false};
                 const handleLogout=async()=>{await _supabase.auth.signOut();session.value=null};
+                
                 const applyCoreOnly=()=>budgetItems.value.forEach(i=>i.includedInScenario=i.is_core);
                 const applyAll=()=>budgetItems.value.forEach(i=>i.includedInScenario=true);
                 const getDaysLeft=(d)=>Math.ceil((new Date(d)-new Date().setHours(0,0,0,0))/(86400000));
@@ -155,689 +169,7 @@
                 watch(currentView,(val)=>{if(val==='debt'){nextTick(()=>{const el=document.getElementById('debt-list-container');if(el){new Sortable(el,{handle:'.sortable-handle',animation:150,onEnd:(evt)=>{const item=debts.value.splice(evt.oldIndex,1)[0];debts.value.splice(evt.newIndex,0,item);updateDebtOrder()}})}})}if(val==='forecast')nextTick(runForecast);if(val==='dashboard')nextTick(renderDashboardChart)});
                 watch(()=>forecastSettings.value.currentBalance,(newVal)=>{if(currentView.value==='dashboard')renderDashboardChart()});
                 watch(bills,()=>{if(currentView.value==='dashboard')renderDashboardChart()},{deep:true});
-                return {session,authEmail,loading,authMessage,currentView,dbBasePay,tempCalculatedPay,useTempPay,activeMonthlyPay,budgetItems,bills,coreExpenses,debts,calcInputs,calcResult,savingBase,calculateAndSave,showPlanner,showAddForm,isSubmitting,newItem,isEditing,showGenModal,potentialBills,projectedBalance,totalMonthlyBurn,isScenarioActive,openGenerateModal,confirmGenerate,deleteBill,toggleBillPaid,handleSave,resetForm,startEditing,deleteBudgetItem,applyCoreOnly,applyAll,formatDate,getDaysLeft,getCalendarLink,fetchBills,saveBasePay,forecastSettings,forecastData,project,showProjectModal,newProject,forecastResults,runForecast,saveProject,addExpense,fillExpense,printReport,standardItems,wishlistItems,setScenarioMode,currentScenarioMode,getMonthlyCost,getPrintTitle,newDebt,extraDebtPayment,addDebt,deleteDebt,debtPlan,showPaidBills,visibleBills,generateMonthOffset,upcomingBills,safeToSpend,burnRate,cashFlowLowPoint,renderDashboardChart,dashboardMode,dashboardBurn,showDebtForm,showImpulseModal,impulseItem,impulseResult,checkImpulse,clearImpulse,showConsultant,chatMessages,userQuery,isThinking,openConsultant,sendQuery,renderMarkdown,showOnboarding,onboardingStep,onboardingData,nextOnboardingStep,handleLogin,handleLogout,lowPointData,resetDemo}
-            },
-        }).mount('#app')
-    </script>
-</body>
-</html>
-<script>
-        const { createApp, ref, computed, onMounted, nextTick, watch } = Vue
-        const { createClient } = supabase
-
-        // ⚠️ REPLACE KEYS BELOW ⚠️
-        const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
-        
-        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-        // --- HELPER FUNCTIONS ---
-        const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100
-
-        const getMonthlyCost = (item) => {
-            const amount = Number(item.amount)
-            if (item.frequency === 'Quarterly') return amount / 3
-            if (item.frequency === 'Yearly') return amount / 12
-            if (item.frequency === 'One-Time') return 0 
-            return amount
-        }
-
-        const taxBrackets = [
-            {limit: 23850, rate: 0.10}, {limit: 96950, rate: 0.12}, {limit: 206700, rate: 0.22},
-            {limit: 394600, rate: 0.24}, {limit: 501050, rate: 0.32}, {limit: 751600, rate: 0.35},
-            {limit: Infinity, rate: 0.37}
-        ];
-        
-        const calculateFederalTax = (annualInc) => { 
-            let tax=0, lower=0; 
-            for(const b of taxBrackets){ 
-                if(annualInc > b.limit){ 
-                    tax += (b.limit - lower) * b.rate; 
-                    lower = b.limit; 
-                } else { 
-                    tax += (annualInc - lower) * b.rate; 
-                    break; 
-                } 
-            } 
-            return tax; 
-        }
-
-        createApp({
-            setup() {
-                // --- STATE MANAGEMENT ---
-                const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref('')
-                const currentView = ref('dashboard') 
-                
-                // SHARED DATA
-                const dbBasePay = ref(0), tempCalculatedPay = ref(0), useTempPay = ref(false)
-                const budgetItems = ref([]), bills = ref([]), debts = ref([])
-
-                // ONBOARDING STATE
-                const showOnboarding = ref(false)
-                const onboardingStep = ref(1)
-                const onboardingData = ref({ balance: '', safety: '', billName: '', billAmount: '', wishName: '', wishAmount: '', goalName: '', goalCost: '' })
-
-                // CALCULATOR INPUTS
-                const calcInputs = ref({ salary: 0, commission: 0, medical: 0, dental: 0, fsa: 0, postTax: 0, trad401k: 0, roth401k: 0, match401k: 0, nextPayDate: '', payFrequency: 'Semi-Monthly' })
-                const calcResult = ref(null), savingBase = ref(false)
-
-                // DEBT INPUTS
-                const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' })
-                const extraDebtPayment = ref(0)
-                const showDebtForm = ref(false)
-
-                // BUDGET UI STATE
-                const showPlanner = ref(false), showAddForm = ref(false)
-                const isSubmitting = ref(false), isEditing = ref(false), editingId = ref(null)
-                const newItem = ref({ name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false, replaces_id: null })
-                const showGenModal = ref(false), potentialBills = ref([])
-                const generateMonthOffset = ref(0) // 0 = This Month, 1 = Next Month
-                const showPaidBills = ref(false)
-                
-                // SCENARIO MODES
-                const currentScenarioMode = ref('survival') 
-                const dashboardMode = ref('standard')
-
-                // FORECAST & IMPULSE STATE
-                const forecastSettings = ref({ currentBalance: 5000, safetyMargin: 2000, months: 12 })
-                const forecastData = ref([]) 
-                const project = ref(null), showProjectModal = ref(false), newProject = ref({name:'', cost:''})
-                const forecastResults = ref({ affordableMonth: null })
-                const showImpulseModal = ref(false)
-                const impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] })
-                const impulseResult = ref(null)
-
-                // AI CONSULTANT
-                const showConsultant = ref(false)
-                const chatMessages = ref([])
-                const userQuery = ref('')
-                const isThinking = ref(false)
-
-                // Chart Instances
-                let chartInstance = null
-                let dashboardChartInstance = null
-
-
-                // --- 1. ONBOARDING LOGIC ---
-                const nextOnboardingStep = async () => {
-                    if (onboardingStep.value === 4) await finishOnboarding()
-                    else onboardingStep.value++
-                }
-
-                const finishOnboarding = async () => {
-                    isSubmitting.value = true
-                    const { balance, safety, billName, billAmount, wishName, wishAmount, goalName, goalCost } = onboardingData.value
-                    
-                    // Save Settings
-                    if (balance || safety) {
-                        forecastSettings.value.currentBalance = balance || 0
-                        forecastSettings.value.safetyMargin = safety || 0
-                        await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: balance, safety_margin: safety })
-                    }
-                    // Add Core Bill
-                    if (billName && billAmount) {
-                         await _supabase.from('budget_items').insert([{ user_id: session.value.user.id, name: billName, amount: Number(billAmount), due_day: 1, is_core: true, is_active: true }])
-                    }
-                    // Add Wishlist Item
-                    if (wishName && wishAmount) {
-                         await _supabase.from('budget_items').insert([{ user_id: session.value.user.id, name: wishName, amount: Number(wishAmount), due_day: 0, is_wishlist: true, is_active: true }])
-                    }
-                    // Set Project (Local session only)
-                    if (goalName && goalCost) {
-                        project.value = { name: goalName, cost: Number(goalCost) }
-                    }
-
-                    await fetchBudgetItems()
-                    await fetchSettings()
-                    
-                    // Celebration
-                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })
-                    
-                    showOnboarding.value = false
-                    isSubmitting.value = false
-                }
-
-
-                // --- 2. DEBT LOGIC ---
-                const debtPlan = computed(() => {
-                    if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }
-
-                    const simulate = (extra) => {
-                        // Deep clone to simulate
-                        let simDebts = JSON.parse(JSON.stringify(debts.value)).map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment), paid_off: false }))
-                        
-                        let totalInterest = 0
-                        let months = 0
-                        let timeline = []
-                        let active = true
-                        let permanentSnowball = extra
-
-                        while (active && months < 480) { // 40 Year Cap
-                            months++
-                            let anyBalanceLeft = false
-                            let monthlySurplus = permanentSnowball
-
-                            // Phase 1: Interest & Minimums
-                            for (let d of simDebts) {
-                                if (d.paid_off) {
-                                    monthlySurplus += d.min // Rollover logic
-                                    continue
-                                }
-                                anyBalanceLeft = true
-                                let interest = d.balance * (d.rate / 100 / 12)
-                                totalInterest += interest
-                                d.balance += interest
-                                
-                                let payment = Math.min(d.balance, d.min)
-                                d.balance -= payment
-                                
-                                // Check if minimum paid it off
-                                if (d.balance < 0.01) {
-                                    d.balance = 0
-                                    d.paid_off = true
-                                    timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 })
-                                    monthlySurplus += (d.min - payment)
-                                }
-                            }
-
-                            // Phase 2: Snowball/Avalanche Attack
-                            for (let d of simDebts) {
-                                if (d.paid_off) continue
-                                if (monthlySurplus <= 0) break
-
-                                let payment = Math.min(d.balance, monthlySurplus)
-                                d.balance -= payment
-                                monthlySurplus -= payment
-
-                                if (d.balance < 0.01) {
-                                    d.balance = 0
-                                    d.paid_off = true
-                                    timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 })
-                                }
-                            }
-
-                            if (!anyBalanceLeft) active = false
-                        }
-                        return { months, totalInterest, timeline }
-                    }
-
-                    const base = simulate(0)
-                    const attack = simulate(extraDebtPayment.value)
-                    
-                    const now = new Date(); now.setMonth(now.getMonth() + attack.months)
-                    const payoffDate = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-
-                    return { 
-                        payoffDate, 
-                        totalInterest: round(attack.totalInterest), 
-                        savedInterest: round(base.totalInterest - attack.totalInterest), 
-                        timeline: attack.timeline 
-                    }
-                })
-
-                const addDebt = async () => {
-                    const maxOrder = debts.value.length > 0 ? Math.max(...debts.value.map(d => d.order_index || 0)) : 0
-                    if (newDebt.value.name && newDebt.value.balance) {
-                        const { data } = await _supabase.from('debts').insert([{ 
-                            user_id: session.value.user.id, 
-                            name: newDebt.value.name, 
-                            balance: newDebt.value.balance, 
-                            rate: newDebt.value.rate, 
-                            min_payment: newDebt.value.min_payment, 
-                            order_index: maxOrder + 1 
-                        }]).select()
-                        if (data) debts.value.push(data[0])
-                        newDebt.value = { name: '', balance: '', rate: '', min_payment: '' }
-                        showDebtForm.value = false
-                    }
-                }
-                
-                const deleteDebt = async (debt) => {
-                    if (confirm('Delete debt?')) {
-                        await _supabase.from('debts').delete().eq('id', debt.id)
-                        debts.value = debts.value.filter(d => d.id !== debt.id)
-                    }
-                }
-                
-                const updateDebtOrder = async () => {
-                    const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index }))
-                    for (const u of updates) {
-                        await _supabase.from('debts').update({ order_index: u.order_index }).eq('id', u.id)
-                    }
-                }
-
-
-                // --- 3. PAYCHECK CALCULATOR ---
-                const calculateAndSave = async (mode) => {
-                    savingBase.value = true
-                    const { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency } = calcInputs.value
-                    
-                    const payPeriods = 24 // Standardizing internal calculation first
-                    const grossPay = (salary / payPeriods) + commission
-                    const preTax = medical + dental + fsa
-                    const ficaWages = Math.max(0, grossPay - preTax)
-                    const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062
-                    const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000)/payPeriods)*0.009 : 0)
-                    const tradAmt = grossPay * (trad401k / 100)
-                    const rothAmt = grossPay * (roth401k / 100)
-                    
-                    const taxable = grossPay - tradAmt - preTax
-                    const annualTaxable = Math.max(0, (taxable * payPeriods) - 30000)
-                    const taxPerPeriod = calculateFederalTax(annualTaxable) / payPeriods
-                    
-                    const net = taxable - taxPerPeriod - postTax - rothAmt - ssTax - medTax
-                    const finalPay = round(net - 2.25)
-                    
-                    // Convert period pay to Monthly for budget
-                    let monthly = finalPay * 2
-                    if (payFrequency === 'Monthly') monthly = finalPay
-                    if (payFrequency === 'Bi-Weekly') monthly = finalPay * 2.166 
-
-                    calcResult.value = { 
-                        gross: round(grossPay), preTaxTotal: round(preTax + tradAmt), 
-                        taxes: round(taxPerPeriod + ssTax + medTax), postTaxTotal: round(postTax + rothAmt), 
-                        netPay: finalPay 
-                    }
-                    
-                    if (mode === 'default') {
-                        dbBasePay.value = monthly
-                        useTempPay.value = false
-                        await _supabase.from('user_settings').upsert({ 
-                            user_id: session.value.user.id, 
-                            base_pay: dbBasePay.value, 
-                            salary, commission, medical, dental, fsa, post_tax: postTax, 
-                            trad_401k: trad401k, roth_401k: roth401k, match_401k: match401k, 
-                            next_pay_date: nextPayDate, pay_frequency: payFrequency 
-                        })
-                        alert("Saved as Default Base Pay!")
-                    } else {
-                        tempCalculatedPay.value = monthly
-                        useTempPay.value = true
-                        alert("Applied Commission Pay to Session!")
-                    }
-                    savingBase.value = false
-                    currentView.value = 'budget'
-                }
-
-
-                // --- 4. FORECAST & DASHBOARD CHARTS ---
-                const runForecast = () => {
-                    let balance = round(forecastSettings.value.currentBalance)
-                    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-                    const now = new Date()
-                    
-                    // Init data if needed
-                    if (forecastData.value.length !== forecastSettings.value.months) {
-                        forecastData.value = []
-                        for(let i=0; i<forecastSettings.value.months; i++) {
-                            const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
-                            forecastData.value.push({
-                                name: `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
-                                income: dbBasePay.value, 
-                                extraExpenses: [],
-                                newExpenseId: '', newExpenseName: '', newExpenseAmount: '', 
-                                isOpen: false
-                            })
-                        }
-                    }
-
-                    forecastResults.value.affordableMonth = null
-                    
-                    forecastData.value.forEach((m, idx) => {
-                        const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0)
-                        const monthlyNet = m.income - coreExpenses.value - totalExtra
-                        balance = round(balance + monthlyNet)
-                        m.endBalance = balance
-                        m.monthIndex = idx 
-                        
-                        if(project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) {
-                            forecastResults.value.affordableMonth = m.name
-                            forecastResults.value.affordableIndex = idx
-                        }
-                    })
-                    renderChart()
-                }
-
-                const renderChart = () => {
-                    const ctx = document.getElementById('forecastChart'); if(!ctx) return;
-                    if(chartInstance) chartInstance.destroy()
-                    
-                    const goalIndex = forecastResults.value.affordableMonth ? forecastResults.value.affordableIndex : -1
-                    const pointStyles = forecastData.value.map((_, i) => i === goalIndex ? 'star' : 'circle')
-                    const pointRadii = forecastData.value.map((_, i) => i === goalIndex ? 10 : 4)
-                    const pointColors = forecastData.value.map((_, i) => i === goalIndex ? '#F59E0B' : '#10B981')
-
-                    chartInstance = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: forecastData.value.map(m => m.name.split(' ')[0]),
-                            datasets: [{ 
-                                label: 'Projected Balance', 
-                                data: forecastData.value.map(m => m.endBalance), 
-                                borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', 
-                                fill: true, tension: 0.3,
-                                pointStyle: pointStyles, pointRadius: pointRadii, 
-                                pointBackgroundColor: pointColors, pointBorderColor: pointColors 
-                            }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
-                    })
-                }
-
-                const renderDashboardChart = () => {
-                    const ctx = document.getElementById('dashboardChart'); if(!ctx) return;
-                    if(dashboardChartInstance) dashboardChartInstance.destroy()
-                    
-                    const labels = []
-                    const dataCurrent = []
-                    const dataImpulse = [] 
-                    
-                    let currentSimBalance = forecastSettings.value.currentBalance || 0
-                    let impulseSimBalance = currentSimBalance 
-                    
-                    const today = new Date(); 
-                    let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null
-                    const freq = calcInputs.value.payFrequency || 'Bi-Weekly'
-                    const payAmount = calcResult.value ? calcResult.value.netPay : (dbBasePay.value / (freq === 'Monthly' ? 1 : 2))
-                    
-                    const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false) 
-                    const impulseCost = Number(impulseItem.value.cost)
-                    const impulseDate = impulseItem.value.date
-
-                    for(let i=0; i<30; i++) {
-                        const d = new Date(); d.setDate(today.getDate() + i); 
-                        const dayOfMonth = d.getDate();
-                        const dStr = d.toISOString().split('T')[0]; 
-                        labels.push(dayOfMonth)
-                        
-                        // HYBRID BILL LOGIC
-                        const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr)
-                        const realDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0)
-                        
-                        const virtualDrop = budgetItems.value.reduce((sum, item) => {
-                            if (item.frequency === 'Monthly' && item.due_day === dayOfMonth) {
-                                // If no real bill exists for this date, assume virtual one
-                                const hasRealBill = bills.value.some(b => b.budget_item_id === item.id && b.due_date === dStr)
-                                if (!hasRealBill) return sum + item.amount
-                            }
-                            return sum
-                        }, 0)
-
-                        const totalDrop = realDrop + virtualDrop
-                        currentSimBalance -= totalDrop
-                        impulseSimBalance -= totalDrop
-                        
-                        // INCOME EVENT
-                        if (nextPay && dStr === nextPay.toISOString().split('T')[0]) {
-                            currentSimBalance += payAmount
-                            impulseSimBalance += payAmount
-                            // Advance pay date
-                            if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14)
-                            else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15)
-                            else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1)
-                        }
-                        
-                        // IMPULSE EVENT
-                        if (runImpulse && dStr === impulseDate) {
-                            impulseSimBalance -= impulseCost
-                        }
-
-                        dataCurrent.push(currentSimBalance)
-                        dataImpulse.push(impulseSimBalance)
-                    }
-                    
-                    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400); 
-                    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)'); 
-                    gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
-
-                    const datasets = [{ 
-                        label: 'Current', data: dataCurrent, borderColor: '#3B82F6', 
-                        borderWidth: 2, pointRadius: 0, backgroundColor: gradient, fill: true, tension: 0.1 
-                    }]
-                    
-                    if (runImpulse) {
-                        datasets.push({
-                            label: 'With Purchase', data: dataImpulse, borderColor: '#9333EA', 
-                            borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0.1
-                        })
-                    }
-
-                    dashboardChartInstance = new Chart(ctx, { 
-                        type: 'line', 
-                        data: { labels: labels, datasets: datasets }, 
-                        options: { 
-                            responsive: true, maintainAspectRatio: false, 
-                            scales: { x: { display: false }, y: { display: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, color: '#94a3b8', callback: (val) => '$' + val } } }, 
-                            plugins: { legend: { display: runImpulse }, tooltip: { enabled: true } } 
-                        } 
-                    })
-                }
-
-                // --- 5. AI CONSULTANT ---
-                const openConsultant = () => { showConsultant.value = true; nextTick(() => scrollChat()) }
-                
-                const getFinancialSnapshot = () => {
-                    return {
-                        income: activeMonthlyPay.value,
-                        savings: forecastSettings.value.currentBalance,
-                        total_debt: debts.value.reduce((a,b)=>a+Number(b.balance), 0),
-                        core_burn: budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),
-                        discretionary_burn: budgetItems.value.filter(i=>!i.is_core && !i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),
-                        debt_list: debts.value,
-                        budget_list: budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name, amt:i.amount, core:i.is_core}))
-                    }
-                }
-
-                const sendQuery = async (text) => {
-                    if(!text) return
-                    chatMessages.value.push({ role: 'user', text })
-                    userQuery.value = ''
-                    isThinking.value = true
-                    nextTick(scrollChat)
-
-                    setTimeout(() => {
-                        const snapshot = getFinancialSnapshot()
-                        const response = generateMockResponse(text, snapshot)
-                        chatMessages.value.push({ role: 'assistant', text: response })
-                        isThinking.value = false
-                        nextTick(scrollChat)
-                    }, 1200)
-                }
-
-                const generateMockResponse = (query, data) => {
-                    const q = query.toLowerCase()
-                    if (q.includes('ruthless') || q.includes('cut')) {
-                        const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt)
-                        let totalWaste = nonCore.reduce((a,b)=>a+b.amt,0)
-                        let top3 = nonCore.slice(0,3).map(i => `• **${i.name}**: $${i.amt}`).join('<br>')
-                        return `I found **$${totalWaste.toLocaleString()}** in non-essential spending.<br>Top 3 targets:<br>${top3}`
-                    }
-                    if (q.includes('debt')) {
-                        if (data.debt_list.length === 0) return "No debts! Great job.";
-                        const highestRate = [...data.debt_list].sort((a,b)=>b.rate - a.rate)[0]
-                        const totalInterest = data.debt_list.reduce((acc, d) => acc + (d.balance * (d.rate/100/365)), 0)
-                        return `Total Debt: **$${data.total_debt.toLocaleString()}**.<br>Losing **$${totalInterest.toFixed(2)}/day** in interest.<br>Attack **${highestRate.name}** (${highestRate.rate}%) first.`
-                    }
-                    if (q.includes('stress') || q.includes('survive')) {
-                         const survivalMonths = (data.savings / (data.core_burn || 1)).toFixed(1)
-                         return `**Runway:** ${survivalMonths} months based on savings of $${data.savings.toLocaleString()}.`
-                    }
-                    return "I analyzed your finances. Income: $" + data.income.toLocaleString() + ". Ask for a specific strategy like a Stress Test or Debt Review."
-                }
-                const scrollChat = () => { const el = document.getElementById('chat-container'); if(el) el.scrollTop = el.scrollHeight }
-                const renderMarkdown = (text) => { return marked.parse(text) }
-
-                // --- 6. IMPULSE CHECK ---
-                const checkImpulse = () => {
-                    if (!impulseItem.value.cost) return
-                    showImpulseModal.value = false
-                    renderDashboardChart() 
-                    if (cashFlowLowPoint.value) {
-                       const futureLow = cashFlowLowPoint.value.amount
-                       if (futureLow < 0) impulseResult.value = { safe: false, message: `Dangerous! You will hit $${futureLow}!` }
-                       else if (futureLow < forecastSettings.value.safetyMargin) impulseResult.value = { safe: false, message: `Risky. Dips below safety ($${futureLow}).` }
-                       else impulseResult.value = { safe: true, message: `Safe! Low: $${futureLow}` }
-                    }
-                }
-                const clearImpulse = () => {
-                    impulseItem.value = { name: '', cost: '', date: new Date().toISOString().split('T')[0] }
-                    impulseResult.value = null
-                    renderDashboardChart()
-                }
-
-
-                // --- 7. COMPUTED PROPERTIES ---
-                const activeMonthlyPay = computed(() => round(useTempPay.value ? tempCalculatedPay.value : dbBasePay.value))
-                const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + getMonthlyCost(i), 0)))
-                
-                const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + getMonthlyCost(item), 0)))
-                
-                const projectedBalance = computed(() => round(activeMonthlyPay.value - totalMonthlyBurn.value))
-                const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario))
-                const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist))
-                const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist))
-                const visibleBills = computed(() => { let sorted = bills.value; if (!showPaidBills.value) sorted = sorted.filter(b => !b.is_paid); return sorted })
-                
-                const upcomingBills = computed(() => {
-                    const today = new Date().toISOString().split('T')[0]
-                    const limit = new Date(); limit.setDate(limit.getDate() + 7); const limitStr = limit.toISOString().split('T')[0]
-                    return bills.value.filter(b => !b.is_paid && b.due_date <= limitStr).sort((a,b) => a.due_date > b.due_date ? 1 : -1)
-                })
-                
-                const safeToSpend = computed(() => {
-                    if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value)
-                    
-                    if (dashboardMode.value === 'dream') {
-                        let burn = 0
-                        budgetItems.value.forEach(i => {
-                            if (i.is_wishlist) {
-                                burn += getMonthlyCost(i)
-                            } else {
-                                const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id)
-                                if (!replacedBy) burn += getMonthlyCost(i)
-                            }
-                        })
-                        return round(activeMonthlyPay.value - burn)
-                    }
-
-                    // Standard Mode
-                    const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc, i) => acc + getMonthlyCost(i), 0)
-                    return round(activeMonthlyPay.value - standardBurn)
-                })
-
-                const dashboardBurn = computed(() => round(activeMonthlyPay.value - safeToSpend.value))
-                const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0)
-                
-                const cashFlowLowPoint = computed(() => {
-                    if (!dashboardChartInstance) return null
-                    const data = dashboardChartInstance.data.datasets[0].data
-                    const activeData = impulseResult.value ? dashboardChartInstance.data.datasets[1].data : data
-                    const min = Math.min(...activeData); const index = activeData.indexOf(min); const d = new Date(); d.setDate(d.getDate() + index)
-                    return { amount: min, date: d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) }
-                })
-
-
-                // --- 8. HELPERS & CRUD ---
-                const setScenarioMode = (mode) => {
-                    currentScenarioMode.value = mode
-                    budgetItems.value.forEach(i => {
-                        if (i.frequency === 'One-Time') { i.includedInScenario = false; return; }
-                        if (mode === 'survival') i.includedInScenario = i.is_core === true
-                        if (mode === 'standard') i.includedInScenario = i.is_wishlist === false
-                        if (mode === 'dream') i.includedInScenario = true
-                    })
-                    if (mode === 'dream') {
-                        const activeWishlist = budgetItems.value.filter(i => i.is_wishlist && i.includedInScenario)
-                        activeWishlist.forEach(w => {
-                            if (w.replaces_id) {
-                                const target = budgetItems.value.find(t => t.id === w.replaces_id)
-                                if (target) target.includedInScenario = false 
-                            }
-                        })
-                    }
-                }
-                
-                const resetDemo = async () => {
-                    if (!confirm("⚠️ WARNING: This will DELETE ALL budget items, bills, debts, and settings to simulate a fresh start. Are you sure?")) return;
-                    loading.value = true;
-                    // Delete Everything
-                    await _supabase.from('ledger').delete().neq('id', 0); 
-                    await _supabase.from('budget_items').delete().neq('id', 0); 
-                    await _supabase.from('debts').delete().neq('id', 0); 
-                    await _supabase.from('user_settings').delete().eq('user_id', session.value.user.id);
-                    // Reload
-                    window.location.reload();
-                }
-
-                // Data Loading
-                const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { dbBasePay.value = data.base_pay; calcInputs.value = { salary: data.salary||0, commission: data.commission||0, medical: data.medical||0, dental: data.dental||0, fsa: data.fsa||0, postTax: data.post_tax||0, trad401k: data.trad_401k||0, roth401k: data.roth_401k||0, match401k: data.match_401k||0, nextPayDate: data.next_pay_date, payFrequency: data.pay_frequency||'Semi-Monthly' }; forecastSettings.value.currentBalance = data.current_balance || 5000; } }
-                const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: i.is_core === true })); currentScenarioMode.value = 'survival'; }
-                const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if(data) bills.value = data.sort((a,b) => a.due_date > b.due_date ? 1 : -1) }
-                const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if(data) debts.value = data }
-
-                // Actions
-                const openGenerateModal = async (offset = 0) => { generateMonthOffset.value = offset; const targetDate = new Date(); targetDate.setMonth(targetDate.getMonth() + offset); const startOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1).toISOString(); const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).toISOString(); const { data: t } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('is_wishlist', false).eq('user_id', session.value.user.id); const { data: e } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', startOfMonth).lte('due_date', endOfMonth); const existingIds = new Set(e.map(b => b.budget_item_id)); potentialBills.value = t.filter(x => !existingIds.has(x.id)).map(x => ({...x, selected: x.frequency === 'Monthly'})); showGenModal.value = true; }
-                const confirmGenerate = async () => { const targetDate = new Date(); targetDate.setMonth(targetDate.getMonth() + generateMonthOffset.value); const toCreate = potentialBills.value.filter(i=>i.selected).map(t => ({user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(targetDate.getFullYear(), targetDate.getMonth(), t.due_day||1).toISOString(), is_paid: false})); if(toCreate.length > 0) { await _supabase.from('ledger').insert(toCreate); await fetchBills(); } showGenModal.value = false; }
-                
-                const handleSave = async () => { isEditing.value ? updateItem() : addItem() }
-                const addItem = async () => { const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1); const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, frequency: newItem.value.frequency, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, replaces_id: newItem.value.replaces_id || null, is_active: true }; const { data } = await _supabase.from('budget_items').insert([payload]).select(); if(data) { budgetItems.value.push({...data[0], includedInScenario: true}); resetForm(); } }
-                const updateItem = async () => { const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1); const updates = { name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, frequency: newItem.value.frequency, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, replaces_id: newItem.value.replaces_id || null }; await _supabase.from('budget_items').update(updates).eq('id', editingId.value); fetchBudgetItems(); resetForm(); }
-                const deleteBudgetItem = async (item) => { if(!confirm('Delete item?')) return; const { error } = await _supabase.from('budget_items').update({ is_active: false }).eq('id', item.id); if(!error) fetchBudgetItems() }
-                const startEditing = (i) => { showAddForm.value=true; isEditing.value=true; editingId.value=i.id; newItem.value={...i, isFlexible: i.due_day === 0}; }
-                const resetForm = () => { newItem.value={name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false, replaces_id: null}; isEditing.value=false; showAddForm.value=false; }
-                const deleteBill = async (bill) => { if(confirm('Delete?')) { await _supabase.from('ledger').delete().eq('id', bill.id); fetchBills(); } }
-                const toggleBillPaid = async (bill) => { await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id) }
-                const saveBasePay = async () => { savingBase.value=true; await _supabase.from('user_settings').upsert({user_id: session.value.user.id, base_pay: dbBasePay.value}); savingBase.value=false; }
-                const handleLogin = async () => { loading.value=true; await _supabase.auth.signInWithOtp({email: authEmail.value, options:{emailRedirectTo:window.location.href}}); authMessage.value="Link Sent!"; loading.value=false; }
-                const handleLogout = async () => { await _supabase.auth.signOut(); session.value=null; }
-                const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { ...newProject.value }; showProjectModal.value = false; runForecast() } }
-                const addExpense = (month) => { if(month.newExpenseName && month.newExpenseAmount) { month.extraExpenses.push({ name: month.newExpenseName, amount: Number(month.newExpenseAmount) }); month.newExpenseName=''; month.newExpenseAmount=''; runForecast() } }
-                const fillExpense = (month) => { const item = budgetItems.value.find(i => i.id === month.newExpenseId); if(item) { month.newExpenseName = item.name; month.newExpenseAmount = item.amount } }
-                const printReport = () => window.print()
-                const getPrintTitle = () => { if (currentView.value === 'debt') return 'Debt Payoff Plan'; return project.value ? project.value.name + ' Plan' : 'Financial Forecast Report' }
-                const updateDebtOrder =async()=>{const updates=debts.value.map((d,index)=>({id:d.id,order_index:index}));for(const u of updates){await _supabase.from('debts').update({order_index:u.order_index}).eq('id',u.id)}};
-
-                // LIFECYCLE
-                const formatDate = (d) => new Date(new Date(d).valueOf() + new Date(d).getTimezoneOffset() * 60000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                const getDaysLeft = (d) => Math.ceil((new Date(d) - new Date().setHours(0,0,0,0)) / (86400000))
-                const getCalendarLink = (b) => `https://www.google.com/calendar/render?action=TEMPLATE&text=Pay ${b.budget_items.name}&dates=${b.due_date.replace(/-/g,'')}/${new Date(new Date(b.due_date).setDate(new Date(b.due_date).getDate()+1)).toISOString().split('T')[0].replace(/-/g,'')}`
-
-                onMounted(() => { 
-                    _supabase.auth.getSession().then(({data})=>{ 
-                        session.value=data.session; 
-                        if(session.value){ 
-                            fetchSettings(); fetchBudgetItems(); fetchBills(); fetchDebts(); 
-                            // TRIGGER ONBOARDING if new
-                            setTimeout(() => { if(budgetItems.value.length === 0 && dbBasePay.value === 0) showOnboarding.value = true }, 1000)
-                        }
-                    }); 
-                    _supabase.auth.onAuthStateChange((_e,_s)=>{ session.value=_s; if(_s){ fetchSettings(); fetchBudgetItems(); fetchBills(); fetchDebts(); } })
-                })
-
-                watch(currentView, (val) => {
-                    if (val === 'debt') { nextTick(() => { const el = document.getElementById('debt-list-container'); if (el) { new Sortable(el, { handle: '.sortable-handle', animation: 150, onEnd: (evt) => { const item = debts.value.splice(evt.oldIndex, 1)[0]; debts.value.splice(evt.newIndex, 0, item); updateDebtOrder() } }) } }) }
-                    if (val === 'forecast') nextTick(runForecast)
-                    if (val === 'dashboard') nextTick(renderDashboardChart)
-                })
-                
-                watch(() => forecastSettings.value.currentBalance, (newVal) => { if(currentView.value === 'dashboard') renderDashboardChart() })
-                watch(bills, () => { if(currentView.value === 'dashboard') renderDashboardChart() }, { deep: true })
-
-                return { 
-                    session, authEmail, loading, authMessage, currentView, 
-                    dbBasePay, tempCalculatedPay, useTempPay, activeMonthlyPay, budgetItems, bills, coreExpenses, debts,
-                    calcInputs, calcResult, savingBase, calculateAndSave,
-                    showPlanner, showAddForm, isSubmitting, newItem, isEditing, showGenModal, potentialBills, projectedBalance, totalMonthlyBurn, isScenarioActive, openGenerateModal, confirmGenerate, deleteBill, toggleBillPaid, handleSave, resetForm, startEditing, deleteBudgetItem, applyCoreOnly, applyAll, formatDate, getDaysLeft, getCalendarLink, fetchBills, saveBasePay,
-                    forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject, addExpense, fillExpense, printReport,
-                    standardItems, wishlistItems, setScenarioMode, currentScenarioMode, getMonthlyCost, getPrintTitle,
-                    newDebt, extraDebtPayment, addDebt, deleteDebt, debtPlan,
-                    showPaidBills, visibleBills, generateMonthOffset,
-                    upcomingBills, safeToSpend, burnRate, cashFlowLowPoint, renderDashboardChart, dashboardMode, dashboardBurn, showDebtForm,
-                    showImpulseModal, impulseItem, impulseResult, checkImpulse, clearImpulse,
-                    showConsultant, chatMessages, userQuery, isThinking, openConsultant, sendQuery, renderMarkdown,
-                    showOnboarding, onboardingStep, onboardingData, nextOnboardingStep,
-                    handleLogin, handleLogout, resetDemo
-                }
+                return {session,authEmail,authPassword,loading,authMessage,currentView,dbBasePay,tempCalculatedPay,useTempPay,activeMonthlyPay,budgetItems,bills,coreExpenses,debts,calcInputs,calcResult,savingBase,calculateAndSave,showPlanner,showAddForm,isSubmitting,newItem,isEditing,showGenModal,potentialBills,projectedBalance,totalMonthlyBurn,isScenarioActive,openGenerateModal,confirmGenerate,deleteBill,toggleBillPaid,handleSave,resetForm,startEditing,deleteBudgetItem,applyCoreOnly,applyAll,formatDate,getDaysLeft,getCalendarLink,fetchBills,saveBasePay,forecastSettings,forecastData,project,showProjectModal,newProject,forecastResults,runForecast,saveProject,addExpense,fillExpense,printReport,standardItems,wishlistItems,setScenarioMode,currentScenarioMode,getMonthlyCost,getPrintTitle,newDebt,extraDebtPayment,addDebt,deleteDebt,debtPlan,showPaidBills,visibleBills,generateMonthOffset,upcomingBills,safeToSpend,burnRate,cashFlowLowPoint,renderDashboardChart,dashboardMode,dashboardBurn,showDebtForm,showImpulseModal,impulseItem,impulseResult,checkImpulse,clearImpulse,showConsultant,chatMessages,userQuery,isThinking,openConsultant,sendQuery,renderMarkdown,showOnboarding,onboardingStep,onboardingData,nextOnboardingStep,handleLogin,handleSignUp,handleLogout,lowPointData,resetDemo}
             },
         }).mount('#app')
     </script>
