@@ -59,62 +59,109 @@
         
         <transition name="fade">
             <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative">
-                    <div class="h-1.5 w-full bg-slate-100"><div class="h-full bg-emerald-500 transition-all duration-500" :style="{ width: (onboardingStep / 5) * 100 + '%' }"></div></div>
-                    <div class="p-8">
-                        <div v-if="onboardingStep === 1" class="text-center space-y-6">
-                            <div class="text-5xl animate-bounce">👋</div>
-                            <h2 class="text-2xl font-black text-slate-900">Welcome to Finance Master</h2>
-                            <p class="text-slate-500">Let's set up your command center in 30 seconds.</p>
-                            <div class="text-left space-y-4">
-                                <div><label class="text-xs font-bold text-slate-400 uppercase">Current Bank Balance</label><input v-model.number="onboardingData.balance" type="number" class="w-full p-3 border rounded-xl bg-slate-50 text-lg font-bold" placeholder="$0.00"></div>
-                                <div><label class="text-xs font-bold text-slate-400 uppercase">Safety Margin</label><input v-model.number="onboardingData.safety" type="number" class="w-full p-3 border rounded-xl bg-slate-50 text-lg font-bold" placeholder="$2,000"><p class="text-[10px] text-slate-400 mt-1">Minimum amount you want to keep in checking.</p></div>
+                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden relative flex flex-col max-h-[90vh]">
+                    <div class="h-2 w-full bg-slate-100"><div class="h-full bg-emerald-500 transition-all duration-500" :style="{ width: (onboardingStep / 5) * 100 + '%' }"></div></div>
+                    
+                    <div class="p-6 md:p-8 overflow-y-auto">
+                        
+                        <div v-if="onboardingStep === 1" class="space-y-6">
+                            <div class="text-center">
+                                <div class="text-4xl mb-2">🧮</div>
+                                <h2 class="text-2xl font-black text-slate-900">Let's Calculate Your Pay</h2>
+                                <p class="text-slate-500 text-sm">Enter your paycheck details to get an accurate baseline.</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <div><label class="text-[10px] font-bold uppercase text-slate-500">Gross Salary (Annual)</label><input v-model.number="calcInputs.salary" type="number" class="w-full p-2 border rounded text-sm"></div>
+                                <div><label class="text-[10px] font-bold uppercase text-slate-500">Pay Frequency</label><select v-model="calcInputs.payFrequency" class="w-full p-2 border rounded text-sm"><option value="Bi-Weekly">Bi-Weekly (Every 2 wks)</option><option value="Semi-Monthly">Semi-Monthly (15th/30th)</option><option value="Monthly">Monthly</option><option value="Weekly">Weekly</option></select></div>
+                                <div><label class="text-[10px] font-bold uppercase text-slate-500">Commission (Annual est.)</label><input v-model.number="calcInputs.commission" type="number" class="w-full p-2 border rounded text-sm"></div>
+                                <div><label class="text-[10px] font-bold uppercase text-slate-500">Filing Status</label><select class="w-full p-2 border rounded text-sm"><option>Single</option><option>Married</option></select></div>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-2">
+                                <div><label class="text-[10px] font-bold uppercase text-slate-500">Medical/Dental</label><input v-model.number="calcInputs.medical" type="number" class="w-full p-2 border rounded text-sm" placeholder="$ per check"></div>
+                                <div><label class="text-[10px] font-bold uppercase text-slate-500">401k %</label><input v-model.number="calcInputs.trad401k" type="number" class="w-full p-2 border rounded text-sm" placeholder="%"></div>
+                                <div><label class="text-[10px] font-bold uppercase text-slate-500">Post-Tax Ded.</label><input v-model.number="calcInputs.postTax" type="number" class="w-full p-2 border rounded text-sm" placeholder="$"></div>
+                            </div>
+
+                            <div v-if="calcResult" class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-center animate-fade-in">
+                                <p class="text-xs text-emerald-600 font-bold uppercase">Estimated Net Per Paycheck</p>
+                                <p class="text-3xl font-black text-emerald-700">${{ calcResult.netPay.toFixed(2) }}</p>
                             </div>
                         </div>
 
                         <div v-if="onboardingStep === 2" class="space-y-6">
                             <div class="text-center">
-                                <div class="text-5xl mb-2">💸</div>
-                                <h2 class="text-xl font-bold text-slate-900">Your Baseline Income</h2>
-                                <p class="text-sm text-slate-500">We'll add commission later. What is your <b>base</b> take-home?</p>
+                                <div class="text-4xl mb-2">🏦</div>
+                                <h2 class="text-2xl font-black text-slate-900">Current Balances</h2>
+                                <p class="text-slate-500 text-sm">Where do you stand right now?</p>
                             </div>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="text-xs font-bold text-slate-400 uppercase">Net Paycheck Amount</label>
-                                    <input v-model.number="onboardingData.payAmount" type="number" class="w-full p-3 border rounded-xl bg-slate-50 text-lg font-bold" placeholder="$0.00">
+                                    <label class="text-xs font-bold text-slate-400 uppercase">Checking Account Balance</label>
+                                    <input v-model.number="onboardingData.balance" type="number" class="w-full p-3 border rounded-xl bg-slate-50 text-lg font-bold" placeholder="$0.00">
                                 </div>
                                 <div>
-                                    <label class="text-xs font-bold text-slate-400 uppercase">How often?</label>
-                                    <select v-model="onboardingData.payFrequency" class="w-full p-3 border rounded-xl bg-slate-50 font-bold">
-                                        <option value="Weekly">Weekly (Every week)</option>
-                                        <option value="Bi-Weekly">Bi-Weekly (Every 2 weeks)</option>
-                                        <option value="Semi-Monthly">Semi-Monthly (15th & 30th)</option>
-                                        <option value="Monthly">Monthly</option>
-                                    </select>
+                                    <label class="text-xs font-bold text-slate-400 uppercase">Safety Margin</label>
+                                    <input v-model.number="onboardingData.safety" type="number" class="w-full p-3 border rounded-xl bg-slate-50 text-lg font-bold" placeholder="$2,000">
+                                    <p class="text-[10px] text-slate-400 mt-1">The minimum amount you never want to dip below.</p>
                                 </div>
                             </div>
                         </div>
 
                         <div v-if="onboardingStep === 3" class="space-y-6">
-                            <div class="text-center"><div class="text-5xl mb-2">🏠</div><h2 class="text-xl font-bold text-slate-900">Add a Core Bill</h2><p class="text-sm text-slate-500">What is one major bill you pay every month?</p></div>
-                            <div class="space-y-3"><input v-model="onboardingData.billName" placeholder="e.g. Rent / Mortgage" class="w-full p-3 border rounded-xl bg-slate-50"><input v-model.number="onboardingData.billAmount" type="number" placeholder="$ Amount" class="w-full p-3 border rounded-xl bg-slate-50"></div>
+                            <div class="text-center">
+                                <div class="text-4xl mb-2">🏠</div>
+                                <h2 class="text-2xl font-black text-slate-900">Add a Major Bill</h2>
+                                <p class="text-slate-500 text-sm">Let's add one "Core" bill (like Rent). You can add the rest later.</p>
+                            </div>
+                            <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <input v-model="onboardingData.billName" placeholder="Bill Name (e.g. Rent)" class="w-full p-3 border rounded-lg bg-white">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <input v-model.number="onboardingData.billAmount" type="number" placeholder="$ Amount" class="w-full p-3 border rounded-lg bg-white">
+                                    <input v-model.number="onboardingData.billDay" type="number" placeholder="Day Due (1-31)" class="w-full p-3 border rounded-lg bg-white">
+                                </div>
+                                <label class="flex items-center gap-2 text-sm font-bold text-slate-700 bg-white p-3 rounded-lg border">
+                                    <input type="checkbox" v-model="onboardingData.billCore" class="w-5 h-5 accent-emerald-500">
+                                    This is a Core Necessity (Must Pay)
+                                </label>
+                            </div>
                         </div>
-                        
+
                         <div v-if="onboardingStep === 4" class="space-y-6">
-                            <div class="text-center"><div class="text-5xl mb-2">✨</div><h2 class="text-xl font-bold text-slate-900">Dream a Little</h2><p class="text-sm text-slate-500">What is something you want but don't need right now?</p></div>
-                            <div class="space-y-3"><input v-model="onboardingData.wishName" placeholder="e.g. New iPhone" class="w-full p-3 border rounded-xl bg-slate-50"><input v-model.number="onboardingData.wishAmount" type="number" placeholder="$ Cost" class="w-full p-3 border rounded-xl bg-slate-50"></div>
+                            <div class="text-center">
+                                <div class="text-4xl mb-2">✨</div>
+                                <h2 class="text-2xl font-black text-slate-900">Add a Wishlist Item</h2>
+                                <p class="text-slate-500 text-sm">Something you want to budget for eventually.</p>
+                            </div>
+                            <div class="space-y-3">
+                                <input v-model="onboardingData.wishName" placeholder="Item Name (e.g. New Laptop)" class="w-full p-3 border rounded-xl bg-slate-50">
+                                <input v-model.number="onboardingData.wishAmount" type="number" placeholder="$ Estimated Cost" class="w-full p-3 border rounded-xl bg-slate-50">
+                            </div>
                         </div>
-                        
+
                         <div v-if="onboardingStep === 5" class="space-y-6">
-                            <div class="text-center"><div class="text-5xl mb-2">🎯</div><h2 class="text-xl font-bold text-slate-900">Set a Goal</h2><p class="text-sm text-slate-500">What are we saving for?</p></div>
-                            <div class="space-y-3"><input v-model="onboardingData.goalName" placeholder="e.g. Europe Trip" class="w-full p-3 border rounded-xl bg-slate-50"><input v-model.number="onboardingData.goalCost" type="number" placeholder="$ Target" class="w-full p-3 border rounded-xl bg-slate-50"></div>
+                            <div class="text-center">
+                                <div class="text-4xl mb-2">🎯</div>
+                                <h2 class="text-2xl font-black text-slate-900">Set a Big Goal</h2>
+                                <p class="text-slate-500 text-sm">What is your main financial focus right now?</p>
+                            </div>
+                            <div class="space-y-3">
+                                <input v-model="onboardingData.goalName" placeholder="Goal Name (e.g. Debt Free)" class="w-full p-3 border rounded-xl bg-slate-50">
+                                <input v-model.number="onboardingData.goalCost" type="number" placeholder="$ Target Amount" class="w-full p-3 border rounded-xl bg-slate-50">
+                            </div>
                         </div>
-                        
+
                         <div class="mt-8 flex gap-3">
-                            <button v-if="onboardingStep > 1" @click="onboardingStep--" class="px-4 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-100">Back</button>
-                            <button @click="nextOnboardingStep" class="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-600 transition transform active:scale-95">{{ onboardingStep === 5 ? 'Finish Setup 🚀' : 'Next' }}</button>
+                            <button v-if="onboardingStep > 1" @click="onboardingStep--" class="px-6 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-100">Back</button>
+                            <button @click="handleWizardNext" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-slate-800 transition transform active:scale-95">
+                                {{ onboardingStep === 1 && !calcResult ? 'Calculate Pay' : (onboardingStep === 5 ? 'Finish Setup 🚀' : 'Next') }}
+                            </button>
                         </div>
-                        <div class="mt-4 text-center"><button @click="showOnboarding = false" class="text-xs text-slate-300 hover:text-slate-500">Skip Setup</button></div>
+                        <div class="mt-4 text-center">
+                            <button @click="showOnboarding = false" class="text-xs text-slate-300 hover:text-slate-500">Skip Setup (Not Recommended)</button>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -135,13 +182,26 @@
         const calculateFederalTax=(inc)=>{let t=0,l=0;for(const b of taxBrackets){if(inc>b.limit){t+=(b.limit-l)*b.rate;l=b.limit}else{t+=(inc-l)*b.rate;break}}return t};
         
         createApp({
-            setup(){
+           setup(){
                 const session=ref(null),authEmail=ref(''),loading=ref(false),authMessage=ref(''),currentView=ref('dashboard');
                 const dbBasePay=ref(0),tempCalculatedPay=ref(0),useTempPay=ref(false),budgetItems=ref([]),bills=ref([]),debts=ref([]);
-                // UPDATED ONBOARDING DATA (Added payAmount, payFrequency)
-                const showOnboarding=ref(false),onboardingStep=ref(1),onboardingData=ref({balance:'',safety:'',payAmount:'',payFrequency:'Semi-Monthly',billName:'',billAmount:'',wishName:'',wishAmount:'',goalName:'',goalCost:''});
+                
+                // --- ONBOARDING STATE ---
+                const showOnboarding=ref(false),onboardingStep=ref(1);
+                // We bind Step 1 directly to calcInputs, Step 2-5 to onboardingData
+                const onboardingData=ref({
+                    balance:'', safety:'', 
+                    billName:'', billAmount:'', billDay:'', billCore:true,
+                    wishName:'', wishAmount:'', 
+                    goalName:'', goalCost:''
+                });
+
+                // Calculator Inputs (Used in Wizard Step 1 AND Calculator View)
                 const calcInputs=ref({salary:0,commission:0,medical:0,dental:0,fsa:0,postTax:0,trad401k:0,roth401k:0,match401k:0,nextPayDate:'',payFrequency:'Semi-Monthly'});
-                const calcResult=ref(null),savingBase=ref(false),newDebt=ref({name:'',balance:'',rate:'',min_payment:''}),extraDebtPayment=ref(0),showDebtForm=ref(false),showPaidBills=ref(false);
+                const calcResult=ref(null);
+
+                // --- APP STATE ---
+                const savingBase=ref(false),newDebt=ref({name:'',balance:'',rate:'',min_payment:''}),extraDebtPayment=ref(0),showDebtForm=ref(false),showPaidBills=ref(false);
                 const showPlanner=ref(false),showAddForm=ref(false),isSubmitting=ref(false),isEditing=ref(false),editingId=ref(null),newItem=ref({name:'',amount:'',due_day:'',isFlexible:false,frequency:'Monthly',is_core:false,is_autopay:false,is_wishlist:false,replaces_id:null});
                 const showGenModal=ref(false),potentialBills=ref([]),generateMonthOffset=ref(0);
                 const currentScenarioMode=ref('survival'),dashboardMode=ref('standard');
@@ -150,46 +210,98 @@
                 const showConsultant=ref(false),chatMessages=ref([]),userQuery=ref(''),isThinking=ref(false),lowPointData=ref({amount:0,date:'-'});
                 let chartInstance=null,dashboardChartInstance=null;
                 
-                const nextOnboardingStep=async()=>{if(onboardingStep.value===5)await finishOnboarding();else onboardingStep.value++};
-                
-                // UPDATED FINISH LOGIC
-                const finishOnboarding=async()=>{
-                    isSubmitting.value=true;
-                    const{balance,safety,payAmount,payFrequency,billName,billAmount,wishName,wishAmount,goalName,goalCost}=onboardingData.value;
+                // --- WIZARD LOGIC ---
+                const performCalculation = () => {
+                    const{salary,commission,medical,dental,fsa,postTax,trad401k,roth401k,payFrequency}=calcInputs.value;
+                    const payPeriods = payFrequency==='Weekly'?52 : payFrequency==='Bi-Weekly'?26 : payFrequency==='Semi-Monthly'?24 : 12;
+                    const grossPay=(salary/payPeriods)+((commission||0)/payPeriods);
+                    const preTax=medical+dental+fsa;
+                    const ficaWages=Math.max(0,grossPay-preTax);
+                    const ssTax=Math.min(ficaWages,168600/payPeriods)*0.062;
+                    const medTax=ficaWages*0.0145;
+                    const tradAmt=grossPay*(trad401k/100);
+                    const rothAmt=grossPay*(roth401k/100);
+                    const taxable=grossPay-tradAmt-preTax;
+                    const annualTaxable=Math.max(0,(taxable*payPeriods)-14600); // approx standard deduction
+                    const taxPerPeriod=calculateFederalTax(annualTaxable)/payPeriods;
+                    const net=taxable-taxPerPeriod-postTax-rothAmt-ssTax-medTax;
                     
-                    // 1. Calculate Monthly Pay
-                    let calculatedMonthlyPay = 0;
-                    const net = Number(payAmount) || 0;
-                    if(payFrequency==='Weekly') calculatedMonthlyPay = net * 4.33;
-                    else if(payFrequency==='Bi-Weekly') calculatedMonthlyPay = net * 2.166;
-                    else if(payFrequency==='Semi-Monthly') calculatedMonthlyPay = net * 2;
-                    else calculatedMonthlyPay = net;
-
-                    // 2. Save Settings
-                    if(balance||safety||calculatedMonthlyPay){
-                        forecastSettings.value.currentBalance=balance||0;
-                        forecastSettings.value.safetyMargin=safety||0;
-                        await _supabase.from('user_settings').upsert({
-                            user_id:session.value.user.id,
-                            current_balance:balance,
-                            safety_margin:safety,
-                            base_pay:calculatedMonthlyPay, // Saved!
-                            pay_frequency:payFrequency
-                        });
-                    }
-                    if(billName&&billAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:billName,amount:Number(billAmount),due_day:1,is_core:true,is_active:true}]);
-                    if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true}]);
-                    if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)};
-                    
-                    await fetchBudgetItems();await fetchSettings();
-                    confetti({particleCount:150,spread:70,origin:{y:0.6}});
-                    showOnboarding.value=false;isSubmitting.value=false
+                    calcResult.value={gross:grossPay,preTaxTotal:preTax+tradAmt,taxes:taxPerPeriod+ssTax+medTax,postTaxTotal:postTax+rothAmt,netPay:net};
                 };
 
+                const handleWizardNext = async () => {
+                    // Step 1: Calculator
+                    if(onboardingStep.value === 1) {
+                        if(!calcResult.value) { performCalculation(); return; } // First click calc
+                        // Save Base Pay immediately
+                        const freq = calcInputs.value.payFrequency;
+                        let monthly = calcResult.value.netPay * (freq==='Weekly'?4.33 : freq==='Bi-Weekly'?2.166 : freq==='Semi-Monthly'?2 : 1);
+                        await _supabase.from('user_settings').upsert({
+                            user_id:session.value.user.id,
+                            base_pay: monthly,
+                            salary: calcInputs.value.salary,
+                            commission: calcInputs.value.commission,
+                            pay_frequency: freq
+                        });
+                        dbBasePay.value = monthly;
+                        onboardingStep.value++;
+                    }
+                    // Step 2: Balances
+                    else if(onboardingStep.value === 2) {
+                        await _supabase.from('user_settings').upsert({
+                            user_id:session.value.user.id,
+                            current_balance: onboardingData.value.balance || 0,
+                            safety_margin: onboardingData.value.safety || 0
+                        });
+                        forecastSettings.value.currentBalance = onboardingData.value.balance;
+                        onboardingStep.value++;
+                    }
+                    // Step 3: Bill
+                    else if(onboardingStep.value === 3) {
+                        if(onboardingData.value.billName && onboardingData.value.billAmount) {
+                            await _supabase.from('budget_items').insert([{
+                                user_id:session.value.user.id,
+                                name: onboardingData.value.billName,
+                                amount: onboardingData.value.billAmount,
+                                due_day: onboardingData.value.billDay || 1,
+                                is_core: onboardingData.value.billCore,
+                                is_active: true
+                            }]);
+                        }
+                        onboardingStep.value++;
+                    }
+                    // Step 4: Wishlist
+                    else if(onboardingStep.value === 4) {
+                        if(onboardingData.value.wishName && onboardingData.value.wishAmount) {
+                            await _supabase.from('budget_items').insert([{
+                                user_id:session.value.user.id,
+                                name: onboardingData.value.wishName,
+                                amount: onboardingData.value.wishAmount,
+                                due_day: 0,
+                                is_wishlist: true,
+                                is_active: true
+                            }]);
+                        }
+                        onboardingStep.value++;
+                    }
+                    // Step 5: Goal (Finish)
+                    else if(onboardingStep.value === 5) {
+                        if(onboardingData.value.goalName && onboardingData.value.goalCost) {
+                            project.value = { name: onboardingData.value.goalName, cost: onboardingData.value.goalCost };
+                        }
+                        // Refresh everything and close
+                        await fetchSettings();
+                        await fetchBudgetItems();
+                        confetti({particleCount:150,spread:70,origin:{y:0.6}});
+                        showOnboarding.value = false;
+                    }
+                };
+
+                // --- EXISTING LOGIC PRESERVED ---
                 const debtPlan=computed(()=>{if(debts.value.length===0)return{payoffDate:'N/A',totalInterest:0,savedInterest:0,timeline:[]};const simulate=(extra)=>{let simDebts=JSON.parse(JSON.stringify(debts.value)).map(d=>({...d,balance:Number(d.balance),rate:Number(d.rate),min:Number(d.min_payment),paid_off:false}));let totalInterest=0,months=0,timeline=[],active=true,permanentSnowball=extra;while(active&&months<480){months++;let anyBalanceLeft=false,monthlySurplus=permanentSnowball;for(let d of simDebts){if(d.paid_off){monthlySurplus+=d.min;continue}anyBalanceLeft=true;let interest=d.balance*(d.rate/100/12);totalInterest+=interest;d.balance+=interest;let payment=Math.min(d.balance,d.min);d.balance-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0});monthlySurplus+=(d.min-payment)}}for(let d of simDebts){if(d.paid_off)continue;if(monthlySurplus<=0)break;let payment=Math.min(d.balance,monthlySurplus);d.balance-=payment;monthlySurplus-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0})}}if(!anyBalanceLeft)active=false}return{months,totalInterest,timeline}};const base=simulate(0);const attack=simulate(extraDebtPayment.value);const now=new Date();now.setMonth(now.getMonth()+attack.months);return{payoffDate:now.toLocaleDateString('en-US',{month:'long',year:'numeric'}),totalInterest:round(attack.totalInterest),savedInterest:round(base.totalInterest-attack.totalInterest),timeline:attack.timeline}});
                 const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
-                const calculateAndSave=async(mode)=>{savingBase.value=true;const{salary,commission,medical,dental,fsa,postTax,trad401k,roth401k,match401k,nextPayDate,payFrequency}=calcInputs.value;const payPeriods=24;const grossPay=(salary/payPeriods)+commission;const preTax=medical+dental+fsa;const ficaWages=Math.max(0,grossPay-preTax);const ssTax=Math.min(ficaWages,174900/payPeriods)*0.062;const medTax=(ficaWages*0.0145)+(grossPay*payPeriods>250000?((grossPay*payPeriods-250000)/payPeriods)*0.009:0);const tradAmt=grossPay*(trad401k/100);const rothAmt=grossPay*(roth401k/100);const taxable=grossPay-tradAmt-preTax;const annualTaxable=Math.max(0,(taxable*payPeriods)-30000);const taxPerPeriod=calculateFederalTax(annualTaxable)/payPeriods;const net=taxable-taxPerPeriod-postTax-rothAmt-ssTax-medTax;const finalPay=round(net-2.25);let monthly=finalPay*2;if(payFrequency==='Monthly')monthly=finalPay;if(payFrequency==='Bi-Weekly')monthly=finalPay*2.166;calcResult.value={gross:round(grossPay),preTaxTotal:round(preTax+tradAmt),taxes:round(taxPerPeriod+ssTax+medTax),postTaxTotal:round(postTax+rothAmt),netPay:finalPay};if(mode==='default'){dbBasePay.value=monthly;useTempPay.value=false;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,base_pay:dbBasePay.value,salary,commission,medical,dental,fsa,post_tax:postTax,trad_401k:trad401k,roth_401k:roth401k,match_401k:match401k,next_pay_date:nextPayDate,pay_frequency:payFrequency});alert("Saved!")}else{tempCalculatedPay.value=monthly;useTempPay.value=true}savingBase.value=false;currentView.value='budget'};
+                const calculateAndSave=async(mode)=>{savingBase.value=true; performCalculation(); const freq=calcInputs.value.payFrequency; const net=calcResult.value.netPay; let monthly=net*(freq==='Weekly'?4.33:freq==='Bi-Weekly'?2.166:freq==='Semi-Monthly'?2:1); if(mode==='default'){dbBasePay.value=monthly;useTempPay.value=false;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,base_pay:dbBasePay.value});alert("Saved!")}else{tempCalculatedPay.value=monthly;useTempPay.value=true}savingBase.value=false;currentView.value='budget'};
                 const runForecast=()=>{let balance=round(forecastSettings.value.currentBalance);const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const now=new Date();if(forecastData.value.length!==forecastSettings.value.months){forecastData.value=[];for(let i=0;i<forecastSettings.value.months;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);forecastData.value.push({name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,income:dbBasePay.value,extraExpenses:[],newExpenseId:'',newExpenseName:'',newExpenseAmount:'',isOpen:false})}}forecastResults.value.affordableMonth=null;forecastData.value.forEach((m,idx)=>{const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);const monthlyNet=m.income-coreExpenses.value-totalExtra;balance=round(balance+monthlyNet);m.endBalance=balance;if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){forecastResults.value.affordableMonth=m.name;forecastResults.value.affordableIndex=idx}});renderChart()};
                 const renderChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
                 const renderDashboardChart=()=>{const ctx=document.getElementById('dashboardChart');if(!ctx)return;if(dashboardChartInstance)dashboardChartInstance.destroy();const labels=[],dataCurrent=[],dataImpulse=[];let currentSimBalance=forecastSettings.value.currentBalance||0,impulseSimBalance=currentSimBalance;const today=new Date();let nextPay=calcInputs.value.nextPayDate?new Date(calcInputs.value.nextPayDate):null;const freq=calcInputs.value.payFrequency||'Bi-Weekly';const payAmount=calcResult.value?calcResult.value.netPay:(dbBasePay.value/(freq==='Monthly'?1:2));const runImpulse=impulseResult.value!==null||(impulseItem.value.cost&&showImpulseModal.value===false);const impulseCost=Number(impulseItem.value.cost),impulseDate=impulseItem.value.date;
@@ -253,7 +365,7 @@
                 watch(()=>forecastSettings.value.currentBalance,(newVal)=>{if(currentView.value==='dashboard')renderDashboardChart()});
                 watch(bills,()=>{if(currentView.value==='dashboard')renderDashboardChart()},{deep:true});
                 
-                return {session,authEmail,loading,authMessage,currentView,dbBasePay,tempCalculatedPay,useTempPay,activeMonthlyPay,budgetItems,bills,coreExpenses,debts,calcInputs,calcResult,savingBase,calculateAndSave,showPlanner,showAddForm,isSubmitting,newItem,isEditing,showGenModal,potentialBills,projectedBalance,totalMonthlyBurn,isScenarioActive,openGenerateModal,confirmGenerate,deleteBill,toggleBillPaid,handleSave,resetForm,startEditing,deleteBudgetItem,applyCoreOnly,applyAll,formatDate,getDaysLeft,getCalendarLink,fetchBills,saveBasePay,forecastSettings,forecastData,project,showProjectModal,newProject,forecastResults,runForecast,saveProject,addExpense,fillExpense,printReport,standardItems,wishlistItems,setScenarioMode,currentScenarioMode,getMonthlyCost,newDebt,extraDebtPayment,addDebt,deleteDebt,debtPlan,showPaidBills,visibleBills,generateMonthOffset,upcomingBills,safeToSpend,burnRate,cashFlowLowPoint,renderDashboardChart,dashboardMode,dashboardBurn,showDebtForm,showImpulseModal,impulseItem,impulseResult,checkImpulse,clearImpulse,showConsultant,chatMessages,userQuery,isThinking,openConsultant,sendQuery,renderMarkdown,showOnboarding,onboardingStep,onboardingData,nextOnboardingStep,handleLogin,handleLogout,lowPointData}
+                return {session,authEmail,loading,authMessage,currentView,dbBasePay,tempCalculatedPay,useTempPay,activeMonthlyPay,budgetItems,bills,coreExpenses,debts,calcInputs,calcResult,savingBase,calculateAndSave,showPlanner,showAddForm,isSubmitting,newItem,isEditing,showGenModal,potentialBills,projectedBalance,totalMonthlyBurn,isScenarioActive,openGenerateModal,confirmGenerate,deleteBill,toggleBillPaid,handleSave,resetForm,startEditing,deleteBudgetItem,applyCoreOnly,applyAll,formatDate,getDaysLeft,getCalendarLink,fetchBills,saveBasePay,forecastSettings,forecastData,project,showProjectModal,newProject,forecastResults,runForecast,saveProject,addExpense,fillExpense,printReport,standardItems,wishlistItems,setScenarioMode,currentScenarioMode,getMonthlyCost,newDebt,extraDebtPayment,addDebt,deleteDebt,debtPlan,showPaidBills,visibleBills,generateMonthOffset,upcomingBills,safeToSpend,burnRate,cashFlowLowPoint,renderDashboardChart,dashboardMode,dashboardBurn,showDebtForm,showImpulseModal,impulseItem,impulseResult,checkImpulse,clearImpulse,showConsultant,chatMessages,userQuery,isThinking,openConsultant,sendQuery,renderMarkdown,showOnboarding,onboardingStep,onboardingData,handleWizardNext,handleLogin,handleLogout,lowPointData}
             },
         }).mount('#app')
     </script>
