@@ -1,0 +1,182 @@
+import { useState } from 'react';
+import { supabase } from './supabaseClient'; 
+
+export default function OnboardingWizard({ session, onComplete }) {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  
+  // We start with one income block ready to go
+  const [incomes, setIncomes] = useState([
+    { name: 'Primary Income', gross: '', deductions: '', frequency: 'bi-weekly', is_variable: false }
+  ]);
+
+  // Add a blank row for a second income
+  const addIncomeSource = () => {
+    setIncomes([
+      ...incomes,
+      { name: 'Secondary Income', gross: '', deductions: '', frequency: 'bi-weekly', is_variable: false }
+    ]);
+  };
+
+  // Handle typing in the inputs
+  const updateIncome = (index, field, value) => {
+    const newIncomes = [...incomes];
+    newIncomes[index][field] = value;
+    setIncomes(newIncomes);
+  };
+
+  // Simple math for the UI display
+  const calculateTotalNet = () => {
+    return incomes.reduce((acc, inc) => {
+      const gross = parseFloat(inc.gross) || 0;
+      const ded = parseFloat(inc.deductions) || 0;
+      return acc + (gross - ded);
+    }, 0);
+  };
+
+  // THE SAVE FUNCTION
+  const handleSave = async () => {
+    setLoading(true);
+    const user = session.user;
+
+    // Format data for Supabase
+    const updates = incomes.map(inc => ({
+      user_id: user.id,
+      name: inc.name,
+      gross_amount: parseFloat(inc.gross) || 0,
+      taxes_and_deductions: parseFloat(inc.deductions) || 0,
+      frequency: inc.frequency,
+      is_variable: inc.is_variable
+    }));
+
+    const { error } = await supabase
+      .from('income_sources')
+      .upsert(updates);
+
+    if (error) {
+      alert('Error saving: ' + error.message);
+    } else {
+      // Success! Move to next app stage
+      if(onComplete) onComplete(); 
+      else alert("Saved! (Now we would move to the dashboard)");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
+      
+      {/* HEADER */}
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-bold text-gray-800">Let's set up your income</h1>
+        <p className="text-gray-500">Add your salary, commissions, or side hustles.</p>
+      </div>
+
+      {/* INCOME CARDS */}
+      <div className="space-y-6">
+        {incomes.map((income, index) => (
+          <div key={index} className="p-5 border border-gray-200 rounded-lg bg-gray-50">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg text-blue-700">Source #{index + 1}</h3>
+              {index > 0 && (
+                 <span className="text-xs text-gray-400">(Optional)</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Name */}
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name (e.g. Job, Bonus)</label>
+                <input
+                  type="text"
+                  value={income.name}
+                  onChange={(e) => updateIncome(index, 'name', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              {/* Frequency */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">How often?</label>
+                <select
+                  value={income.frequency}
+                  onChange={(e) => updateIncome(index, 'frequency', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded bg-white"
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="bi-weekly">Bi-Weekly (Every 2 weeks)</option>
+                  <option value="semi-monthly">Semi-Monthly (15th & 30th)</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+
+              {/* Variable Checkbox for your Commission */}
+              <div className="flex items-center mt-6">
+                <input
+                  type="checkbox"
+                  checked={income.is_variable}
+                  onChange={(e) => updateIncome(index, 'is_variable', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <label className="ml-2 text-sm text-gray-700">
+                  This amount varies (e.g. Commission)
+                </label>
+              </div>
+
+              {/* Gross */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gross Pay</label>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={income.gross}
+                  onChange={(e) => updateIncome(index, 'gross', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+              </div>
+
+              {/* Deductions */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Taxes/Deductions</label>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={income.deductions}
+                  onChange={(e) => updateIncome(index, 'deductions', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ACTIONS */}
+      <div className="mt-6 flex flex-col gap-4">
+        <button 
+          onClick={addIncomeSource}
+          className="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center justify-center gap-2"
+        >
+          <span>+ Add another income source</span>
+        </button>
+
+        <div className="p-4 bg-blue-50 rounded-lg text-center border border-blue-100">
+          <p className="text-gray-600 text-sm">Estimated Net (Per Paycheck Total)</p>
+          <p className="text-3xl font-bold text-gray-900">
+             ${calculateTotalNet().toLocaleString(undefined, {minimumFractionDigits: 2})}
+          </p>
+        </div>
+
+        <button 
+          onClick={handleSave}
+          disabled={loading}
+          className={`w-full py-3 px-4 rounded-lg text-white font-bold transition-all ${
+            loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-md'
+          }`}
+        >
+          {loading ? 'Saving...' : 'Save & Continue'}
+        </button>
+      </div>
+    </div>
+  );
+}
