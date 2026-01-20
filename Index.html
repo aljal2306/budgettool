@@ -67,7 +67,7 @@
                 </div>
 
                 <div class="mt-12 mb-8 text-center border-t border-slate-200 pt-8 opacity-50 hover:opacity-100 transition flex justify-center gap-4">
-                    <button v-if="budgetItems.length === 0 && dbBasePay.value === 0" @click="startWizard" class="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-6 py-3 rounded-lg font-bold hover:bg-emerald-100 hover:scale-105 transition transform shadow-sm">🚀 Start Setup Wizard</button>
+                    <button v-if="budgetItems.length === 0" @click="startWizard" class="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-6 py-3 rounded-lg font-bold hover:bg-emerald-100 hover:scale-105 transition transform shadow-sm">🚀 Start Setup Wizard</button>
                     <button v-else @click="startWizard" class="text-xs bg-slate-50 text-slate-600 border border-slate-200 px-4 py-3 rounded-lg font-bold hover:bg-slate-100 transition">↺ Restart Wizard</button>
                     
                     <button @click="resetDemo" class="text-xs bg-red-50 text-red-500 border border-red-100 px-4 py-3 rounded-lg font-bold hover:bg-red-100 transition">⚠️ Reset Account</button>
@@ -219,7 +219,7 @@
                     
                     const settingsPayload = { user_id: session.value.user.id };
                     
-                    // SAVE BALANCE (if entered)
+                    // SAVE BALANCE (Fix for 0 issue)
                     if(balance !== '') settingsPayload.current_balance = Number(balance);
                     if(safety !== '') settingsPayload.safety_margin = Number(safety);
 
@@ -247,7 +247,7 @@
                         settingsPayload.trad_401k = Number(trad401k)||0;
                     }
 
-                    // SAVE SETTINGS ONCE
+                    // SINGLE SAVE
                     await _supabase.from('user_settings').upsert(settingsPayload);
                     if(balance !== '') forecastSettings.value.currentBalance = Number(balance);
 
@@ -304,7 +304,7 @@
                     if(data){
                         dbBasePay.value=data.base_pay;
                         calcInputs.value={salary:data.salary||0,commission:data.commission||0,medical:data.medical||0,dental:data.dental||0,fsa:data.fsa||0,postTax:data.post_tax||0,trad401k:data.trad_401k||0,roth401k:data.roth_401k||0,match401k:data.match_401k||0,nextPayDate:data.next_pay_date,payFrequency:data.pay_frequency||'Semi-Monthly'};
-                        // FIX: Only use 5000 default if DB is null, not if DB is 0
+                        // FIX: Allow 0 as valid balance
                         forecastSettings.value.currentBalance = (data.current_balance !== null && data.current_balance !== undefined) ? data.current_balance : 5000;
                         forecastSettings.value.safetyMargin = (data.safety_margin !== null) ? data.safety_margin : 2000;
                     }
