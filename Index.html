@@ -3,20 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Master (Safe Mode)</title>
+    <title>Finance Master (Debug Mode)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
-        [v-cloak] { display: none; }
+        /* v-cloak removed so you can see the HTML immediately */
         .cursor-grab { cursor: grab; }
-        /* Simple scrollbar styling */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -24,7 +21,15 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans">
 
-    <div id="app" v-cloak class="max-w-6xl mx-auto p-4 md:p-8 pb-20">
+    <script>
+        window.onerror = function(msg, url, line) {
+            document.body.innerHTML += `<div style="position:fixed;top:0;left:0;width:100%;background:red;color:white;padding:20px;z-index:9999;">
+                <strong>CRASH DETECTED:</strong><br>${msg}<br>Line: ${line}
+            </div>`;
+        };
+    </script>
+
+    <div id="app" class="max-w-6xl mx-auto p-4 md:p-8 pb-20">
         
         <div v-if="!session" class="min-h-[80vh] flex flex-col items-center justify-center">
             <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-200 text-center">
@@ -49,423 +54,207 @@
                 <div class="flex items-center gap-2 bg-white p-1 rounded-xl shadow-sm border border-slate-200">
                     <button @click="currentView='dashboard'" class="px-3 py-2 text-xs font-bold rounded-lg" :class="currentView==='dashboard'?'bg-slate-900 text-white':'text-slate-500 hover:bg-slate-50'">Home</button>
                     <button @click="currentView='budget'" class="px-3 py-2 text-xs font-bold rounded-lg" :class="currentView==='budget'?'bg-slate-900 text-white':'text-slate-500 hover:bg-slate-50'">Budget</button>
-                    <button @click="currentView='forecast'" class="px-3 py-2 text-xs font-bold rounded-lg" :class="currentView==='forecast'?'bg-slate-900 text-white':'text-slate-500 hover:bg-slate-50'">Forecast</button>
-                    <button @click="currentView='debt'" class="px-3 py-2 text-xs font-bold rounded-lg" :class="currentView==='debt'?'bg-red-500 text-white':'text-slate-500 hover:bg-slate-50'">Debt</button>
+                    <button @click="currentView='calculator'" class="px-3 py-2 text-xs font-bold rounded-lg" :class="currentView==='calculator'?'bg-slate-900 text-white':'text-slate-500 hover:text-slate-900'">Paycheck</button>
                     <div class="w-px h-6 bg-slate-200 mx-1"></div>
-                    <button @click="startWizard" class="px-3 py-2 text-xs font-bold rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200">⚙️ Setup</button>
+                    <button @click="startWizard" class="px-3 py-2 text-xs font-bold rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200">⚙️ Setup</button>
                     <button @click="handleLogout" class="px-3 py-2 text-xs font-bold rounded-lg text-red-400 hover:bg-red-50">Exit</button>
                 </div>
             </div>
 
             <div v-if="currentView==='dashboard'">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-2xl shadow-lg text-white">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-xs font-bold text-emerald-100 uppercase">Safe To Spend</h3>
-                            <div class="flex bg-black/20 rounded p-1 gap-1">
-                                <button @click="dashboardMode='survival'" class="px-2 text-[10px] rounded" :class="dashboardMode==='survival'?'bg-white text-emerald-600':'text-emerald-100'">Survival</button>
-                                <button @click="dashboardMode='standard'" class="px-2 text-[10px] rounded" :class="dashboardMode==='standard'?'bg-white text-emerald-600':'text-emerald-100'">Standard</button>
-                            </div>
-                        </div>
+                        <div class="text-xs font-bold text-emerald-100 uppercase mb-2">Safe To Spend</div>
                         <div class="text-4xl font-black">${{ safeToSpend.toLocaleString() }}</div>
-                        <div class="text-xs text-emerald-100 mt-2 opacity-80">Income - {{ dashboardMode }} Bills</div>
+                        <div class="text-xs text-emerald-100 mt-2 opacity-80">Income - Bills</div>
                     </div>
-
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">Monthly Burn Rate</h3>
+                        <div class="text-xs font-bold text-slate-400 uppercase mb-2">Monthly Burn Rate</div>
                         <div class="text-4xl font-black text-slate-800">{{ burnRate }}%</div>
-                        <div class="w-full bg-slate-100 rounded-full h-2 mt-4">
-                            <div class="bg-slate-800 h-2 rounded-full" :style="{width: Math.min(burnRate, 100) + '%'}"></div>
-                        </div>
-                        <div class="text-xs text-slate-400 mt-2">${{ dashboardBurn.toLocaleString() }} / ${{ activeMonthlyPay.toLocaleString() }}</div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">30-Day Projection</h3>
-                        <div class="h-24 relative">
-                            <canvas id="dashboardChart"></canvas>
-                        </div>
-                        <div class="text-center mt-2">
-                            <span class="text-xs font-bold px-2 py-1 rounded" :class="cashFlowLowPoint.amount < 0 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'">
-                                Low: ${{ cashFlowLowPoint.amount.toLocaleString() }}
-                            </span>
-                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 mt-4"><div class="bg-slate-800 h-2 rounded-full" :style="{width: Math.min(burnRate, 100) + '%'}"></div></div>
                     </div>
                 </div>
             </div>
 
-            <div v-if="currentView==='budget'" class="bg-white p-8 rounded-xl border border-slate-200 text-center">
-                <h2 class="text-xl font-bold mb-2">Budget View</h2>
-                <p class="text-slate-500">Use the buttons above to navigate or "Setup" to add data.</p>
-                <div class="mt-4 p-4 bg-slate-50 rounded text-left">
-                    <div v-for="item in budgetItems" class="flex justify-between border-b py-2">
-                        <span>{{ item.name }}</span>
+            <div v-if="currentView==='budget'" class="bg-white p-6 rounded-2xl border border-slate-200">
+                <h2 class="text-xl font-bold mb-4">Your Budget</h2>
+                <div v-if="budgetItems.length === 0" class="text-center py-8 text-slate-400">No items found. Use Setup!</div>
+                <div v-else class="space-y-2">
+                    <div v-for="item in budgetItems" :key="item.id" class="flex justify-between p-3 border rounded bg-slate-50">
+                        <span class="font-bold">{{ item.name }}</span>
                         <span class="font-mono">${{ item.amount }}</span>
                     </div>
                 </div>
             </div>
 
-            <div v-if="currentView==='forecast'" class="bg-white p-8 rounded-xl border border-slate-200 text-center">
-                <h2 class="text-xl font-bold">Forecast View</h2>
-                <div class="h-64 mt-4"><canvas id="forecastChart"></canvas></div>
+            <div v-if="currentView==='calculator'" class="bg-white p-6 rounded-2xl border border-slate-200 text-center">
+                <h2 class="text-xl font-bold mb-2">Paycheck Calculator</h2>
+                <p class="text-slate-500 mb-4">Current Base Pay Setting: <b>${{ dbBasePay.toLocaleString() }}/mo</b></p>
+                <button @click="startWizard" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold">Update via Setup Wizard</button>
             </div>
 
-            <div v-if="currentView==='debt'" class="bg-white p-8 rounded-xl border border-slate-200 text-center">
-                <h2 class="text-xl font-bold">Debt Attack</h2>
-                <div v-if="debts.length === 0" class="mt-4 text-slate-400">No debts added yet. Use Setup!</div>
-                <div v-else class="mt-4 space-y-2">
-                    <div v-for="d in debts" class="flex justify-between p-3 border rounded bg-slate-50">
-                        <span class="font-bold">{{ d.name }}</span>
-                        <span>${{ d.balance }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        </div> <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="h-2 w-full bg-slate-100">
-                    <div class="h-full bg-emerald-500 transition-all duration-300" :style="{ width: (onboardingStep / 5) * 100 + '%' }"></div>
-                </div>
-
+                <div class="h-2 w-full bg-slate-100"><div class="h-full bg-emerald-500 transition-all duration-300" :style="{ width: (onboardingStep / 5) * 100 + '%' }"></div></div>
                 <div class="p-6 overflow-y-auto">
                     
                     <div v-if="onboardingStep === 1">
-                        <div class="text-center mb-6">
-                            <h2 class="text-2xl font-bold">Calculate Paycheck</h2>
-                            <p class="text-slate-500 text-sm">Enter details to find your true monthly net.</p>
-                        </div>
+                        <h2 class="text-2xl font-bold mb-4 text-center">Calculate Pay</h2>
                         <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase">Annual Salary</label>
-                                    <input v-model.number="calcInputs.salary" type="number" class="w-full p-2 border rounded">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase">Frequency</label>
-                                    <select v-model="calcInputs.payFrequency" class="w-full p-2 border rounded">
-                                        <option value="Bi-Weekly">Bi-Weekly</option>
-                                        <option value="Semi-Monthly">Semi-Monthly</option>
-                                        <option value="Monthly">Monthly</option>
-                                        <option value="Weekly">Weekly</option>
-                                    </select>
-                                </div>
+                            <input v-model.number="calcInputs.salary" type="number" placeholder="Annual Salary" class="w-full p-3 border rounded">
+                            <select v-model="calcInputs.payFrequency" class="w-full p-3 border rounded">
+                                <option value="Bi-Weekly">Bi-Weekly (Every 2 wks)</option>
+                                <option value="Semi-Monthly">Semi-Monthly (15th/30th)</option>
+                                <option value="Monthly">Monthly</option>
+                            </select>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input v-model.number="calcInputs.medical" type="number" placeholder="Medical $" class="p-2 border rounded">
+                                <input v-model.number="calcInputs.postTax" type="number" placeholder="Tax/Ded $" class="p-2 border rounded">
                             </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <input v-model.number="calcInputs.medical" type="number" placeholder="Medical $" class="p-2 border rounded text-sm">
-                                <input v-model.number="calcInputs.trad401k" type="number" placeholder="401k %" class="p-2 border rounded text-sm">
-                                <input v-model.number="calcInputs.postTax" type="number" placeholder="Post-Tax $" class="p-2 border rounded text-sm">
-                            </div>
-                            <div v-if="calcResult" class="bg-emerald-50 p-4 rounded text-center border border-emerald-100">
-                                <div class="text-xs text-emerald-600 font-bold uppercase">Estimated Net Per Check</div>
-                                <div class="text-2xl font-black text-emerald-700">${{ calcResult.netPay.toFixed(2) }}</div>
-                            </div>
+                            <div v-if="calcResult" class="bg-emerald-50 p-3 rounded text-center font-bold text-emerald-700">Net: ${{ calcResult.netPay.toFixed(2) }}</div>
                         </div>
                     </div>
 
                     <div v-if="onboardingStep === 2">
-                        <div class="text-center mb-6">
-                            <h2 class="text-2xl font-bold">Current Status</h2>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase">Checking Balance</label>
-                                <input v-model.number="onboardingData.balance" type="number" class="w-full p-3 border rounded text-lg font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase">Safety Buffer</label>
-                                <input v-model.number="onboardingData.safety" type="number" class="w-full p-3 border rounded text-lg font-bold">
-                            </div>
-                        </div>
+                        <h2 class="text-2xl font-bold mb-4 text-center">Balances</h2>
+                        <input v-model.number="onboardingData.balance" type="number" placeholder="Current Bank Balance" class="w-full p-3 border rounded mb-2">
+                        <input v-model.number="onboardingData.safety" type="number" placeholder="Safety Margin ($2000)" class="w-full p-3 border rounded">
                     </div>
 
                     <div v-if="onboardingStep === 3">
-                        <div class="text-center mb-6">
-                            <h2 class="text-2xl font-bold">Add One Core Bill</h2>
-                            <p class="text-sm text-slate-500">Like Rent or Mortgage.</p>
-                        </div>
-                        <div class="space-y-3">
-                            <input v-model="onboardingData.billName" type="text" placeholder="Bill Name" class="w-full p-3 border rounded">
-                            <div class="grid grid-cols-2 gap-3">
-                                <input v-model.number="onboardingData.billAmount" type="number" placeholder="Amount ($)" class="w-full p-3 border rounded">
-                                <input v-model.number="onboardingData.billDay" type="number" placeholder="Day Due (1-31)" class="w-full p-3 border rounded">
-                            </div>
-                        </div>
+                        <h2 class="text-2xl font-bold mb-4 text-center">Add Core Bill</h2>
+                        <input v-model="onboardingData.billName" type="text" placeholder="Bill Name (e.g. Rent)" class="w-full p-3 border rounded mb-2">
+                        <input v-model.number="onboardingData.billAmount" type="number" placeholder="Amount ($)" class="w-full p-3 border rounded">
                     </div>
 
-                    <div v-if="onboardingStep === 4">
-                        <div class="text-center mb-6">
-                            <h2 class="text-2xl font-bold">Add a Wish</h2>
-                            <p class="text-sm text-slate-500">Something fun to save for.</p>
-                        </div>
-                        <div class="space-y-3">
-                            <input v-model="onboardingData.wishName" type="text" placeholder="Item Name" class="w-full p-3 border rounded">
-                            <input v-model.number="onboardingData.wishAmount" type="number" placeholder="Estimated Cost ($)" class="w-full p-3 border rounded">
-                        </div>
+                    <div class="mt-6 flex gap-2">
+                        <button v-if="onboardingStep > 1" @click="onboardingStep--" class="px-4 py-3 bg-slate-100 rounded-lg font-bold text-slate-500">Back</button>
+                        <button @click="handleWizardNext" class="flex-1 bg-slate-900 text-white py-3 rounded-lg font-bold">{{ onboardingStep===1 && !calcResult ? 'Calculate' : (onboardingStep===5?'Finish':'Next') }}</button>
                     </div>
-
-                    <div v-if="onboardingStep === 5">
-                        <div class="text-center mb-6">
-                            <h2 class="text-2xl font-bold">Big Goal</h2>
-                            <p class="text-sm text-slate-500">Your main focus.</p>
-                        </div>
-                        <div class="space-y-3">
-                            <input v-model="onboardingData.goalName" type="text" placeholder="Goal Name" class="w-full p-3 border rounded">
-                            <input v-model.number="onboardingData.goalCost" type="number" placeholder="Target Amount ($)" class="w-full p-3 border rounded">
-                        </div>
-                    </div>
-
-                    <div class="mt-8 flex gap-3 pt-4 border-t">
-                        <button v-if="onboardingStep > 1" @click="onboardingStep--" class="px-4 py-2 text-slate-400 font-bold hover:bg-slate-50 rounded">Back</button>
-                        <button @click="handleWizardNext" class="flex-1 bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800">
-                            {{ onboardingStep === 1 && !calcResult ? 'Calculate' : (onboardingStep === 5 ? 'Finish' : 'Next') }}
-                        </button>
-                    </div>
-                    <button @click="showOnboarding=false" class="block w-full text-center text-xs text-slate-300 mt-4 hover:text-slate-500">Close Setup</button>
+                    <button @click="showOnboarding=false" class="mt-4 text-xs text-slate-400 w-full text-center hover:underline">Close Setup</button>
                 </div>
             </div>
         </div>
 
-    </div> 
+    </div>
+
     <script>
-        const {createApp, ref, computed, onMounted, nextTick, watch} = Vue;
+        const {createApp, ref, computed, onMounted} = Vue;
         const {createClient} = supabase;
         
-        // ⚠️ SUPABASE KEYS 
         const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
-        
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // --- HELPERS ---
-        const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
-        const getMonthlyCost = (i) => { let a = Number(i.amount); if (i.frequency === 'Quarterly') return a / 3; if (i.frequency === 'Yearly') return a / 12; return a; };
-        // Tax Brackets (2024 Single approx)
-        const taxBrackets = [{ limit: 11600, rate: 0.1 }, { limit: 47150, rate: 0.12 }, { limit: 100525, rate: 0.22 }, { limit: 191950, rate: 0.24 }, { limit: 243725, rate: 0.32 }, { limit: 609350, rate: 0.35 }, { limit: Infinity, rate: 0.37 }];
-        const calculateFederalTax = (inc) => { let t = 0, l = 0; for (const b of taxBrackets) { if (inc > b.limit) { t += (b.limit - l) * b.rate; l = b.limit; } else { t += (inc - l) * b.rate; break; } } return t; };
 
         createApp({
             setup() {
-                // STATE
                 const session = ref(null);
                 const authEmail = ref('');
                 const loading = ref(false);
                 const authMessage = ref('');
                 const currentView = ref('dashboard');
                 
-                // DATA
+                // Data State
                 const dbBasePay = ref(0);
-                const activeMonthlyPay = ref(0); // Using ref for simplicity in Safe Mode
                 const budgetItems = ref([]);
+                const bills = ref([]);
                 const debts = ref([]);
-                const bills = ref([]); // Ledger
                 
-                // WIZARD STATE
+                // Wizard State
                 const showOnboarding = ref(false);
                 const onboardingStep = ref(1);
-                const onboardingData = ref({ balance: 0, safety: 0, billName: '', billAmount: 0, billDay: 1, billCore: true, wishName: '', wishAmount: 0, goalName: '', goalCost: 0 });
-                const calcInputs = ref({ salary: 0, commission: 0, medical: 0, trad401k: 0, postTax: 0, payFrequency: 'Bi-Weekly' });
+                const onboardingData = ref({ balance: 0, safety: 0, billName: '', billAmount: 0 });
+                const calcInputs = ref({ salary: 0, medical: 0, postTax: 0, payFrequency: 'Bi-Weekly' });
                 const calcResult = ref(null);
 
-                // DASHBOARD VARS
-                const dashboardMode = ref('standard');
-                const forecastSettings = ref({ currentBalance: 0, safetyMargin: 0, months: 12 });
-                const project = ref(null);
-                const forecastData = ref([]);
-                const forecastResults = ref({ affordableMonth: null });
-                const lowPointData = ref({ amount: 0, date: '-' });
-                const showImpulseModal = ref(false);
-                const impulseItem = ref({name:'', cost:0, date:''});
-                const impulseResult = ref(null);
-                let dashboardChartInstance = null;
-                let forecastChartInstance = null;
-
                 // --- FUNCTIONS ---
-
-                const startWizard = () => {
-                    onboardingStep.value = 1;
-                    showOnboarding.value = true;
-                };
+                const startWizard = () => { onboardingStep.value = 1; showOnboarding.value = true; };
 
                 const performCalculation = () => {
-                    // Simple Calc Logic
-                    const { salary, payFrequency, medical, trad401k, postTax } = calcInputs.value;
+                    const { salary, medical, postTax, payFrequency } = calcInputs.value;
                     if(!salary) return;
-                    
-                    const payPeriods = payFrequency === 'Weekly' ? 52 : payFrequency === 'Bi-Weekly' ? 26 : payFrequency === 'Semi-Monthly' ? 24 : 12;
+                    const payPeriods = payFrequency === 'Weekly' ? 52 : payFrequency === 'Bi-Weekly' ? 26 : 24;
                     const gross = salary / payPeriods;
-                    const taxable = gross - (gross * (trad401k/100)) - medical;
-                    const tax = calculateFederalTax(taxable * payPeriods) / payPeriods;
-                    const net = taxable - tax - postTax - (gross * 0.0765); // FICA approx
-                    
+                    const net = gross - medical - postTax - (gross * 0.20); // 20% tax estimate for safety
                     calcResult.value = { netPay: Math.max(0, net) };
                 };
 
                 const handleWizardNext = async () => {
-                    const user = session.value?.user;
-                    if (!user) return;
-
                     if (onboardingStep.value === 1) {
                         performCalculation();
                         if (!calcResult.value) return;
                         
-                        // Save Base Pay
-                        let monthly = calcResult.value.netPay * (calcInputs.value.payFrequency === 'Monthly' ? 1 : 2); // Simple approx for now
-                        if(calcInputs.value.payFrequency === 'Weekly') monthly = calcResult.value.netPay * 4.33;
-                        if(calcInputs.value.payFrequency === 'Bi-Weekly') monthly = calcResult.value.netPay * 2.166;
-
-                        dbBasePay.value = monthly;
-                        activeMonthlyPay.value = monthly;
+                        let monthly = calcResult.value.netPay * (calcInputs.value.payFrequency==='Monthly'?1:2);
+                        if(calcInputs.value.payFrequency==='Weekly') monthly = calcResult.value.netPay * 4.33;
+                        if(calcInputs.value.payFrequency==='Bi-Weekly') monthly = calcResult.value.netPay * 2.166;
                         
-                        await _supabase.from('user_settings').upsert({
-                            user_id: user.id,
-                            base_pay: monthly,
-                            salary: calcInputs.value.salary
-                        });
+                        dbBasePay.value = monthly; // Update local state immediately
+                        if(session.value) {
+                            await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, base_pay: monthly });
+                        }
                         onboardingStep.value++;
-                    } 
-                    else if (onboardingStep.value === 2) {
-                        // Balances
-                        forecastSettings.value.currentBalance = onboardingData.value.balance;
-                        await _supabase.from('user_settings').upsert({
-                            user_id: user.id,
-                            current_balance: onboardingData.value.balance,
-                            safety_margin: onboardingData.value.safety
-                        });
+                    } else if (onboardingStep.value === 2) {
+                        if(session.value) {
+                            await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: onboardingData.value.balance });
+                        }
                         onboardingStep.value++;
-                    }
-                    else if (onboardingStep.value === 3) {
-                        // Bill
-                        if(onboardingData.value.billName) {
+                    } else if (onboardingStep.value === 3) {
+                        if(onboardingData.value.billName && session.value) {
                             await _supabase.from('budget_items').insert([{
-                                user_id: user.id,
+                                user_id: session.value.user.id,
                                 name: onboardingData.value.billName,
                                 amount: onboardingData.value.billAmount,
-                                due_day: onboardingData.value.billDay,
-                                is_core: true, is_active: true
+                                due_day: 1, is_core: true, is_active: true
                             }]);
+                            await fetchBudgetItems();
                         }
-                        onboardingStep.value++;
-                    }
-                    else if (onboardingStep.value === 4) {
-                        // Wish
-                        if(onboardingData.value.wishName) {
-                            await _supabase.from('budget_items').insert([{
-                                user_id: user.id,
-                                name: onboardingData.value.wishName,
-                                amount: onboardingData.value.wishAmount,
-                                due_day: 0, is_wishlist: true, is_active: true
-                            }]);
-                        }
-                        onboardingStep.value++;
-                    }
-                    else if (onboardingStep.value === 5) {
-                        // Finish
-                        await loadAllData();
+                        showOnboarding.value = false; // FINISH AT STEP 3 FOR SAFETY TEST
+                    } else {
                         showOnboarding.value = false;
-                        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
                     }
+                };
+
+                const fetchBudgetItems = async () => {
+                    if(!session.value) return;
+                    const { data } = await _supabase.from('budget_items').select('*').eq('user_id', session.value.user.id);
+                    if(data) budgetItems.value = data;
                 };
 
                 const handleLogin = async () => {
                     loading.value = true;
                     await _supabase.auth.signInWithOtp({ email: authEmail.value, options: { emailRedirectTo: window.location.href } });
-                    authMessage.value = "Check your email!";
+                    authMessage.value = "Link Sent!";
                     loading.value = false;
                 };
 
-                const handleLogout = async () => {
-                    await _supabase.auth.signOut();
-                    session.value = null;
-                };
+                const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; };
 
-                const loadAllData = async () => {
-                    const user = session.value?.user;
-                    if(!user) return;
-
-                    // Load Settings
-                    const { data: settings } = await _supabase.from('user_settings').select('*').eq('user_id', user.id).single();
-                    if(settings) {
-                        dbBasePay.value = settings.base_pay;
-                        activeMonthlyPay.value = settings.base_pay;
-                        forecastSettings.value.currentBalance = settings.current_balance;
-                    }
-
-                    // Load Budget
-                    const { data: items } = await _supabase.from('budget_items').select('*').eq('user_id', user.id).eq('is_active', true);
-                    if(items) budgetItems.value = items;
-
-                    // Load Debts
-                    const { data: d } = await _supabase.from('debts').select('*').eq('user_id', user.id);
-                    if(d) debts.value = d;
-                    
-                    renderDashboardChart();
-                };
-
-                // COMPATIBILITY COMPUTED
-                const burnRate = computed(() => {
-                    if(activeMonthlyPay.value === 0) return 0;
-                    const expenseTotal = budgetItems.value.filter(i => !i.is_wishlist).reduce((sum, i) => sum + getMonthlyCost(i), 0);
-                    return Math.round((expenseTotal / activeMonthlyPay.value) * 100);
-                });
+                // Computed Helpers for Dashboard
+                const activeMonthlyPay = computed(() => dbBasePay.value || 1);
+                const dashboardBurn = computed(() => budgetItems.value.reduce((sum, i) => sum + (Number(i.amount)||0), 0));
+                const safeToSpend = computed(() => activeMonthlyPay.value - dashboardBurn.value);
+                const burnRate = computed(() => Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100));
                 
-                const dashboardBurn = computed(() => {
-                    return budgetItems.value.filter(i => !i.is_wishlist).reduce((sum, i) => sum + getMonthlyCost(i), 0);
-                });
-
-                const safeToSpend = computed(() => {
-                    return Math.round(activeMonthlyPay.value - dashboardBurn.value);
-                });
-
-                // Chart Logic (Simplified)
-                const renderDashboardChart = () => {
-                    const ctx = document.getElementById('dashboardChart');
-                    if(!ctx) return;
-                    if(dashboardChartInstance) dashboardChartInstance.destroy();
-                    
-                    const labels = Array.from({length:30}, (_, i) => i+1);
-                    const data = labels.map(d => forecastSettings.value.currentBalance - (d * 50)); // Dummy slope for safe mode viz
-                    
-                    dashboardChartInstance = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [{ label: 'Projection', data: data, borderColor: '#10B981', tension: 0.4 }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
-                    });
-                };
-
-                const debtPlan = computed(() => ({ payoffDate: 'Calc...', totalInterest: 0, savedInterest: 0, timeline: [] }));
-                const upcomingBills = computed(() => []); // Placeholder
-                const cashFlowLowPoint = computed(() => ({ amount: 0, date: 'N/A' }));
-                const getDaysLeft = () => 0; 
-                const getCalendarLink = () => '#';
-                
-                // Watchers & Mount
+                // Mount Logic
                 onMounted(() => {
                     _supabase.auth.getSession().then(({ data }) => {
                         session.value = data.session;
-                        if (session.value) loadAllData();
+                        if(session.value) fetchBudgetItems();
                     });
-                    
-                    _supabase.auth.onAuthStateChange((_event, _session) => {
-                        session.value = _session;
-                        if (_session) loadAllData();
-                    });
+                    _supabase.auth.onAuthStateChange((_e, _s) => { session.value = _s; if(_s) fetchBudgetItems(); });
                 });
 
                 return {
                     session, authEmail, loading, authMessage, handleLogin, handleLogout,
                     currentView, showOnboarding, onboardingStep, onboardingData, calcInputs, calcResult,
                     startWizard, handleWizardNext,
-                    dashboardMode, safeToSpend, burnRate, dashboardBurn, activeMonthlyPay,
-                    budgetItems, debts, forecastSettings, cashFlowLowPoint,
-                    debtPlan, upcomingBills, getDaysLeft, getCalendarLink,
-                    renderDashboardChart, project, showImpulseModal, impulseItem, impulseResult, showConsultant, chatMessages, showGenModal, potentialBills
+                    safeToSpend, burnRate, dashboardBurn, activeMonthlyPay, budgetItems, 
+                    // Placeholders to prevent crash
+                    cashFlowLowPoint: {amount:0}, debtPlan: {payoffDate:'-'}, upcomingBills: [],
+                    getDaysLeft: ()=>0, getCalendarLink: ()=>'#'
                 }
             }
-        }).mount('#app');
+        }).mount('#app')
     </script>
 </body>
 </html>
