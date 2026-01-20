@@ -61,7 +61,6 @@
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative"><div class="flex justify-between items-end mb-2"><div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Burn Rate</div><div class="text-lg font-black" :class="burnRate>90?'text-red-500':'text-slate-700'">{{burnRate}}%</div></div><div class="w-full bg-slate-100 rounded-full h-4 mt-2 overflow-hidden shadow-inner"><div class="h-4 rounded-full transition-all duration-1000 ease-out" :class="burnRate>100?'bg-red-500':(burnRate>85?'bg-orange-400':'bg-emerald-500')" :style="{width:Math.min(burnRate,100)+'%'}"></div></div><div class="text-[10px] text-slate-400 mt-3 text-right font-mono">${{dashboardBurn.toLocaleString()}} used of ${{activeMonthlyPay.toLocaleString()}}</div></div>
                     <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-300 border border-slate-700 col-span-1 md:col-span-2 flex flex-col justify-center relative overflow-hidden"><div class="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500 rounded-full blur-[80px] opacity-20"></div><div class="flex flex-col md:flex-row justify-between items-center relative z-10 gap-4"><div><div class="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Debt Free By</div><div class="text-3xl md:text-4xl font-black text-white">{{debtPlan.payoffDate}}</div><div class="text-xs text-slate-400 mt-1">based on ${{extraDebtPayment}} extra/mo</div></div><div v-if="project" class="w-full md:w-auto bg-white/5 p-3 rounded-xl border border-white/10 backdrop-blur-sm"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target: {{project.name}}</div><div class="flex items-center gap-2"><div class="text-xl font-bold" :class="forecastResults.affordableMonth?'text-emerald-400':'text-red-400'">{{forecastResults.affordableMonth||'Not affordable yet'}}</div><span v-if="forecastResults.affordableMonth">🎉</span></div></div></div></div>
                 </div>
-                
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><h3 class="font-bold text-sm text-slate-800 uppercase mb-4 flex items-center gap-2"><span class="bg-red-100 text-red-600 p-1 rounded">🚨</span> Due Next 7 Days</h3><div class="space-y-2"><div v-if="upcomingBills.length===0" class="text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">No bills due soon. Relax! 🏝️</div><div v-for="bill in upcomingBills" :key="bill.id" class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 hover:shadow-md transition hover:border-slate-200 group"><div><div class="font-bold text-sm text-slate-700">{{bill.budget_items.name}}</div><div class="text-[10px] font-bold uppercase tracking-wide mt-0.5" :class="getDaysLeft(bill.due_date)<0?'text-red-500':(getDaysLeft(bill.due_date)===0?'text-orange-500':'text-slate-400')">{{getDaysLeft(bill.due_date)<=0?(getDaysLeft(bill.due_date)===0?'Due Today':'Overdue'):getDaysLeft(bill.due_date)+' Days Left'}}</div></div><div class="text-right"><div class="font-mono text-sm font-bold text-slate-900">${{bill.budget_items.amount}}</div><a :href="getCalendarLink(bill)" target="_blank" class="text-[10px] text-blue-500 font-bold hover:underline opacity-0 group-hover:opacity-100 transition">Pay Now</a></div></div><button @click="currentView='budget'" class="w-full text-center text-xs font-bold text-slate-400 hover:text-slate-600 mt-4 pt-2">View All Bills &rarr;</button></div></div>
                     <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><div class="flex flex-wrap justify-between items-center mb-6 gap-2"><div class="flex items-center gap-3"><h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-blue-100 text-blue-600 p-1 rounded">📉</span> 30-Day Cash Flow</h3><button @click="showImpulseModal=true" class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition">🤔 Can I Afford It?</button></div><div class="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200"><span class="text-[10px] font-bold text-slate-400 uppercase px-2">Balance Now:</span><input type="number" v-model.number="forecastSettings.currentBalance" @input="renderDashboardChart" class="w-24 p-1 bg-white border border-slate-200 rounded text-right font-mono font-bold text-sm text-slate-700 outline-none focus:border-blue-500"></div></div><div class="h-64 w-full relative"><canvas id="dashboardChart"></canvas></div><div v-if="cashFlowLowPoint && !impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="cashFlowLowPoint.amount<0?'bg-red-50 border-red-100 text-red-700':'bg-emerald-50 border-emerald-100 text-emerald-700'"><span class="text-lg">{{cashFlowLowPoint.amount<0?'⚠️':'✅'}}</span> Lowest projected balance: <span class="font-mono font-bold text-sm">${{cashFlowLowPoint.amount.toLocaleString()}}</span> on {{cashFlowLowPoint.date}}</div><div v-if="impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="impulseResult.safe?'bg-emerald-50 border-emerald-100 text-emerald-700':'bg-red-50 border-red-100 text-red-700'"><span class="text-lg">{{impulseResult.safe?'✅':'❌'}}</span><span>{{impulseResult.message}}</span><button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button></div></div>
@@ -78,7 +77,7 @@
             <div v-if="currentView==='forecast'" class="animate-fade-in"><div class="grid grid-cols-1 lg:grid-cols-4 gap-6"><div class="lg:col-span-1 space-y-4 print:hidden"><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3><label class="block text-xs mb-1">Bank Balance Now</label><input v-model="forecastSettings.currentBalance" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Safety Margin</label><input v-model="forecastSettings.safetyMargin" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Months to Forecast</label><select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg bg-slate-50"><option v-for="n in 24" :value="n">{{ n }} Months</option></select><button @click="runForecast" class="w-full mt-3 bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800">Refresh Forecast</button></div><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3><button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button><button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button></div><div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100"><div class="font-bold text-blue-900">{{ project.name }}</div><div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div><div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div></div><div v-else class="text-xs text-slate-400 italic text-center py-2">No active goals</div></div></div><div class="lg:col-span-3 print:col-span-4 space-y-6"><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 print:border-0 print:shadow-none"><div class="flex justify-between items-center mb-2 print:hidden"><h3 class="font-bold">{{ project ? project.name + ' Projection' : 'Financial Projection' }}</h3><button @click="printReport" class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🖨️ Print Report</button></div><canvas id="forecastChart" style="max-height: 300px; width: 100%;"></canvas></div><div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none"><div class="p-4 border-b bg-slate-50 font-bold text-sm text-slate-500 print:bg-white print:border-b-2 print:text-black">Monthly Details</div><div v-for="(month, idx) in forecastData" :key="idx" class="border-b last:border-0 print:border-slate-200 no-break"><div @click="month.isOpen = !month.isOpen" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 print:cursor-default"><div class="font-bold text-sm text-slate-700">{{ month.name }}</div><div class="flex gap-4 text-sm font-mono"><span class="text-slate-400">In: ${{ month.income.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span><span :class="month.endBalance < 0 ? 'text-red-500' : 'text-emerald-600'">End: ${{ month.endBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span><span class="text-slate-300 text-xs transform transition print:hidden" :class="month.isOpen ? 'rotate-180' : ''">▼</span></div></div><div v-if="month.isOpen" class="p-3 bg-slate-50 text-xs border-t print:bg-white print:block"><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 print:grid-cols-2"><div class="print:hidden"><div class="flex justify-between items-center mb-1"><label class="block font-bold text-slate-400">Total Income</label><button v-if="tempCalculatedPay && tempCalculatedPay !== month.income" @click="month.income = tempCalculatedPay; runForecast()" class="text-[10px] text-emerald-600 font-bold hover:underline">Apply Calc Pay (${{ tempCalculatedPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }})</button><button v-else-if="dbBasePay !== month.income" @click="month.income = dbBasePay; runForecast()" class="text-[10px] text-blue-500 hover:underline">Reset to Base</button></div><input type="number" v-model.number="month.income" @change="runForecast" step="0.01" class="p-1 border rounded w-full"></div><div class="flex flex-col justify-center"><div class="text-slate-500">Core Burn: <span class="font-mono text-red-400">-${{ coreExpenses.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div><div class="text-slate-500">Optional: <span class="font-mono text-orange-400">-${{ month.extraExpenses.reduce((a,b)=>a+b.amount,0).toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div></div></div><div class="bg-orange-50/50 p-2 rounded border border-orange-100 print:bg-white print:border-0"><h6 class="font-bold text-orange-400 mb-2 print:text-black">Optional Expenses</h6><div class="space-y-2 mb-2"><div v-for="(exp, eIdx) in month.extraExpenses" :key="eIdx" class="flex justify-between items-center bg-white p-1 px-2 rounded border border-orange-100 shadow-sm print:border-0 print:shadow-none print:px-0"><span>{{ exp.name }}</span><div class="flex items-center gap-2"><span class="font-mono">${{ exp.amount.toFixed(2) }}</span><button @click="month.extraExpenses.splice(eIdx, 1); runForecast()" class="text-red-400 hover:text-red-600 font-bold print:hidden">&times;</button></div></div><div v-if="month.extraExpenses.length === 0" class="text-slate-400 italic text-center py-1">None added</div></div><div class="flex gap-2 items-end print:hidden"><div class="flex-1"><select v-model="month.newExpenseId" @change="fillExpense(month)" class="w-full p-1 border rounded text-xs mb-1"><option value="">-- Pick from Budget --</option><option v-for="item in budgetItems" :value="item.id">{{ item.name }} (${{ item.amount.toFixed(2) }})</option></select><input v-model="month.newExpenseName" placeholder="Name" class="w-full p-1 border rounded"></div><div class="w-20"><input v-model.number="month.newExpenseAmount" type="number" step="0.01" placeholder="$" class="w-full p-1 border rounded"></div><button @click="addExpense(month)" class="bg-orange-400 text-white px-3 py-1 rounded font-bold hover:bg-orange-500">Add</button></div></div></div></div></div></div></div></div>
             <div v-if="currentView==='debt'" class="animate-fade-in print:hidden"><div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="lg:col-span-1 space-y-6"><button v-if="!showDebtForm" @click="showDebtForm = true" class="w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-dashed text-slate-500 font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2">+ Add New Liability</button><div v-else class="bg-white p-6 rounded-2xl shadow-lg border border-blue-200 ring-2 ring-blue-50"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm text-slate-800 uppercase">Add Liability</h3><button @click="showDebtForm = false" class="text-slate-400 hover:text-slate-600">&times;</button></div><div class="space-y-3"><input v-model="newDebt.name" type="text" placeholder="Debt Name (e.g. Visa)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><div class="grid grid-cols-2 gap-2"><input v-model="newDebt.balance" type="number" step="0.01" placeholder="Balance ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><input v-model="newDebt.rate" type="number" step="0.01" placeholder="Rate (%)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"></div><input v-model="newDebt.min_payment" type="number" step="0.01" placeholder="Min Payment ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><div class="flex gap-2 pt-2"><button @click="addDebt" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Save Debt</button><button @click="showDebtForm = false" class="px-4 bg-slate-100 text-slate-500 font-bold py-2 rounded-lg text-sm">Cancel</button></div></div></div><div class="space-y-3" id="debt-list-container"><div v-for="(debt, index) in debts" :key="debt.id" :data-id="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group cursor-default"><div class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 cursor-grab sortable-handle p-2 hover:text-slate-500">⋮⋮</div><div class="pl-6 flex justify-between items-start"><div><div class="font-bold text-slate-800">{{ debt.name }}</div><div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div></div><div class="font-mono text-lg font-bold text-slate-700">${{ debt.balance.toLocaleString() }}</div></div><button @click="deleteDebt(debt)" class="absolute top-2 right-2 text-xs text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">Delete</button></div><div v-if="debts.length === 0" class="text-center text-slate-400 py-8 italic">No debts added yet.</div></div></div><div class="lg:col-span-2"><div class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300 mb-6"><div class="flex justify-between items-end mb-4"><div><h2 class="text-2xl font-bold">⚔️ Attack Plan</h2><p class="text-slate-400 text-sm">Drag cards on left to prioritize payoff order.</p></div><div class="text-right"><div class="text-xs text-slate-400 uppercase">Debt Free By</div><div class="text-3xl font-bold text-emerald-400">{{ debtPlan.payoffDate }}</div></div></div><div class="bg-slate-800 p-4 rounded-lg border border-slate-700"><div class="flex justify-between text-sm mb-2"><span class="font-bold text-slate-300">Extra Monthly Attack</span><span class="font-mono text-emerald-300">${{ extraDebtPayment }}</span></div><input type="range" v-model.number="extraDebtPayment" min="0" max="2000" step="50" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500"><div class="flex justify-between text-xs text-slate-500 mt-2"><span>$0</span><span>$2,000</span></div></div><div class="grid grid-cols-2 gap-4 mt-6"><div class="bg-slate-800/50 p-3 rounded"><div class="text-xs text-slate-400 uppercase">Total Interest</div><div class="text-xl font-bold text-red-300">${{ debtPlan.totalInterest.toLocaleString() }}</div></div><div class="bg-emerald-900/30 p-3 rounded border border-emerald-900"><div class="text-xs text-emerald-400 uppercase">Interest Saved</div><div class="text-xl font-bold text-emerald-300">${{ debtPlan.savedInterest.toLocaleString() }}</div></div></div></div><div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Payoff Timeline</h3><div class="max-h-[300px] overflow-y-auto space-y-2"><div v-for="(log, idx) in debtPlan.timeline" :key="idx" class="flex justify-between text-xs border-b pb-2 last:border-0"><span class="font-bold w-20 text-slate-400">{{ log.date }}</span><span class="text-slate-700 font-bold flex-1">{{ log.action }}</span><span class="font-mono text-slate-500 text-[10px]">rem: ${{ log.remaining.toLocaleString() }}</span></div></div></div></div></div></div>
         </div>
-
+        
         <transition name="fade">
             <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                 <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative">
@@ -88,13 +87,25 @@
                     <div class="p-8">
                         <button @click="showOnboarding = false" class="absolute top-4 right-4 text-slate-300 hover:text-slate-500 font-bold">&times;</button>
                         
-                        <div v-if="onboardingStep === 1" class="text-center space-y-6">
-                            <div class="text-5xl animate-bounce">👋</div>
-                            <h2 class="text-2xl font-black text-slate-900">Let's Get Started</h2>
-                            <p class="text-slate-500 text-sm">First, tell us about your income so we can calculate your monthly budget.</p>
-                            <div class="text-left space-y-3">
-                                <div><label class="text-xs font-bold text-slate-400 uppercase">Annual Salary ($)</label><input v-model.number="onboardingData.salary" type="number" class="w-full p-3 border rounded-xl bg-slate-50" placeholder="e.g. 75000"></div>
-                                <div><label class="text-xs font-bold text-slate-400 uppercase">Pay Frequency</label><select v-model="onboardingData.frequency" class="w-full p-3 border rounded-xl bg-slate-50"><option value="Bi-Weekly">Bi-Weekly (Every 2 wks)</option><option value="Semi-Monthly">Semi-Monthly (15th/30th)</option><option value="Monthly">Monthly</option></select></div>
+                        <div v-if="onboardingStep === 1" class="space-y-6">
+                            <div class="text-center">
+                                <div class="text-5xl mb-2">💸</div>
+                                <h2 class="text-xl font-bold text-slate-900">Let's Get Paid</h2>
+                                <p class="text-sm text-slate-500">We need accurate numbers to calculate your real take-home pay.</p>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Annual Salary</label><input v-model.number="onboardingData.salary" type="number" class="w-full p-2 border rounded-lg bg-slate-50" placeholder="$"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Frequency</label><select v-model="onboardingData.frequency" class="w-full p-2 border rounded-lg bg-slate-50 text-sm"><option value="Bi-Weekly">Bi-Weekly</option><option value="Semi-Monthly">15th/30th</option><option value="Monthly">Monthly</option></select></div>
+                                </div>
+                                <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                                    <p class="text-[10px] font-bold text-blue-500 uppercase mb-2">Deductions (Per Paycheck)</p>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div><label class="block text-[9px] text-blue-400 uppercase">Medical</label><input v-model.number="onboardingData.medical" type="number" class="w-full p-1.5 border border-blue-200 rounded text-center text-sm" placeholder="$"></div>
+                                        <div><label class="block text-[9px] text-blue-400 uppercase">Dental</label><input v-model.number="onboardingData.dental" type="number" class="w-full p-1.5 border border-blue-200 rounded text-center text-sm" placeholder="$"></div>
+                                        <div><label class="block text-[9px] text-blue-400 uppercase">401k %</label><input v-model.number="onboardingData.trad401k" type="number" class="w-full p-1.5 border border-blue-200 rounded text-center text-sm" placeholder="%"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -106,7 +117,7 @@
                             </div>
                             <div class="space-y-3">
                                 <div><label class="text-xs font-bold text-slate-400 uppercase">Current Bank Balance</label><input v-model.number="onboardingData.balance" type="number" class="w-full p-3 border rounded-xl bg-slate-50 font-bold" placeholder="$0.00"></div>
-                                <div><label class="text-xs font-bold text-slate-400 uppercase">Safety Margin</label><input v-model.number="onboardingData.safety" type="number" class="w-full p-3 border rounded-xl bg-slate-50 font-bold" placeholder="$2,000"><p class="text-[10px] text-slate-400 mt-1">Minimum cash you want to keep available.</p></div>
+                                <div><label class="text-xs font-bold text-slate-400 uppercase">Safety Margin</label><input v-model.number="onboardingData.safety" type="number" class="w-full p-3 border rounded-xl bg-slate-50 font-bold" placeholder="$2,000"><p class="text-[10px] text-slate-400 mt-1">Minimum cash you want to keep in checking.</p></div>
                             </div>
                         </div>
 
@@ -114,7 +125,7 @@
                             <div class="text-center">
                                 <div class="text-5xl mb-2">🏠</div>
                                 <h2 class="text-xl font-bold text-slate-900">First Bill</h2>
-                                <p class="text-sm text-slate-500">Add a major monthly expense (e.g. Rent/Mortgage).</p>
+                                <p class="text-sm text-slate-500">Add a major monthly expense (e.g. Rent).</p>
                             </div>
                             <div class="space-y-3">
                                 <input v-model="onboardingData.billName" placeholder="Name (e.g. Rent)" class="w-full p-3 border rounded-xl bg-slate-50">
@@ -126,7 +137,6 @@
                                     <input type="checkbox" v-model="onboardingData.isCore" class="w-5 h-5 text-yellow-600">
                                     <span class="text-sm text-yellow-800 font-bold">This is a Core Bill (Essential)</span>
                                 </div>
-                                <p class="text-xs text-center text-slate-400 italic">You can add more bills later in the Budget tab.</p>
                             </div>
                         </div>
                         
@@ -134,11 +144,11 @@
                             <div class="text-center">
                                 <div class="text-5xl mb-2">✨</div>
                                 <h2 class="text-xl font-bold text-slate-900">Dream Item</h2>
-                                <p class="text-sm text-slate-500">Something you want but don't strictly need.</p>
+                                <p class="text-sm text-slate-500">Something you want to fit into your monthly budget.</p>
                             </div>
                             <div class="space-y-3">
-                                <input v-model="onboardingData.wishName" placeholder="e.g. New iPhone" class="w-full p-3 border rounded-xl bg-slate-50">
-                                <input v-model.number="onboardingData.wishAmount" type="number" placeholder="Cost ($)" class="w-full p-3 border rounded-xl bg-slate-50">
+                                <input v-model="onboardingData.wishName" placeholder="e.g. New Car Payment" class="w-full p-3 border rounded-xl bg-slate-50">
+                                <input v-model.number="onboardingData.wishAmount" type="number" placeholder="Monthly Cost ($)" class="w-full p-3 border rounded-xl bg-slate-50">
                             </div>
                         </div>
                         
@@ -146,11 +156,11 @@
                             <div class="text-center">
                                 <div class="text-5xl mb-2">🎯</div>
                                 <h2 class="text-xl font-bold text-slate-900">Set a Goal</h2>
-                                <p class="text-sm text-slate-500">What are we saving towards?</p>
+                                <p class="text-sm text-slate-500">A one-time project you are saving for.</p>
                             </div>
                             <div class="space-y-3">
                                 <input v-model="onboardingData.goalName" placeholder="e.g. Europe Trip" class="w-full p-3 border rounded-xl bg-slate-50">
-                                <input v-model.number="onboardingData.goalCost" type="number" placeholder="Target Amount ($)" class="w-full p-3 border rounded-xl bg-slate-50">
+                                <input v-model.number="onboardingData.goalCost" type="number" placeholder="Total Cost ($)" class="w-full p-3 border rounded-xl bg-slate-50">
                             </div>
                         </div>
 
@@ -189,7 +199,7 @@
             setup(){
                 const session=ref(null),authEmail=ref(''),loading=ref(false),authMessage=ref(''),currentView=ref('dashboard');
                 const dbBasePay=ref(0),tempCalculatedPay=ref(0),useTempPay=ref(false),budgetItems=ref([]),bills=ref([]),debts=ref([]);
-                const showOnboarding=ref(false),onboardingStep=ref(1),onboardingData=ref({balance:'',safety:'',salary:'',frequency:'Semi-Monthly',billName:'',billAmount:'',billDay:1,isCore:true,wishName:'',wishAmount:'',goalName:'',goalCost:''});
+                const showOnboarding=ref(false),onboardingStep=ref(1),onboardingData=ref({balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',billName:'',billAmount:'',billDay:1,isCore:true,wishName:'',wishAmount:'',goalName:'',goalCost:''});
                 const calcInputs=ref({salary:0,commission:0,medical:0,dental:0,fsa:0,postTax:0,trad401k:0,roth401k:0,match401k:0,nextPayDate:'',payFrequency:'Semi-Monthly'});
                 const calcResult=ref(null),savingBase=ref(false),newDebt=ref({name:'',balance:'',rate:'',min_payment:''}),extraDebtPayment=ref(0),showDebtForm=ref(false),showPaidBills=ref(false);
                 const showPlanner=ref(false),showAddForm=ref(false),isSubmitting=ref(false),isEditing=ref(false),editingId=ref(null),newItem=ref({name:'',amount:'',due_day:'',isFlexible:false,frequency:'Monthly',is_core:false,is_autopay:false,is_wishlist:false,replaces_id:null});
@@ -201,20 +211,48 @@
                 let chartInstance=null,dashboardChartInstance=null;
                 
                 const nextOnboardingStep=async()=>{if(onboardingStep.value===5)await finishOnboarding();else onboardingStep.value++};
-                const finishOnboarding=async()=>{isSubmitting.value=true;const{balance,safety,salary,frequency,billName,billAmount,billDay,isCore,wishName,wishAmount,goalName,goalCost}=onboardingData.value;
+                const finishOnboarding=async()=>{
+                    isSubmitting.value=true;
+                    const{balance,safety,salary,frequency,medical,dental,trad401k,billName,billAmount,billDay,isCore,wishName,wishAmount,goalName,goalCost}=onboardingData.value;
+                    
                     if(balance||safety){forecastSettings.value.currentBalance=balance||0;forecastSettings.value.safetyMargin=safety||0;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,current_balance:balance,safety_margin:safety})}
+                    
+                    // Detailed Pay Calculation
                     if(salary){
-                        calcInputs.value.salary=Number(salary);calcInputs.value.payFrequency=frequency;
-                        const payPeriods=24;const grossPay=(salary/payPeriods);const annualTaxable=Math.max(0,(grossPay*payPeriods)-30000);const taxPerPeriod=calculateFederalTax(annualTaxable)/payPeriods;const net=grossPay-taxPerPeriod-(grossPay*0.0765);const finalPay=round(net);
-                        let monthly=finalPay*2;if(frequency==='Monthly')monthly=finalPay;if(frequency==='Bi-Weekly')monthly=finalPay*2.166;
-                        dbBasePay.value=monthly;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,base_pay:monthly,salary:salary,pay_frequency:frequency});
+                        calcInputs.value = { ...calcInputs.value, salary:Number(salary), payFrequency:frequency, medical:Number(medical)||0, dental:Number(dental)||0, trad401k:Number(trad401k)||0 };
+                        const payPeriods=24; const grossPay=(salary/payPeriods); 
+                        const preTax=(Number(medical)||0) + (Number(dental)||0);
+                        const tradAmt=grossPay * ((Number(trad401k)||0)/100);
+                        const taxable=grossPay - tradAmt - preTax;
+                        const annualTaxable=Math.max(0,(taxable*payPeriods)-30000); 
+                        const taxPerPeriod=calculateFederalTax(annualTaxable)/payPeriods;
+                        const ssTax=Math.min(grossPay, 174900/payPeriods)*0.062;
+                        const medTax=grossPay*0.0145;
+                        const net=taxable-taxPerPeriod-ssTax-medTax; 
+                        const finalPay=round(net);
+                        
+                        let monthly=finalPay*2; if(frequency==='Monthly')monthly=finalPay; if(frequency==='Bi-Weekly')monthly=finalPay*2.166;
+                        dbBasePay.value=monthly;
+                        
+                        await _supabase.from('user_settings').upsert({
+                            user_id:session.value.user.id,
+                            base_pay:monthly, salary:salary, pay_frequency:frequency,
+                            medical:Number(medical)||0, dental:Number(dental)||0, trad_401k:Number(trad401k)||0
+                        });
                     }
+
                     if(billName&&billAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:billName,amount:Number(billAmount),due_day:Number(billDay)||1,is_core:isCore,is_active:true}]);
                     if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true}]);
                     if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)};
-                    await fetchBudgetItems();await fetchSettings();confetti({particleCount:150,spread:70,origin:{y:0.6}});showOnboarding.value=false;isSubmitting.value=false};
+                    
+                    await fetchBudgetItems();await fetchSettings();
+                    confetti({particleCount:150,spread:70,origin:{y:0.6}});
+                    showOnboarding.value=false;isSubmitting.value=false;
+                    // Safe Reload to prevent data leak
+                    window.location.reload();
+                };
                 
-                const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',billName:'',billAmount:'',billDay:1,isCore:true,wishName:'',wishAmount:'',goalName:'',goalCost:''}};
+                const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',billName:'',billAmount:'',billDay:1,isCore:true,wishName:'',wishAmount:'',goalName:'',goalCost:''}};
                 const resetDemo=async()=>{if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?"))return;loading.value=true;const uid=session.value.user.id;await _supabase.from('ledger').delete().eq('user_id',uid);await _supabase.from('budget_items').delete().eq('user_id',uid);await _supabase.from('debts').delete().eq('user_id',uid);await _supabase.from('user_settings').delete().eq('user_id',uid);window.location.reload()};
 
                 const debtPlan=computed(()=>{if(debts.value.length===0)return{payoffDate:'N/A',totalInterest:0,savedInterest:0,timeline:[]};const simulate=(extra)=>{let simDebts=JSON.parse(JSON.stringify(debts.value)).map(d=>({...d,balance:Number(d.balance),rate:Number(d.rate),min:Number(d.min_payment),paid_off:false}));let totalInterest=0,months=0,timeline=[],active=true,permanentSnowball=extra;while(active&&months<480){months++;let anyBalanceLeft=false,monthlySurplus=permanentSnowball;for(let d of simDebts){if(d.paid_off){monthlySurplus+=d.min;continue}anyBalanceLeft=true;let interest=d.balance*(d.rate/100/12);totalInterest+=interest;d.balance+=interest;let payment=Math.min(d.balance,d.min);d.balance-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0});monthlySurplus+=(d.min-payment)}}for(let d of simDebts){if(d.paid_off)continue;if(monthlySurplus<=0)break;let payment=Math.min(d.balance,monthlySurplus);d.balance-=payment;monthlySurplus-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0})}}if(!anyBalanceLeft)active=false}return{months,totalInterest,timeline}};const base=simulate(0);const attack=simulate(extraDebtPayment.value);const now=new Date();now.setMonth(now.getMonth()+attack.months);return{payoffDate:now.toLocaleDateString('en-US',{month:'long',year:'numeric'}),totalInterest:round(attack.totalInterest),savedInterest:round(base.totalInterest-attack.totalInterest),timeline:attack.timeline}});
@@ -278,7 +316,17 @@
                 const printReport=()=>window.print();
                 const getPrintTitle=()=>{if(currentView.value==='debt')return'Debt Payoff Plan';return project.value?project.value.name+' Plan':'Financial Forecast Report'};
                 const updateDebtOrder=async()=>{const updates=debts.value.map((d,index)=>({id:d.id,order_index:index}));for(const u of updates){await _supabase.from('debts').update({order_index:u.order_index}).eq('id',u.id)}};
-                onMounted(()=>{_supabase.auth.getSession().then(({data})=>{session.value=data.session;if(session.value){fetchSettings();fetchBudgetItems();fetchBills();fetchDebts();}});_supabase.auth.onAuthStateChange((_e,_s)=>{session.value=_s;if(_s){fetchSettings();fetchBudgetItems();fetchBills();fetchDebts()}})});
+                
+                onMounted(()=>{
+                    _supabase.auth.getSession().then(({data})=>{
+                        session.value=data.session;
+                        if(session.value){
+                            fetchSettings();fetchBudgetItems();fetchBills();fetchDebts();
+                        }
+                    });
+                    _supabase.auth.onAuthStateChange((_e,_s)=>{session.value=_s;if(_s){fetchSettings();fetchBudgetItems();fetchBills();fetchDebts()}})
+                });
+
                 watch(currentView,(val)=>{if(val==='debt'){nextTick(()=>{const el=document.getElementById('debt-list-container');if(el){new Sortable(el,{handle:'.sortable-handle',animation:150,onEnd:(evt)=>{const item=debts.value.splice(evt.oldIndex,1)[0];debts.value.splice(evt.newIndex,0,item);updateDebtOrder()}})}})}if(val==='forecast')nextTick(runForecast);if(val==='dashboard')nextTick(renderDashboardChart)});
                 watch(()=>forecastSettings.value.currentBalance,(newVal)=>{if(currentView.value==='dashboard')renderDashboardChart()});
                 watch(bills,()=>{if(currentView.value==='dashboard')renderDashboardChart()},{deep:true});
