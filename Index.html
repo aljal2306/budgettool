@@ -161,7 +161,7 @@
                 const calcInputs=ref({salary:0,commission:0,medical:0,dental:0,fsa:0,postTax:0,trad401k:0,roth401k:0,match401k:0,nextPayDate:'',payFrequency:'Semi-Monthly'});
                 const calcResult=ref(null);
 
-                // --- OTHER APP STATE ---
+                // --- APP STATE ---
                 const savingBase=ref(false),newDebt=ref({name:'',balance:'',rate:'',min_payment:''}),extraDebtPayment=ref(0),showDebtForm=ref(false),showPaidBills=ref(false);
                 const showPlanner=ref(false),showAddForm=ref(false),isSubmitting=ref(false),isEditing=ref(false),editingId=ref(null),newItem=ref({name:'',amount:'',due_day:'',isFlexible:false,frequency:'Monthly',is_core:false,is_autopay:false,is_wishlist:false,replaces_id:null});
                 const showGenModal=ref(false),potentialBills=ref([]),generateMonthOffset=ref(0);
@@ -195,10 +195,21 @@
                 };
 
                 const handleWizardNext = async () => {
+                    console.log("Wizard Step:", onboardingStep.value);
+                    
+                    // Step 1: Calculator Logic
                     if(onboardingStep.value === 1) {
-                        if(!calcResult.value) { performCalculation(); return; } 
+                        // Force calculation if they haven't done it yet
+                        if(!calcResult.value) { 
+                            performCalculation(); 
+                            // If calculation results in NaN (empty inputs), stop here
+                            if(isNaN(calcResult.value.netPay)) { alert("Please enter salary details first."); return; }
+                        }
+                        
+                        // Save Base Pay
                         const freq = calcInputs.value.payFrequency;
                         let monthly = calcResult.value.netPay * (freq==='Weekly'?4.33 : freq==='Bi-Weekly'?2.166 : freq==='Semi-Monthly'?2 : 1);
+                        
                         await _supabase.from('user_settings').upsert({
                             user_id:session.value.user.id,
                             base_pay: monthly,
@@ -209,6 +220,7 @@
                         dbBasePay.value = monthly;
                         onboardingStep.value++;
                     }
+                    // Step 2: Balances
                     else if(onboardingStep.value === 2) {
                         await _supabase.from('user_settings').upsert({
                             user_id:session.value.user.id,
@@ -218,6 +230,7 @@
                         forecastSettings.value.currentBalance = onboardingData.value.balance;
                         onboardingStep.value++;
                     }
+                    // Step 3: Bill
                     else if(onboardingStep.value === 3) {
                         if(onboardingData.value.billName && onboardingData.value.billAmount) {
                             await _supabase.from('budget_items').insert([{
@@ -231,6 +244,7 @@
                         }
                         onboardingStep.value++;
                     }
+                    // Step 4: Wishlist
                     else if(onboardingStep.value === 4) {
                         if(onboardingData.value.wishName && onboardingData.value.wishAmount) {
                             await _supabase.from('budget_items').insert([{
@@ -244,6 +258,7 @@
                         }
                         onboardingStep.value++;
                     }
+                    // Step 5: Goal (Finish)
                     else if(onboardingStep.value === 5) {
                         if(onboardingData.value.goalName && onboardingData.value.goalCost) {
                             project.value = { name: onboardingData.value.goalName, cost: onboardingData.value.goalCost };
@@ -255,7 +270,7 @@
                     }
                 };
 
-                // --- EXISTING FUNCTIONS ---
+                // --- EXISTING FUNCTIONS (Unchanged) ---
                 const debtPlan=computed(()=>{if(debts.value.length===0)return{payoffDate:'N/A',totalInterest:0,savedInterest:0,timeline:[]};const simulate=(extra)=>{let simDebts=JSON.parse(JSON.stringify(debts.value)).map(d=>({...d,balance:Number(d.balance),rate:Number(d.rate),min:Number(d.min_payment),paid_off:false}));let totalInterest=0,months=0,timeline=[],active=true,permanentSnowball=extra;while(active&&months<480){months++;let anyBalanceLeft=false,monthlySurplus=permanentSnowball;for(let d of simDebts){if(d.paid_off){monthlySurplus+=d.min;continue}anyBalanceLeft=true;let interest=d.balance*(d.rate/100/12);totalInterest+=interest;d.balance+=interest;let payment=Math.min(d.balance,d.min);d.balance-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0});monthlySurplus+=(d.min-payment)}}for(let d of simDebts){if(d.paid_off)continue;if(monthlySurplus<=0)break;let payment=Math.min(d.balance,monthlySurplus);d.balance-=payment;monthlySurplus-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0})}}if(!anyBalanceLeft)active=false}return{months,totalInterest,timeline}};const base=simulate(0);const attack=simulate(extraDebtPayment.value);const now=new Date();now.setMonth(now.getMonth()+attack.months);return{payoffDate:now.toLocaleDateString('en-US',{month:'long',year:'numeric'}),totalInterest:round(attack.totalInterest),savedInterest:round(base.totalInterest-attack.totalInterest),timeline:attack.timeline}});
                 const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
@@ -329,3 +344,5 @@
     </script>
 </body>
 </html>
+            
+           
