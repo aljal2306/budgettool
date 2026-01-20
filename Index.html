@@ -124,94 +124,85 @@
         </transition>
 
     </div>
-    <script>
-        const {createApp,ref,computed,onMounted,nextTick,watch}=Vue;
-        const {createClient}=supabase;
+   <script>
+        const {createApp, ref, computed, onMounted, nextTick, watch} = Vue;
+        const {createClient} = supabase;
         
         // ⚠️ KEYS 
         const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
         
-        const _supabase = createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // Helper Functions
-        const round=(n)=>Math.round((n+Number.EPSILON)*100)/100;
-        const getMonthlyCost=(i)=>{let a=Number(i.amount);if(i.frequency==='Quarterly')return a/3;if(i.frequency==='Yearly')return a/12;if(i.frequency==='One-Time')return 0;return a};
-        const taxBrackets=[{limit:23850,rate:0.1},{limit:96950,rate:0.12},{limit:206700,rate:0.22},{limit:394600,rate:0.24},{limit:501050,rate:0.32},{limit:751600,rate:0.35},{limit:Infinity,rate:0.37}];
-        const calculateFederalTax=(inc)=>{let t=0,l=0;for(const b of taxBrackets){if(inc>b.limit){t+=(b.limit-l)*b.rate;l=b.limit}else{t+=(inc-l)*b.rate;break}}return t};
+        const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+        const getMonthlyCost = (i) => { let a = Number(i.amount); if (i.frequency === 'Quarterly') return a / 3; if (i.frequency === 'Yearly') return a / 12; if (i.frequency === 'One-Time') return 0; return a; };
+        const taxBrackets = [{ limit: 23850, rate: 0.1 }, { limit: 96950, rate: 0.12 }, { limit: 206700, rate: 0.22 }, { limit: 394600, rate: 0.24 }, { limit: 501050, rate: 0.32 }, { limit: 751600, rate: 0.35 }, { limit: Infinity, rate: 0.37 }];
+        const calculateFederalTax = (inc) => { let t = 0, l = 0; for (const b of taxBrackets) { if (inc > b.limit) { t += (b.limit - l) * b.rate; l = b.limit; } else { t += (inc - l) * b.rate; break; } } return t; };
         
         createApp({
-            setup(){
+            setup() {
                 // --- AUTH & VIEW STATE ---
-                const session=ref(null),authEmail=ref(''),loading=ref(false),authMessage=ref(''),currentView=ref('dashboard');
+                const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
                 
                 // --- FINANCIAL DATA ---
-                const dbBasePay=ref(0),tempCalculatedPay=ref(0),useTempPay=ref(false),budgetItems=ref([]),bills=ref([]),debts=ref([]);
+                const dbBasePay = ref(0), tempCalculatedPay = ref(0), useTempPay = ref(false), budgetItems = ref([]), bills = ref([]), debts = ref([]);
                 
                 // --- ONBOARDING STATE ---
-                const showOnboarding=ref(false),onboardingStep=ref(1);
-                const onboardingData=ref({
-                    balance:'', safety:'', 
-                    billName:'', billAmount:'', billDay:'', billCore:true,
-                    wishName:'', wishAmount:'', 
-                    goalName:'', goalCost:''
+                const showOnboarding = ref(false), onboardingStep = ref(1);
+                const onboardingData = ref({
+                    balance: '', safety: '', 
+                    billName: '', billAmount: '', billDay: '', billCore: true,
+                    wishName: '', wishAmount: '', 
+                    goalName: '', goalCost: ''
                 });
 
                 // --- CALCULATOR STATE ---
-                const calcInputs=ref({salary:0,commission:0,medical:0,dental:0,fsa:0,postTax:0,trad401k:0,roth401k:0,match401k:0,nextPayDate:'',payFrequency:'Semi-Monthly'});
-                const calcResult=ref(null);
+                const calcInputs = ref({ salary: 0, commission: 0, medical: 0, dental: 0, fsa: 0, postTax: 0, trad401k: 0, roth401k: 0, match401k: 0, nextPayDate: '', payFrequency: 'Semi-Monthly' });
+                const calcResult = ref(null);
 
-                // --- APP STATE ---
-                const savingBase=ref(false),newDebt=ref({name:'',balance:'',rate:'',min_payment:''}),extraDebtPayment=ref(0),showDebtForm=ref(false),showPaidBills=ref(false);
-                const showPlanner=ref(false),showAddForm=ref(false),isSubmitting=ref(false),isEditing=ref(false),editingId=ref(null),newItem=ref({name:'',amount:'',due_day:'',isFlexible:false,frequency:'Monthly',is_core:false,is_autopay:false,is_wishlist:false,replaces_id:null});
-                const showGenModal=ref(false),potentialBills=ref([]),generateMonthOffset=ref(0);
-                const currentScenarioMode=ref('survival'),dashboardMode=ref('standard');
-                const forecastSettings=ref({currentBalance:5000,safetyMargin:2000,months:12}),forecastData=ref([]),project=ref(null),showProjectModal=ref(false),newProject=ref({name:'',cost:''}),forecastResults=ref({affordableMonth:null});
-                const showImpulseModal=ref(false),impulseItem=ref({name:'',cost:'',date:new Date().toISOString().split('T')[0]}),impulseResult=ref(null);
-                const showConsultant=ref(false),chatMessages=ref([]),userQuery=ref(''),isThinking=ref(false),lowPointData=ref({amount:0,date:'-'});
-                let chartInstance=null,dashboardChartInstance=null;
+                // --- OTHER APP STATE ---
+                const savingBase = ref(false), newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' }), extraDebtPayment = ref(0), showDebtForm = ref(false), showPaidBills = ref(false);
+                const showPlanner = ref(false), showAddForm = ref(false), isSubmitting = ref(false), isEditing = ref(false), editingId = ref(null), newItem = ref({ name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null });
+                const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
+                const currentScenarioMode = ref('survival'), dashboardMode = ref('standard');
+                const forecastSettings = ref({ currentBalance: 5000, safetyMargin: 2000, months: 12 }), forecastData = ref([]), project = ref(null), showProjectModal = ref(false), newProject = ref({ name: '', cost: '' }), forecastResults = ref({ affordableMonth: null });
+                const showImpulseModal = ref(false), impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] }), impulseResult = ref(null);
+                const showConsultant = ref(false), chatMessages = ref([]), userQuery = ref(''), isThinking = ref(false), lowPointData = ref({ amount: 0, date: '-' });
+                let chartInstance = null, dashboardChartInstance = null;
                 
                 // --- WIZARD LOGIC ---
                 const startWizard = () => {
+                    // Reset to Step 1 and Open
                     onboardingStep.value = 1;
                     showOnboarding.value = true;
                 };
 
                 const performCalculation = () => {
-                    const{salary,commission,medical,dental,fsa,postTax,trad401k,roth401k,payFrequency}=calcInputs.value;
-                    const payPeriods = payFrequency==='Weekly'?52 : payFrequency==='Bi-Weekly'?26 : payFrequency==='Semi-Monthly'?24 : 12;
-                    const grossPay=(salary/payPeriods)+((commission||0)/payPeriods);
-                    const preTax=medical+dental+fsa;
-                    const ficaWages=Math.max(0,grossPay-preTax);
-                    const ssTax=Math.min(ficaWages,168600/payPeriods)*0.062;
-                    const medTax=ficaWages*0.0145;
-                    const tradAmt=grossPay*(trad401k/100);
-                    const rothAmt=grossPay*(roth401k/100);
-                    const taxable=grossPay-tradAmt-preTax;
-                    const annualTaxable=Math.max(0,(taxable*payPeriods)-14600); 
-                    const taxPerPeriod=calculateFederalTax(annualTaxable)/payPeriods;
-                    const net=taxable-taxPerPeriod-postTax-rothAmt-ssTax-medTax;
-                    calcResult.value={gross:grossPay,preTaxTotal:preTax+tradAmt,taxes:taxPerPeriod+ssTax+medTax,postTaxTotal:postTax+rothAmt,netPay:net};
+                    const { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, payFrequency } = calcInputs.value;
+                    const payPeriods = payFrequency === 'Weekly' ? 52 : payFrequency === 'Bi-Weekly' ? 26 : payFrequency === 'Semi-Monthly' ? 24 : 12;
+                    const grossPay = (salary / payPeriods) + ((commission || 0) / payPeriods);
+                    const preTax = medical + dental + fsa;
+                    const ficaWages = Math.max(0, grossPay - preTax);
+                    const ssTax = Math.min(ficaWages, 168600 / payPeriods) * 0.062;
+                    const medTax = ficaWages * 0.0145;
+                    const tradAmt = grossPay * (trad401k / 100);
+                    const rothAmt = grossPay * (roth401k / 100);
+                    const taxable = grossPay - tradAmt - preTax;
+                    const annualTaxable = Math.max(0, (taxable * payPeriods) - 14600);
+                    const taxPerPeriod = calculateFederalTax(annualTaxable) / payPeriods;
+                    const net = taxable - taxPerPeriod - postTax - rothAmt - ssTax - medTax;
+                    calcResult.value = { gross: grossPay, preTaxTotal: preTax + tradAmt, taxes: taxPerPeriod + ssTax + medTax, postTaxTotal: postTax + rothAmt, netPay: net };
                 };
 
                 const handleWizardNext = async () => {
-                    console.log("Wizard Step:", onboardingStep.value);
-                    
-                    // Step 1: Calculator Logic
-                    if(onboardingStep.value === 1) {
-                        // Force calculation if they haven't done it yet
-                        if(!calcResult.value) { 
-                            performCalculation(); 
-                            // If calculation results in NaN (empty inputs), stop here
-                            if(isNaN(calcResult.value.netPay)) { alert("Please enter salary details first."); return; }
-                        }
-                        
-                        // Save Base Pay
+                    // Step 1: Calculator
+                    if (onboardingStep.value === 1) {
+                        if (!calcResult.value) { performCalculation(); return; }
                         const freq = calcInputs.value.payFrequency;
-                        let monthly = calcResult.value.netPay * (freq==='Weekly'?4.33 : freq==='Bi-Weekly'?2.166 : freq==='Semi-Monthly'?2 : 1);
-                        
+                        let monthly = calcResult.value.netPay * (freq === 'Weekly' ? 4.33 : freq === 'Bi-Weekly' ? 2.166 : freq === 'Semi-Monthly' ? 2 : 1);
                         await _supabase.from('user_settings').upsert({
-                            user_id:session.value.user.id,
+                            user_id: session.value.user.id,
                             base_pay: monthly,
                             salary: calcInputs.value.salary,
                             commission: calcInputs.value.commission,
@@ -221,20 +212,20 @@
                         onboardingStep.value++;
                     }
                     // Step 2: Balances
-                    else if(onboardingStep.value === 2) {
+                    else if (onboardingStep.value === 2) {
                         await _supabase.from('user_settings').upsert({
-                            user_id:session.value.user.id,
+                            user_id: session.value.user.id,
                             current_balance: onboardingData.value.balance || 0,
                             safety_margin: onboardingData.value.safety || 0
                         });
                         forecastSettings.value.currentBalance = onboardingData.value.balance;
                         onboardingStep.value++;
                     }
-                    // Step 3: Bill
-                    else if(onboardingStep.value === 3) {
-                        if(onboardingData.value.billName && onboardingData.value.billAmount) {
+                    // Step 3: First Bill
+                    else if (onboardingStep.value === 3) {
+                        if (onboardingData.value.billName && onboardingData.value.billAmount) {
                             await _supabase.from('budget_items').insert([{
-                                user_id:session.value.user.id,
+                                user_id: session.value.user.id,
                                 name: onboardingData.value.billName,
                                 amount: onboardingData.value.billAmount,
                                 due_day: onboardingData.value.billDay || 1,
@@ -245,10 +236,10 @@
                         onboardingStep.value++;
                     }
                     // Step 4: Wishlist
-                    else if(onboardingStep.value === 4) {
-                        if(onboardingData.value.wishName && onboardingData.value.wishAmount) {
+                    else if (onboardingStep.value === 4) {
+                        if (onboardingData.value.wishName && onboardingData.value.wishAmount) {
                             await _supabase.from('budget_items').insert([{
-                                user_id:session.value.user.id,
+                                user_id: session.value.user.id,
                                 name: onboardingData.value.wishName,
                                 amount: onboardingData.value.wishAmount,
                                 due_day: 0,
@@ -259,90 +250,84 @@
                         onboardingStep.value++;
                     }
                     // Step 5: Goal (Finish)
-                    else if(onboardingStep.value === 5) {
-                        if(onboardingData.value.goalName && onboardingData.value.goalCost) {
+                    else if (onboardingStep.value === 5) {
+                        if (onboardingData.value.goalName && onboardingData.value.goalCost) {
                             project.value = { name: onboardingData.value.goalName, cost: onboardingData.value.goalCost };
                         }
                         await fetchSettings();
                         await fetchBudgetItems();
-                        confetti({particleCount:150,spread:70,origin:{y:0.6}});
+                        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
                         showOnboarding.value = false;
                     }
                 };
 
-                // --- EXISTING FUNCTIONS (Unchanged) ---
-                const debtPlan=computed(()=>{if(debts.value.length===0)return{payoffDate:'N/A',totalInterest:0,savedInterest:0,timeline:[]};const simulate=(extra)=>{let simDebts=JSON.parse(JSON.stringify(debts.value)).map(d=>({...d,balance:Number(d.balance),rate:Number(d.rate),min:Number(d.min_payment),paid_off:false}));let totalInterest=0,months=0,timeline=[],active=true,permanentSnowball=extra;while(active&&months<480){months++;let anyBalanceLeft=false,monthlySurplus=permanentSnowball;for(let d of simDebts){if(d.paid_off){monthlySurplus+=d.min;continue}anyBalanceLeft=true;let interest=d.balance*(d.rate/100/12);totalInterest+=interest;d.balance+=interest;let payment=Math.min(d.balance,d.min);d.balance-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0});monthlySurplus+=(d.min-payment)}}for(let d of simDebts){if(d.paid_off)continue;if(monthlySurplus<=0)break;let payment=Math.min(d.balance,monthlySurplus);d.balance-=payment;monthlySurplus-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0})}}if(!anyBalanceLeft)active=false}return{months,totalInterest,timeline}};const base=simulate(0);const attack=simulate(extraDebtPayment.value);const now=new Date();now.setMonth(now.getMonth()+attack.months);return{payoffDate:now.toLocaleDateString('en-US',{month:'long',year:'numeric'}),totalInterest:round(attack.totalInterest),savedInterest:round(base.totalInterest-attack.totalInterest),timeline:attack.timeline}});
-                const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
-                const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
-                const calculateAndSave=async(mode)=>{savingBase.value=true; performCalculation(); const freq=calcInputs.value.payFrequency; const net=calcResult.value.netPay; let monthly=net*(freq==='Weekly'?4.33:freq==='Bi-Weekly'?2.166:freq==='Semi-Monthly'?2:1); if(mode==='default'){dbBasePay.value=monthly;useTempPay.value=false;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,base_pay:dbBasePay.value});alert("Saved!")}else{tempCalculatedPay.value=monthly;useTempPay.value=true}savingBase.value=false;currentView.value='budget'};
-                const runForecast=()=>{let balance=round(forecastSettings.value.currentBalance);const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const now=new Date();if(forecastData.value.length!==forecastSettings.value.months){forecastData.value=[];for(let i=0;i<forecastSettings.value.months;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);forecastData.value.push({name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,income:dbBasePay.value,extraExpenses:[],newExpenseId:'',newExpenseName:'',newExpenseAmount:'',isOpen:false})}}forecastResults.value.affordableMonth=null;forecastData.value.forEach((m,idx)=>{const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);const monthlyNet=m.income-coreExpenses.value-totalExtra;balance=round(balance+monthlyNet);m.endBalance=balance;if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){forecastResults.value.affordableMonth=m.name;forecastResults.value.affordableIndex=idx}});renderChart()};
-                const renderChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
-                const renderDashboardChart=()=>{const ctx=document.getElementById('dashboardChart');if(!ctx)return;if(dashboardChartInstance)dashboardChartInstance.destroy();const labels=[],dataCurrent=[],dataImpulse=[];let currentSimBalance=forecastSettings.value.currentBalance||0,impulseSimBalance=currentSimBalance;const today=new Date();let nextPay=calcInputs.value.nextPayDate?new Date(calcInputs.value.nextPayDate):null;const freq=calcInputs.value.payFrequency||'Bi-Weekly';const payAmount=calcResult.value?calcResult.value.netPay:(dbBasePay.value/(freq==='Monthly'?1:2));const runImpulse=impulseResult.value!==null||(impulseItem.value.cost&&showImpulseModal.value===false);const impulseCost=Number(impulseItem.value.cost),impulseDate=impulseItem.value.date;
-                    for(let i=0;i<30;i++){const d=new Date();d.setDate(today.getDate()+i);const dayOfMonth=d.getDate();const dStr=d.toISOString().split('T')[0];labels.push(dayOfMonth);const billsDue=bills.value.filter(b=>!b.is_paid&&b.due_date===dStr);const realDrop=billsDue.reduce((sum,b)=>sum+b.budget_items.amount,0);const virtualDrop=budgetItems.value.reduce((sum,item)=>{if(item.frequency==='Monthly'&&item.due_day===dayOfMonth){const hasRealBill=bills.value.some(b=>b.budget_item_id===item.id&&b.due_date===dStr);if(!hasRealBill)return sum+item.amount}return sum},0);const totalDrop=realDrop+virtualDrop;currentSimBalance-=totalDrop;impulseSimBalance-=totalDrop;if(nextPay&&dStr===nextPay.toISOString().split('T')[0]){currentSimBalance+=payAmount;impulseSimBalance+=payAmount;if(freq==='Bi-Weekly')nextPay.setDate(nextPay.getDate()+14);else if(freq==='Semi-Monthly')nextPay.setDate(nextPay.getDate()+15);else if(freq==='Monthly')nextPay.setMonth(nextPay.getMonth()+1)}if(runImpulse&&dStr===impulseDate)impulseSimBalance-=impulseCost;dataCurrent.push(currentSimBalance);dataImpulse.push(impulseSimBalance)}
-                    const datasets=[{label:'Current',data:dataCurrent,borderColor:'#3B82F6',borderWidth:2,pointRadius:0,fill:false,tension:0.1}];if(runImpulse)datasets.push({label:'With Purchase',data:dataImpulse,borderColor:'#9333EA',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false,tension:0.1});
-                    const activeData=runImpulse?dataImpulse:dataCurrent;const min=Math.min(...activeData);const index=activeData.indexOf(min);const d=new Date();d.setDate(today.getDate()+index);lowPointData.value={amount:min,date:d.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
-                    dashboardChartInstance=new Chart(ctx,{type:'line',data:{labels:labels,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false},y:{display:true,grid:{color:'#f1f5f9'},ticks:{font:{size:10},color:'#94a3b8',callback:(val)=>'$'+val}}},plugins:{legend:{display:runImpulse},tooltip:{enabled:true}}}});};
-                const activeMonthlyPay=computed(()=>round(useTempPay.value?tempCalculatedPay.value:dbBasePay.value));
-                const coreExpenses=computed(()=>round(budgetItems.value.filter(i=>i.is_core).reduce((acc,i)=>acc+getMonthlyCost(i),0)));
-                const totalMonthlyBurn=computed(()=>round(budgetItems.value.filter(item=>item.includedInScenario).reduce((acc,item)=>acc+getMonthlyCost(item),0)));
-                const projectedBalance=computed(()=>round(activeMonthlyPay.value-totalMonthlyBurn.value));
-                const isScenarioActive=computed(()=>budgetItems.value.some(i=>!i.includedInScenario));
-                const standardItems=computed(()=>budgetItems.value.filter(i=>!i.is_wishlist));
-                const wishlistItems=computed(()=>budgetItems.value.filter(i=>i.is_wishlist));
-                const visibleBills=computed(()=>{let sorted=bills.value;if(!showPaidBills.value)sorted=sorted.filter(b=>!b.is_paid);return sorted});
-                const upcomingBills=computed(()=>{const today=new Date().toISOString().split('T')[0];const limit=new Date();limit.setDate(limit.getDate()+7);const limitStr=limit.toISOString().split('T')[0];return bills.value.filter(b=>!b.is_paid&&b.due_date<=limitStr).sort((a,b)=>a.due_date>b.due_date?1:-1)});
-                const safeToSpend=computed(()=>{if(dashboardMode.value==='survival')return round(activeMonthlyPay.value-coreExpenses.value);if(dashboardMode.value==='dream'){let burn=0;budgetItems.value.forEach(i=>{if(i.is_wishlist){burn+=getMonthlyCost(i)}else{const replacedBy=budgetItems.value.find(w=>w.is_wishlist&&w.replaces_id===i.id);if(!replacedBy)burn+=getMonthlyCost(i)}});return round(activeMonthlyPay.value-burn)}const standardBurn=budgetItems.value.filter(i=>!i.is_wishlist).reduce((acc,i)=>acc+getMonthlyCost(i),0);return round(activeMonthlyPay.value-standardBurn)});
-                const dashboardBurn=computed(()=>round(activeMonthlyPay.value-safeToSpend.value));
-                const burnRate=computed(()=>activeMonthlyPay.value>0?Math.round((dashboardBurn.value/activeMonthlyPay.value)*100):0);
-                const cashFlowLowPoint=computed(()=>lowPointData.value);
-                const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
-                const getFinancialSnapshot=()=>{return{income:activeMonthlyPay.value,savings:forecastSettings.value.currentBalance,total_debt:debts.value.reduce((a,b)=>a+Number(b.balance),0),core_burn:budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),discretionary_burn:budgetItems.value.filter(i=>!i.is_core&&!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),debt_list:debts.value,budget_list:budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name,amt:i.amount,core:i.is_core})),survival_months:(forecastSettings.value.currentBalance/(budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)}};
-                const sendQuery=async(text)=>{if(!text)return;chatMessages.value.push({role:'user',text});userQuery.value='';isThinking.value=true;nextTick(scrollChat);setTimeout(()=>{const snapshot=getFinancialSnapshot();const response=generateMockResponse(text,snapshot);chatMessages.value.push({role:'assistant',text:response});isThinking.value=false;nextTick(scrollChat)},1200)};
-                const generateMockResponse=(query,data)=>{const q=query.toLowerCase();if(q.includes('ruthless')||q.includes('cut')){const nonCore=data.budget_list.filter(i=>!i.core).sort((a,b)=>b.amt-a.amt);let totalWaste=nonCore.reduce((a,b)=>a+b.amt,0);let top3=nonCore.slice(0,3).map(i=>`• **${i.name}**: $${i.amt}`).join('<br>');return`Found **$${totalWaste.toLocaleString()}** in non-essential spending.<br>Top 3 targets:<br>${top3}`}if(q.includes('debt')){if(data.debt_list.length===0)return"No debts! Great job.";const highestRate=[...data.debt_list].sort((a,b)=>b.rate-a.rate)[0];const totalInterest=data.debt_list.reduce((acc,d)=>acc+(d.balance*(d.rate/100/365)),0);return`Total Debt: **$${data.total_debt.toLocaleString()}**.<br>Losing **$${totalInterest.toFixed(2)}/day** in interest.<br>Attack **${highestRate.name}** (${highestRate.rate}%) first.`}if(q.includes('stress')||q.includes('survive')){return`**Runway:** ${data.survival_months} months based on savings of $${data.savings.toLocaleString()}.`}return"I analyzed your finances. Income: $"+data.income.toLocaleString()+". Ask for a Stress Test or Debt Strategy."};
-                const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
-                const renderMarkdown=(text)=>{return marked.parse(text)};
-                const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
-                const clearImpulse=()=>{impulseItem.value={name:'',cost:'',date:new Date().toISOString().split('T')[0]};impulseResult.value=null;renderDashboardChart()};
-                const setScenarioMode=(mode)=>{currentScenarioMode.value=mode;budgetItems.value.forEach(i=>{if(i.frequency==='One-Time'){i.includedInScenario=false;return}if(mode==='survival')i.includedInScenario=i.is_core===true;if(mode==='standard')i.includedInScenario=i.is_wishlist===false;if(mode==='dream')i.includedInScenario=true});if(mode==='dream'){const activeWishlist=budgetItems.value.filter(i=>i.is_wishlist&&i.includedInScenario);activeWishlist.forEach(w=>{if(w.replaces_id){const target=budgetItems.value.find(t=>t.id===w.replaces_id);if(target)target.includedInScenario=false}})}};
-                const fetchSettings=async()=>{const{data}=await _supabase.from('user_settings').select('*').eq('user_id',session.value.user.id).single();if(data){dbBasePay.value=data.base_pay;calcInputs.value={salary:data.salary||0,commission:data.commission||0,medical:data.medical||0,dental:data.dental||0,fsa:data.fsa||0,postTax:data.post_tax||0,trad401k:data.trad_401k||0,roth401k:data.roth_401k||0,match401k:data.match_401k||0,nextPayDate:data.next_pay_date,payFrequency:data.pay_frequency||'Semi-Monthly'};forecastSettings.value.currentBalance=data.current_balance||5000;forecastSettings.value.safetyMargin=data.safety_margin||2000}};
-                const fetchBudgetItems=async()=>{const{data}=await _supabase.from('budget_items').select('*').eq('is_active',true).order('amount',{ascending:false});if(data)budgetItems.value=data.map(i=>({...i,includedInScenario:i.is_core===true}));currentScenarioMode.value='survival'};
-                const fetchBills=async()=>{const{data}=await _supabase.from('ledger').select('*, budget_items(*)');if(data)bills.value=data.sort((a,b)=>a.due_date>b.due_date?1:-1)};
-                const fetchDebts=async()=>{const{data}=await _supabase.from('debts').select('*').order('order_index',{ascending:true});if(data)debts.value=data};
-                const openGenerateModal=async(offset=0)=>{generateMonthOffset.value=offset;const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+offset);const startOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth(),1).toISOString();const endOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0).toISOString();const{data:t}=await _supabase.from('budget_items').select('*').eq('is_active',true).eq('is_wishlist',false).eq('user_id',session.value.user.id);const{data:e}=await _supabase.from('ledger').select('budget_item_id').gte('due_date',startOfMonth).lte('due_date',endOfMonth);const existingIds=new Set(e.map(b=>b.budget_item_id));potentialBills.value=t.filter(x=>!existingIds.has(x.id)).map(x=>({...x,selected:x.frequency==='Monthly'}));showGenModal.value=true};
-                const confirmGenerate=async()=>{const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+generateMonthOffset.value);const toCreate=potentialBills.value.filter(i=>i.selected).map(t=>({user_id:session.value.user.id,budget_item_id:t.id,amount_paid:0,due_date:new Date(targetDate.getFullYear(),targetDate.getMonth(),t.due_day||1).toISOString(),is_paid:false}));if(toCreate.length>0){await _supabase.from('ledger').insert(toCreate);await fetchBills()}showGenModal.value=false};
-                const handleSave=async()=>{isEditing.value?updateItem():addItem()};
-                const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
-                const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
-                const deleteBudgetItem=async(item)=>{if(!confirm('Delete item?'))return;const{error}=await _supabase.from('budget_items').update({is_active:false}).eq('id',item.id);if(!error)fetchBudgetItems()};
-                const startEditing=(i)=>{showAddForm.value=true;isEditing.value=true;editingId.value=i.id;newItem.value={...i,isFlexible:i.due_day===0}};
-                const resetForm=()=>{newItem.value={name:'',amount:'',due_day:'',isFlexible:false,frequency:'Monthly',is_core:false,is_autopay:false,is_wishlist:false,replaces_id:null};isEditing.value=false;showAddForm.value=false};
-                const deleteBill=async(bill)=>{if(confirm('Delete?')){await _supabase.from('ledger').delete().eq('id',bill.id);fetchBills()}};
-                const toggleBillPaid=async(bill)=>{await _supabase.from('ledger').update({is_paid:bill.is_paid}).eq('id',bill.id)};
-                const saveBasePay=async()=>{savingBase.value=true;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,base_pay:dbBasePay.value});savingBase.value=false};
-                const handleLogin=async()=>{loading.value=true;await _supabase.auth.signInWithOtp({email:authEmail.value,options:{emailRedirectTo:window.location.href}});authMessage.value="Link Sent!";loading.value=false};
-                const handleLogout=async()=>{await _supabase.auth.signOut();session.value=null};
-                const applyCoreOnly=()=>budgetItems.value.forEach(i=>i.includedInScenario=i.is_core);
-                const applyAll=()=>budgetItems.value.forEach(i=>i.includedInScenario=true);
-                const getDaysLeft=(d)=>Math.ceil((new Date(d)-new Date().setHours(0,0,0,0))/(86400000));
-                const getCalendarLink=(b)=>`https://www.google.com/calendar/render?action=TEMPLATE&text=Pay ${b.budget_items.name}&dates=${b.due_date.replace(/-/g,'')}/${new Date(new Date(b.due_date).setDate(new Date(b.due_date).getDate()+1)).toISOString().split('T')[0].replace(/-/g,'')}`;
-                const formatDate=(d)=>new Date(new Date(d).valueOf()+new Date(d).getTimezoneOffset()*60000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-                const saveProject=()=>{if(newProject.value.name&&newProject.value.cost){project.value={...newProject.value};showProjectModal.value=false;runForecast()}};
-                const addExpense=(month)=>{if(month.newExpenseName&&month.newExpenseAmount){month.extraExpenses.push({name:month.newExpenseName,amount:Number(month.newExpenseAmount)});month.newExpenseName='';month.newExpenseAmount='';runForecast()}};
-                const fillExpense=(month)=>{const item=budgetItems.value.find(i=>i.id===month.newExpenseId);if(item){month.newExpenseName=item.name;month.newExpenseAmount=item.amount}};
-                const printReport=()=>window.print();
-                const updateDebtOrder=async()=>{const updates=debts.value.map((d,index)=>({id:d.id,order_index:index}));for(const u of updates){await _supabase.from('debts').update({order_index:u.order_index}).eq('id',u.id)}};
+                // --- EXISTING APP FUNCTIONS ---
+                const debtPlan = computed(() => { if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }; const simulate = (extra) => { let simDebts = JSON.parse(JSON.stringify(debts.value)).map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment), paid_off: false })); let totalInterest = 0, months = 0, timeline = [], active = true, permanentSnowball = extra; while (active && months < 480) { months++; let anyBalanceLeft = false, monthlySurplus = permanentSnowball; for (let d of simDebts) { if (d.paid_off) { monthlySurplus += d.min; continue } anyBalanceLeft = true; let interest = d.balance * (d.rate / 100 / 12); totalInterest += interest; d.balance += interest; let payment = Math.min(d.balance, d.min); d.balance -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }); monthlySurplus += (d.min - payment) } } for (let d of simDebts) { if (d.paid_off) continue; if (monthlySurplus <= 0) break; let payment = Math.min(d.balance, monthlySurplus); d.balance -= payment; monthlySurplus -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }) } } if (!anyBalanceLeft) active = false } return { months, totalInterest, timeline } }; const base = simulate(0); const attack = simulate(extraDebtPayment.value); const now = new Date(); now.setMonth(now.getMonth() + attack.months); return { payoffDate: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), totalInterest: round(attack.totalInterest), savedInterest: round(base.totalInterest - attack.totalInterest), timeline: attack.timeline } });
+                const addDebt = async () => { const maxOrder = debts.value.length > 0 ? Math.max(...debts.value.map(d => d.order_index || 0)) : 0; if (newDebt.value.name && newDebt.value.balance) { const { data } = await _supabase.from('debts').insert([{ user_id: session.value.user.id, name: newDebt.value.name, balance: newDebt.value.balance, rate: newDebt.value.rate, min_payment: newDebt.value.min_payment, order_index: maxOrder + 1 }]).select(); if (data) debts.value.push(data[0]); newDebt.value = { name: '', balance: '', rate: '', min_payment: '' }; showDebtForm.value = false } };
+                const deleteDebt = async (d) => { if (confirm('Delete?')) { await _supabase.from('debts').delete().eq('id', d.id); debts.value = debts.value.filter(x => x.id !== d.id) } };
+                const calculateAndSave = async (mode) => { savingBase.value = true; performCalculation(); const freq = calcInputs.value.payFrequency; const net = calcResult.value.netPay; let monthly = net * (freq === 'Weekly' ? 4.33 : freq === 'Bi-Weekly' ? 2.166 : freq === 'Semi-Monthly' ? 2 : 1); if (mode === 'default') { dbBasePay.value = monthly; useTempPay.value = false; await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, base_pay: dbBasePay.value }); alert("Saved!") } else { tempCalculatedPay.value = monthly; useTempPay.value = true } savingBase.value = false; currentView.value = 'budget' };
+                const runForecast = () => { let balance = round(forecastSettings.value.currentBalance); const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; const now = new Date(); if (forecastData.value.length !== forecastSettings.value.months) { forecastData.value = []; for (let i = 0; i < forecastSettings.value.months; i++) { const d = new Date(now.getFullYear(), now.getMonth() + i, 1); forecastData.value.push({ name: `${monthNames[d.getMonth()]} ${d.getFullYear()}`, income: dbBasePay.value, extraExpenses: [], newExpenseId: '', newExpenseName: '', newExpenseAmount: '', isOpen: false }) } } forecastResults.value.affordableMonth = null; forecastData.value.forEach((m, idx) => { const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0); const monthlyNet = m.income - coreExpenses.value - totalExtra; balance = round(balance + monthlyNet); m.endBalance = balance; if (project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) { forecastResults.value.affordableMonth = m.name; forecastResults.value.affordableIndex = idx } }); renderChart() };
+                const renderChart = () => { const ctx = document.getElementById('forecastChart'); if (!ctx) return; if (chartInstance) chartInstance.destroy(); const goalIndex = forecastResults.value.affordableMonth ? forecastResults.value.affordableIndex : -1; const pointStyles = forecastData.value.map((_, i) => i === goalIndex ? 'star' : 'circle'); const pointRadii = forecastData.value.map((_, i) => i === goalIndex ? 10 : 4); const pointColors = forecastData.value.map((_, i) => i === goalIndex ? '#F59E0B' : '#10B981'); chartInstance = new Chart(ctx, { type: 'line', data: { labels: forecastData.value.map(m => m.name.split(' ')[0]), datasets: [{ label: 'Projected Balance', data: forecastData.value.map(m => m.endBalance), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3, pointStyle: pointStyles, pointRadius: pointRadii, pointBackgroundColor: pointColors, pointBorderColor: pointColors }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); };
+                const renderDashboardChart = () => { const ctx = document.getElementById('dashboardChart'); if (!ctx) return; if (dashboardChartInstance) dashboardChartInstance.destroy(); const labels = [], dataCurrent = [], dataImpulse = []; let currentSimBalance = forecastSettings.value.currentBalance || 0, impulseSimBalance = currentSimBalance; const today = new Date(); let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null; const freq = calcInputs.value.payFrequency || 'Bi-Weekly'; const payAmount = calcResult.value ? calcResult.value.netPay : (dbBasePay.value / (freq === 'Monthly' ? 1 : 2)); const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false); const impulseCost = Number(impulseItem.value.cost), impulseDate = impulseItem.value.date; for (let i = 0; i < 30; i++) { const d = new Date(); d.setDate(today.getDate() + i); const dayOfMonth = d.getDate(); const dStr = d.toISOString().split('T')[0]; labels.push(dayOfMonth); const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr); const realDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0); const virtualDrop = budgetItems.value.reduce((sum, item) => { if (item.frequency === 'Monthly' && item.due_day === dayOfMonth) { const hasRealBill = bills.value.some(b => b.budget_item_id === item.id && b.due_date === dStr); if (!hasRealBill) return sum + item.amount } return sum }, 0); const totalDrop = realDrop + virtualDrop; currentSimBalance -= totalDrop; impulseSimBalance -= totalDrop; if (nextPay && dStr === nextPay.toISOString().split('T')[0]) { currentSimBalance += payAmount; impulseSimBalance += payAmount; if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14); else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15); else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1) } if (runImpulse && dStr === impulseDate) impulseSimBalance -= impulseCost; dataCurrent.push(currentSimBalance); dataImpulse.push(impulseSimBalance) } const datasets = [{ label: 'Current', data: dataCurrent, borderColor: '#3B82F6', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.1 }]; if (runImpulse) datasets.push({ label: 'With Purchase', data: dataImpulse, borderColor: '#9333EA', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0.1 }); const activeData = runImpulse ? dataImpulse : dataCurrent; const min = Math.min(...activeData); const index = activeData.indexOf(min); const d = new Date(); d.setDate(today.getDate() + index); lowPointData.value = { amount: min, date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }; dashboardChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { display: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, color: '#94a3b8', callback: (val) => '$' + val } } }, plugins: { legend: { display: runImpulse }, tooltip: { enabled: true } } } }); };
+                const activeMonthlyPay = computed(() => round(useTempPay.value ? tempCalculatedPay.value : dbBasePay.value));
+                const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc, i) => acc + getMonthlyCost(i), 0)));
+                const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(item => item.includedInScenario).reduce((acc, item) => acc + getMonthlyCost(item), 0)));
+                const projectedBalance = computed(() => round(activeMonthlyPay.value - totalMonthlyBurn.value));
+                const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario));
+                const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist));
+                const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist));
+                const visibleBills = computed(() => { let sorted = bills.value; if (!showPaidBills.value) sorted = sorted.filter(b => !b.is_paid); return sorted });
+                const upcomingBills = computed(() => { const today = new Date().toISOString().split('T')[0]; const limit = new Date(); limit.setDate(limit.getDate() + 7); const limitStr = limit.toISOString().split('T')[0]; return bills.value.filter(b => !b.is_paid && b.due_date <= limitStr).sort((a, b) => a.due_date > b.due_date ? 1 : -1) });
+                const safeToSpend = computed(() => { if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value); if (dashboardMode.value === 'dream') { let burn = 0; budgetItems.value.forEach(i => { if (i.is_wishlist) { burn += getMonthlyCost(i) } else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i) } }); return round(activeMonthlyPay.value - burn) } const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc, i) => acc + getMonthlyCost(i), 0); return round(activeMonthlyPay.value - standardBurn) });
+                const dashboardBurn = computed(() => round(activeMonthlyPay.value - safeToSpend.value));
+                const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0);
+                const cashFlowLowPoint = computed(() => lowPointData.value);
+                const openConsultant = () => { showConsultant.value = true; nextTick(() => scrollChat()) };
+                const getFinancialSnapshot = () => { return { income: activeMonthlyPay.value, savings: forecastSettings.value.currentBalance, total_debt: debts.value.reduce((a, b) => a + Number(b.balance), 0), core_burn: budgetItems.value.filter(i => i.is_core).reduce((a, b) => a + getMonthlyCost(b), 0), discretionary_burn: budgetItems.value.filter(i => !i.is_core && !i.is_wishlist).reduce((a, b) => a + getMonthlyCost(b), 0), debt_list: debts.value, budget_list: budgetItems.value.filter(i => !i.is_wishlist).map(i => ({ name: i.name, amt: i.amount, core: i.is_core })), survival_months: (forecastSettings.value.currentBalance / (budgetItems.value.filter(i => i.is_core).reduce((a, b) => a + getMonthlyCost(b), 0) || 1)).toFixed(1) } };
+                const sendQuery = async (text) => { if (!text) return; chatMessages.value.push({ role: 'user', text }); userQuery.value = ''; isThinking.value = true; nextTick(scrollChat); setTimeout(() => { const snapshot = getFinancialSnapshot(); const response = generateMockResponse(text, snapshot); chatMessages.value.push({ role: 'assistant', text: response }); isThinking.value = false; nextTick(scrollChat) }, 1200) };
+                const generateMockResponse = (query, data) => { const q = query.toLowerCase(); if (q.includes('ruthless') || q.includes('cut')) { const nonCore = data.budget_list.filter(i => !i.core).sort((a, b) => b.amt - a.amt); let totalWaste = nonCore.reduce((a, b) => a + b.amt, 0); let top3 = nonCore.slice(0, 3).map(i => `• **${i.name}**: $${i.amt}`).join('<br>'); return `Found **$${totalWaste.toLocaleString()}** in non-essential spending.<br>Top 3 targets:<br>${top3}` } if (q.includes('debt')) { if (data.debt_list.length === 0) return "No debts! Great job."; const highestRate = [...data.debt_list].sort((a, b) => b.rate - a.rate)[0]; const totalInterest = data.debt_list.reduce((acc, d) => acc + (d.balance * (d.rate / 100 / 365)), 0); return `Total Debt: **$${data.total_debt.toLocaleString()}**.<br>Losing **$${totalInterest.toFixed(2)}/day** in interest.<br>Attack **${highestRate.name}** (${highestRate.rate}%) first.` } if (q.includes('stress') || q.includes('survive')) { return `**Runway:** ${data.survival_months} months based on savings of $${data.savings.toLocaleString()}.` } return "I analyzed your finances. Income: $" + data.income.toLocaleString() + ". Ask for a Stress Test or Debt Strategy." };
+                const scrollChat = () => { const el = document.getElementById('chat-container'); if (el) el.scrollTop = el.scrollHeight };
+                const renderMarkdown = (text) => { return marked.parse(text) };
+                const checkImpulse = () => { if (!impulseItem.value.cost) return; showImpulseModal.value = false; renderDashboardChart(); if (lowPointData.value) { const futureLow = lowPointData.value.amount; if (futureLow < 0) impulseResult.value = { safe: false, message: `Dangerous! Hit $${futureLow}!` }; else if (futureLow < forecastSettings.value.safetyMargin) impulseResult.value = { safe: false, message: `Risky. Dips below safety ($${futureLow}).` }; else impulseResult.value = { safe: true, message: `Safe! Low: $${futureLow}` } } };
+                const clearImpulse = () => { impulseItem.value = { name: '', cost: '', date: new Date().toISOString().split('T')[0] }; impulseResult.value = null; renderDashboardChart() };
+                const setScenarioMode = (mode) => { currentScenarioMode.value = mode; budgetItems.value.forEach(i => { if (i.frequency === 'One-Time') { i.includedInScenario = false; return } if (mode === 'survival') i.includedInScenario = i.is_core === true; if (mode === 'standard') i.includedInScenario = i.is_wishlist === false; if (mode === 'dream') i.includedInScenario = true }); if (mode === 'dream') { const activeWishlist = budgetItems.value.filter(i => i.is_wishlist && i.includedInScenario); activeWishlist.forEach(w => { if (w.replaces_id) { const target = budgetItems.value.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false } }) } };
+                const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { dbBasePay.value = data.base_pay; calcInputs.value = { salary: data.salary || 0, commission: data.commission || 0, medical: data.medical || 0, dental: data.dental || 0, fsa: data.fsa || 0, postTax: data.post_tax || 0, trad401k: data.trad_401k || 0, roth401k: data.roth_401k || 0, match401k: data.match_401k || 0, nextPayDate: data.next_pay_date, payFrequency: data.pay_frequency || 'Semi-Monthly' }; forecastSettings.value.currentBalance = data.current_balance || 5000; forecastSettings.value.safetyMargin = data.safety_margin || 2000 } };
+                const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) budgetItems.value = data.map(i => ({ ...i, includedInScenario: i.is_core === true })); currentScenarioMode.value = 'survival' };
+                const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if (data) bills.value = data.sort((a, b) => a.due_date > b.due_date ? 1 : -1) };
+                const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data };
+                const openGenerateModal = async (offset = 0) => { generateMonthOffset.value = offset; const targetDate = new Date(); targetDate.setMonth(targetDate.getMonth() + offset); const startOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1).toISOString(); const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).toISOString(); const { data: t } = await _supabase.from('budget_items').select('*').eq('is_active', true).eq('is_wishlist', false).eq('user_id', session.value.user.id); const { data: e } = await _supabase.from('ledger').select('budget_item_id').gte('due_date', startOfMonth).lte('due_date', endOfMonth); const existingIds = new Set(e.map(b => b.budget_item_id)); potentialBills.value = t.filter(x => !existingIds.has(x.id)).map(x => ({ ...x, selected: x.frequency === 'Monthly' })); showGenModal.value = true };
+                const confirmGenerate = async () => { const targetDate = new Date(); targetDate.setMonth(targetDate.getMonth() + generateMonthOffset.value); const toCreate = potentialBills.value.filter(i => i.selected).map(t => ({ user_id: session.value.user.id, budget_item_id: t.id, amount_paid: 0, due_date: new Date(targetDate.getFullYear(), targetDate.getMonth(), t.due_day || 1).toISOString(), is_paid: false })); if (toCreate.length > 0) { await _supabase.from('ledger').insert(toCreate); await fetchBills() } showGenModal.value = false };
+                const handleSave = async () => { isEditing.value ? updateItem() : addItem() };
+                const addItem = async () => { const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1); const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, frequency: newItem.value.frequency, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, replaces_id: newItem.value.replaces_id || null, is_active: true }; const { data } = await _supabase.from('budget_items').insert([payload]).select(); if (data) { budgetItems.value.push({ ...data[0], includedInScenario: true }); resetForm() } };
+                const updateItem = async () => { const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1); const updates = { name: newItem.value.name, amount: Number(newItem.value.amount), due_day: finalDueDay, frequency: newItem.value.frequency, is_core: newItem.value.is_core, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, replaces_id: newItem.value.replaces_id || null }; await _supabase.from('budget_items').update(updates).eq('id', editingId.value); fetchBudgetItems(); resetForm() };
+                const deleteBudgetItem = async (item) => { if (!confirm('Delete item?')) return; const { error } = await _supabase.from('budget_items').update({ is_active: false }).eq('id', item.id); if (!error) fetchBudgetItems() };
+                const startEditing = (i) => { showAddForm.value = true; isEditing.value = true; editingId.value = i.id; newItem.value = { ...i, isFlexible: i.due_day === 0 } };
+                const resetForm = () => { newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null }; isEditing.value = false; showAddForm.value = false };
+                const deleteBill = async (bill) => { if (confirm('Delete?')) { await _supabase.from('ledger').delete().eq('id', bill.id); fetchBills() } };
+                const toggleBillPaid = async (bill) => { await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id) };
+                const saveBasePay = async () => { savingBase.value = true; await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, base_pay: dbBasePay.value }); savingBase.value = false };
+                const handleLogin = async () => { loading.value = true; await _supabase.auth.signInWithOtp({ email: authEmail.value, options: { emailRedirectTo: window.location.href } }); authMessage.value = "Link Sent!"; loading.value = false };
+                const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null };
+                const applyCoreOnly = () => budgetItems.value.forEach(i => i.includedInScenario = i.is_core);
+                const applyAll = () => budgetItems.value.forEach(i => i.includedInScenario = true);
+                const getDaysLeft = (d) => Math.ceil((new Date(d) - new Date().setHours(0, 0, 0, 0)) / (86400000));
+                const getCalendarLink = (b) => `https://www.google.com/calendar/render?action=TEMPLATE&text=Pay ${b.budget_items.name}&dates=${b.due_date.replace(/-/g, '')}/${new Date(new Date(b.due_date).setDate(new Date(b.due_date).getDate() + 1)).toISOString().split('T')[0].replace(/-/g, '')}`;
+                const formatDate = (d) => new Date(new Date(d).valueOf() + new Date(d).getTimezoneOffset() * 60000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const saveProject = () => { if (newProject.value.name && newProject.value.cost) { project.value = { ...newProject.value }; showProjectModal.value = false; runForecast() } };
+                const addExpense = (month) => { if (month.newExpenseName && month.newExpenseAmount) { month.extraExpenses.push({ name: month.newExpenseName, amount: Number(month.newExpenseAmount) }); month.newExpenseName = ''; month.newExpenseAmount = ''; runForecast() } };
+                const fillExpense = (month) => { const item = budgetItems.value.find(i => i.id === month.newExpenseId); if (item) { month.newExpenseName = item.name; month.newExpenseAmount = item.amount } };
+                const printReport = () => window.print();
+                const updateDebtOrder = async () => { const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index })); for (const u of updates) { await _supabase.from('debts').update({ order_index: u.order_index }).eq('id', u.id) } };
                 
-                onMounted(()=>{_supabase.auth.getSession().then(({data})=>{session.value=data.session;if(session.value){fetchSettings();fetchBudgetItems();fetchBills();fetchDebts()}});_supabase.auth.onAuthStateChange((_e,_s)=>{session.value=_s;if(_s){fetchSettings();fetchBudgetItems();fetchBills();fetchDebts()}})});
+                onMounted(() => { _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchSettings(); fetchBudgetItems(); fetchBills(); fetchDebts() } }); _supabase.auth.onAuthStateChange((_e, _s) => { session.value = _s; if (_s) { fetchSettings(); fetchBudgetItems(); fetchBills(); fetchDebts() } }) });
                 
-                watch(currentView,(val)=>{if(val==='debt'){nextTick(()=>{const el=document.getElementById('debt-list-container');if(el){new Sortable(el,{handle:'.sortable-handle',animation:150,onEnd:(evt)=>{const item=debts.value.splice(evt.oldIndex,1)[0];debts.value.splice(evt.newIndex,0,item);updateDebtOrder()}})}})}if(val==='forecast')nextTick(runForecast);if(val==='dashboard')nextTick(renderDashboardChart)});
-                watch(()=>forecastSettings.value.currentBalance,(newVal)=>{if(currentView.value==='dashboard')renderDashboardChart()});
-                watch(bills,()=>{if(currentView.value==='dashboard')renderDashboardChart()},{deep:true});
+                watch(currentView, (val) => { if (val === 'debt') { nextTick(() => { const el = document.getElementById('debt-list-container'); if (el) { new Sortable(el, { handle: '.sortable-handle', animation: 150, onEnd: (evt) => { const item = debts.value.splice(evt.oldIndex, 1)[0]; debts.value.splice(evt.newIndex, 0, item); updateDebtOrder() } }) } }) } if (val === 'forecast') nextTick(runForecast); if (val === 'dashboard') nextTick(renderDashboardChart) });
+                watch(() => forecastSettings.value.currentBalance, (newVal) => { if (currentView.value === 'dashboard') renderDashboardChart() });
+                watch(bills, () => { if (currentView.value === 'dashboard') renderDashboardChart() }, { deep: true });
                 
-                return {session,authEmail,loading,authMessage,currentView,dbBasePay,tempCalculatedPay,useTempPay,activeMonthlyPay,budgetItems,bills,coreExpenses,debts,calcInputs,calcResult,savingBase,calculateAndSave,showPlanner,showAddForm,isSubmitting,newItem,isEditing,showGenModal,potentialBills,projectedBalance,totalMonthlyBurn,isScenarioActive,openGenerateModal,confirmGenerate,deleteBill,toggleBillPaid,handleSave,resetForm,startEditing,deleteBudgetItem,applyCoreOnly,applyAll,formatDate,getDaysLeft,getCalendarLink,fetchBills,saveBasePay,forecastSettings,forecastData,project,showProjectModal,newProject,forecastResults,runForecast,saveProject,addExpense,fillExpense,printReport,standardItems,wishlistItems,setScenarioMode,currentScenarioMode,getMonthlyCost,newDebt,extraDebtPayment,addDebt,deleteDebt,debtPlan,showPaidBills,visibleBills,generateMonthOffset,upcomingBills,safeToSpend,burnRate,cashFlowLowPoint,renderDashboardChart,dashboardMode,dashboardBurn,showDebtForm,showImpulseModal,impulseItem,impulseResult,checkImpulse,clearImpulse,showConsultant,chatMessages,userQuery,isThinking,openConsultant,sendQuery,renderMarkdown,showOnboarding,onboardingStep,onboardingData,startWizard,handleWizardNext,handleLogin,handleLogout,lowPointData}
+                return { session, authEmail, loading, authMessage, currentView, dbBasePay, tempCalculatedPay, useTempPay, activeMonthlyPay, budgetItems, bills, coreExpenses, debts, calcInputs, calcResult, savingBase, calculateAndSave, showPlanner, showAddForm, isSubmitting, newItem, isEditing, showGenModal, potentialBills, projectedBalance, totalMonthlyBurn, isScenarioActive, openGenerateModal, confirmGenerate, deleteBill, toggleBillPaid, handleSave, resetForm, startEditing, deleteBudgetItem, applyCoreOnly, applyAll, formatDate, getDaysLeft, getCalendarLink, fetchBills, saveBasePay, forecastSettings, forecastData, project, showProjectModal, newProject, forecastResults, runForecast, saveProject, addExpense, fillExpense, printReport, standardItems, wishlistItems, setScenarioMode, currentScenarioMode, getMonthlyCost, newDebt, extraDebtPayment, addDebt, deleteDebt, debtPlan, showPaidBills, visibleBills, generateMonthOffset, upcomingBills, safeToSpend, burnRate, cashFlowLowPoint, renderDashboardChart, dashboardMode, dashboardBurn, showDebtForm, showImpulseModal, impulseItem, impulseResult, checkImpulse, clearImpulse, showConsultant, chatMessages, userQuery, isThinking, openConsultant, sendQuery, renderMarkdown, showOnboarding, onboardingStep, onboardingData, startWizard, handleWizardNext, handleLogin, handleLogout, lowPointData }
             },
         }).mount('#app')
     </script>
 </body>
 </html>
-            
-           
