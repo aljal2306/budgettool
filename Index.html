@@ -215,11 +215,15 @@
                     isSubmitting.value=true;
                     const{balance,safety,salary,frequency,medical,dental,trad401k,billName,billAmount,billDay,isCore,wishName,wishAmount,goalName,goalCost}=onboardingData.value;
                     
-                    if(balance||safety){forecastSettings.value.currentBalance=balance||0;forecastSettings.value.safetyMargin=safety||0;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,current_balance:balance,safety_margin:safety})}
-                    
-                    // Detailed Pay Calculation
+                    // 1. Prepare Settings Object
+                    const settingsPayload = {
+                        user_id: session.value.user.id,
+                        current_balance: Number(balance)||0,
+                        safety_margin: Number(safety)||0,
+                    };
+
+                    // 2. Calculate Paycheck & Add to Payload
                     if(salary){
-                        calcInputs.value = { ...calcInputs.value, salary:Number(salary), payFrequency:frequency, medical:Number(medical)||0, dental:Number(dental)||0, trad401k:Number(trad401k)||0 };
                         const payPeriods=24; const grossPay=(salary/payPeriods); 
                         const preTax=(Number(medical)||0) + (Number(dental)||0);
                         const tradAmt=grossPay * ((Number(trad401k)||0)/100);
@@ -234,13 +238,20 @@
                         let monthly=finalPay*2; if(frequency==='Monthly')monthly=finalPay; if(frequency==='Bi-Weekly')monthly=finalPay*2.166;
                         dbBasePay.value=monthly;
                         
-                        await _supabase.from('user_settings').upsert({
-                            user_id:session.value.user.id,
-                            base_pay:monthly, salary:salary, pay_frequency:frequency,
-                            medical:Number(medical)||0, dental:Number(dental)||0, trad_401k:Number(trad401k)||0
-                        });
+                        // Add paycheck data to the SAME payload
+                        settingsPayload.base_pay = monthly;
+                        settingsPayload.salary = Number(salary);
+                        settingsPayload.pay_frequency = frequency;
+                        settingsPayload.medical = Number(medical)||0;
+                        settingsPayload.dental = Number(dental)||0;
+                        settingsPayload.trad_401k = Number(trad401k)||0;
                     }
 
+                    // 3. Single Upsert for Settings
+                    await _supabase.from('user_settings').upsert(settingsPayload);
+                    if(balance) forecastSettings.value.currentBalance = Number(balance);
+
+                    // 4. Insert Items
                     if(billName&&billAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:billName,amount:Number(billAmount),due_day:Number(billDay)||1,is_core:isCore,is_active:true}]);
                     if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true}]);
                     if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)};
@@ -248,7 +259,6 @@
                     await fetchBudgetItems();await fetchSettings();
                     confetti({particleCount:150,spread:70,origin:{y:0.6}});
                     showOnboarding.value=false;isSubmitting.value=false;
-                    // Safe Reload to prevent data leak
                     window.location.reload();
                 };
                 
