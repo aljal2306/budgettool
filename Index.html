@@ -67,7 +67,9 @@
                 </div>
 
                 <div class="mt-12 mb-8 text-center border-t border-slate-200 pt-8 opacity-50 hover:opacity-100 transition flex justify-center gap-4">
-                    <button v-if="budgetItems.length === 0" @click="startWizard" class="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-6 py-3 rounded-lg font-bold hover:bg-emerald-100 hover:scale-105 transition transform shadow-sm">🚀 Start Setup Wizard</button>
+                    <button v-if="budgetItems.length === 0 && dbBasePay.value === 0" @click="startWizard" class="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-6 py-3 rounded-lg font-bold hover:bg-emerald-100 hover:scale-105 transition transform shadow-sm">🚀 Start Setup Wizard</button>
+                    <button v-else @click="startWizard" class="text-xs bg-slate-50 text-slate-600 border border-slate-200 px-4 py-3 rounded-lg font-bold hover:bg-slate-100 transition">↺ Restart Wizard</button>
+                    
                     <button @click="resetDemo" class="text-xs bg-red-50 text-red-500 border border-red-100 px-4 py-3 rounded-lg font-bold hover:bg-red-100 transition">⚠️ Reset Account</button>
                 </div>
             </div>
@@ -215,16 +217,15 @@
                     isSubmitting.value=true;
                     const{balance,safety,salary,frequency,medical,dental,trad401k,billName,billAmount,billDay,isCore,wishName,wishAmount,goalName,goalCost}=onboardingData.value;
                     
-                    // 1. Prepare Settings Object
-                    const settingsPayload = {
-                        user_id: session.value.user.id,
-                        current_balance: Number(balance)||0,
-                        safety_margin: Number(safety)||0,
-                    };
+                    const settingsPayload = { user_id: session.value.user.id };
+                    
+                    // SAVE BALANCE (if entered)
+                    if(balance !== '') settingsPayload.current_balance = Number(balance);
+                    if(safety !== '') settingsPayload.safety_margin = Number(safety);
 
-                    // 2. Calculate Paycheck & Add to Payload
-                    if(salary){
-                        const payPeriods=24; const grossPay=(salary/payPeriods); 
+                    // SAVE INCOME (if entered)
+                    if(salary !== ''){
+                        const payPeriods=24; const grossPay=(Number(salary)/payPeriods); 
                         const preTax=(Number(medical)||0) + (Number(dental)||0);
                         const tradAmt=grossPay * ((Number(trad401k)||0)/100);
                         const taxable=grossPay - tradAmt - preTax;
@@ -238,7 +239,6 @@
                         let monthly=finalPay*2; if(frequency==='Monthly')monthly=finalPay; if(frequency==='Bi-Weekly')monthly=finalPay*2.166;
                         dbBasePay.value=monthly;
                         
-                        // Add paycheck data to the SAME payload
                         settingsPayload.base_pay = monthly;
                         settingsPayload.salary = Number(salary);
                         settingsPayload.pay_frequency = frequency;
@@ -247,11 +247,11 @@
                         settingsPayload.trad_401k = Number(trad401k)||0;
                     }
 
-                    // 3. Single Upsert for Settings
+                    // SAVE SETTINGS ONCE
                     await _supabase.from('user_settings').upsert(settingsPayload);
-                    if(balance) forecastSettings.value.currentBalance = Number(balance);
+                    if(balance !== '') forecastSettings.value.currentBalance = Number(balance);
 
-                    // 4. Insert Items
+                    // SAVE ITEMS
                     if(billName&&billAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:billName,amount:Number(billAmount),due_day:Number(billDay)||1,is_core:isCore,is_active:true}]);
                     if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true}]);
                     if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)};
@@ -298,7 +298,18 @@
                 const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
                 const clearImpulse=()=>{impulseItem.value={name:'',cost:'',date:new Date().toISOString().split('T')[0]};impulseResult.value=null;renderDashboardChart()};
                 const setScenarioMode=(mode)=>{currentScenarioMode.value=mode;budgetItems.value.forEach(i=>{if(i.frequency==='One-Time'){i.includedInScenario=false;return}if(mode==='survival')i.includedInScenario=i.is_core===true;if(mode==='standard')i.includedInScenario=i.is_wishlist===false;if(mode==='dream')i.includedInScenario=true});if(mode==='dream'){const activeWishlist=budgetItems.value.filter(i=>i.is_wishlist&&i.includedInScenario);activeWishlist.forEach(w=>{if(w.replaces_id){const target=budgetItems.value.find(t=>t.id===w.replaces_id);if(target)target.includedInScenario=false}})}};
-                const fetchSettings=async()=>{const{data}=await _supabase.from('user_settings').select('*').eq('user_id',session.value.user.id).single();if(data){dbBasePay.value=data.base_pay;calcInputs.value={salary:data.salary||0,commission:data.commission||0,medical:data.medical||0,dental:data.dental||0,fsa:data.fsa||0,postTax:data.post_tax||0,trad401k:data.trad_401k||0,roth401k:data.roth_401k||0,match401k:data.match_401k||0,nextPayDate:data.next_pay_date,payFrequency:data.pay_frequency||'Semi-Monthly'};forecastSettings.value.currentBalance=data.current_balance||5000;forecastSettings.value.safetyMargin=data.safety_margin||2000}};
+                
+                const fetchSettings=async()=>{
+                    const{data}=await _supabase.from('user_settings').select('*').eq('user_id',session.value.user.id).single();
+                    if(data){
+                        dbBasePay.value=data.base_pay;
+                        calcInputs.value={salary:data.salary||0,commission:data.commission||0,medical:data.medical||0,dental:data.dental||0,fsa:data.fsa||0,postTax:data.post_tax||0,trad401k:data.trad_401k||0,roth401k:data.roth_401k||0,match401k:data.match_401k||0,nextPayDate:data.next_pay_date,payFrequency:data.pay_frequency||'Semi-Monthly'};
+                        // FIX: Only use 5000 default if DB is null, not if DB is 0
+                        forecastSettings.value.currentBalance = (data.current_balance !== null && data.current_balance !== undefined) ? data.current_balance : 5000;
+                        forecastSettings.value.safetyMargin = (data.safety_margin !== null) ? data.safety_margin : 2000;
+                    }
+                };
+                
                 const fetchBudgetItems=async()=>{const{data}=await _supabase.from('budget_items').select('*').eq('is_active',true).order('amount',{ascending:false});if(data)budgetItems.value=data.map(i=>({...i,includedInScenario:i.is_core===true}));currentScenarioMode.value='survival'};
                 const fetchBills=async()=>{const{data}=await _supabase.from('ledger').select('*, budget_items(*)');if(data)bills.value=data.sort((a,b)=>a.due_date>b.due_date?1:-1)};
                 const fetchDebts=async()=>{const{data}=await _supabase.from('debts').select('*').order('order_index',{ascending:true});if(data)debts.value=data};
