@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Master</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -12,23 +11,11 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
     <style>
-        /* ERROR BOX */
-        #error-console { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fee2e2; color: #991b1b; padding: 2rem; z-index: 9999; font-family: monospace; overflow: auto; }
-        
-        /* APP STYLES */
         .toggle-checkbox:checked{right:0;border-color:#10B981}.toggle-checkbox:checked+.toggle-label{background-color:#10B981}[v-cloak]{display:none}.fade-enter-active,.fade-leave-active{transition:opacity .3s}.fade-enter-from,.fade-leave-to{opacity:0}.accordion-enter-active,.accordion-leave-active{transition:max-height .3s ease,opacity .3s;max-height:1000px;opacity:1;overflow:hidden}.accordion-enter-from,.accordion-leave-to{max-height:0;opacity:0}.cursor-grab{cursor:grab}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:0 0}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}.chat-bubble{max-width:85%;padding:12px 16px;border-radius:16px;font-size:.9rem;line-height:1.5}.chat-user{background-color:#3b82f6;color:#fff;border-bottom-right-radius:4px;margin-left:auto}.chat-ai{background-color:#f1f5f9;color:#1e293b;border-bottom-left-radius:4px;margin-right:auto}.typing-dot{animation:typing 1.4s infinite ease-in-out both}.typing-dot:nth-child(1){animation-delay:-.32s}.typing-dot:nth-child(2){animation-delay:-.16s}@keyframes typing{0%,100%,80%{transform:scale(0)}40%{transform:scale(1)}}@media print{body{background-color:#fff;color:#000}.print\:hidden{display:none!important}.print\:block{display:block!important}.shadow-lg,.shadow-sm,.shadow-xl{box-shadow:none!important}}
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans selection:bg-emerald-100">
-
-    <div id="error-console">
-        <h2 class="text-2xl font-bold mb-4">⚠️ Application Error</h2>
-        <p class="mb-2">The app failed to start. Copy this error message:</p>
-        <pre id="error-message" class="bg-white p-4 border border-red-300 rounded shadow-sm text-sm mb-4"></pre>
-        <button onclick="localStorage.clear(); window.location.reload()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">Clear Cache & Reload</button>
-    </div>
 
     <div id="app" v-cloak class="max-w-6xl mx-auto p-4 md:p-8 pb-20">
 
@@ -75,7 +62,30 @@
                     <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-300 border border-slate-700 col-span-1 md:col-span-2 flex flex-col justify-center relative overflow-hidden"><div class="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500 rounded-full blur-[80px] opacity-20"></div><div class="flex flex-col md:flex-row justify-between items-center relative z-10 gap-4"><div><div class="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Debt Free By</div><div class="text-3xl md:text-4xl font-black text-white">{{debtPlan.payoffDate}}</div><div class="text-xs text-slate-400 mt-1">based on ${{extraDebtPayment}} extra/mo</div></div><div v-if="project" class="w-full md:w-auto bg-white/5 p-3 rounded-xl border border-white/10 backdrop-blur-sm"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target: {{project.name}}</div><div class="flex items-center gap-2"><div class="text-xl font-bold" :class="forecastResults.affordableMonth?'text-emerald-400':'text-red-400'">{{forecastResults.affordableMonth||'Not affordable yet'}}</div><span v-if="forecastResults.affordableMonth">🎉</span></div></div></div></div>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><h3 class="font-bold text-sm text-slate-800 uppercase mb-4 flex items-center gap-2"><span class="bg-red-100 text-red-600 p-1 rounded">🚨</span> Due Next 7 Days</h3><div class="space-y-2"><div v-if="upcomingBills.length===0" class="text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">No bills due soon. Relax! 🏝️</div><div v-for="bill in upcomingBills" :key="bill.id" class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 hover:shadow-md transition hover:border-slate-200 group"><div><div class="font-bold text-sm text-slate-700">{{bill.budget_items.name}}</div><div class="text-[10px] font-bold uppercase tracking-wide mt-0.5" :class="getDaysLeft(bill.due_date)<0?'text-red-500':(getDaysLeft(bill.due_date)===0?'text-orange-500':'text-slate-400')">{{getDaysLeft(bill.due_date)<=0?(getDaysLeft(bill.due_date)===0?'Due Today':'Overdue'):getDaysLeft(bill.due_date)+' Days Left'}}</div></div><div class="text-right"><div class="font-mono text-sm font-bold text-slate-900">${{bill.budget_items.amount}}</div><a :href="getCalendarLink(bill)" target="_blank" class="text-[10px] text-blue-500 font-bold hover:underline opacity-0 group-hover:opacity-100 transition">Pay Now</a></div></div><button @click="currentView='budget'" class="w-full text-center text-xs font-bold text-slate-400 hover:text-slate-600 mt-4 pt-2">View All Bills &rarr;</button></div></div>
+                    <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-sm text-slate-800 uppercase mb-4 flex items-center gap-2">
+                            <span class="bg-red-100 text-red-600 p-1 rounded">🚨</span> Due Next 7 Days
+                        </h3>
+                        <div class="space-y-2">
+                            <div v-if="upcomingBills.length===0" class="text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">No bills due soon. Relax! 🏝️</div>
+                            
+                            <div v-for="bill in upcomingBills" :key="bill.id" class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 hover:shadow-md transition hover:border-slate-200 group">
+                                <div>
+                                    <div class="font-bold text-sm text-slate-700">{{bill.budget_items.name}}</div>
+                                    <div class="text-[10px] font-bold uppercase tracking-wide mt-0.5" :class="getDaysLeft(bill.due_date)<0?'text-red-500':(getDaysLeft(bill.due_date)===0?'text-orange-500':'text-slate-400')">
+                                        {{getDaysLeft(bill.due_date)<=0?(getDaysLeft(bill.due_date)===0?'Due Today':'Overdue'):getDaysLeft(bill.due_date)+' Days Left'}}
+                                    </div>
+                                </div>
+                                <div class="text-right flex flex-col items-end gap-1">
+                                    <div class="font-mono text-sm font-bold text-slate-900">${{bill.budget_items.amount}}</div>
+                                    <button @click="quickPay(bill)" class="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded font-bold hover:bg-emerald-100 transition opacity-0 group-hover:opacity-100">✅ Mark Paid</button>
+                                </div>
+                            </div>
+                            
+                            <button @click="currentView='budget'" class="w-full text-center text-xs font-bold text-slate-400 hover:text-slate-600 mt-4 pt-2">View All Bills &rarr;</button>
+                        </div>
+                    </div>
+
                     <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><div class="flex flex-wrap justify-between items-center mb-6 gap-2"><div class="flex items-center gap-3"><h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-blue-100 text-blue-600 p-1 rounded">📉</span> 30-Day Cash Flow</h3><button @click="showImpulseModal=true" class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition">🤔 Can I Afford It?</button></div><div class="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200"><span class="text-[10px] font-bold text-slate-400 uppercase px-2">Balance Now:</span><input type="number" v-model.number="forecastSettings.currentBalance" @input="renderDashboardChart" class="w-24 p-1 bg-white border border-slate-200 rounded text-right font-mono font-bold text-sm text-slate-700 outline-none focus:border-blue-500"></div></div><div class="h-64 w-full relative"><canvas id="dashboardChart"></canvas></div><div v-if="cashFlowLowPoint && !impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="cashFlowLowPoint.amount<0?'bg-red-50 border-red-100 text-red-700':'bg-emerald-50 border-emerald-100 text-emerald-700'"><span class="text-lg">{{cashFlowLowPoint.amount<0?'⚠️':'✅'}}</span> Lowest projected balance: <span class="font-mono font-bold text-sm">${{cashFlowLowPoint.amount.toLocaleString()}}</span> on {{cashFlowLowPoint.date}}</div><div v-if="impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="impulseResult.safe?'bg-emerald-50 border-emerald-100 text-emerald-700':'bg-red-50 border-red-100 text-red-700'"><span class="text-lg">{{impulseResult.safe?'✅':'❌'}}</span><span>{{impulseResult.message}}</span><button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button></div></div>
                 </div>
 
@@ -210,9 +220,6 @@
         const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
         
-        // ERROR CHECK
-        if(SUPABASE_URL.includes('YOUR_PROJECT')){document.getElementById('error-console').style.display='block';document.getElementById('error-message').textContent="⚠️ CRITICAL ERROR: You forgot to paste your Supabase Keys at the bottom of the script!";throw new Error("Missing Keys")}
-
         const _supabase = createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
         const round=(n)=>Math.round((n+Number.EPSILON)*100)/100;
         const getMonthlyCost=(i)=>{let a=Number(i.amount);if(i.frequency==='Quarterly')return a/3;if(i.frequency==='Yearly')return a/12;if(i.frequency==='One-Time')return 0;return a};
@@ -290,10 +297,29 @@
                 const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',billName:'',billAmount:'',billDay:1,isCore:true,wishName:'',wishAmount:'',goalName:'',goalCost:''}};
                 const resetDemo=async()=>{if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?"))return;loading.value=true;const uid=session.value.user.id;await _supabase.from('ledger').delete().eq('user_id',uid);await _supabase.from('budget_items').delete().eq('user_id',uid);await _supabase.from('debts').delete().eq('user_id',uid);await _supabase.from('user_settings').delete().eq('user_id',uid);window.location.reload()};
 
+                // --- 2. QUICK PAY LOGIC ---
+                const quickPay = async (bill) => {
+                    // 1. Optimistic Update (Immediate Feedback)
+                    bill.is_paid = true;
+                    
+                    // 2. Database Update
+                    const { error } = await _supabase.from('ledger').update({ is_paid: true }).eq('id', bill.id);
+                    
+                    // 3. Re-Render Dashboard to update "Safe to Spend"
+                    if (!error) {
+                        // We need to re-fetch bills to ensure data consistency or manually update local state
+                        // The optimistic update handles the UI, but let's re-calculate charts
+                        renderDashboardChart();
+                    } else {
+                        bill.is_paid = false; // Revert if error
+                        alert("Error paying bill.");
+                    }
+                };
+
                 const debtPlan=computed(()=>{if(debts.value.length===0)return{payoffDate:'N/A',totalInterest:0,savedInterest:0,timeline:[]};const simulate=(extra)=>{let simDebts=JSON.parse(JSON.stringify(debts.value)).map(d=>({...d,balance:Number(d.balance),rate:Number(d.rate),min:Number(d.min_payment),paid_off:false}));let totalInterest=0,months=0,timeline=[],active=true,permanentSnowball=extra;while(active&&months<480){months++;let anyBalanceLeft=false,monthlySurplus=permanentSnowball;for(let d of simDebts){if(d.paid_off){monthlySurplus+=d.min;continue}anyBalanceLeft=true;let interest=d.balance*(d.rate/100/12);totalInterest+=interest;d.balance+=interest;let payment=Math.min(d.balance,d.min);d.balance-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0});monthlySurplus+=(d.min-payment)}}for(let d of simDebts){if(d.paid_off)continue;if(monthlySurplus<=0)break;let payment=Math.min(d.balance,monthlySurplus);d.balance-=payment;monthlySurplus-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0})}}if(!anyBalanceLeft)active=false}return{months,totalInterest,timeline}};const base=simulate(0);const attack=simulate(extraDebtPayment.value);const now=new Date();now.setMonth(now.getMonth()+attack.months);return{payoffDate:now.toLocaleDateString('en-US',{month:'long',year:'numeric'}),totalInterest:round(attack.totalInterest),savedInterest:round(base.totalInterest-attack.totalInterest),timeline:attack.timeline}});
                 const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
-                const calculateAndSave=async(mode)=>{savingBase.value=true;const{salary,commission,medical,dental,fsa,postTax,trad401k,roth401k,match401k,nextPayDate,payFrequency}=calcInputs.value;const payPeriods=24;const grossPay=(salary/payPeriods)+commission;const preTax=medical+dental+fsa;const ficaWages=Math.max(0,grossPay-preTax);const ssTax=Math.min(ficaWages,174900/payPeriods)*0.062;const medTax=(ficaWages*0.0145)+(grossPay*payPeriods>250000?((grossPay*payPeriods-250000)/payPeriods)*0.009:0);const tradAmt=grossPay*(trad401k/100);const rothAmt=grossPay*(roth401k/100);const taxable=grossPay-tradAmt-preTax;const annualTaxable=Math.max(0,(taxable*payPeriods)-30000);const taxPerPeriod=calculateFederalTax(annualTaxable)/payPeriods;const net=taxable-taxPerPeriod-postTax-rothAmt-ssTax-medTax;const finalPay=round(net-2.25);let monthly=finalPay*2;if(payFrequency==='Monthly')monthly=finalPay;if(payFrequency==='Bi-Weekly')monthly=finalPay*2.166;calcResult.value={gross:round(grossPay),preTaxTotal:round(preTax+tradAmt),taxes:round(taxPerPeriod+ssTax+medTax),postTaxTotal:round(postTax+rothAmt),netPay:finalPay};if(mode==='default'){dbBasePay.value=monthly;useTempPay.value=false;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,base_pay:dbBasePay.value,salary,commission,medical,dental,fsa,post_tax:postTax,trad_401k:trad401k,roth_401k:roth401k,match_401k:match401k,next_pay_date:nextPayDate,pay_frequency:payFrequency});alert("Saved!")}else{tempCalculatedPay.value=monthly;useTempPay.value=true}savingBase.value=false;currentView.value='budget'};
+                const calculateAndSave=async(mode)=>{savingBase.value=true;const{salary,commission,medical,dental,fsa,postTax,trad401k,roth401k,match401k,nextPayDate,payFrequency}=calcInputs.value;const payPeriods=24;const grossPay=(salary/payPeriods)+commission;const preTax=medical+dental+fsa;const ficaWages=Math.max(0,grossPay-preTax);const ssTax=Math.min(ficaWages,174900/payPeriods)*0.062;const medTax=(ficaWages*0.0145)+(grossPay*payPeriods>250000?((grossPay*payPeriods-250000)/payPeriods)*0.009:0);const tradAmt=grossPay*(trad401k/100);const rothAmt=grossPay*(roth401k/100);const taxable=grossPay-tradAmt-preTax;const annualTaxable=Math.max(0,(taxable*payPeriods)-30000);const taxPerPeriod=calculateFederalTax(annualTaxable)/payPeriods;const net=taxable-taxPerPeriod-postTax-rothAmt-ssTax-medTax;const finalPay=round(net-2.25);let monthly=finalPay*2;if(payFrequency==='Monthly')monthly=finalPay;if(payFrequency==='Bi-Weekly')monthly=finalPay*2.166;calcResult.value={gross:round(grossPay),preTaxTotal:round(preTax+tradAmt),taxes:round(taxPerPeriod+ssTax+medTax),postTaxTotal:round(postTax+rothAmt),netPay:finalPay};if(mode==='default'){dbBasePay.value=monthly;useTempPay.value=false;await _supabase.from('user_settings').upsert({user_id:session.value.user.id,base_pay:dbBasePay.value,salary,commission,medical,dental,fsa,post_tax:postTax,trad401k:trad401k,roth_401k:roth401k,match_401k:match401k,next_pay_date:nextPayDate,pay_frequency:payFrequency});alert("Saved!")}else{tempCalculatedPay.value=monthly;useTempPay.value=true}savingBase.value=false;currentView.value='budget'};
                 const runForecast=()=>{let balance=round(forecastSettings.value.currentBalance);const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const now=new Date();if(forecastData.value.length!==forecastSettings.value.months){forecastData.value=[];for(let i=0;i<forecastSettings.value.months;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);forecastData.value.push({name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,income:dbBasePay.value,extraExpenses:[],newExpenseId:'',newExpenseName:'',newExpenseAmount:'',isOpen:false})}}forecastResults.value.affordableMonth=null;forecastData.value.forEach((m,idx)=>{
                     let monthlyBurn = 0;
                     if(forecastMode.value==='survival') monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
@@ -343,13 +369,9 @@
                     if(data){
                         dbBasePay.value=data.base_pay;
                         calcInputs.value={salary:data.salary||0,commission:data.commission||0,medical:data.medical||0,dental:data.dental||0,fsa:data.fsa||0,postTax:data.post_tax||0,trad401k:data.trad_401k||0,roth401k:data.roth_401k||0,match401k:data.match_401k||0,nextPayDate:data.next_pay_date,payFrequency:data.pay_frequency||'Semi-Monthly'};
-                        // FIX: Use real values, or default if NULL (not 0)
-                        if (data.current_balance !== undefined && data.current_balance !== null) {
-                            forecastSettings.value.currentBalance = data.current_balance;
-                        }
-                        if (data.safety_margin !== undefined && data.safety_margin !== null) {
-                            forecastSettings.value.safetyMargin = data.safety_margin;
-                        }
+                        // FIX: Allow 0 as valid balance
+                        forecastSettings.value.currentBalance = (data.current_balance !== null && data.current_balance !== undefined) ? data.current_balance : 5000;
+                        forecastSettings.value.safetyMargin = (data.safety_margin !== null) ? data.safety_margin : 2000;
                     }
                 };
                 
@@ -401,7 +423,7 @@
                 watch(currentView,(val)=>{if(val==='debt'){nextTick(()=>{const el=document.getElementById('debt-list-container');if(el){new Sortable(el,{handle:'.sortable-handle',animation:150,onEnd:(evt)=>{const item=debts.value.splice(evt.oldIndex,1)[0];debts.value.splice(evt.newIndex,0,item);updateDebtOrder()}})}})}if(val==='forecast')nextTick(runForecast);if(val==='dashboard')nextTick(renderDashboardChart)});
                 watch(()=>forecastSettings.value.currentBalance,(newVal)=>{if(currentView.value==='dashboard')renderDashboardChart()});
                 watch(bills,()=>{if(currentView.value==='dashboard')renderDashboardChart()},{deep:true});
-                return {session,authEmail,loading,authMessage,currentView,dbBasePay,tempCalculatedPay,useTempPay,activeMonthlyPay,budgetItems,bills,coreExpenses,debts,calcInputs,calcResult,savingBase,calculateAndSave,showPlanner,showAddForm,isSubmitting,newItem,isEditing,showGenModal,potentialBills,projectedBalance,totalMonthlyBurn,isScenarioActive,openGenerateModal,confirmGenerate,deleteBill,toggleBillPaid,handleSave,resetForm,startEditing,deleteBudgetItem,applyCoreOnly,applyAll,formatDate,getDaysLeft,getCalendarLink,fetchBills,saveBasePay,forecastSettings,forecastData,project,showProjectModal,newProject,forecastResults,runForecast,saveProject,addExpense,fillExpense,printReport,standardItems,wishlistItems,setScenarioMode,currentScenarioMode,getMonthlyCost,getPrintTitle,newDebt,extraDebtPayment,addDebt,deleteDebt,debtPlan,showPaidBills,visibleBills,generateMonthOffset,upcomingBills,safeToSpend,burnRate,cashFlowLowPoint,renderDashboardChart,dashboardMode,dashboardBurn,showDebtForm,showImpulseModal,impulseItem,impulseResult,checkImpulse,clearImpulse,showConsultant,chatMessages,userQuery,isThinking,openConsultant,sendQuery,renderMarkdown,showOnboarding,onboardingStep,onboardingData,nextOnboardingStep,handleLogin,handleLogout,resetDemo,lowPointData,startWizard,forecastMode,setForecastMode}
+                return {session,authEmail,loading,authMessage,currentView,dbBasePay,tempCalculatedPay,useTempPay,activeMonthlyPay,budgetItems,bills,coreExpenses,debts,calcInputs,calcResult,savingBase,calculateAndSave,showPlanner,showAddForm,isSubmitting,newItem,isEditing,showGenModal,potentialBills,projectedBalance,totalMonthlyBurn,isScenarioActive,openGenerateModal,confirmGenerate,deleteBill,toggleBillPaid,handleSave,resetForm,startEditing,deleteBudgetItem,applyCoreOnly,applyAll,formatDate,getDaysLeft,getCalendarLink,fetchBills,saveBasePay,forecastSettings,forecastData,project,showProjectModal,newProject,forecastResults,runForecast,saveProject,addExpense,fillExpense,printReport,standardItems,wishlistItems,setScenarioMode,currentScenarioMode,getMonthlyCost,getPrintTitle,newDebt,extraDebtPayment,addDebt,deleteDebt,debtPlan,showPaidBills,visibleBills,generateMonthOffset,upcomingBills,safeToSpend,burnRate,cashFlowLowPoint,renderDashboardChart,dashboardMode,dashboardBurn,showDebtForm,showImpulseModal,impulseItem,impulseResult,checkImpulse,clearImpulse,showConsultant,chatMessages,userQuery,isThinking,openConsultant,sendQuery,renderMarkdown,showOnboarding,onboardingStep,onboardingData,nextOnboardingStep,handleLogin,handleLogout,resetDemo,lowPointData,startWizard,forecastMode,setForecastMode,quickPay}
             },
         }).mount('#app')
     </script>
