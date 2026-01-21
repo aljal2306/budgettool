@@ -64,9 +64,12 @@
                 
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     
-                    <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center">
-                        <h3 class="font-bold text-sm text-slate-800 uppercase mb-4 self-start flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 p-1 rounded">📊</span> Breakdown</h3>
-                        <div class="relative w-40 h-40">
+                    <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition" @click="toggleChartMode">
+                        <div class="w-full flex justify-between items-center mb-2">
+                             <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 p-1 rounded">📊</span> Breakdown</h3>
+                             <div class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold">{{ showChartPercentages ? '%' : '$' }}</div>
+                        </div>
+                        <div class="relative w-40 h-40 pointer-events-none">
                              <canvas id="categoryChart"></canvas>
                         </div>
                         <div class="mt-4 w-full space-y-1">
@@ -181,7 +184,7 @@
                             <select v-model="expenseData.budgetId" class="w-full p-3 border rounded-xl bg-slate-50 text-sm">
                                 <option value="" disabled>Select a Budget...</option>
                                 <option v-for="item in variableBudgets" :key="item.id" :value="item.id">
-                                    {{ item.name }} ({{ item.remaining < 0 ? 'Over' : 'Left' }}: ${{ item.remaining }})
+                                    {{ item.name }} ({{ item.remaining < 0 ? 'Over' : 'Left' }}: ${{ Math.round(item.remaining) }})
                                 </option>
                             </select>
                         </div>
@@ -366,6 +369,9 @@
 
                 // NEW: CATEGORIES
                 const categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Entertainment', 'Subscriptions', 'Other']);
+                // NEW: SHOW % TOGGLE
+                const showChartPercentages = ref(false);
+
                 let chartInstance=null,dashboardChartInstance=null, categoryChartInstance=null;
                 
                 const nextOnboardingStep=async()=>{if(onboardingStep.value===5)await finishOnboarding();else onboardingStep.value++};
@@ -425,6 +431,12 @@
                 
                 const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
                 const resetDemo=async()=>{if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?"))return;loading.value=true;const uid=session.value.user.id;await _supabase.from('ledger').delete().eq('user_id',uid);await _supabase.from('budget_items').delete().eq('user_id',uid);await _supabase.from('debts').delete().eq('user_id',uid);await _supabase.from('incomes').delete().eq('user_id',uid);await _supabase.from('user_settings').delete().eq('user_id',uid);window.location.reload()};
+                
+                // TOGGLE CHART MODE
+                const toggleChartMode = () => {
+                    showChartPercentages.value = !showChartPercentages.value;
+                    renderCategoryChart();
+                };
 
                 const calculateAndSave=async(mode)=>{
                     savingBase.value=true;
@@ -526,17 +538,34 @@
                     if (!ctx) return;
                     if (categoryChartInstance) categoryChartInstance.destroy();
 
-                    // Aggregate data by category
+                    // Aggregate data by category (Monthly Equivalent)
                     const totals = {};
+                    let grandTotal = 0;
                     categories.value.forEach(c => totals[c] = 0);
+                    
                     budgetItems.value.forEach(item => {
+                        // Skip One-Time items for monthly budget chart
+                        if(item.frequency === 'One-Time') return;
+                        
                         const cat = item.category || 'Other';
-                        totals[cat] = (totals[cat] || 0) + getMonthlyCost(item);
+                        const monthlyCost = getMonthlyCost(item);
+                        totals[cat] = (totals[cat] || 0) + monthlyCost;
+                        grandTotal += monthlyCost;
                     });
 
-                    // Prepare for Chart.js
+                    // Prepare labels and data
                     const labels = Object.keys(totals);
-                    const data = Object.values(totals);
+                    const rawData = Object.values(totals); // Raw numbers for chart internal logic
+                    
+                    // Generate Display Data (Percentage or Rounded Dollar)
+                    const displayData = rawData.map(val => {
+                        if(showChartPercentages.value) {
+                            return grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
+                        } else {
+                            return Math.round(val);
+                        }
+                    });
+
                     const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#64748B'];
 
                     categoryChartInstance = new Chart(ctx, {
@@ -544,7 +573,7 @@
                         data: {
                             labels: labels,
                             datasets: [{
-                                data: data,
+                                data: rawData, // Chart.js needs raw numbers for slice size
                                 backgroundColor: colors,
                                 borderWidth: 0
                             }]
@@ -557,10 +586,9 @@
                                 tooltip: {
                                     callbacks: {
                                         label: function(context) {
-                                            let label = context.label || '';
-                                            if (label) label += ': ';
-                                            label += '$' + context.raw.toLocaleString();
-                                            return label;
+                                            const val = context.raw;
+                                            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
+                                            return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`;
                                         }
                                     }
                                 }
@@ -572,10 +600,15 @@
                     const legendEl = document.getElementById('cat-legend');
                     if(legendEl) {
                         legendEl.innerHTML = labels.map((label, i) => {
-                            if(data[i] === 0) return ''; // Skip empty
+                            if(rawData[i] === 0) return ''; 
+                            
+                            const val = rawData[i];
+                            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
+                            const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`;
+
                             return `<div class="flex justify-between items-center mb-1">
                                 <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div>
-                                <span class="font-mono font-bold">$${data[i].toLocaleString()}</span>
+                                <span class="font-mono font-bold">${displayStr}</span>
                             </div>`;
                         }).join('');
                     }
@@ -738,7 +771,7 @@
                 watch(bills,()=>{if(currentView.value==='dashboard')renderDashboardChart()},{deep:true});
                 watch(budgetItems, () => { if(currentView.value==='dashboard') renderCategoryChart() }, {deep: true});
 
-                return {session,authEmail,loading,authMessage,currentView,dbBasePay,tempCalculatedPay,useTempPay,activeMonthlyPay,budgetItems,bills,coreExpenses,debts,calcInputs,calcResult,savingBase,calculateAndSave,showPlanner,showAddForm,isSubmitting,newItem,isEditing,showGenModal,potentialBills,projectedBalance,totalMonthlyBurn,isScenarioActive,openGenerateModal,confirmGenerate,deleteBill,toggleBillPaid,handleSave,resetForm,startEditing,deleteBudgetItem,applyCoreOnly,applyAll,formatDate,getDaysLeft,getCalendarLink,fetchBills,saveBasePay,forecastSettings,forecastData,project,showProjectModal,newProject,forecastResults,runForecast,saveProject,addExpense,fillExpense,printReport,standardItems,wishlistItems,setScenarioMode,currentScenarioMode,getMonthlyCost,getPrintTitle,newDebt,extraDebtPayment,addDebt,deleteDebt,debtPlan,showPaidBills,visibleBills,generateMonthOffset,upcomingBills,safeToSpend,burnRate,cashFlowLowPoint,renderDashboardChart,dashboardMode,dashboardBurn,showDebtForm,showImpulseModal,impulseItem,impulseResult,checkImpulse,clearImpulse,showConsultant,chatMessages,userQuery,isThinking,openConsultant,sendQuery,renderMarkdown,showOnboarding,onboardingStep,onboardingData,nextOnboardingStep,handleLogin,handleLogout,resetDemo,lowPointData,startWizard,forecastMode,setForecastMode,quickPay,incomes,loadIncomeIntoCalculator,deleteIncome,variableBudgets,showExpenseModal,expenseData,logExpense,categories}
+                return {session,authEmail,loading,authMessage,currentView,dbBasePay,tempCalculatedPay,useTempPay,activeMonthlyPay,budgetItems,bills,coreExpenses,debts,calcInputs,calcResult,savingBase,calculateAndSave,showPlanner,showAddForm,isSubmitting,newItem,isEditing,showGenModal,potentialBills,projectedBalance,totalMonthlyBurn,isScenarioActive,openGenerateModal,confirmGenerate,deleteBill,toggleBillPaid,handleSave,resetForm,startEditing,deleteBudgetItem,applyCoreOnly,applyAll,formatDate,getDaysLeft,getCalendarLink,fetchBills,saveBasePay,forecastSettings,forecastData,project,showProjectModal,newProject,forecastResults,runForecast,saveProject,addExpense,fillExpense,printReport,standardItems,wishlistItems,setScenarioMode,currentScenarioMode,getMonthlyCost,getPrintTitle,newDebt,extraDebtPayment,addDebt,deleteDebt,debtPlan,showPaidBills,visibleBills,generateMonthOffset,upcomingBills,safeToSpend,burnRate,cashFlowLowPoint,renderDashboardChart,dashboardMode,dashboardBurn,showDebtForm,showImpulseModal,impulseItem,impulseResult,checkImpulse,clearImpulse,showConsultant,chatMessages,userQuery,isThinking,openConsultant,sendQuery,renderMarkdown,showOnboarding,onboardingStep,onboardingData,nextOnboardingStep,handleLogin,handleLogout,resetDemo,lowPointData,startWizard,forecastMode,setForecastMode,quickPay,incomes,loadIncomeIntoCalculator,deleteIncome,variableBudgets,showExpenseModal,expenseData,logExpense,categories,showChartPercentages,toggleChartMode}
             },
         }).mount('#app')
     </script>
