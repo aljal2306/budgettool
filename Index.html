@@ -805,195 +805,176 @@
                 const handleSave=async()=>{isEditing.value?updateItem():addItem()};
                 const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
                 const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
-                const deleteBudgetItem=async(item)=>{if(!confirm('Delete item?'))return;const{error}=await _supabase.from('budget_items.delete().eq('id', item.id);
-                if (!error) {
-                    budgetItems.value = budgetItems.value.filter(i => i.id !== item.id);
-                    // Also clean up related bills in the ledger view locally
-                    bills.value = bills.value.filter(b => b.budget_item_id !== item.id);
-                    renderCategoryChart();
-                    renderDashboardChart();
-                }
-            };
-
-            const startEditing = (item) => {
-                isEditing.value = true;
-                editingId.value = item.id;
-                // Clone item to avoid direct mutation before save
-                newItem.value = { 
-                    ...item, 
-                    isFlexible: item.due_day === 0,
-                    // Ensure defaults if missing
-                    replaces_id: item.replaces_id || null
+                const deleteBudgetItem = async (item) => {
+                    if (!confirm('Delete item?')) return;
+                    // FIX: Added the missing closing ') below
+                    const { error } = await _supabase.from('budget_items').delete().eq('id', item.id);
+                    if (!error) {
+                        budgetItems.value = budgetItems.value.filter(i => i.id !== item.id);
+                        // Also clean up related bills in the ledger view locally
+                        bills.value = bills.value.filter(b => b.budget_item_id !== item.id);
+                        renderCategoryChart();
+                        renderDashboardChart();
+                    }
                 };
-                showAddForm.value = true;
-            };
 
-            const resetForm = () => {
-                isEditing.value = false;
-                editingId.value = null;
-                newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false };
-                showAddForm.value = false;
-            };
-
-            const deleteBill = async (bill) => {
-                if(!confirm("Remove this bill instance?")) return;
-                const { error } = await _supabase.from('ledger').delete().eq('id', bill.id);
-                if(!error) {
-                    bills.value = bills.value.filter(b => b.id !== bill.id);
-                    renderDashboardChart();
-                }
-            };
-
-            const toggleBillPaid = async (bill) => {
-                // Determine new state (Vue v-model updates the value before this triggers, so we just save it)
-                const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id);
-                if(error) {
-                    bill.is_paid = !bill.is_paid; // revert on error
-                    alert('Error updating bill status');
-                } else {
-                    renderDashboardChart();
-                }
-            };
-
-            const saveProject = () => {
-                if(newProject.value.name && newProject.value.cost) {
-                    project.value = {
-                        name: newProject.value.name,
-                        cost: Number(newProject.value.cost)
+                const startEditing = (item) => {
+                    isEditing.value = true;
+                    editingId.value = item.id;
+                    // Clone item to avoid direct mutation before save
+                    newItem.value = { 
+                        ...item, 
+                        isFlexible: item.due_day === 0,
+                        replaces_id: item.replaces_id || null
                     };
-                    showProjectModal.value = false;
-                    newProject.value = { name: '', cost: '' };
-                    runForecast();
-                }
-            };
+                    showAddForm.value = true;
+                };
 
-            // --- AUTHENTICATION ---
-            const handleLogin = async () => {
-                loading.value = true;
-                const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value });
-                if (error) alert(error.message);
-                else authMessage.value = "Check your email for the Magic Link!";
-                loading.value = false;
-            };
+                const resetForm = () => {
+                    isEditing.value = false;
+                    editingId.value = null;
+                    newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false };
+                    showAddForm.value = false;
+                };
 
-            const handleLogout = async () => {
-                await _supabase.auth.signOut();
-                session.value = null;
-                window.location.reload();
-            };
+                const deleteBill = async (bill) => {
+                    if(!confirm("Remove this bill instance?")) return;
+                    const { error } = await _supabase.from('ledger').delete().eq('id', bill.id);
+                    if(!error) {
+                        bills.value = bills.value.filter(b => b.id !== bill.id);
+                        renderDashboardChart();
+                    }
+                };
 
-            // --- UTILITIES ---
-            const formatDate = (dateStr) => {
-                if (!dateStr) return '';
-                // Adjust for timezone issues by splitting manually
-                const [y, m, d] = dateStr.split('-');
-                const date = new Date(y, m - 1, d);
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            };
+                const toggleBillPaid = async (bill) => {
+                    const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id);
+                    if(error) {
+                        bill.is_paid = !bill.is_paid; // revert on error
+                        alert('Error updating bill status');
+                    } else {
+                        renderDashboardChart();
+                    }
+                };
 
-            const getDaysLeft = (dateStr) => {
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                const [y, m, d] = dateStr.split('-');
-                const due = new Date(y, m - 1, d);
-                const diffTime = due - today;
-                return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-            };
+                const saveProject = () => {
+                    if(newProject.value.name && newProject.value.cost) {
+                        project.value = {
+                            name: newProject.value.name,
+                            cost: Number(newProject.value.cost)
+                        };
+                        showProjectModal.value = false;
+                        newProject.value = { name: '', cost: '' };
+                        runForecast();
+                    }
+                };
 
-            const getCalendarLink = (bill) => {
-                const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
-                const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
-                const dStr = bill.due_date.replace(/-/g, '');
-                return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
-            };
+                // --- AUTHENTICATION ---
+                const handleLogin = async () => {
+                    loading.value = true;
+                    const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value });
+                    if (error) alert(error.message);
+                    else authMessage.value = "Check your email for the Magic Link!";
+                    loading.value = false;
+                };
 
-            // --- LIFECYCLE ---
-            onMounted(() => {
-                _supabase.auth.getSession().then(({ data }) => {
-                    session.value = data.session;
-                    if (session.value) {
-                        fetchSettings();
-                        fetchIncomes();
-                        fetchBudgetItems().then(() => {
-                            fetchBills().then(() => {
-                                nextTick(() => {
-                                    renderCategoryChart();
-                                    renderDashboardChart();
+                const handleLogout = async () => {
+                    await _supabase.auth.signOut();
+                    session.value = null;
+                    window.location.reload();
+                };
+
+                // --- UTILITIES ---
+                const formatDate = (dateStr) => {
+                    if (!dateStr) return '';
+                    const [y, m, d] = dateStr.split('-');
+                    const date = new Date(y, m - 1, d);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                };
+
+                const getDaysLeft = (dateStr) => {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const [y, m, d] = dateStr.split('-');
+                    const due = new Date(y, m - 1, d);
+                    const diffTime = due - today;
+                    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                };
+
+                const getCalendarLink = (bill) => {
+                    const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
+                    const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
+                    const dStr = bill.due_date.replace(/-/g, '');
+                    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
+                };
+
+                // --- LIFECYCLE ---
+                onMounted(() => {
+                    _supabase.auth.getSession().then(({ data }) => {
+                        session.value = data.session;
+                        if (session.value) {
+                            fetchSettings();
+                            fetchIncomes();
+                            fetchBudgetItems().then(() => {
+                                fetchBills().then(() => {
+                                    nextTick(() => {
+                                        renderCategoryChart();
+                                        renderDashboardChart();
+                                    });
                                 });
                             });
-                        });
-                        fetchDebts().then(() => {
-                            // Initialize Sortable for Debt List
-                            const el = document.getElementById('debt-list-container');
-                            if(el) {
-                                new Sortable(el, {
-                                    handle: '.sortable-handle',
-                                    animation: 150,
-                                    onEnd: async (evt) => {
-                                        // Reorder local array
-                                        const item = debts.value.splice(evt.oldIndex, 1)[0];
-                                        debts.value.splice(evt.newIndex, 0, item);
-                                        // Update Order in DB
-                                        const updates = debts.value.map((d, index) => ({
-                                            id: d.id,
-                                            order_index: index,
-                                            // Pass required fields to avoid DB constraint errors if any
-                                            user_id: session.value.user.id,
-                                            name: d.name,
-                                            balance: d.balance,
-                                            rate: d.rate,
-                                            min_payment: d.min_payment
-                                        }));
-                                        await _supabase.from('debts').upsert(updates);
-                                    }
-                                });
-                            }
-                        });
-                    }
+                            fetchDebts().then(() => {
+                                // Initialize Sortable for Debt List
+                                const el = document.getElementById('debt-list-container');
+                                if(el) {
+                                    new Sortable(el, {
+                                        handle: '.sortable-handle',
+                                        animation: 150,
+                                        onEnd: async (evt) => {
+                                            const item = debts.value.splice(evt.oldIndex, 1)[0];
+                                            debts.value.splice(evt.newIndex, 0, item);
+                                            
+                                            const updates = debts.value.map((d, index) => ({
+                                                id: d.id,
+                                                order_index: index,
+                                                user_id: session.value.user.id,
+                                                name: d.name,
+                                                balance: d.balance,
+                                                rate: d.rate,
+                                                min_payment: d.min_payment
+                                            }));
+                                            await _supabase.from('debts').upsert(updates);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    _supabase.auth.onAuthStateChange((_, _session) => {
+                        session.value = _session;
+                    });
                 });
 
-                _supabase.auth.onAuthStateChange((_, _session) => {
-                    session.value = _session;
-                });
-            });
-
-            // Return everything to Template
-            return {
-                session, authEmail, loading, authMessage, handleLogin, handleLogout,
-                currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, startWizard, resetDemo,
-                
-                // Incomes & Calc
-                calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome,
-                useTempPay, activeMonthlyPay, tempCalculatedPay,
-                
-                // Budgeting
-                budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, 
-                handleSave, startEditing, resetForm, deleteBudgetItem, categories,
-                
-                // Dashboard
-                dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills,
-                showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode,
-                
-                // Ledger / Generation
-                showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate,
-                showExpenseModal, expenseData, logExpense,
-                
-                // Forecast
-                forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults,
-                retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings,
-                
-                // Impulse & Chat
-                showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint,
-                showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown,
-                
-                // Debt
-                debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment,
-                
-                // Utils
-                formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive
-            };
-        }
-    }).mount('#app');
+                return {
+                    session, authEmail, loading, authMessage, handleLogin, handleLogout,
+                    currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, startWizard, resetDemo,
+                    calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome,
+                    useTempPay, activeMonthlyPay, tempCalculatedPay,
+                    budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, 
+                    handleSave, startEditing, resetForm, deleteBudgetItem, categories,
+                    dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills,
+                    showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode,
+                    showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate,
+                    showExpenseModal, expenseData, logExpense,
+                    forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults,
+                    retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings,
+                    showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint,
+                    showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown,
+                    debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment,
+                    formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive
+                };
+            }
+        }).mount('#app');
     </script>
 </body>
 </html>
