@@ -11,6 +11,10 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+
     <style>
         .toggle-checkbox:checked { right: 0; border-color: #10B981; }
         .toggle-checkbox:checked + .toggle-label { background-color: #10B981; }
@@ -30,6 +34,14 @@
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        
+        /* Custom Driver.js Styling to match theme */
+        .driver-popover.driverjs-theme { background-color: #ffffff; color: #1e293b; padding: 15px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        .driver-popover.driverjs-theme .driver-popover-title { font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; color: #0f172a; }
+        .driver-popover.driverjs-theme .driver-popover-description { font-size: 0.9rem; line-height: 1.5; color: #64748b; margin-bottom: 15px; }
+        .driver-popover.driverjs-theme button { background-color: #10B981; color: white; border: none; text-shadow: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 0.8rem; }
+        .driver-popover.driverjs-theme button:hover { background-color: #059669; }
+        
         @media print {
             body { background-color: #fff; color: #000; }
             .print\:hidden { display: none !important; }
@@ -76,8 +88,15 @@
             </div>
 
             <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
+                
+                <div class="flex justify-end mb-2 print:hidden">
+                    <button @click="startDashboardTour" class="text-xs font-bold text-indigo-500 flex items-center gap-1 hover:bg-indigo-50 px-2 py-1 rounded transition">
+                        <span>📍</span> Take a Tour
+                    </button>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 text-white relative overflow-hidden group">
+                    <div id="tour-safe-spend" class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 text-white relative overflow-hidden group">
                         <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">💰</div>
                         <div class="relative z-10">
                             <div class="flex justify-between items-start mb-2">
@@ -93,7 +112,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative group overflow-hidden">
+                    <div id="tour-nest-egg" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative group overflow-hidden">
                         <div class="absolute top-0 right-0 p-4 opacity-[0.03] text-6xl group-hover:opacity-10 transition">👴</div>
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">Nest Egg @ Age {{ forecastSettings.retirementAge }}</h3>
                         <div class="text-2xl font-black text-indigo-700">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div>
@@ -105,7 +124,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-300 border border-slate-700 col-span-1 md:col-span-2 flex flex-col justify-center relative overflow-hidden">
+                    <div id="tour-debt-free" class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-300 border border-slate-700 col-span-1 md:col-span-2 flex flex-col justify-center relative overflow-hidden">
                         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500 rounded-full blur-[80px] opacity-20"></div>
                         <div class="flex flex-col md:flex-row justify-between items-center relative z-10 gap-4">
                             <div>
@@ -126,7 +145,7 @@
                 
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
                     
-                    <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
+                    <div id="tour-variable-budgets" class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2">
                                 <span class="bg-purple-100 text-purple-600 p-1 rounded">🛒</span> Budgets
@@ -152,7 +171,7 @@
                         </div>
                     </div>
 
-                    <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
+                    <div id="tour-due-soon" class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
                          <h3 class="font-bold text-sm text-slate-800 uppercase mb-4 flex items-center gap-2">
                              <span class="bg-red-100 text-red-600 p-1 rounded">🚨</span> Due Soon
                          </h3>
@@ -173,7 +192,7 @@
                          </div>
                     </div>
 
-                    <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <div id="tour-cash-flow" class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                         <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
                             <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-blue-100 text-blue-600 p-1 rounded">📉</span> 30-Day Flow</h3>
                             <div class="flex items-center gap-2">
@@ -195,7 +214,7 @@
                 </div>
 
                 <div class="flex justify-center mb-8">
-                    <div class="w-full max-w-2xl bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-center gap-8">
+                    <div id="tour-breakdown" class="w-full max-w-2xl bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-center gap-8">
                         <div class="flex-1 w-full">
                              <div class="w-full flex justify-between items-center mb-2">
                                 <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 p-1 rounded">📊</span> Spending Breakdown</h3>
@@ -542,7 +561,7 @@
             </div>
         </transition>
 
-        <transition name="fade"><div v-if="showImpulseModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-slate-800">🤔 Impulse Check</h3><button @click="showImpulseModal=false" class="text-slate-400 hover:text-slate-600">&times;</button></div><div class="space-y-4"><input v-model="impulseItem.name" type="text" placeholder="What is it?" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none"><div class="grid grid-cols-2 gap-3"><input v-model="impulseItem.cost" type="number" placeholder="Price ($)" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none"><input v-model="impulseItem.date" type="date" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none"></div><button @click="checkImpulse" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700 transition shadow-lg shadow-purple-200">Run Simulation</button></div></div></div></transition>
+        <transition name="fade"><div v-if="showImpulseModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-slate-800">🤔 Impulse Check</h3><button @click="showImpulseModal=false" class="text-slate-400 hover:text-slate-600">&times;</button></div><div class="space-y-4"><input v-model="impulseItem.name" type="text" placeholder="What is it?" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none"><div class="grid grid-cols-2 gap-3"><input v-model="impulseItem.cost" type="number" placeholder="Price ($)" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none"><input v-model="impulseItem.date" type="date" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none"></div><button @click="checkImpulse" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700 transition shadow-lg shadow-purple-200">Run Simulation</button></div></div></div></transition>
         
         <transition name="fade">
             <div v-if="showConsultant" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -633,8 +652,8 @@
                 // Onboarding State
                 const showOnboarding=ref(false),onboardingStep=ref(1),onboardingData=ref({
                     balance:'',safety:'',salary:'',frequency:'Semi-Monthly',
-                    medical:'',dental:'',trad4401k:'', 
-                    filingStatus:'Single', stateTaxRate:'', // Added these
+                    medical:'',dental:'',trad401k:'',
+                    filingStatus:'Single', stateTaxRate:'', // Added Tax Fields
                     billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''
                 });
                 
@@ -670,6 +689,24 @@
 
                 let chartInstance=null,dashboardChartInstance=null, categoryChartInstance=null;
                 
+                // --- DASHBOARD TOUR (Driver.js) ---
+                const startDashboardTour = () => {
+                    const driver = window.driver.js.driver;
+                    const tour = driver({
+                        showProgress: true,
+                        steps: [
+                            { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'This is your "Guilt-Free" money. It is calculated by taking your Net Pay and subtracting your Core Bills.' } },
+                            { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'A live projection of your retirement savings based on your current 401k contributions and age.' } },
+                            { element: '#tour-debt-free', popover: { title: '3. Debt Free Date', description: 'When you will be debt free based on your "Attack Plan" (set in the Debt tab).' } },
+                            { element: '#tour-variable-budgets', popover: { title: '4. Variable Budgets', description: 'Track fluctuating expenses here (Groceries, Gas). You must manually log expenses for these.' } },
+                            { element: '#tour-due-soon', popover: { title: '5. Due Soon', description: 'Fixed bills due in the next 7 days. Click the checkbox to mark them as paid.' } },
+                            { element: '#tour-cash-flow', popover: { title: '6. 30-Day Forecast', description: 'Your projected bank balance for the next month. Use "Can I Afford It?" to test large purchases.' } },
+                            { element: '#tour-breakdown', popover: { title: '7. Spending Breakdown', description: 'See where your money goes. Toggle between % and $ to see the impact of each category.' } }
+                        ]
+                    });
+                    tour.drive();
+                };
+
                 // --- ONBOARDING ---
                 const nextOnboardingStep=async()=>{if(onboardingStep.value===5)await finishOnboarding();else onboardingStep.value++};
                 const finishOnboarding=async()=>{
@@ -681,11 +718,9 @@
                     if(safety !== '') settingsPayload.safety_margin = Number(safety);
 
                     if(salary !== ''){
-                        const payPeriods=24; // Defaulting to 24 for estimation in wizard if needed, but saving exacts below
                         const annualSalary = Number(salary);
-                        const grossPay = annualSalary / 24; 
-                        
-                        // Rough estimate for immediate display
+                        // Rough estimate for immediate display, exact calc happens in Calculator
+                        const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); 
                         const net = grossPay * 0.75; 
                         const finalPay=round(net);
                         const nextDate = new Date().toISOString().split('T')[0]; 
@@ -693,7 +728,7 @@
                         await _supabase.from('incomes').insert([{
                             user_id: session.value.user.id,
                             name: incomeName || 'Main Job',
-                            amount: finalPay, // Placeholder, user should refine in calculator
+                            amount: finalPay, 
                             frequency: frequency,
                             next_pay_date: nextDate,
                             details: { 
@@ -736,8 +771,8 @@
                     const payPeriods=24; 
                     const grossPay=(salary/payPeriods)+commission;
                     
-                    const benefitAmt = medical+dental+fsa; // SEPARATE THIS FOR DISPLAY
-                    const preTax=benefitAmt; // Used for calculation logic
+                    const benefitAmt = medical+dental+fsa; 
+                    const preTax=benefitAmt; 
                     
                     const ficaWages=Math.max(0,grossPay-preTax);
                     const ssTax=Math.min(ficaWages,174900/payPeriods)*0.062;
@@ -758,7 +793,6 @@
                     const net=taxable-fedTaxPerPeriod-stateTaxPerPeriod-postTax-rothAmt-ssTax-medTax;
                     const finalPay=round(net);
                     
-                    // Return object includes separated breakdown
                     calcResult.value={
                         gross:round(grossPay),
                         benefitAmt: round(benefitAmt),
@@ -914,7 +948,6 @@
                 const dashboardBurn=computed(()=>round(activeMonthlyPay.value-safeToSpend.value));
                 const burnRate=computed(()=>activeMonthlyPay.value>0?Math.round((dashboardBurn.value/activeMonthlyPay.value)*100):0);
                 const cashFlowLowPoint=computed(()=>lowPointData.value);
-                
                 const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
                 const getFinancialSnapshot=()=>{return{income:activeMonthlyPay.value,savings:forecastSettings.value.currentBalance,total_debt:debts.value.reduce((a,b)=>a+Number(b.balance),0),core_burn:budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),discretionary_burn:budgetItems.value.filter(i=>!i.is_core&&!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),debt_list:debts.value,budget_list:budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name,amt:i.amount,core:i.is_core})),survival_months:(forecastSettings.value.currentBalance/(budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)}};
                 
@@ -978,6 +1011,24 @@
                 const getDaysLeft = (dateStr) => { const today = new Date(); today.setHours(0,0,0,0); const [y, m, d] = dateStr.split('-'); const due = new Date(y, m - 1, d); const diffTime = due - today; return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); };
                 const getCalendarLink = (bill) => { const title = encodeURIComponent(`Pay ${bill.budget_items.name}`); const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`); const dStr = bill.due_date.replace(/-/g, ''); return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`; };
 
+                // --- DASHBOARD TOUR (Driver.js) ---
+                const startDashboardTour = () => {
+                    const driver = window.driver.js.driver;
+                    const tour = driver({
+                        showProgress: true,
+                        steps: [
+                            { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'This is your "Guilt-Free" money. It is calculated by taking your Net Pay and subtracting your Core Bills.' } },
+                            { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'A live projection of your retirement savings based on your current 401k contributions and age.' } },
+                            { element: '#tour-debt-free', popover: { title: '3. Debt Free Date', description: 'When you will be debt free based on your "Attack Plan" (set in the Debt tab).' } },
+                            { element: '#tour-variable-budgets', popover: { title: '4. Variable Budgets', description: 'Track fluctuating expenses here (Groceries, Gas). You must manually log expenses for these.' } },
+                            { element: '#tour-due-soon', popover: { title: '5. Due Soon', description: 'Fixed bills due in the next 7 days. Click the checkbox to mark them as paid.' } },
+                            { element: '#tour-cash-flow', popover: { title: '6. 30-Day Forecast', description: 'Your projected bank balance for the next month. Use "Can I Afford It?" to test large purchases.' } },
+                            { element: '#tour-breakdown', popover: { title: '7. Spending Breakdown', description: 'See where your money goes. Toggle between % and $ to see the impact of each category.' } }
+                        ]
+                    });
+                    tour.drive();
+                };
+
                 watch(currentView, async (newView) => { await nextTick(); if (newView === 'dashboard') { if(bills.value.length > 0 || budgetItems.value.length > 0) { renderCategoryChart(); renderDashboardChart(); } } else if (newView === 'forecast') { runForecast(); } });
 
                 onMounted(() => {
@@ -985,7 +1036,7 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings };
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour };
             }
         }).mount('#app');
     </script>
