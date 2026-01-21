@@ -535,11 +535,54 @@
         </transition>
 
         <transition name="fade"><div v-if="showImpulseModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-slate-800">🤔 Impulse Check</h3><button @click="showImpulseModal=false" class="text-slate-400 hover:text-slate-600">&times;</button></div><div class="space-y-4"><input v-model="impulseItem.name" type="text" placeholder="What is it?" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none"><div class="grid grid-cols-2 gap-3"><input v-model="impulseItem.cost" type="number" placeholder="Price ($)" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none"><input v-model="impulseItem.date" type="date" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none"></div><button @click="checkImpulse" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700 transition shadow-lg shadow-purple-200">Run Simulation</button></div></div></div></transition>
+        
+        <transition name="fade">
+            <div v-if="showConsultant" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[600px] flex flex-col overflow-hidden">
+                    <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-lg">🤖</div>
+                            <div><h3 class="font-bold text-slate-800">Financial Consultant</h3><div class="text-[10px] text-slate-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Online</div></div>
+                        </div>
+                        <button @click="showConsultant = false" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" id="chat-container">
+                        <div v-if="chatMessages.length === 0" class="text-center py-8">
+                            <div class="text-4xl mb-2">👋</div>
+                            <p class="text-slate-500 text-sm">I have analyzed your finances.<br>How can I help you today?</p>
+                        </div>
+                        <div v-for="(msg, i) in chatMessages" :key="i" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+                            <div class="chat-bubble shadow-sm" :class="msg.role === 'user' ? 'chat-user' : 'chat-ai'">
+                                <div v-html="renderMarkdown(msg.text)"></div>
+                            </div>
+                        </div>
+                        <div v-if="isThinking" class="flex justify-start">
+                            <div class="chat-bubble chat-ai flex gap-1 items-center h-10">
+                                <div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div>
+                                <div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div>
+                                <div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="chatMessages.length === 0" class="p-4 border-t bg-white grid grid-cols-2 gap-2">
+                        <button @click="sendQuery('Review my budget strictly. Identify non-essential spending and suggest a 15% cut strategy.')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">✂️ Ruthless Review</button>
+                        <button @click="sendQuery('Analyze my debt situation. What is the most efficient payoff method and how much interest is it costing me daily?')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">🔥 Debt Strategy</button>
+                        <button @click="sendQuery('If I lost my main income today, how long could I survive on my current savings based on my survival budget?')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">🛡️ Stress Test</button>
+                        <button @click="sendQuery('How would increasing my retirement contribution by 1% affect my nest egg?')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">🥚 1% Boost Impact</button>
+                    </div>
+                    <div class="p-3 border-t bg-white flex gap-2">
+                        <input v-model="userQuery" @keyup.enter="sendQuery(userQuery)" type="text" placeholder="Ask anything..." class="flex-1 p-2 border rounded-lg text-sm outline-none focus:border-indigo-500">
+                        <button @click="sendQuery(userQuery)" :disabled="!userQuery" class="bg-indigo-600 text-white px-4 rounded-lg font-bold disabled:opacity-50 hover:bg-indigo-700 transition">Send</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <transition name="fade"><div v-if="showGenModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]"><div class="p-4 border-b bg-slate-50 flex justify-between items-center"><h3 class="font-bold">Generate Bills</h3><button @click="showGenModal=false" class="text-slate-400 hover:text-slate-600">&times;</button></div><div class="flex p-2 bg-slate-100 border-b"><button @click="openGenerateModal(0)" class="flex-1 py-1 text-xs font-bold rounded transition" :class="generateMonthOffset === 0 ? 'bg-white shadow text-slate-800' : 'text-slate-400'">This Month</button><button @click="openGenerateModal(1)" class="flex-1 py-1 text-xs font-bold rounded transition" :class="generateMonthOffset === 1 ? 'bg-white shadow text-slate-800' : 'text-slate-400'">Next Month</button></div><div class="p-4 overflow-y-auto flex-1 space-y-2"><div v-if="potentialBills.length === 0" class="text-center text-slate-400 py-8 text-sm">No missing bills found for this month! 🎉</div><div v-for="item in potentialBills" :key="item.id" class="flex justify-between p-3 border rounded cursor-pointer hover:bg-slate-50" :class="item.selected?'border-blue-500 bg-blue-50':''" @click="item.selected=!item.selected"><div>{{ item.name }}</div><div class="flex items-center gap-3"><span class="text-slate-400 text-sm">${{ item.amount }}</span><input type="checkbox" v-model="item.selected" class="accent-blue-600"></div></div></div><div class="p-4 border-t flex justify-end gap-2 bg-white"><button @click="showGenModal=false" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded">Cancel</button><button @click="confirmGenerate" class="px-6 py-2 bg-slate-900 text-white rounded font-bold hover:bg-slate-800">Add {{ potentialBills.filter(i=>i.selected).length }} Bills</button></div></div></div></transition>
         <transition name="fade"><div v-if="showProjectModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Add Project Goal</h3><input v-model="newProject.name" placeholder="Project Name" class="w-full p-2 border rounded mb-2"><input v-model="newProject.cost" type="number" step="0.01" placeholder="Total Cost" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button @click="saveProject" class="flex-1 bg-slate-900 text-white py-2 rounded font-bold">Save</button><button @click="showProjectModal=false" class="px-4 py-2 bg-slate-200 rounded">Cancel</button></div></div></div></div></transition>
 
     </div>
-
+    
    <script>
         const {createApp,ref,computed,onMounted,nextTick,watch}=Vue;const{createClient}=supabase;
         
@@ -835,8 +878,48 @@
                 const cashFlowLowPoint=computed(()=>lowPointData.value);
                 const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
                 const getFinancialSnapshot=()=>{return{income:activeMonthlyPay.value,savings:forecastSettings.value.currentBalance,total_debt:debts.value.reduce((a,b)=>a+Number(b.balance),0),core_burn:budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),discretionary_burn:budgetItems.value.filter(i=>!i.is_core&&!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),debt_list:debts.value,budget_list:budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name,amt:i.amount,core:i.is_core})),survival_months:(forecastSettings.value.currentBalance/(budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)}};
+                
                 const sendQuery=async(text)=>{if(!text)return;chatMessages.value.push({role:'user',text});userQuery.value='';isThinking.value=true;nextTick(scrollChat);setTimeout(()=>{const snapshot=getFinancialSnapshot();const response=generateMockResponse(text,snapshot);chatMessages.value.push({role:'assistant',text:response});isThinking.value=false;nextTick(scrollChat)},1200)};
-                const generateMockResponse=(query,data)=>{const q=query.toLowerCase();if(q.includes('ruthless')||q.includes('cut')){const nonCore=data.budget_list.filter(i=>!i.core).sort((a,b)=>b.amt-a.amt);let totalWaste=nonCore.reduce((a,b)=>a+b.amt,0);let top3=nonCore.slice(0,3).map(i=>`• **${i.name}**: $${i.amt}`).join('<br>');return`Found **$${totalWaste.toLocaleString()}** in non-essential spending.<br>Top 3 targets:<br>${top3}`}if(q.includes('debt')){if(data.debt_list.length===0)return"No debts! Great job.";const highestRate=[...data.debt_list].sort((a,b)=>b.rate-a.rate)[0];const totalInterest=data.debt_list.reduce((acc,d)=>acc+(d.balance*(d.rate/100/365)),0);return`Total Debt: **$${data.total_debt.toLocaleString()}**.<br>Losing **$${totalInterest.toFixed(2)}/day** in interest.<br>Attack **${highestRate.name}** (${highestRate.rate}%) first.`}if(q.includes('stress')||q.includes('survive')){return`**Runway:** ${data.survival_months} months based on savings of $${data.savings.toLocaleString()}.`}return"I analyzed your finances. Income: $"+data.income.toLocaleString()+". Ask for a Stress Test or Debt Strategy."};
+                
+                // ADVISOR LOGIC (With 1% Boost Check)
+                const generateMockResponse=(query,data)=>{
+                    const q=query.toLowerCase();
+                    if(q.includes('ruthless')||q.includes('cut')){const nonCore=data.budget_list.filter(i=>!i.core).sort((a,b)=>b.amt-a.amt);let totalWaste=nonCore.reduce((a,b)=>a+b.amt,0);let top3=nonCore.slice(0,3).map(i=>`• **${i.name}**: $${i.amt}`).join('<br>');return`Found **$${totalWaste.toLocaleString()}** in non-essential spending.<br>Top 3 targets:<br>${top3}`}
+                    if(q.includes('debt')){if(data.debt_list.length===0)return"No debts! Great job.";const highestRate=[...data.debt_list].sort((a,b)=>b.rate-a.rate)[0];const totalInterest=data.debt_list.reduce((acc,d)=>acc+(d.balance*(d.rate/100/365)),0);return`Total Debt: **$${data.total_debt.toLocaleString()}**.<br>Losing **$${totalInterest.toFixed(2)}/day** in interest.<br>Attack **${highestRate.name}** (${highestRate.rate}%) first.`}
+                    if(q.includes('stress')||q.includes('survive')){return`**Runway:** ${data.survival_months} months based on savings of $${data.savings.toLocaleString()}.`}
+                    
+                    // NEW: 1% Boost Logic
+                    if(q.includes('1%')||q.includes('boost')||q.includes('nest egg')){
+                        // Roughly estimate total gross monthly income from all active sources
+                        const totalGross = incomes.value.reduce((sum, inc) => {
+                            let gross = Number(inc.details?.salary || 0) / 12; // Base salary monthly
+                            gross += Number(inc.details?.commission || 0); // Add commission per check...
+                            if(inc.frequency==='Bi-Weekly') gross = gross + (Number(inc.details?.commission||0) * 2.166);
+                            else if(inc.frequency==='Semi-Monthly') gross = gross + (Number(inc.details?.commission||0) * 2);
+                            return sum + gross;
+                        }, 0);
+                        
+                        const onePercent = totalGross * 0.01;
+                        
+                        // Calculate Impact
+                        const currentP = retirementProjection.value;
+                        const r = (Number(forecastSettings.value.expectedReturn || 7) / 100);
+                        const n = 12;
+                        const t = Math.max(0, Number(forecastSettings.value.retirementAge) - Number(forecastSettings.value.currentAge));
+                        const boostedPMT = totalMonthlyRetirementContribution.value + onePercent;
+                        
+                        const fvLumpSum = Number(forecastSettings.value.retirementBalance) * Math.pow((1 + r/n), (n*t));
+                        const fvContrib = boostedPMT * ((Math.pow((1 + r/n), (n*t)) - 1) / (r/n));
+                        const boostedProjection = fvLumpSum + fvContrib;
+                        
+                        const diff = boostedProjection - currentP;
+                        
+                        return `Increasing contributions by just **1%** ($${onePercent.toFixed(0)}/mo) could add **$${diff.toLocaleString(undefined, {maximumFractionDigits:0})}** to your nest egg by age ${forecastSettings.value.retirementAge}.<br><br>New Projection: **$${boostedProjection.toLocaleString(undefined, {maximumFractionDigits:0})}**`;
+                    }
+                    
+                    return"I analyzed your finances. Income: $"+data.income.toLocaleString()+". Ask for a Stress Test or Debt Strategy.";
+                };
+                
                 const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
                 const renderMarkdown=(text)=>{return marked.parse(text)};
                 const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
