@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Master</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -12,7 +11,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
     <style>
         .toggle-checkbox:checked{right:0;border-color:#10B981}.toggle-checkbox:checked+.toggle-label{background-color:#10B981}[v-cloak]{display:none}.fade-enter-active,.fade-leave-active{transition:opacity .3s}.fade-enter-from,.fade-leave-to{opacity:0}.accordion-enter-active,.accordion-leave-active{transition:max-height .3s ease,opacity .3s;max-height:1000px;opacity:1;overflow:hidden}.accordion-enter-from,.accordion-leave-to{max-height:0;opacity:0}.cursor-grab{cursor:grab}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:0 0}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}.chat-bubble{max-width:85%;padding:12px 16px;border-radius:16px;font-size:.9rem;line-height:1.5}.chat-user{background-color:#3b82f6;color:#fff;border-bottom-right-radius:4px;margin-left:auto}.chat-ai{background-color:#f1f5f9;color:#1e293b;border-bottom-left-radius:4px;margin-right:auto}.typing-dot{animation:typing 1.4s infinite ease-in-out both}.typing-dot:nth-child(1){animation-delay:-.32s}.typing-dot:nth-child(2){animation-delay:-.16s}@keyframes typing{0%,100%,80%{transform:scale(0)}40%{transform:scale(1)}}@media print{body{background-color:#fff;color:#000}.print\:hidden{display:none!important}.print\:block{display:block!important}.shadow-lg,.shadow-sm,.shadow-xl{box-shadow:none!important}}
     </style>
@@ -111,8 +109,28 @@
                             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Annual Salary</label><input v-model="calcInputs.salary" type="number" class="w-full p-3 border border-slate-200 rounded-lg bg-slate-50"></div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Commission</label><input v-model="calcInputs.commission" type="number" class="w-full p-3 border border-slate-200 rounded-lg bg-slate-50"></div>
-                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Post-Tax</label><input v-model="calcInputs.postTax" type="number" class="w-full p-3 border border-slate-200 rounded-lg bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Post-Tax Deductions</label><input v-model="calcInputs.postTax" type="number" class="w-full p-3 border border-slate-200 rounded-lg bg-slate-50"></div>
                             </div>
+                            
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3">Tax Settings</h3>
+                                <div class="grid grid-cols-2 gap-3 mb-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filing Status</label>
+                                        <select v-model="calcInputs.filingStatus" class="w-full p-2 border rounded-lg text-sm bg-white">
+                                            <option value="Single">Single</option>
+                                            <option value="Married">Married Filing Jointly</option>
+                                            <option value="Head">Head of Household</option>
+                                        </select>
+                                    </div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">State Tax Rate (%)</label><input v-model="calcInputs.stateTaxRate" type="number" step="0.1" class="w-full p-2 border rounded-lg text-sm" placeholder="0.0"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dependent Credits ($)</label><input v-model="calcInputs.dependents" type="number" class="w-full p-2 border rounded-lg text-sm" placeholder="Total $ (e.g. 2000)"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Extra Withholding ($)</label><input v-model="calcInputs.extraWithholding" type="number" class="w-full p-2 border rounded-lg text-sm" placeholder="$ per check"></div>
+                                </div>
+                            </div>
+
                             <div class="grid grid-cols-3 gap-2">
                                 <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Medical</label><input v-model="calcInputs.medical" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
                                 <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dental</label><input v-model="calcInputs.dental" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
@@ -139,7 +157,9 @@
                             <div v-if="calcResult" class="space-y-4 text-sm font-mono">
                                 <div class="flex justify-between border-b border-slate-700 pb-2"><span>Gross Pay:</span> <span>${{ calcResult.gross.toFixed(2) }}</span></div>
                                 <div class="flex justify-between text-slate-400"><span>- Pre-Tax / 401k:</span> <span>${{ calcResult.preTaxTotal.toFixed(2) }}</span></div>
-                                <div class="flex justify-between text-slate-400"><span>- Taxes (Fed/FICA):</span> <span>${{ calcResult.taxes.toFixed(2) }}</span></div>
+                                <div class="flex justify-between text-slate-400"><span>- Fed Tax:</span> <span>${{ calcResult.fedTax.toFixed(2) }}</span></div>
+                                <div class="flex justify-between text-slate-400"><span>- State Tax:</span> <span>${{ calcResult.stateTax.toFixed(2) }}</span></div>
+                                <div class="flex justify-between text-slate-400"><span>- FICA (SS/Med):</span> <span>${{ calcResult.fica.toFixed(2) }}</span></div>
                                 <div class="flex justify-between text-slate-400 pb-2 border-b border-slate-700"><span>- Post-Tax Ded:</span> <span>${{ calcResult.postTaxTotal.toFixed(2) }}</span></div>
                                 <div class="flex justify-between text-xl font-bold text-emerald-300 pt-2"><span>Net Pay:</span> <span>${{ calcResult.netPay.toFixed(2) }}</span></div>
                             </div>
@@ -300,15 +320,31 @@
         const _supabase = createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
         const round=(n)=>Math.round((n+Number.EPSILON)*100)/100;
         const getMonthlyCost=(i)=>{let a=Number(i.amount);if(i.frequency==='Quarterly')return a/3;if(i.frequency==='Yearly')return a/12;if(i.frequency==='One-Time')return 0;return a};
-        const taxBrackets=[{limit:23850,rate:0.1},{limit:96950,rate:0.12},{limit:206700,rate:0.22},{limit:394600,rate:0.24},{limit:501050,rate:0.32},{limit:751600,rate:0.35},{limit:Infinity,rate:0.37}];
-        const calculateFederalTax=(inc)=>{let t=0,l=0;for(const b of taxBrackets){if(inc>b.limit){t+=(b.limit-l)*b.rate;l=b.limit}else{t+=(inc-l)*b.rate;break}}return t};
+        // UPDATED TAX BRACKETS (2025 Estimates)
+        const taxBrackets = {
+            Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}],
+            Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}],
+            Head: [{limit: 17000, rate: 0.10},{limit: 64850, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}]
+        };
+        const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
+
+        const calculateFederalTax=(annualInc, status='Single')=>{
+            let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000));
+            let t=0, l=0; 
+            const brackets = taxBrackets[status] || taxBrackets.Single;
+            for(const b of brackets){
+                if(taxable > b.limit){ t+=(b.limit-l)*b.rate; l=b.limit; }
+                else { t+=(taxable-l)*b.rate; break; }
+            }
+            return t;
+        };
         
         createApp({
             setup(){
                 const session=ref(null),authEmail=ref(''),loading=ref(false),authMessage=ref(''),currentView=ref('dashboard');
                 const dbBasePay=ref(0),tempCalculatedPay=ref(0),useTempPay=ref(false),budgetItems=ref([]),bills=ref([]),debts=ref([]),incomes=ref([]);
                 const showOnboarding=ref(false),onboardingStep=ref(1),onboardingData=ref({balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',billName:'',billAmount:'',billDay:1,isCore:true,incomeName:'',wishName:'',wishAmount:'',goalName:'',goalCost:''});
-                const calcInputs=ref({salary:0,commission:0,medical:0,dental:0,fsa:0,postTax:0,trad401k:0,roth401k:0,match401k:0,nextPayDate:'',payFrequency:'Semi-Monthly'});
+                const calcInputs=ref({name:'',salary:0,commission:0,medical:0,dental:0,fsa:0,postTax:0,trad401k:0,roth401k:0,match401k:0,nextPayDate:'',payFrequency:'Semi-Monthly', filingStatus:'Single', stateTaxRate:0, dependents:0, extraWithholding:0});
                 const calcResult=ref(null),savingBase=ref(false),newDebt=ref({name:'',balance:'',rate:'',min_payment:''}),extraDebtPayment=ref(0),showDebtForm=ref(false),showPaidBills=ref(false);
                 const showPlanner=ref(false),showAddForm=ref(false),isSubmitting=ref(false),isEditing=ref(false),editingId=ref(null),newItem=ref({name:'',amount:'',due_day:'',isFlexible:false,frequency:'Monthly',is_core:false,is_autopay:false,is_wishlist:false,replaces_id:null});
                 const showGenModal=ref(false),potentialBills=ref([]),generateMonthOffset=ref(0);
@@ -327,16 +363,17 @@
                     if(balance !== '') settingsPayload.current_balance = Number(balance);
                     if(safety !== '') settingsPayload.safety_margin = Number(safety);
 
+                    // SAVE INCOME
                     if(salary !== ''){
+                        // Simple wizard calculation (Single, No State Tax assumed for speed)
                         const payPeriods=24; const grossPay=(Number(salary)/payPeriods); 
                         const preTax=(Number(medical)||0) + (Number(dental)||0);
                         const tradAmt=grossPay * ((Number(trad401k)||0)/100);
                         const taxable=grossPay - tradAmt - preTax;
-                        const annualTaxable=Math.max(0,(taxable*payPeriods)-30000); 
-                        const taxPerPeriod=calculateFederalTax(annualTaxable)/payPeriods;
+                        const fedTax = calculateFederalTax((grossPay*payPeriods), 'Single')/payPeriods;
                         const ssTax=Math.min(grossPay, 174900/payPeriods)*0.062;
                         const medTax=grossPay*0.0145;
-                        const net=taxable-taxPerPeriod-ssTax-medTax; 
+                        const net=taxable-fedTax-ssTax-medTax; 
                         const finalPay=round(net);
                         const nextDate = new Date().toISOString().split('T')[0]; 
 
@@ -346,20 +383,17 @@
                             amount: finalPay, 
                             frequency: frequency,
                             next_pay_date: nextDate,
-                            details: { salary:Number(salary), medical:Number(medical), dental:Number(dental), trad_401k:Number(trad401k) }
+                            details: { salary:Number(salary), medical:Number(medical), dental:Number(dental), trad401k:Number(trad401k), filingStatus:'Single', stateTaxRate:0 }
                         }]);
                     }
 
                     const { error } = await _supabase.from('user_settings').upsert(settingsPayload);
-                    if(error) { console.error(error); alert("Error saving settings. Try again."); isSubmitting.value=false; return; }
+                    if(error) { console.error(error); alert("Error saving settings."); isSubmitting.value=false; return; }
 
-                    if(balance !== '') forecastSettings.value.currentBalance = Number(balance);
                     if(billName&&billAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:billName,amount:Number(billAmount),due_day:Number(billDay)||1,is_core:isCore,is_active:true}]);
                     if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true}]);
                     if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)};
                     
-                    await fetchIncomes(); await fetchBudgetItems(); await fetchSettings();
-                    confetti({particleCount:150,spread:70,origin:{y:0.6}});
                     showOnboarding.value=false; isSubmitting.value=false;
                     setTimeout(() => window.location.reload(), 500);
                 };
@@ -369,10 +403,44 @@
 
                 const calculateAndSave=async(mode)=>{
                     savingBase.value=true;
-                    const{name,salary,commission,medical,dental,fsa,postTax,trad401k,roth401k,match401k,nextPayDate,payFrequency}=calcInputs.value;
-                    const payPeriods=24;const grossPay=(salary/payPeriods)+commission;const preTax=medical+dental+fsa;const ficaWages=Math.max(0,grossPay-preTax);const ssTax=Math.min(ficaWages,174900/payPeriods)*0.062;const medTax=(ficaWages*0.0145)+(grossPay*payPeriods>250000?((grossPay*payPeriods-250000)/payPeriods)*0.009:0);const tradAmt=grossPay*(trad401k/100);const rothAmt=grossPay*(roth401k/100);const taxable=grossPay-tradAmt-preTax;const annualTaxable=Math.max(0,(taxable*payPeriods)-30000);const taxPerPeriod=calculateFederalTax(annualTaxable)/payPeriods;const net=taxable-taxPerPeriod-postTax-rothAmt-ssTax-medTax;const finalPay=round(net-2.25);
+                    const{name,salary,commission,medical,dental,fsa,postTax,trad401k,roth401k,match401k,nextPayDate,payFrequency,filingStatus,stateTaxRate,dependents,extraWithholding}=calcInputs.value;
+                    const payPeriods=24; 
+                    const grossPay=(salary/payPeriods)+commission;
+                    const preTax=medical+dental+fsa;
+                    const ficaWages=Math.max(0,grossPay-preTax);
+                    const ssTax=Math.min(ficaWages,174900/payPeriods)*0.062;
+                    const medTax=(ficaWages*0.0145)+(grossPay*payPeriods>250000?((grossPay*payPeriods-250000)/payPeriods)*0.009:0);
+                    const tradAmt=grossPay*(trad401k/100); const rothAmt=grossPay*(roth401k/100);
                     
-                    calcResult.value={gross:round(grossPay),preTaxTotal:round(preTax+tradAmt),taxes:round(taxPerPeriod+ssTax+medTax),postTaxTotal:round(postTax+rothAmt),netPay:finalPay};
+                    // Taxable Income
+                    const taxable=grossPay-tradAmt-preTax;
+                    const annualTaxable=Math.max(0, (taxable*payPeriods)); 
+                    
+                    // Federal Tax
+                    let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods);
+                    // Apply Dependent Credits (reduce tax liability directly)
+                    if(dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods);
+                    // Apply Extra Withholding (add to tax liability)
+                    if(extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding);
+                    
+                    fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod); // Tax can't be negative
+
+                    // State Tax
+                    const stateTaxPerPeriod = grossPay * ((stateTaxRate||0)/100);
+
+                    const net=taxable-fedTaxPerPeriod-stateTaxPerPeriod-postTax-rothAmt-ssTax-medTax;
+                    const finalPay=round(net);
+                    
+                    calcResult.value={
+                        gross:round(grossPay),
+                        preTaxTotal:round(preTax+tradAmt),
+                        taxes:round(fedTaxPerPeriod+stateTaxPerPeriod),
+                        fedTax: round(fedTaxPerPeriod),
+                        stateTax: round(stateTaxPerPeriod),
+                        fica: round(ssTax+medTax),
+                        postTaxTotal:round(postTax+rothAmt),
+                        netPay:finalPay
+                    };
                     
                     if(mode==='default'){
                         const payload = {
@@ -381,7 +449,7 @@
                             amount: finalPay,
                             frequency: payFrequency,
                             next_pay_date: nextPayDate || new Date().toISOString().split('T')[0],
-                            details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k }
+                            details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding }
                         };
                         if (calcInputs.value.id) await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id);
                         else await _supabase.from('incomes').insert([payload]);
@@ -390,10 +458,16 @@
                         alert("Income Saved!");
                     } else if (mode==='temp') {
                         // TEMP MODE: Store just the number for forecast override
-                        tempCalculatedPay.value = payFrequency === 'Monthly' ? finalPay : (payFrequency === 'Bi-Weekly' ? finalPay * 2.166 : finalPay * 2);
+                        // Calculate Monthly equivalent of this specific check
+                        let monthlyEq = 0;
+                        if(payFrequency==='Monthly') monthlyEq = finalPay;
+                        else if(payFrequency==='Bi-Weekly') monthlyEq = finalPay * 2.166;
+                        else if(payFrequency==='Semi-Monthly') monthlyEq = finalPay * 2;
+                        
+                        tempCalculatedPay.value = round(monthlyEq);
                         useTempPay.value = true;
-                        currentView.value = 'forecast'; // Go straight to forecast to apply it
-                        alert("Session Pay Calculated! Click 'Apply Session Pay' on a month below.");
+                        currentView.value = 'forecast'; 
+                        alert("Session Pay Calculated ($"+finalPay+")! Go to Forecast to apply it.");
                     }
                     savingBase.value=false;
                 };
@@ -404,7 +478,15 @@
                 };
 
                 const loadIncomeIntoCalculator = (inc) => {
-                    calcInputs.value = { ...calcInputs.value, id: inc.id, name: inc.name, nextPayDate: inc.next_pay_date, payFrequency: inc.frequency, ...inc.details };
+                    // Populate fields including tax settings
+                    calcInputs.value = { 
+                        ...calcInputs.value, 
+                        id: inc.id, 
+                        name: inc.name, 
+                        nextPayDate: inc.next_pay_date, 
+                        payFrequency: inc.frequency, 
+                        ...inc.details 
+                    };
                     calculateAndSave('preview'); 
                 };
 
@@ -415,6 +497,7 @@
                 };
 
                 const activeMonthlyPay = computed(() => {
+                    // Always returns SUM of saved incomes
                     return incomes.value.reduce((total, inc) => {
                         let monthly = Number(inc.amount);
                         if (inc.frequency === 'Bi-Weekly') monthly = monthly * 2.166;
@@ -435,6 +518,10 @@
                         nextDate: new Date(inc.next_pay_date),
                         freq: inc.frequency
                     }));
+                    
+                    // If in Session Mode, simulate THAT paycheck instead of normal ones?
+                    // Usually Dashboard should show REALITY. Forecast allows the "What If".
+                    // Let's keep Dashboard strictly on SAVED incomes to avoid confusion.
 
                     const runImpulse=impulseResult.value!==null||(impulseItem.value.cost&&showImpulseModal.value===false);
                     const impulseCost=Number(impulseItem.value.cost),impulseDate=impulseItem.value.date;
@@ -474,33 +561,7 @@
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
                 const quickPay = async (bill) => { bill.is_paid = true; const { error } = await _supabase.from('ledger').update({ is_paid: true }).eq('id', bill.id); if (!error) { renderDashboardChart(); } else { bill.is_paid = false; alert("Error paying bill."); } };
                 
-                const runForecast=()=>{let balance=round(forecastSettings.value.currentBalance);const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const now=new Date();
-                    // Re-init month array if needed
-                    if(forecastData.value.length!==forecastSettings.value.months){
-                        forecastData.value=[];
-                        for(let i=0;i<forecastSettings.value.months;i++){
-                            const d=new Date(now.getFullYear(),now.getMonth()+i,1);
-                            // Default income is total active monthly pay
-                            forecastData.value.push({
-                                name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,
-                                income: activeMonthlyPay.value, 
-                                extraExpenses:[],newExpenseId:'',newExpenseName:'',newExpenseAmount:'',isOpen:false
-                            })
-                        }
-                    }
-                    forecastResults.value.affordableMonth=null;
-                    forecastData.value.forEach((m,idx)=>{
-                        let monthlyBurn=0;
-                        if(forecastMode.value==='survival')monthlyBurn=budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
-                        else if(forecastMode.value==='standard')monthlyBurn=budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
-                        else if(forecastMode.value==='dream'){budgetItems.value.forEach(i=>{if(i.is_wishlist)monthlyBurn+=getMonthlyCost(i);else{const replaced=budgetItems.value.find(w=>w.is_wishlist&&w.replaces_id===i.id);if(!replaced)monthlyBurn+=getMonthlyCost(i)}})}
-                        const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);
-                        const monthlyNet=m.income-monthlyBurn-totalExtra;
-                        balance=round(balance+monthlyNet);m.endBalance=balance;if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){forecastResults.value.affordableMonth=m.name;forecastResults.value.affordableIndex=idx}
-                    });
-                    renderChart()
-                };
-
+                const runForecast=()=>{let balance=round(forecastSettings.value.currentBalance);const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const now=new Date();if(forecastData.value.length!==forecastSettings.value.months){forecastData.value=[];for(let i=0;i<forecastSettings.value.months;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);forecastData.value.push({name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,income:activeMonthlyPay.value,extraExpenses:[],newExpenseId:'',newExpenseName:'',newExpenseAmount:'',isOpen:false})}}forecastResults.value.affordableMonth=null;forecastData.value.forEach((m,idx)=>{let monthlyBurn=0;if(forecastMode.value==='survival')monthlyBurn=budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);else if(forecastMode.value==='standard')monthlyBurn=budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);else if(forecastMode.value==='dream'){budgetItems.value.forEach(i=>{if(i.is_wishlist)monthlyBurn+=getMonthlyCost(i);else{const replaced=budgetItems.value.find(w=>w.is_wishlist&&w.replaces_id===i.id);if(!replaced)monthlyBurn+=getMonthlyCost(i)}})}const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);const monthlyNet=m.income-monthlyBurn-totalExtra;balance=round(balance+monthlyNet);m.endBalance=balance;if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){forecastResults.value.affordableMonth=m.name;forecastResults.value.affordableIndex=idx}});renderChart()};
                 const renderChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
                 const coreExpenses=computed(()=>round(budgetItems.value.filter(i=>i.is_core).reduce((acc,i)=>acc+getMonthlyCost(i),0)));
                 const totalMonthlyBurn=computed(()=>round(budgetItems.value.filter(item=>item.includedInScenario).reduce((acc,item)=>acc+getMonthlyCost(item),0)));
