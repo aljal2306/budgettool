@@ -122,7 +122,7 @@
                                 <div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Match %</label><input v-model="calcInputs.match401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div>
                             </div>
                             <div class="pt-2">
-                                <button @click="calculateAndSave" :disabled="savingBase" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition text-sm">
+                                <button @click="calculateAndSave('default')" :disabled="savingBase" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition text-sm">
                                     {{ savingBase?'Saving...':'💾 Save / Add Income Source' }}
                                 </button>
                             </div>
@@ -293,9 +293,12 @@
         createApp({
             setup(){
                 const session=ref(null),authEmail=ref(''),loading=ref(false),authMessage=ref(''),currentView=ref('dashboard');
+                // RESTORED MISSING VARS
+                const dbBasePay=ref(0), tempCalculatedPay=ref(0), useTempPay=ref(false);
+                
                 const incomes=ref([]), budgetItems=ref([]), bills=ref([]), debts=ref([]);
                 const showOnboarding=ref(false),onboardingStep=ref(1),onboardingData=ref({balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',billName:'',billAmount:'',billDay:1,isCore:true,incomeName:'',wishName:'',wishAmount:'',goalName:'',goalCost:''});
-                const calcInputs=ref({name:'', salary:0,commission:0,medical:0,dental:0,fsa:0,postTax:0,trad401k:0,roth401k:0,match401k:0,nextPayDate:'',payFrequency:'Semi-Monthly'});
+                const calcInputs=ref({salary:0,commission:0,medical:0,dental:0,fsa:0,postTax:0,trad401k:0,roth401k:0,match401k:0,nextPayDate:'',payFrequency:'Semi-Monthly'});
                 const calcResult=ref(null),savingBase=ref(false),newDebt=ref({name:'',balance:'',rate:'',min_payment:''}),extraDebtPayment=ref(0),showDebtForm=ref(false),showPaidBills=ref(false);
                 const showPlanner=ref(false),showAddForm=ref(false),isSubmitting=ref(false),isEditing=ref(false),editingId=ref(null),newItem=ref({name:'',amount:'',due_day:'',isFlexible:false,frequency:'Monthly',is_core:false,is_autopay:false,is_wishlist:false,replaces_id:null});
                 const showGenModal=ref(false),potentialBills=ref([]),generateMonthOffset=ref(0);
@@ -326,13 +329,12 @@
                         const net=taxable-taxPerPeriod-ssTax-medTax; 
                         const finalPay=round(net);
                         
-                        let monthly=finalPay*2; if(frequency==='Monthly')monthly=finalPay; if(frequency==='Bi-Weekly')monthly=finalPay*2.166;
-                        const nextDate = new Date().toISOString().split('T')[0]; // Default to today
+                        const nextDate = new Date().toISOString().split('T')[0]; 
 
                         await _supabase.from('incomes').insert([{
                             user_id: session.value.user.id,
                             name: incomeName || 'Main Job',
-                            amount: finalPay, // Net Per Check
+                            amount: finalPay, 
                             frequency: frequency,
                             next_pay_date: nextDate,
                             details: { salary:Number(salary), medical:Number(medical), dental:Number(dental), trad_401k:Number(trad401k) }
@@ -361,7 +363,6 @@
                     calcResult.value={gross:round(grossPay),preTaxTotal:round(preTax+tradAmt),taxes:round(taxPerPeriod+ssTax+medTax),postTaxTotal:round(postTax+rothAmt),netPay:finalPay};
                     
                     if(mode==='default'){
-                        // Save to Incomes Table
                         const payload = {
                             user_id: session.value.user.id,
                             name: name || 'New Income',
@@ -370,18 +371,12 @@
                             next_pay_date: nextPayDate || new Date().toISOString().split('T')[0],
                             details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k }
                         };
+                        if (calcInputs.value.id) await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id);
+                        else await _supabase.from('incomes').insert([payload]);
                         
-                        // Check if updating existing
-                        if (calcInputs.value.id) {
-                            await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id);
-                        } else {
-                            await _supabase.from('incomes').insert([payload]);
-                        }
                         await fetchIncomes();
                         alert("Income Saved!");
-                    } else {
-                        // Temp mode (just show result)
-                    }
+                    } 
                     savingBase.value=false;
                 };
 
@@ -392,7 +387,6 @@
 
                 const loadIncomeIntoCalculator = (inc) => {
                     calcInputs.value = { ...calcInputs.value, id: inc.id, name: inc.name, nextPayDate: inc.next_pay_date, payFrequency: inc.frequency, ...inc.details };
-                    // Trigger calc to show numbers immediately
                     calculateAndSave('temp');
                 };
 
@@ -411,14 +405,13 @@
                     }, 0);
                 });
 
-                // --- FORECAST & CHARTS (UPDATED FOR MULTIPLE INCOMES) ---
+                // --- FORECAST & CHARTS ---
                 const renderDashboardChart=()=>{
                     const ctx=document.getElementById('dashboardChart');if(!ctx)return;if(dashboardChartInstance)dashboardChartInstance.destroy();
                     const labels=[],dataCurrent=[],dataImpulse=[];
                     let currentSimBalance=forecastSettings.value.currentBalance||0,impulseSimBalance=currentSimBalance;
                     const today=new Date();
                     
-                    // Create deep copy of incomes to track next pay dates independently for simulation
                     let simIncomes = incomes.value.map(inc => ({
                         amount: Number(inc.amount),
                         nextDate: new Date(inc.next_pay_date),
@@ -432,19 +425,16 @@
                         const d=new Date();d.setDate(today.getDate()+i);const dayOfMonth=d.getDate();const dStr=d.toISOString().split('T')[0];
                         const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); labels.push(dateLabel);
 
-                        // Expenses
                         const billsDue=bills.value.filter(b=>!b.is_paid&&b.due_date===dStr);
                         const realDrop=billsDue.reduce((sum,b)=>sum+b.budget_items.amount,0);
                         const virtualDrop=budgetItems.value.reduce((sum,item)=>{if(item.frequency==='Monthly'&&item.due_day===dayOfMonth){const hasRealBill=bills.value.some(b=>b.budget_item_id===item.id&&b.due_date===dStr);if(!hasRealBill)return sum+item.amount}return sum},0);
                         const totalDrop=realDrop+virtualDrop;
                         currentSimBalance-=totalDrop;impulseSimBalance-=totalDrop;
 
-                        // Income (Loop through all sources)
                         simIncomes.forEach(inc => {
                             if (dStr === inc.nextDate.toISOString().split('T')[0]) {
                                 currentSimBalance += inc.amount;
                                 impulseSimBalance += inc.amount;
-                                // Advance date
                                 if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14);
                                 else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15);
                                 else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1);
@@ -461,7 +451,6 @@
                     dashboardChartInstance.update();
                 };
 
-                // --- EXISTING HELPERS (Unchanged) ---
                 const debtPlan=computed(()=>{if(debts.value.length===0)return{payoffDate:'N/A',totalInterest:0,savedInterest:0,timeline:[]};const simulate=(extra)=>{let simDebts=JSON.parse(JSON.stringify(debts.value)).map(d=>({...d,balance:Number(d.balance),rate:Number(d.rate),min:Number(d.min_payment),paid_off:false}));let totalInterest=0,months=0,timeline=[],active=true,permanentSnowball=extra;while(active&&months<480){months++;let anyBalanceLeft=false,monthlySurplus=permanentSnowball;for(let d of simDebts){if(d.paid_off){monthlySurplus+=d.min;continue}anyBalanceLeft=true;let interest=d.balance*(d.rate/100/12);totalInterest+=interest;d.balance+=interest;let payment=Math.min(d.balance,d.min);d.balance-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0});monthlySurplus+=(d.min-payment)}}for(let d of simDebts){if(d.paid_off)continue;if(monthlySurplus<=0)break;let payment=Math.min(d.balance,monthlySurplus);d.balance-=payment;monthlySurplus-=payment;if(d.balance<0.01){d.balance=0;d.paid_off=true;timeline.push({date:`Month ${months}`,action:`PAID OFF: ${d.name}`,remaining:0})}}if(!anyBalanceLeft)active=false}return{months,totalInterest,timeline}};const base=simulate(0);const attack=simulate(extraDebtPayment.value);const now=new Date();now.setMonth(now.getMonth()+attack.months);return{payoffDate:now.toLocaleDateString('en-US',{month:'long',year:'numeric'}),totalInterest:round(attack.totalInterest),savedInterest:round(base.totalInterest-attack.totalInterest),timeline:attack.timeline}});
                 const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
