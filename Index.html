@@ -124,77 +124,19 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition" @click="toggleChartMode">
-                        <div class="w-full flex flex-col justify-between items-center mb-4">
-                             <div class="w-full flex justify-between items-center">
-                                <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 p-1 rounded">📊</span> Breakdown</h3>
-                                <div class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold">{{ showChartPercentages ? '%' : '$' }}</div>
-                             </div>
-                             <div class="flex gap-1 bg-slate-100 p-1 rounded-lg mt-2 w-full justify-center">
-                                <button @click.stop="setDashboardMode('survival')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='survival'?'bg-white shadow text-orange-600':'text-slate-400 hover:text-slate-600'">🛡️</button>
-                                <button @click.stop="setDashboardMode('standard')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='standard'?'bg-white shadow text-blue-600':'text-slate-400 hover:text-slate-600'">⚖️</button>
-                                <button @click.stop="setDashboardMode('dream')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='dream'?'bg-white shadow text-purple-600':'text-slate-400 hover:text-slate-600'">🚀</button>
-                            </div>
-                        </div>
-                        <div class="relative w-40 h-40 pointer-events-none"><canvas id="categoryChart"></canvas></div>
-                        <div class="mt-4 w-full space-y-1"><div id="cat-legend" class="text-xs text-slate-500"></div></div>
-                    </div>
-
-                    <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                        <div class="flex flex-wrap justify-between items-center mb-6 gap-2">
-                            <div class="flex items-center gap-3">
-                                <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-blue-100 text-blue-600 p-1 rounded">📉</span> 30-Day Cash Flow</h3>
-                                <button @click="showImpulseModal=true" class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition">🤔 Can I Afford It?</button>
-                            </div>
-                            <div class="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase px-2">Balance Now:</span>
-                                <input type="number" v-model.number="forecastSettings.currentBalance" @change="saveSettings" @input="renderDashboardChart" class="w-24 p-1 bg-white border border-slate-200 rounded text-right font-mono font-bold text-sm text-slate-700 outline-none focus:border-blue-500">
-                            </div>
-                        </div>
-                        <div class="h-64 w-full relative"><canvas id="dashboardChart"></canvas></div>
-                        <div v-if="cashFlowLowPoint && !impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="cashFlowLowPoint.amount<0?'bg-red-50 border-red-100 text-red-700':'bg-emerald-50 border-emerald-100 text-emerald-700'">
-                            <span class="text-lg">{{cashFlowLowPoint.amount<0?'⚠️':'✅'}}</span> Lowest projected balance: <span class="font-mono font-bold text-sm">${{cashFlowLowPoint.amount.toLocaleString()}}</span> on {{cashFlowLowPoint.date}}
-                        </div>
-                        <div v-if="impulseResult" class="mt-4 flex items-center justify-center gap-2 text-xs font-medium p-3 rounded-lg border" :class="impulseResult.safe?'bg-emerald-50 border-emerald-100 text-emerald-700':'bg-red-50 border-red-100 text-red-700'">
-                            <span class="text-lg">{{impulseResult.safe?'✅':'❌'}}</span><span>{{impulseResult.message}}</span><button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button>
-                        </div>
-                    </div>
-
-                    <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                         <h3 class="font-bold text-sm text-slate-800 uppercase mb-4 flex items-center gap-2">
-                             <span class="bg-red-100 text-red-600 p-1 rounded">🚨</span> Due Next 7 Days
-                         </h3>
-                         <div class="space-y-2">
-                             <div v-if="upcomingBills.length===0" class="text-center text-slate-400 text-sm py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">No fixed bills due soon. Relax! 🏝️</div>
-                             <div v-for="bill in upcomingBills" :key="bill.id" class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 hover:shadow-md transition hover:border-slate-200 group">
-                                 <div>
-                                     <div class="font-bold text-sm text-slate-700">{{bill.budget_items.name}}</div>
-                                     <div class="text-[10px] font-bold uppercase tracking-wide mt-0.5" :class="getDaysLeft(bill.due_date)<0?'text-red-500':(getDaysLeft(bill.due_date)===0?'text-orange-500':'text-slate-400')">
-                                         {{getDaysLeft(bill.due_date)<=0?(getDaysLeft(bill.due_date)===0?'Due Today':'Overdue'):getDaysLeft(bill.due_date)+' Days Left'}}
-                                     </div>
-                                 </div>
-                                 <div class="text-right flex flex-col items-end gap-1">
-                                     <div class="font-mono text-sm font-bold text-slate-900">${{bill.budget_items.amount}}</div>
-                                     <button @click="quickPay(bill)" class="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded font-bold hover:bg-emerald-100 transition opacity-0 group-hover:opacity-100">✅ Mark Paid</button>
-                                 </div>
-                             </div>
-                         </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                    
                     <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2">
-                                <span class="bg-purple-100 text-purple-600 p-1 rounded">🛒</span> Variable Budgets
+                                <span class="bg-purple-100 text-purple-600 p-1 rounded">🛒</span> Budgets
                             </h3>
-                            <button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+ Log Expense</button>
+                            <button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+</button>
                         </div>
                         <div v-if="variableBudgets.length === 0" class="flex-1 flex items-center justify-center text-center text-slate-400 text-xs py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                            No variable budgets yet.<br>Create one in "Budget" tab (e.g. Groceries).
+                            No variable budgets yet.
                         </div>
-                        <div class="space-y-4 overflow-y-auto max-h-[300px] pr-2">
+                        <div class="space-y-4 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar">
                             <div v-for="item in variableBudgets" :key="item.id" class="group">
                                 <div class="flex justify-between text-xs mb-1">
                                     <span class="font-bold text-slate-700">{{item.name}}</span>
@@ -206,11 +148,72 @@
                                          :style="{width: Math.min(item.progress, 100) + '%'}">
                                     </div>
                                 </div>
-                                <div class="flex justify-between text-[10px] text-slate-400 mt-1">
-                                    <span>Spent: ${{item.spent.toLocaleString()}}</span>
-                                    <span>Budget: ${{item.amount.toLocaleString()}}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
+                         <h3 class="font-bold text-sm text-slate-800 uppercase mb-4 flex items-center gap-2">
+                             <span class="bg-red-100 text-red-600 p-1 rounded">🚨</span> Due Soon
+                         </h3>
+                         <div class="space-y-2 overflow-y-auto max-h-[300px] pr-1">
+                             <div v-if="upcomingBills.length===0" class="text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">No fixed bills due soon.</div>
+                             <div v-for="bill in upcomingBills" :key="bill.id" class="flex justify-between items-center p-2 bg-white rounded-xl border border-slate-100 hover:shadow-md transition hover:border-slate-200 group">
+                                 <div>
+                                     <div class="font-bold text-xs text-slate-700">{{bill.budget_items.name}}</div>
+                                     <div class="text-[9px] font-bold uppercase tracking-wide mt-0.5" :class="getDaysLeft(bill.due_date)<0?'text-red-500':(getDaysLeft(bill.due_date)===0?'text-orange-500':'text-slate-400')">
+                                         {{getDaysLeft(bill.due_date)<=0?(getDaysLeft(bill.due_date)===0?'Due Today':'Overdue'):getDaysLeft(bill.due_date)+' Days Left'}}
+                                     </div>
+                                 </div>
+                                 <div class="text-right flex flex-col items-end gap-1">
+                                     <div class="font-mono text-xs font-bold text-slate-900">${{bill.budget_items.amount}}</div>
+                                     <button @click="quickPay(bill)" class="text-[9px] bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded font-bold hover:bg-emerald-100 transition opacity-0 group-hover:opacity-100">✅</button>
+                                 </div>
+                             </div>
+                         </div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                            <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-blue-100 text-blue-600 p-1 rounded">📉</span> 30-Day Flow</h3>
+                            <div class="flex items-center gap-2">
+                                <button @click="showImpulseModal=true" class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition">Can I Afford It?</button>
+                                <div class="flex items-center gap-1 bg-slate-50 p-1 rounded border border-slate-200">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase px-1">Bal:</span>
+                                    <input type="number" v-model.number="forecastSettings.currentBalance" @change="saveSettings" @input="renderDashboardChart" class="w-16 p-0.5 bg-white border border-slate-200 rounded text-right font-mono font-bold text-xs text-slate-700 outline-none focus:border-blue-500">
                                 </div>
                             </div>
+                        </div>
+                        <div class="h-48 w-full relative"><canvas id="dashboardChart"></canvas></div>
+                        <div v-if="cashFlowLowPoint && !impulseResult" class="mt-2 flex items-center justify-center gap-2 text-xs font-medium p-2 rounded-lg border" :class="cashFlowLowPoint.amount<0?'bg-red-50 border-red-100 text-red-700':'bg-emerald-50 border-emerald-100 text-emerald-700'">
+                            <span class="text-lg">{{cashFlowLowPoint.amount<0?'⚠️':'✅'}}</span> Low Point: <span class="font-mono font-bold">${{cashFlowLowPoint.amount.toLocaleString()}}</span> on {{cashFlowLowPoint.date}}
+                        </div>
+                        <div v-if="impulseResult" class="mt-2 flex items-center justify-center gap-2 text-xs font-medium p-2 rounded-lg border" :class="impulseResult.safe?'bg-emerald-50 border-emerald-100 text-emerald-700':'bg-red-50 border-red-100 text-red-700'">
+                            <span class="text-lg">{{impulseResult.safe?'✅':'❌'}}</span><span>{{impulseResult.message}}</span><button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mb-8">
+                    <div class="w-full max-w-2xl bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-center gap-8">
+                        <div class="flex-1 w-full">
+                             <div class="w-full flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 p-1 rounded">📊</span> Spending Breakdown</h3>
+                                <div class="flex gap-2">
+                                    <button @click="toggleChartMode" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold hover:bg-slate-200">{{ showChartPercentages ? 'Show $' : 'Show %' }}</button>
+                                </div>
+                             </div>
+                             <div class="flex gap-1 bg-slate-100 p-1 rounded-lg w-full justify-center">
+                                <button @click.stop="setDashboardMode('survival')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='survival'?'bg-white shadow text-orange-600':'text-slate-400 hover:text-slate-600'">🛡️ Survival</button>
+                                <button @click.stop="setDashboardMode('standard')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='standard'?'bg-white shadow text-blue-600':'text-slate-400 hover:text-slate-600'">⚖️ Standard</button>
+                                <button @click.stop="setDashboardMode('dream')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='dream'?'bg-white shadow text-purple-600':'text-slate-400 hover:text-slate-600'">🚀 Dream</button>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex justify-center relative w-40 h-40">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        <div class="flex-1 w-full">
+                            <div id="cat-legend" class="text-xs text-slate-500"></div>
                         </div>
                     </div>
                 </div>
@@ -590,7 +593,7 @@
                 const showPlanner=ref(false),showAddForm=ref(false),isSubmitting=ref(false),isEditing=ref(false),editingId=ref(null);
                 const newItem=ref({name:'',amount:'',due_day:'',isFlexible:false,frequency:'Monthly',is_core:false,is_autopay:false,is_wishlist:false,replaces_id:null,category:'Essentials',is_variable:false});
                 const showPaidBills=ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Entertainment', 'Subscriptions', 'Other']);
-                const showChartPercentages = ref(false);
+                const showChartPercentages = ref(false); // Controls $ vs % in donut chart
                 
                 // Ledger/Expense State
                 const showGenModal=ref(false),potentialBills=ref([]),generateMonthOffset=ref(0);
