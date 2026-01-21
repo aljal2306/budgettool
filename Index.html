@@ -906,7 +906,26 @@
                     const dStr = bill.due_date.replace(/-/g, '');
                     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
                 };
+// --- WATCHERS (FIX FOR CHARTS) ---
+            watch(currentView, async (newView) => {
+                await nextTick(); // Wait for the v-if to render the HTML
+                
+                if (newView === 'dashboard') {
+                    // Re-render dashboard charts when switching back to Home
+                    if(bills.value.length > 0 || budgetItems.value.length > 0) {
+                        renderCategoryChart();
+                        renderDashboardChart();
+                    }
+                } 
+                else if (newView === 'forecast') {
+                    // Run and render forecast when switching to Forecast tab
+                    runForecast();
+                }
+            });
 
+            // --- LIFECYCLE ---
+            onMounted(() => {
+                // ... existing onMounted code ...
                 // --- LIFECYCLE ---
                 onMounted(() => {
                     _supabase.auth.getSession().then(({ data }) => {
