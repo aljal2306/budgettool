@@ -397,11 +397,11 @@
                 let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
 
                 // --- 1. CORE BUDGET LOGIC (The Fix) ---
-                // We redefine setScenarioMode to force a deep update of the budgetItems array.
+                // This function forces the top cards to update by creating a new array reference
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode;
                     
-                    // Create a fresh copy to trigger Vue reactivity
+                    // Create a FRESH copy of the array. This tells Vue "the data has changed, re-calculate everything!"
                     const freshItems = budgetItems.value.map(item => ({...item}));
                     
                     freshItems.forEach(item => {
@@ -411,9 +411,9 @@
                             return;
                         }
 
-                        // Determine inclusion
+                        // Determine inclusion based on the button clicked
                         if (mode === 'survival') {
-                            item.includedInScenario = !!item.is_core; // Force boolean
+                            item.includedInScenario = !!item.is_core; // Force boolean true/false
                         } else if (mode === 'standard') {
                             item.includedInScenario = !item.is_wishlist; // Everything except wishlist
                         } else if (mode === 'dream') {
@@ -421,7 +421,7 @@
                         }
                     });
 
-                    // Dream Mode Replacement Logic: If Wishlist item replaces Standard item, turn off Standard
+                    // Dream Mode Replacement Logic (e.g. if New Car replaces Old Car, turn off Old Car)
                     if (mode === 'dream') {
                         const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario);
                         activeWishlist.forEach(w => {
@@ -432,11 +432,11 @@
                         });
                     }
 
-                    // Assign back to trigger Vue reactivity
+                    // Assign the fresh array back to the main variable
                     budgetItems.value = freshItems;
                 };
 
-                // Computed Props based on Scenario
+                // Computed Props based on Scenario (Now reactive because of the fix above)
                 const totalMonthlyBurn = computed(() => {
                     return round(budgetItems.value
                         .filter(item => item.includedInScenario)
@@ -507,7 +507,14 @@
                 });
 
                 // --- 3. DATA FETCHING ---
-                const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) { budgetItems.value = data.map(i => ({...i, includedInScenario: false})); setScenarioMode('survival'); } };
+                const fetchBudgetItems = async () => { 
+                    const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
+                    if (data) { 
+                        budgetItems.value = data.map(i => ({...i, includedInScenario: false})); 
+                        // Initial load sets mode to survival
+                        setScenarioMode('survival'); 
+                    } 
+                };
                 const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { if (data.current_balance !== null) forecastSettings.value.currentBalance = data.current_balance; if (data.safety_margin !== null) forecastSettings.value.safetyMargin = data.safety_margin; if (data.retirement_balance !== null) forecastSettings.value.retirementBalance = data.retirement_balance; if (data.current_age !== null) forecastSettings.value.currentAge = data.current_age; if (data.retirement_age !== null) forecastSettings.value.retirementAge = data.retirement_age; if (data.expected_return !== null) forecastSettings.value.expectedReturn = data.expected_return; } };
                 const fetchIncomes = async () => { const { data } = await _supabase.from('incomes').select('*').order('created_at', { ascending: true }); if (data) incomes.value = data; };
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if (data) bills.value = data.sort((a,b)=>a.due_date>b.due_date?1:-1); };
@@ -557,7 +564,7 @@
                 const deleteIncome = async (id) => { if(!confirm("Delete this income source?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
                 const deleteBill = async (bill) => { if(!confirm("Remove this bill instance?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
                 const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating bill status'); } else { renderDashboardChart(); } };
-                // ⚠️ FIX: Define quickPay here so it's not undefined
+                // --- QUICKPAY WAS MISSING IN PREVIOUS VERSION ---
                 const quickPay = async (bill) => { 
                     const newStatus = !bill.is_paid;
                     const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); 
@@ -655,4 +662,4 @@
 </body>
 </html>
 
-    
+   
