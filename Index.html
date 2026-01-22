@@ -310,8 +310,8 @@
     </div>
 
     <script>
-        const {createApp,ref,computed,onMounted,nextTick,watch}=Vue;
-        const {createClient}=supabase;
+        const {createApp, ref, computed, onMounted, nextTick, watch} = Vue;
+        const {createClient} = supabase;
         
         // ⚠️ PASTE YOUR SUPABASE KEYS HERE ⚠️
         const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
@@ -324,14 +324,14 @@
         }
 
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const round=(n)=>Math.round((n+Number.EPSILON)*100)/100;
+        const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
         
         // Helper: Calculate monthly cost
-        const getMonthlyCost=(i)=>{
-            let a=Number(i.amount);
-            if(i.frequency==='Quarterly') return a/3;
-            if(i.frequency==='Yearly') return a/12;
-            if(i.frequency==='One-Time') return 0; 
+        const getMonthlyCost = (i) => {
+            let a = Number(i.amount);
+            if (i.frequency === 'Quarterly') return a / 3;
+            if (i.frequency === 'Yearly') return a / 12;
+            if (i.frequency === 'One-Time') return 0; 
             return a;
         };
         
@@ -395,27 +395,25 @@
 
                 let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
 
-                // --- 1. CORE BUDGET LOGIC (Fixed for Toggles) ---
+                // --- 1. CORE BUDGET LOGIC ---
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode;
-                    
-                    // We must create a new array to force Vue to re-evaluate the computed properties
+                    // Force a new array reference so Vue watchers trigger immediately
                     const freshItems = budgetItems.value.map(item => ({...item}));
                     
                     freshItems.forEach(item => {
-                        // One-Time items are never in monthly burn
+                        // Exclude One-Time items from monthly burn scenarios
                         if (item.frequency === 'One-Time') {
                             item.includedInScenario = false;
                             return;
                         }
 
-                        // Determine inclusion
                         if (mode === 'survival') {
-                            item.includedInScenario = !!item.is_core; // Force boolean
+                            item.includedInScenario = !!item.is_core;
                         } else if (mode === 'standard') {
-                            item.includedInScenario = !item.is_wishlist; // Everything except wishlist
+                            item.includedInScenario = !item.is_wishlist;
                         } else if (mode === 'dream') {
-                            item.includedInScenario = true; // Everything
+                            item.includedInScenario = true;
                         }
                     });
 
@@ -430,7 +428,6 @@
                         });
                     }
 
-                    // Assign back to trigger Vue reactivity
                     budgetItems.value = freshItems;
                 };
 
@@ -452,20 +449,16 @@
                 const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
 
-                // --- 2. FORECAST LOGIC (Fixed for Optional Expenses) ---
-                
+                // --- 2. FORECAST LOGIC ---
                 const addExpense = (month) => {
                     if (month.newExpenseName && month.newExpenseAmount) {
                         month.extraExpenses.push({
                             name: month.newExpenseName,
                             amount: Number(month.newExpenseAmount)
                         });
-                        // Reset inputs
                         month.newExpenseName = '';
                         month.newExpenseAmount = '';
                         month.newExpenseId = '';
-                        
-                        // Re-run forecast to update chart and balances
                         runForecast();
                     }
                 };
@@ -535,7 +528,6 @@
                     const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
                     if (data) { 
                         budgetItems.value = data.map(i => ({...i, includedInScenario: false})); 
-                        // Initial load sets mode to survival
                         setScenarioMode('survival'); 
                     } 
                 };
@@ -601,18 +593,9 @@
                 const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
                 const setForecastMode=(mode)=>{forecastMode.value=mode;};
+                // FIXED: Clear URL hash on logout to prevent auto-login loop
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
-                const handleLogout = async () => { 
-    // 1. Sign out of Supabase
-    await _supabase.auth.signOut(); 
-    
-    // 2. Clear local session state
-    session.value = null; 
-    
-    // 3. Clear the "Magic Link" hash from the URL so we don't auto-login on reload
-    // This resets the URL to just the clean path (e.g., "index.html" or "/")
-    window.location.href = window.location.pathname;
-};
+                const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; window.location.href = window.location.pathname; };
                 const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
                 const handleSave=async()=>{isEditing.value?updateItem():addItem()};
                 const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
@@ -659,7 +642,5 @@
             }
         }).mount('#app');
     </script>
-</body>
-</html>
 
     
