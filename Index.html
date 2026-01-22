@@ -309,7 +309,7 @@
             </transition>
     </div>
 
-   <script>
+    <script>
         const {createApp, ref, computed, onMounted, nextTick, watch} = Vue;
         const {createClient} = supabase;
         
@@ -326,6 +326,7 @@
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
         
+        // Helper: Calculate monthly cost for any frequency
         const getMonthlyCost = (i) => {
             let a = Number(i.amount);
             if (i.frequency === 'Quarterly') return a / 3;
@@ -334,6 +335,7 @@
             return a;
         };
         
+        // Tax Brackets
         const taxBrackets = {
             Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}],
             Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}],
@@ -396,7 +398,7 @@
                 // --- 1. CORE BUDGET LOGIC ---
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode;
-                    // Force Reactivity
+                    // Force a new array reference to trigger reactivity
                     const freshItems = budgetItems.value.map(item => ({...item}));
                     freshItems.forEach(item => {
                         if (item.frequency === 'One-Time') { item.includedInScenario = false; return; }
@@ -417,13 +419,7 @@
                 };
 
                 const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + getMonthlyCost(i), 0)));
-                const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { 
-                    let m = Number(inc.amount); 
-                    if (inc.frequency === 'Bi-Weekly') m *= 2.166; 
-                    else if (inc.frequency === 'Semi-Monthly') m *= 2; 
-                    return total + m; 
-                }, 0));
-
+                const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { let m = Number(inc.amount); if (inc.frequency === 'Bi-Weekly') m *= 2.166; else if (inc.frequency === 'Semi-Monthly') m *= 2; return total + m; }, 0));
                 const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
 
@@ -486,7 +482,9 @@
                     const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100);
                     const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax;
                     const finalPay = round(net);
+                    
                     calcResult.value = { gross: round(grossPay), benefitAmt: round(benefitAmt), tradAmt: round(tradAmt), preTaxTotal: round(benefitAmt + tradAmt), taxes: round(fedTaxPerPeriod + stateTaxPerPeriod), fedTax: round(fedTaxPerPeriod), stateTax: round(stateTaxPerPeriod), fica: round(ssTax + medTax), postTaxTotal: round(Number(postTax) + rothAmt), netPay: finalPay };
+                    
                     if (mode === 'default') {
                         const payload = { user_id: session.value.user.id, name: name || 'New Income', amount: finalPay, frequency: payFrequency, next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding } };
                         if (calcInputs.value.id) await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id); else await _supabase.from('incomes').insert([payload]);
@@ -501,22 +499,34 @@
                 const logExpense = async () => { if(!expenseData.value.budgetId || !expenseData.value.amount) return; const { error } = await _supabase.from('ledger').insert([{ user_id: session.value.user.id, budget_item_id: expenseData.value.budgetId, amount_paid: Number(expenseData.value.amount), is_paid: true, due_date: expenseData.value.date, transaction_name: expenseData.value.description }]); if(!error){ showExpenseModal.value = false; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; fetchBills(); renderDashboardChart(); } else { alert("Error logging expense"); } };
                 const saveSettings = async () => { await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: forecastSettings.value.currentBalance, safety_margin: forecastSettings.value.safetyMargin }); };
                 const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
+                
                 const deleteIncome = async (id) => { if(!confirm("Delete this income source?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
                 const deleteBill = async (bill) => { if(!confirm("Remove this bill instance?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
                 const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating bill status'); } else { renderDashboardChart(); } };
                 const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying bill."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
                 const deleteBudgetItem = async (item) => { if (!confirm('Delete item?')) return; const { error } = await _supabase.from('budget_items').delete().eq('id', item.id); if (!error) { budgetItems.value = budgetItems.value.filter(i => i.id !== item.id); bills.value = bills.value.filter(b => b.budget_item_id !== item.id); renderCategoryChart(); renderDashboardChart(); } };
+                
                 const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
                 const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
                 const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
+                
                 const resetDemo = async () => { if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); window.location.reload(); };
                 const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
                 const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
                 const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
                 const setForecastMode=(mode)=>{forecastMode.value=mode;};
+                
+                // Fixed Logout: Clear URL Hash
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
-                const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; const cleanUrl = window.location.origin + window.location.pathname; window.history.replaceState(null, '', cleanUrl); window.location.href = cleanUrl; };
+                const handleLogout = async () => { 
+                    await _supabase.auth.signOut(); 
+                    session.value = null; 
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.history.replaceState(null, '', cleanUrl);
+                    window.location.href = cleanUrl; 
+                };
+                
                 const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
                 const handleSave=async()=>{isEditing.value?updateItem():addItem()};
                 const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
@@ -557,7 +567,9 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense };
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, finishOnboarding, addExpense, fillExpense };
             }
         }).mount('#app');
     </script>
+
+   
