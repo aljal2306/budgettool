@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Master</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -16,6 +17,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
 
     <style>
+        /* Custom UI Tweaks */
         .toggle-checkbox:checked { right: 0; border-color: #10B981; }
         .toggle-checkbox:checked + .toggle-label { background-color: #10B981; }
         [v-cloak] { display: none; }
@@ -27,6 +29,8 @@
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
+        /* Chat Styles */
         .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: .9rem; line-height: 1.5; }
         .chat-user { background-color: #3b82f6; color: #fff; border-bottom-right-radius: 4px; margin-left: auto; }
         .chat-ai { background-color: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; margin-right: auto; }
@@ -35,13 +39,13 @@
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
         
-        /* Custom Driver.js Styling */
+        /* Driver.js Theme Overrides */
         .driver-popover.driverjs-theme { background-color: #ffffff; color: #1e293b; padding: 15px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
         .driver-popover.driverjs-theme .driver-popover-title { font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; color: #0f172a; }
         .driver-popover.driverjs-theme .driver-popover-description { font-size: 0.9rem; line-height: 1.5; color: #64748b; margin-bottom: 15px; }
         .driver-popover.driverjs-theme button { background-color: #4F46E5; color: white; border: none; text-shadow: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 0.8rem; }
         .driver-popover.driverjs-theme button:hover { background-color: #4338ca; }
-
+        
         @media print {
             body { background-color: #fff; color: #000; }
             .print\:hidden { display: none !important; }
@@ -326,7 +330,7 @@
             </transition>
 
     </div>
-            
+
     <script>
         const {createApp,ref,computed,onMounted,nextTick,watch}=Vue;const{createClient}=supabase;
         
@@ -349,7 +353,7 @@
             return a;
         };
         
-        // Tax Brackets
+        // Tax Brackets (2025 Estimates)
         const taxBrackets = {
             Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}],
             Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}],
