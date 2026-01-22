@@ -326,7 +326,6 @@
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
         
-        // Helper: Calculate monthly cost
         const getMonthlyCost = (i) => {
             let a = Number(i.amount);
             if (i.frequency === 'Quarterly') return a / 3;
@@ -335,7 +334,6 @@
             return a;
         };
         
-        // Tax Brackets (2025 Estimates)
         const taxBrackets = {
             Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}],
             Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}],
@@ -403,13 +401,10 @@
                     const freshItems = budgetItems.value.map(item => ({...item}));
                     
                     freshItems.forEach(item => {
-                        // One-Time items are never in monthly burn
                         if (item.frequency === 'One-Time') {
                             item.includedInScenario = false;
                             return;
                         }
-
-                        // Determine inclusion
                         if (mode === 'survival') {
                             item.includedInScenario = !!item.is_core;
                         } else if (mode === 'standard') {
@@ -419,7 +414,6 @@
                         }
                     });
 
-                    // Dream Mode Replacement Logic
                     if (mode === 'dream') {
                         const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario);
                         activeWishlist.forEach(w => {
@@ -433,7 +427,7 @@
                     budgetItems.value = freshItems;
                 };
 
-                // Computed Props based on Scenario
+                // Computed Props
                 const totalMonthlyBurn = computed(() => {
                     return round(budgetItems.value
                         .filter(item => item.includedInScenario)
@@ -589,25 +583,39 @@
                 const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
                 const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
                 
-                const resetDemo = async () => { if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); window.location.reload(); };
-                const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
+                const resetDemo = async () => { 
+                    if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?")) return; 
+                    loading.value=true; 
+                    const uid=session.value.user.id; 
+                    await _supabase.from('ledger').delete().eq('user_id',uid); 
+                    await _supabase.from('budget_items').delete().eq('user_id',uid); 
+                    await _supabase.from('debts').delete().eq('user_id',uid); 
+                    await _supabase.from('incomes').delete().eq('user_id',uid); 
+                    await _supabase.from('user_settings').delete().eq('user_id',uid); 
+                    window.location.reload(); 
+                };
+
+                const finishOnboarding=async()=>{ 
+                    isSubmitting.value=true; 
+                    const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; 
+                    const settingsPayload = { user_id: session.value.user.id }; 
+                    if(balance !== '') settingsPayload.current_balance = Number(balance); 
+                    if(safety !== '') settingsPayload.safety_margin = Number(safety); 
+                    if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } 
+                    const { error } = await _supabase.from('user_settings').upsert(settingsPayload); 
+                    if(balance !== '') forecastSettings.value.currentBalance = Number(balance); 
+                    if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); 
+                    if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); 
+                    if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; 
+                    await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); 
+                };
+                
                 const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
                 const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
                 const setForecastMode=(mode)=>{forecastMode.value=mode;};
-                
-                // FIXED LOGOUT: Clear URL history to prevent auto-login loop
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
-                const handleLogout = async () => { 
-                    await _supabase.auth.signOut(); 
-                    session.value = null; 
-                    // Clear the hash from the URL
-                    const cleanUrl = window.location.origin + window.location.pathname;
-                    window.history.replaceState(null, '', cleanUrl);
-                    // Force navigation to the clean URL
-                    window.location.href = cleanUrl; 
-                };
-                
+                const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; window.location.href = window.location.pathname; };
                 const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
                 const handleSave=async()=>{isEditing.value?updateItem():addItem()};
                 const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
@@ -636,7 +644,7 @@
                 const getFinancialSnapshot=()=>{return{income:activeMonthlyPay.value,savings:forecastSettings.value.currentBalance,total_debt:debts.value.reduce((a,b)=>a+Number(b.balance),0),core_burn:budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),discretionary_burn:budgetItems.value.filter(i=>!i.is_core&&!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),debt_list:debts.value,budget_list:budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name,amt:i.amount,core:i.is_core})),survival_months:(forecastSettings.value.currentBalance/(budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)}};
 
                 // --- TOURS ---
-                const startDashboardTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'This is your "Guilt-Free" money. It is calculated by taking your Net Pay and subtracting your Core Bills.' } }, { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'A live projection of your retirement savings based on your current 401k contributions and age.' } }, { element: '#tour-debt-free', popover: { title: '3. Debt Free Date', description: 'When you will be debt free based on your "Attack Plan" (set in the Debt tab).' } }, { element: '#tour-variable-budgets', popover: { title: '4. Variable Budgets', description: 'Track fluctuating expenses here (Groceries, Gas). You must manually log expenses for these.' } }, { element: '#tour-due-soon', popover: { title: '5. Due Soon', description: 'Fixed bills due in the next 7 days. Click the checkbox to mark them as paid.' } }, { element: '#tour-cash-flow', popover: { title: '6. 30-Day Forecast', description: 'Your projected bank balance for the next month. Use "Can I Afford It?" to test large purchases.' } }, { element: '#tour-breakdown', popover: { title: '7. Spending Breakdown', description: 'See where your money goes. Toggle between % and $ to see the impact of each category.' } } ] }).drive(); };
+                const startDashboardTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'This is your "Guilt-Free" money. It is calculated by taking your Net Pay and subtracting your Core Bills.' } }, { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'A live projection of your retirement savings based on your current 401k contributions and age.' } }, { element: '#tour-debt-free', popover: { title: '3. Debt Free Date', description: 'When you will be debt free based on your "Attack Plan" (set in the Debt tab).' } }, { element: '#tour-variable-budgets', popover: { title: '4. Variable Budgets', description: 'Pro Tip: Check the "Variable Budget" box for fluctuating costs like Groceries. This creates a dedicated tracker on your Dashboard to log receipts against.' } }, { element: '#tour-due-soon', popover: { title: '5. Due Soon', description: 'Fixed bills due in the next 7 days. Click the checkbox to mark them as paid.' } }, { element: '#tour-cash-flow', popover: { title: '6. 30-Day Forecast', description: 'Your projected bank balance for the next month. Use "Can I Afford It?" to test large purchases.' } }, { element: '#tour-breakdown', popover: { title: '7. Spending Breakdown', description: 'See where your money goes. Toggle between % and $ to see the impact of each category.' } } ] }).drive(); };
                 const startPaycheckTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-paycheck-trigger', popover: { title: 'New Calculation', description: 'Click here to add a new income source or calculate a one-off paycheck.' } }, { element: '#tour-paycheck-save', popover: { title: 'Save or Simulate', description: 'Save the income permanently to your profile, or use "Session Mode" to test different salary scenarios without saving or to determine your pay for months that include commission and apply it to the financial forecast.' } }, { element: '#tour-paycheck-result', popover: { title: 'The Breakdown', description: 'See exactly where your money goes: Taxes, 401k, Benefits, and your final Net Pay.' } }, { element: '#tour-active-incomes', popover: { title: 'Active Incomes', description: 'All your saved income sources live here. Click one to edit or recalculate it.' } } ] }).drive(); };
                 const startBudgetTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-net-pay', popover: { title: '1. Net Monthly Pay', description: 'Your financial fuel. This is the total monthly income from all your "Active" income sources in the Paycheck tab.' } }, { element: '#tour-scenario-burn', popover: { title: '2. Scenario Commitments', description: 'Your burn rate. This sums up all bills currently active in this scenario (Survival, Standard, or Dream).' } }, { element: '#tour-projected-end', popover: { title: '3. Projected End Balance', description: 'The bottom line. Income minus Commitments. Green means you are saving; red means you are overspending.' } }, { element: '#tour-manage-budget', popover: { title: '4. The Control Center', description: 'Click here to add bills. **Pro Tip:** For fluctuating costs like Groceries or Gas, check the **Variable Budget** box. This sets up a dedicated tracker on the Dashboard so you can log receipts and stay within your limit.' } }, { element: '#tour-ledger', popover: { title: '5. Current Bills Ledger', description: 'This list is auto-generated from your budget items. Use this to track actual payments due this month.' } } ] }).drive(); };
                 const startForecastTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-forecast-settings', popover: { title: '1. Control the Future', description: 'Set your current balance, safety margin, and how far ahead you want to look.' } }, { element: '#tour-retirement-forecast', popover: { title: '2. The Long Game', description: 'See how your nest egg grows based on your contributions and expected return.' } }, { element: '#tour-goal-project', popover: { title: '3. Dream Big', description: 'Add a specific financial target (like a house or car) to see exactly when you can afford it.' } }, { element: '#tour-forecast-chart', popover: { title: '4. Visual Timeline', description: 'Watch your balance grow (or shrink) over time. The "Star" indicates when you hit your goal.' } }, { element: '#tour-monthly-details', popover: { title: '5. Monthly Deep Dive', description: 'Expand any month to see exactly what income came in and what bills went out. Easily apply calculated paychecks with commission to the appropriate month. You can even add one-time expenses here.' } } ] }).drive(); };
