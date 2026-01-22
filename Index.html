@@ -311,8 +311,8 @@
     </div>
 
     <script>
-        const {createApp, ref, computed, onMounted, nextTick, watch} = Vue;
-        const {createClient} = supabase;
+        const {createApp,ref,computed,onMounted,nextTick,watch}=Vue;
+        const {createClient}=supabase;
         
         // ⚠️ PASTE YOUR SUPABASE KEYS HERE ⚠️
         const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
@@ -325,14 +325,14 @@
         }
 
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+        const round=(n)=>Math.round((n+Number.EPSILON)*100)/100;
         
         // Helper: Calculate monthly cost
-        const getMonthlyCost = (i) => {
-            let a = Number(i.amount);
-            if (i.frequency === 'Quarterly') return a / 3;
-            if (i.frequency === 'Yearly') return a / 12;
-            if (i.frequency === 'One-Time') return 0; 
+        const getMonthlyCost=(i)=>{
+            let a=Number(i.amount);
+            if(i.frequency==='Quarterly') return a/3;
+            if(i.frequency==='Yearly') return a/12;
+            if(i.frequency==='One-Time') return 0; 
             return a;
         };
         
@@ -397,23 +397,21 @@
                 let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
 
                 // --- 1. CORE BUDGET LOGIC (The Fix) ---
-                // This function forces the top cards to update by creating a new array reference
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode;
                     
-                    // Create a FRESH copy of the array. This tells Vue "the data has changed, re-calculate everything!"
-                    const freshItems = budgetItems.value.map(item => ({...item}));
-                    
-                    freshItems.forEach(item => {
-                        // Exclude One-Time items from monthly burn scenarios
+                    // Directly modify the array items rather than replacing the array reference
+                    // This often helps Vue's deep reactivity system tracking
+                    budgetItems.value.forEach(item => {
+                        // One-Time items are never in monthly burn
                         if (item.frequency === 'One-Time') {
                             item.includedInScenario = false;
                             return;
                         }
 
-                        // Determine inclusion based on the button clicked
+                        // Determine inclusion
                         if (mode === 'survival') {
-                            item.includedInScenario = !!item.is_core; // Force boolean true/false
+                            item.includedInScenario = Boolean(item.is_core); // Force boolean
                         } else if (mode === 'standard') {
                             item.includedInScenario = !item.is_wishlist; // Everything except wishlist
                         } else if (mode === 'dream') {
@@ -421,22 +419,27 @@
                         }
                     });
 
-                    // Dream Mode Replacement Logic (e.g. if New Car replaces Old Car, turn off Old Car)
+                    // Dream Mode Replacement Logic
                     if (mode === 'dream') {
-                        const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario);
+                        // Find all active wishlist items
+                        const activeWishlist = budgetItems.value.filter(i => i.is_wishlist && i.includedInScenario);
+                        
+                        // Disable the items they replace
                         activeWishlist.forEach(w => {
                             if (w.replaces_id) {
-                                const target = freshItems.find(t => t.id === w.replaces_id);
+                                const target = budgetItems.value.find(t => t.id === w.replaces_id);
                                 if (target) target.includedInScenario = false;
                             }
                         });
                     }
-
-                    // Assign the fresh array back to the main variable
-                    budgetItems.value = freshItems;
+                    
+                    // Force a recalculation of computed properties by touching a reactive dummy if needed,
+                    // but usually direct mutation of the reactive array works. 
+                    // To be safe, we can trigger a recalculation by re-assigning the array to itself if it's stubborn.
+                    budgetItems.value = [...budgetItems.value];
                 };
 
-                // Computed Props based on Scenario (Now reactive because of the fix above)
+                // Computed Props based on Scenario
                 const totalMonthlyBurn = computed(() => {
                     return round(budgetItems.value
                         .filter(item => item.includedInScenario)
@@ -454,7 +457,35 @@
                 const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
 
-                // --- 2. OTHER COMPUTED PROPS ---
+                // --- 2. FORECAST LOGIC (Fixing Missing Functions) ---
+                
+                // Add Expense to specific forecast month
+                const addExpense = (month) => {
+                    if (month.newExpenseName && month.newExpenseAmount) {
+                        month.extraExpenses.push({
+                            name: month.newExpenseName,
+                            amount: Number(month.newExpenseAmount)
+                        });
+                        // Reset inputs
+                        month.newExpenseName = '';
+                        month.newExpenseAmount = '';
+                        month.newExpenseId = '';
+                        
+                        // Re-run forecast to update chart and balances
+                        runForecast();
+                    }
+                };
+
+                // Auto-fill expense details from dropdown
+                const fillExpense = (month) => {
+                    const selected = budgetItems.value.find(i => i.id === month.newExpenseId);
+                    if (selected) {
+                        month.newExpenseName = selected.name;
+                        month.newExpenseAmount = selected.amount;
+                    }
+                };
+
+                // --- 3. OTHER COMPUTED PROPS ---
                 const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist));
                 const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist));
                 const variableBudgets = computed(() => budgetItems.value.filter(i => i.is_variable).map(item => { const currentMonthStr = new Date().toISOString().slice(0, 7); const spent = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).reduce((sum, b) => sum + (b.amount_paid || b.budget_items.amount), 0); return { ...item, spent: spent, remaining: item.amount - spent, progress: (spent / item.amount) * 100 }; }));
@@ -506,7 +537,7 @@
                     return { payoffDate: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), totalInterest: round(attack.totalInterest), savedInterest: round(base.totalInterest - attack.totalInterest), timeline: attack.timeline }; 
                 });
 
-                // --- 3. DATA FETCHING ---
+                // --- 4. DATA FETCHING ---
                 const fetchBudgetItems = async () => { 
                     const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
                     if (data) { 
@@ -520,7 +551,7 @@
                 const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if (data) bills.value = data.sort((a,b)=>a.due_date>b.due_date?1:-1); };
                 const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data; };
 
-                // --- 4. APP ACTIONS ---
+                // --- 5. APP ACTIONS ---
                 const loadIncomeIntoCalculator = (inc) => { calcInputs.value = { ...calcInputs.value, id: inc.id, name: inc.name, nextPayDate: inc.next_pay_date, payFrequency: inc.frequency, ...inc.details }; showCalcForm.value = true; calculateAndSave('preview'); };
                 
                 const calculateAndSave = async (mode) => {
@@ -564,7 +595,8 @@
                 const deleteIncome = async (id) => { if(!confirm("Delete this income source?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
                 const deleteBill = async (bill) => { if(!confirm("Remove this bill instance?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
                 const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating bill status'); } else { renderDashboardChart(); } };
-                // --- QUICKPAY WAS MISSING IN PREVIOUS VERSION ---
+                
+                // FIXED: Defined quickPay to prevent crash
                 const quickPay = async (bill) => { 
                     const newStatus = !bill.is_paid;
                     const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); 
@@ -575,6 +607,7 @@
                         renderDashboardChart(); 
                     } 
                 };
+                
                 const deleteBudgetItem = async (item) => { if (!confirm('Delete item?')) return; const { error } = await _supabase.from('budget_items').delete().eq('id', item.id); if (!error) { budgetItems.value = budgetItems.value.filter(i => i.id !== item.id); bills.value = bills.value.filter(b => b.budget_item_id !== item.id); renderCategoryChart(); renderDashboardChart(); } };
                 
                 const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
@@ -634,6 +667,8 @@
                 const renderChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
                 const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
                 const clearImpulse=()=>{impulseItem.value={name:'',cost:'',date:new Date().toISOString().split('T')[0]};impulseResult.value=null;renderDashboardChart()};
+                
+                // Chat Logic
                 const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
                 const sendQuery=async(text)=>{if(!text)return;chatMessages.value.push({role:'user',text});userQuery.value='';isThinking.value=true;nextTick(scrollChat);setTimeout(()=>{const snapshot=getFinancialSnapshot();const response=generateMockResponse(text,snapshot);chatMessages.value.push({role:'assistant',text:response});isThinking.value=false;nextTick(scrollChat)},1200)};
                 const generateMockResponse=(query,data)=>{ const q=query.toLowerCase(); if(q.includes('ruthless')||q.includes('cut')){const nonCore=data.budget_list.filter(i=>!i.core).sort((a,b)=>b.amt-a.amt);let totalWaste=nonCore.reduce((a,b)=>a+b.amt,0);let top3=nonCore.slice(0,3).map(i=>`• **${i.name}**: $${i.amt}`).join('<br>');return`Found **$${totalWaste.toLocaleString()}** in non-essential spending.<br>Top 3 targets:<br>${top3}`} if(q.includes('debt')){if(data.debt_list.length===0)return"No debts! Great job.";const highestRate=[...data.debt_list].sort((a,b)=>b.rate-a.rate)[0];const totalInterest=data.debt_list.reduce((acc,d)=>acc+(d.balance*(d.rate/100/365)),0);return`Total Debt: **$${data.total_debt.toLocaleString()}**.<br>Losing **$${totalInterest.toFixed(2)}/day** in interest.<br>Attack **${highestRate.name}** (${highestRate.rate}%) first.`} if(q.includes('stress')||q.includes('survive')){return`**Runway:** ${data.survival_months} months based on savings of $${data.savings.toLocaleString()}.`} if(q.includes('1%')||q.includes('boost')||q.includes('nest egg')){ const totalGross = incomes.value.reduce((sum, inc) => { let gross = Number(inc.details?.salary || 0) / 12; gross += Number(inc.details?.commission || 0); if(inc.frequency==='Bi-Weekly') gross = gross + (Number(inc.details?.commission||0) * 2.166); else if(inc.frequency==='Semi-Monthly') gross = gross + (Number(inc.details?.commission||0) * 2); return sum + gross; }, 0); const onePercent = totalGross * 0.01; const currentP = retirementProjection.value; const r = (Number(forecastSettings.value.expectedReturn || 7) / 100); const n = 12; const t = Math.max(0, Number(forecastSettings.value.retirementAge) - Number(forecastSettings.value.currentAge)); const boostedPMT = totalMonthlyRetirementContribution.value + onePercent; const fvLumpSum = Number(forecastSettings.value.retirementBalance) * Math.pow((1 + r/n), (n*t)); const fvContrib = boostedPMT * ((Math.pow((1 + r/n), (n*t)) - 1) / (r/n)); const boostedProjection = fvLumpSum + fvContrib; const diff = boostedProjection - currentP; return `Increasing contributions by just **1%** ($${onePercent.toFixed(0)}/mo) could add **$${diff.toLocaleString(undefined, {maximumFractionDigits:0})}** to your nest egg by age ${forecastSettings.value.retirementAge}.<br><br>New Projection: **$${boostedProjection.toLocaleString(undefined, {maximumFractionDigits:0})}**`; } return"I analyzed your finances. Income: $"+data.income.toLocaleString()+". Ask for a Stress Test or Debt Strategy."; };
@@ -655,11 +690,9 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, finishOnboarding };
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, finishOnboarding, addExpense, fillExpense };
             }
         }).mount('#app');
     </script>
-</body>
-</html>
 
-   
+    
