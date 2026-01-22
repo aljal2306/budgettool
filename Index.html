@@ -88,9 +88,8 @@
             </div>
 
             <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
-                
                 <div class="w-full flex justify-end mb-4">
-                    <button @click="startDashboardTour" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-800 text-xs font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition shadow-sm border border-indigo-100">
+                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform">
                         <span>📍</span> Take a Tour
                     </button>
                 </div>
@@ -111,547 +110,98 @@
                             <div class="text-xs text-emerald-100 mt-2 font-medium opacity-80">{{dashboardMode==='survival'?'Net Pay - Core Bills':(dashboardMode==='dream'?'Net Pay - (Bills - Replaced + Wishlist)':'Net Pay - Standard Bills')}}</div>
                         </div>
                     </div>
-
                     <div id="tour-nest-egg" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative group overflow-hidden">
                         <div class="absolute top-0 right-0 p-4 opacity-[0.03] text-6xl group-hover:opacity-10 transition">👴</div>
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">Nest Egg @ Age {{ forecastSettings.retirementAge }}</h3>
                         <div class="text-2xl font-black text-indigo-700">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div>
-                        <div class="text-[10px] text-slate-400 mt-1">
-                            Saving <span class="text-indigo-600 font-bold">${{ totalMonthlyRetirementContribution.toLocaleString() }}/mo</span> ({{ forecastSettings.expectedReturn }}% rtr)
-                        </div>
-                        <div class="mt-3 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div class="h-full bg-indigo-500 w-1/4"></div> 
-                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Saving <span class="text-indigo-600 font-bold">${{ totalMonthlyRetirementContribution.toLocaleString() }}/mo</span> ({{ forecastSettings.expectedReturn }}% rtr)</div>
+                        <div class="mt-3 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 w-1/4"></div></div>
                     </div>
-
                     <div id="tour-debt-free" class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-300 border border-slate-700 col-span-1 md:col-span-2 flex flex-col justify-center relative overflow-hidden">
                         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500 rounded-full blur-[80px] opacity-20"></div>
                         <div class="flex flex-col md:flex-row justify-between items-center relative z-10 gap-4">
-                            <div>
-                                <div class="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Debt Free By</div>
-                                <div class="text-3xl md:text-4xl font-black text-white">{{debtPlan.payoffDate}}</div>
-                                <div class="text-xs text-slate-400 mt-1">based on ${{extraDebtPayment}} extra/mo</div>
-                            </div>
-                            <div v-if="project" class="w-full md:w-auto bg-white/5 p-3 rounded-xl border border-white/10 backdrop-blur-sm">
-                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target: {{project.name}}</div>
-                                <div class="flex items-center gap-2">
-                                    <div class="text-xl font-bold" :class="forecastResults.affordableMonth?'text-emerald-400':'text-red-400'">{{forecastResults.affordableMonth||'Not affordable yet'}}</div>
-                                    <span v-if="forecastResults.affordableMonth">🎉</span>
-                                </div>
-                            </div>
+                            <div><div class="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Debt Free By</div><div class="text-3xl md:text-4xl font-black text-white">{{debtPlan.payoffDate}}</div><div class="text-xs text-slate-400 mt-1">based on ${{extraDebtPayment}} extra/mo</div></div>
+                            <div v-if="project" class="w-full md:w-auto bg-white/5 p-3 rounded-xl border border-white/10 backdrop-blur-sm"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target: {{project.name}}</div><div class="flex items-center gap-2"><div class="text-xl font-bold" :class="forecastResults.affordableMonth?'text-emerald-400':'text-red-400'">{{forecastResults.affordableMonth||'Not affordable yet'}}</div><span v-if="forecastResults.affordableMonth">🎉</span></div></div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-                    
                     <div id="tour-variable-budgets" class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2">
-                                <span class="bg-purple-100 text-purple-600 p-1 rounded">🛒</span> Budgets
-                            </h3>
-                            <button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+</button>
-                        </div>
-                        <div v-if="variableBudgets.length === 0" class="flex-1 flex items-center justify-center text-center text-slate-400 text-xs py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                            No variable budgets yet.
-                        </div>
-                        <div class="space-y-4 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar">
-                            <div v-for="item in variableBudgets" :key="item.id" class="group">
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span class="font-bold text-slate-700">{{item.name}}</span>
-                                    <span class="font-mono" :class="item.remaining < 0 ? 'text-red-500 font-bold' : 'text-slate-500'">${{item.remaining.toLocaleString()}} left</span>
-                                </div>
-                                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                    <div class="h-full rounded-full transition-all duration-500" 
-                                         :class="item.remaining < 0 ? 'bg-red-500' : (item.progress > 85 ? 'bg-orange-400' : 'bg-purple-500')"
-                                         :style="{width: Math.min(item.progress, 100) + '%'}">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-purple-100 text-purple-600 p-1 rounded">🛒</span> Budgets</h3><button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+ Log Expense</button></div>
+                        <div v-if="variableBudgets.length === 0" class="flex-1 flex items-center justify-center text-center text-slate-400 text-xs py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">No variable budgets yet.</div>
+                        <div class="space-y-4 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar"><div v-for="item in variableBudgets" :key="item.id" class="group"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-700">{{item.name}}</span><span class="font-mono" :class="item.remaining < 0 ? 'text-red-500 font-bold' : 'text-slate-500'">${{item.remaining.toLocaleString()}} left</span></div><div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden"><div class="h-full rounded-full transition-all duration-500" :class="item.remaining < 0 ? 'bg-red-500' : (item.progress > 85 ? 'bg-orange-400' : 'bg-purple-500')" :style="{width: Math.min(item.progress, 100) + '%'}"></div></div></div></div>
                     </div>
-
                     <div id="tour-due-soon" class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
-                         <h3 class="font-bold text-sm text-slate-800 uppercase mb-4 flex items-center gap-2">
-                             <span class="bg-red-100 text-red-600 p-1 rounded">🚨</span> Due Soon
-                         </h3>
-                         <div class="space-y-2 overflow-y-auto max-h-[300px] pr-1">
-                             <div v-if="upcomingBills.length===0" class="text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">No fixed bills due soon.</div>
-                             <div v-for="bill in upcomingBills" :key="bill.id" class="flex justify-between items-center p-2 bg-white rounded-xl border border-slate-100 hover:shadow-md transition hover:border-slate-200 group">
-                                 <div>
-                                     <div class="font-bold text-xs text-slate-700">{{bill.budget_items.name}}</div>
-                                     <div class="text-[9px] font-bold uppercase tracking-wide mt-0.5" :class="getDaysLeft(bill.due_date)<0?'text-red-500':(getDaysLeft(bill.due_date)===0?'text-orange-500':'text-slate-400')">
-                                         {{getDaysLeft(bill.due_date)<=0?(getDaysLeft(bill.due_date)===0?'Due Today':'Overdue'):getDaysLeft(bill.due_date)+' Days Left'}}
-                                     </div>
-                                 </div>
-                                 <div class="text-right flex flex-col items-end gap-1">
-                                     <div class="font-mono text-xs font-bold text-slate-900">${{bill.budget_items.amount}}</div>
-                                     <button @click="quickPay(bill)" class="text-[9px] bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded font-bold hover:bg-emerald-100 transition opacity-0 group-hover:opacity-100">✅</button>
-                                 </div>
-                             </div>
-                         </div>
+                         <h3 class="font-bold text-sm text-slate-800 uppercase mb-4 flex items-center gap-2"><span class="bg-red-100 text-red-600 p-1 rounded">🚨</span> Due Soon</h3>
+                         <div class="space-y-2 overflow-y-auto max-h-[300px] pr-1"><div v-if="upcomingBills.length===0" class="text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">No fixed bills due soon.</div><div v-for="bill in upcomingBills" :key="bill.id" class="flex justify-between items-center p-2 bg-white rounded-xl border border-slate-100 hover:shadow-md transition hover:border-slate-200 group"><div><div class="font-bold text-xs text-slate-700">{{bill.budget_items.name}}</div><div class="text-[9px] font-bold uppercase tracking-wide mt-0.5" :class="getDaysLeft(bill.due_date)<0?'text-red-500':(getDaysLeft(bill.due_date)===0?'text-orange-500':'text-slate-400')">{{getDaysLeft(bill.due_date)<=0?(getDaysLeft(bill.due_date)===0?'Due Today':'Overdue'):getDaysLeft(bill.due_date)+' Days Left'}}</div></div><div class="text-right flex flex-col items-end gap-1"><div class="font-mono text-xs font-bold text-slate-900">${{bill.budget_items.amount}}</div><button @click="quickPay(bill)" class="text-[9px] bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded font-bold hover:bg-emerald-100 transition opacity-0 group-hover:opacity-100">✅</button></div></div></div>
                     </div>
-
                     <div id="tour-cash-flow" class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                        <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-                            <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-blue-100 text-blue-600 p-1 rounded">📉</span> 30-Day Flow</h3>
-                            <div class="flex items-center gap-2">
-                                <button @click="showImpulseModal=true" class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition">Can I Afford It?</button>
-                                <div class="flex items-center gap-1 bg-slate-50 p-1 rounded border border-slate-200">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase px-1">Bal:</span>
-                                    <input type="number" v-model.number="forecastSettings.currentBalance" @change="saveSettings" @input="renderDashboardChart" class="w-16 p-0.5 bg-white border border-slate-200 rounded text-right font-mono font-bold text-xs text-slate-700 outline-none focus:border-blue-500">
-                                </div>
-                            </div>
-                        </div>
+                        <div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-blue-100 text-blue-600 p-1 rounded">📉</span> 30-Day Flow</h3><div class="flex items-center gap-2"><button @click="showImpulseModal=true" class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition">Can I Afford It?</button><div class="flex items-center gap-1 bg-slate-50 p-1 rounded border border-slate-200"><span class="text-[10px] font-bold text-slate-400 uppercase px-1">Bal:</span><input type="number" v-model.number="forecastSettings.currentBalance" @change="saveSettings" @input="renderDashboardChart" class="w-16 p-0.5 bg-white border border-slate-200 rounded text-right font-mono font-bold text-xs text-slate-700 outline-none focus:border-blue-500"></div></div></div>
                         <div class="h-48 w-full relative"><canvas id="dashboardChart"></canvas></div>
-                        <div v-if="cashFlowLowPoint && !impulseResult" class="mt-2 flex items-center justify-center gap-2 text-xs font-medium p-2 rounded-lg border" :class="cashFlowLowPoint.amount<0?'bg-red-50 border-red-100 text-red-700':'bg-emerald-50 border-emerald-100 text-emerald-700'">
-                            <span class="text-lg">{{cashFlowLowPoint.amount<0?'⚠️':'✅'}}</span> Low Point: <span class="font-mono font-bold">${{cashFlowLowPoint.amount.toLocaleString()}}</span> on {{cashFlowLowPoint.date}}
-                        </div>
-                        <div v-if="impulseResult" class="mt-2 flex items-center justify-center gap-2 text-xs font-medium p-2 rounded-lg border" :class="impulseResult.safe?'bg-emerald-50 border-emerald-100 text-emerald-700':'bg-red-50 border-red-100 text-red-700'">
-                            <span class="text-lg">{{impulseResult.safe?'✅':'❌'}}</span><span>{{impulseResult.message}}</span><button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button>
-                        </div>
+                        <div v-if="cashFlowLowPoint && !impulseResult" class="mt-2 flex items-center justify-center gap-2 text-xs font-medium p-2 rounded-lg border" :class="cashFlowLowPoint.amount<0?'bg-red-50 border-red-100 text-red-700':'bg-emerald-50 border-emerald-100 text-emerald-700'"><span class="text-lg">{{cashFlowLowPoint.amount<0?'⚠️':'✅'}}</span> Low Point: <span class="font-mono font-bold">${{cashFlowLowPoint.amount.toLocaleString()}}</span> on {{cashFlowLowPoint.date}}</div>
+                        <div v-if="impulseResult" class="mt-2 flex items-center justify-center gap-2 text-xs font-medium p-2 rounded-lg border" :class="impulseResult.safe?'bg-emerald-50 border-emerald-100 text-emerald-700':'bg-red-50 border-red-100 text-red-700'"><span class="text-lg">{{impulseResult.safe?'✅':'❌'}}</span><span>{{impulseResult.message}}</span><button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button></div>
                     </div>
                 </div>
 
                 <div class="flex justify-center mb-8">
                     <div id="tour-breakdown" class="w-full max-w-2xl bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-center gap-8">
-                        <div class="flex-1 w-full">
-                             <div class="w-full flex justify-between items-center mb-2">
-                                <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 p-1 rounded">📊</span> Spending Breakdown</h3>
-                                <div class="flex gap-2">
-                                    <button @click="toggleChartMode" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold hover:bg-slate-200">{{ showChartPercentages ? 'Show $' : 'Show %' }}</button>
-                                </div>
-                             </div>
-                             <div class="flex gap-1 bg-slate-100 p-1 rounded-lg w-full justify-center">
-                                <button @click.stop="setDashboardMode('survival')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='survival'?'bg-white shadow text-orange-600':'text-slate-400 hover:text-slate-600'">🛡️ Survival</button>
-                                <button @click.stop="setDashboardMode('standard')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='standard'?'bg-white shadow text-blue-600':'text-slate-400 hover:text-slate-600'">⚖️ Standard</button>
-                                <button @click.stop="setDashboardMode('dream')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='dream'?'bg-white shadow text-purple-600':'text-slate-400 hover:text-slate-600'">🚀 Dream</button>
-                            </div>
-                        </div>
-                        <div class="flex-1 flex justify-center relative w-40 h-40">
-                            <canvas id="categoryChart"></canvas>
-                        </div>
-                        <div class="flex-1 w-full">
-                            <div id="cat-legend" class="text-xs text-slate-500"></div>
-                        </div>
+                        <div class="flex-1 w-full"><div class="w-full flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 p-1 rounded">📊</span> Spending Breakdown</h3><div class="flex gap-2"><button @click="toggleChartMode" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold hover:bg-slate-200">{{ showChartPercentages ? 'Show $' : 'Show %' }}</button></div></div><div class="flex gap-1 bg-slate-100 p-1 rounded-lg w-full justify-center"><button @click.stop="setDashboardMode('survival')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='survival'?'bg-white shadow text-orange-600':'text-slate-400 hover:text-slate-600'">🛡️ Survival</button><button @click.stop="setDashboardMode('standard')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='standard'?'bg-white shadow text-blue-600':'text-slate-400 hover:text-slate-600'">⚖️ Standard</button><button @click.stop="setDashboardMode('dream')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='dream'?'bg-white shadow text-purple-600':'text-slate-400 hover:text-slate-600'">🚀 Dream</button></div></div>
+                        <div class="flex-1 flex justify-center relative w-40 h-40"><canvas id="categoryChart"></canvas></div><div class="flex-1 w-full"><div id="cat-legend" class="text-xs text-slate-500"></div></div>
                     </div>
                 </div>
-
-                <div class="mt-12 mb-8 text-center border-t border-slate-200 pt-8 opacity-50 hover:opacity-100 transition flex justify-center gap-4">
-                    <button v-if="budgetItems.length === 0" @click="startWizard" class="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-6 py-3 rounded-lg font-bold hover:bg-emerald-100 hover:scale-105 transition transform shadow-sm">🚀 Start Setup Wizard</button>
-                    <button v-else @click="startWizard" class="text-xs bg-slate-50 text-slate-600 border border-slate-200 px-4 py-3 rounded-lg font-bold hover:bg-slate-100 transition">↺ Restart Wizard</button>
-                    <button @click="resetDemo" class="text-xs bg-red-50 text-red-500 border border-red-100 px-4 py-3 rounded-lg font-bold hover:bg-red-100 transition">⚠️ Reset Account</button>
-                </div>
+                <div class="mt-12 mb-8 text-center border-t border-slate-200 pt-8 opacity-50 hover:opacity-100 transition flex justify-center gap-4"><button v-if="budgetItems.length === 0" @click="startWizard" class="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-6 py-3 rounded-lg font-bold hover:bg-emerald-100 hover:scale-105 transition transform shadow-sm">🚀 Start Setup Wizard</button><button v-else @click="startWizard" class="text-xs bg-slate-50 text-slate-600 border border-slate-200 px-4 py-3 rounded-lg font-bold hover:bg-slate-100 transition">↺ Restart Wizard</button><button @click="resetDemo" class="text-xs bg-red-50 text-red-500 border border-red-100 px-4 py-3 rounded-lg font-bold hover:bg-red-100 transition">⚠️ Reset Account</button></div>
             </div>
 
             <div v-if="currentView==='calculator'" class="animate-fade-in print:hidden">
-                 
-                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">📝 Paycheck Calculator</h2>
-                    <button @click="startPaycheckTour" class="text-xs font-bold text-indigo-500 flex items-center gap-1 hover:bg-indigo-50 px-2 py-1 rounded transition">
-                        <span>📍</span> Tour This Tab
-                    </button>
-                 </div>
-
+                 <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-black text-slate-800 flex items-center gap-2">📝 Paycheck Calculator</h2><button @click="startPaycheckTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Tour This Tab</button></div>
                  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        
-                        <div id="tour-paycheck-trigger">
-                            <button v-if="!showCalcForm" @click="showCalcForm = true" class="w-full py-8 border-2 border-dashed border-slate-300 rounded-2xl text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition flex flex-col items-center justify-center gap-2 group">
-                                <span class="text-4xl group-hover:scale-110 transition duration-300">➕</span>
-                                <span>Calculate Paycheck / Add Income</span>
-                            </button>
-                        </div>
-
-                        <div v-if="showCalcForm" class="space-y-4 animate-fade-in">
-                            <div class="flex justify-between items-center mb-2 pb-2 border-b">
-                                <h3 class="text-xs font-bold text-slate-400 uppercase">New Calculation</h3>
-                                <button @click="showCalcForm = false" class="text-xs text-red-400 hover:text-red-600 font-bold bg-red-50 px-2 py-1 rounded">Cancel</button>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Income Source Name</label>
-                                <input v-model="calcInputs.name" type="text" class="w-full h-11 px-3 border border-slate-300 rounded-lg bg-white text-sm focus:border-blue-500" placeholder="e.g. Main Job, Side Hustle">
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Next Pay Date</label>
-                                    <input v-model="calcInputs.nextPayDate" type="date" class="w-full h-11 px-3 border border-slate-300 rounded-lg bg-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Frequency</label>
-                                    <select v-model="calcInputs.payFrequency" class="w-full h-11 px-3 border border-slate-300 rounded-lg bg-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                                        <option value="Semi-Monthly">Semi-Monthly (15th/30th)</option>
-                                        <option value="Bi-Weekly">Bi-Weekly (Every 2w)</option>
-                                        <option value="Monthly">Monthly</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Annual Salary</label>
-                                <input v-model="calcInputs.salary" type="number" class="w-full p-3 border border-slate-200 rounded-lg bg-slate-50" placeholder="$">
-                            </div>
-
-                            <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3">Tax Settings</h3>
-                                <div class="grid grid-cols-2 gap-3 mb-3">
-                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filing Status</label><select v-model="calcInputs.filingStatus" class="w-full p-2 border rounded-lg text-sm bg-white"><option value="Single">Single</option><option value="Married">Married Filing Jointly</option><option value="Head">Head of Household</option></select></div>
-                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">State Tax Rate (%)</label><input v-model="calcInputs.stateTaxRate" type="number" step="0.1" class="w-full p-2 border rounded-lg text-sm" placeholder="0.0"></div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dependent Credits ($)</label><input v-model="calcInputs.dependents" type="number" class="w-full p-2 border rounded-lg text-sm" placeholder="Total $ (e.g. 2000)"></div>
-                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Extra Withholding ($)</label><input v-model="calcInputs.extraWithholding" type="number" class="w-full p-2 border rounded-lg text-sm" placeholder="$ per check"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="border rounded-xl bg-slate-50 overflow-hidden">
-                                <button @click="showCalcDetails = !showCalcDetails" class="w-full flex justify-between items-center p-3 text-xs font-bold text-slate-500 uppercase hover:bg-slate-100 transition">
-                                    <span>Medical, 401k & Other Deductions</span>
-                                    <span>{{ showCalcDetails ? '▲' : '▼' }}</span>
-                                </button>
-                                
-                                <transition name="accordion">
-                                    <div v-if="showCalcDetails" class="p-4 border-t border-slate-200 space-y-4 bg-white">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Commission (Per Pay)</label><input v-model="calcInputs.commission" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
-                                            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Post-Tax Deductions</label><input v-model="calcInputs.postTax" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
-                                        </div>
-
-                                        <div class="grid grid-cols-3 gap-2">
-                                            <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Medical</label><input v-model="calcInputs.medical" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
-                                            <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dental</label><input v-model="calcInputs.dental" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
-                                            <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">FSA</label><input v-model="calcInputs.fsa" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
-                                        </div>
-
-                                        <div class="grid grid-cols-3 gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                                            <div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Trad 401k %</label><input v-model="calcInputs.trad401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div>
-                                            <div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Roth 401k %</label><input v-model="calcInputs.roth401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div>
-                                            <div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Match %</label><input v-model="calcInputs.match401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div>
-                                        </div>
-                                    </div>
-                                </transition>
-                            </div>
-
-                            <div class="pt-2 grid grid-cols-2 gap-3" id="tour-paycheck-save">
-                                <button @click="calculateAndSave('default')" :disabled="savingBase" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition text-sm shadow-lg">
-                                    {{ savingBase?'Saving...':'💾 Save to Incomes' }}
-                                </button>
-                                <button @click="calculateAndSave('temp')" class="w-full bg-emerald-100 text-emerald-800 font-bold py-3 rounded-lg hover:bg-emerald-200 transition text-sm border border-emerald-200">
-                                    ⚡ Use for Session
-                                </button>
-                            </div>
-                        </div>
+                        <div id="tour-paycheck-trigger"><button v-if="!showCalcForm" @click="showCalcForm = true" class="w-full py-8 border-2 border-dashed border-slate-300 rounded-2xl text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition flex flex-col items-center justify-center gap-2 group"><span class="text-4xl group-hover:scale-110 transition duration-300">➕</span><span>Calculate Paycheck / Add Income</span></button></div>
+                        <div v-if="showCalcForm" class="space-y-4 animate-fade-in"><div class="flex justify-between items-center mb-2 pb-2 border-b"><h3 class="text-xs font-bold text-slate-400 uppercase">New Calculation</h3><button @click="showCalcForm = false" class="text-xs text-red-400 hover:text-red-600 font-bold bg-red-50 px-2 py-1 rounded">Cancel</button></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Income Source Name</label><input v-model="calcInputs.name" type="text" class="w-full h-11 px-3 border border-slate-300 rounded-lg bg-white text-sm focus:border-blue-500" placeholder="e.g. Main Job, Side Hustle"></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Next Pay Date</label><input v-model="calcInputs.nextPayDate" type="date" class="w-full h-11 px-3 border border-slate-300 rounded-lg bg-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Frequency</label><select v-model="calcInputs.payFrequency" class="w-full h-11 px-3 border border-slate-300 rounded-lg bg-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Semi-Monthly">Semi-Monthly (15th/30th)</option><option value="Bi-Weekly">Bi-Weekly (Every 2w)</option><option value="Monthly">Monthly</option></select></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Annual Salary</label><input v-model="calcInputs.salary" type="number" class="w-full p-3 border border-slate-200 rounded-lg bg-slate-50" placeholder="$"></div><div class="p-4 bg-slate-50 rounded-lg border border-slate-200"><h3 class="text-xs font-bold text-slate-500 uppercase mb-3">Tax Settings</h3><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filing Status</label><select v-model="calcInputs.filingStatus" class="w-full p-2 border rounded-lg text-sm bg-white"><option value="Single">Single</option><option value="Married">Married Filing Jointly</option><option value="Head">Head of Household</option></select></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">State Tax Rate (%)</label><input v-model="calcInputs.stateTaxRate" type="number" step="0.1" class="w-full p-2 border rounded-lg text-sm" placeholder="0.0"></div></div><div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dependent Credits ($)</label><input v-model="calcInputs.dependents" type="number" class="w-full p-2 border rounded-lg text-sm" placeholder="Total $ (e.g. 2000)"></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Extra Withholding ($)</label><input v-model="calcInputs.extraWithholding" type="number" class="w-full p-2 border rounded-lg text-sm" placeholder="$ per check"></div></div></div><div class="border rounded-xl bg-slate-50 overflow-hidden"><button @click="showCalcDetails = !showCalcDetails" class="w-full flex justify-between items-center p-3 text-xs font-bold text-slate-500 uppercase hover:bg-slate-100 transition"><span>Medical, 401k & Other Deductions</span><span>{{ showCalcDetails ? '▲' : '▼' }}</span></button><transition name="accordion"><div v-if="showCalcDetails" class="p-4 border-t border-slate-200 space-y-4 bg-white"><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Commission (Per Pay)</label><input v-model="calcInputs.commission" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Post-Tax Deductions</label><input v-model="calcInputs.postTax" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div></div><div class="grid grid-cols-3 gap-2"><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Medical</label><input v-model="calcInputs.medical" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dental</label><input v-model="calcInputs.dental" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">FSA</label><input v-model="calcInputs.fsa" type="number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50"></div></div><div class="grid grid-cols-3 gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100"><div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Trad 401k %</label><input v-model="calcInputs.trad401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div><div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Roth 401k %</label><input v-model="calcInputs.roth401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div><div><label class="block text-[10px] font-bold text-blue-700 uppercase mb-1">Match %</label><input v-model="calcInputs.match401k" type="number" class="w-full p-2 border border-blue-200 rounded text-center"></div></div></div></transition></div><div class="pt-2 grid grid-cols-2 gap-3" id="tour-paycheck-save"><button @click="calculateAndSave('default')" :disabled="savingBase" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition text-sm shadow-lg">{{ savingBase?'Saving...':'💾 Save to Incomes' }}</button><button @click="calculateAndSave('temp')" class="w-full bg-emerald-100 text-emerald-800 font-bold py-3 rounded-lg hover:bg-emerald-200 transition text-sm border border-emerald-200">⚡ Use for Session</button></div></div>
                     </div>
-
                     <div class="space-y-6">
-                        <div id="tour-paycheck-result" class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300">
-                            <h2 class="text-lg font-bold mb-4 text-emerald-400">💰 Calculator Result</h2>
-                            <div v-if="calcResult" class="space-y-4 text-sm font-mono">
-                                <div class="flex justify-between border-b border-slate-700 pb-2"><span>Gross Pay:</span> <span>${{ calcResult.gross.toFixed(2) }}</span></div>
-                                <div class="flex justify-between text-slate-400"><span>- 401k Contrib:</span> <span>${{ calcResult.tradAmt.toFixed(2) }}</span></div>
-                                <div class="flex justify-between text-slate-400" v-if="calcResult.benefitAmt > 0"><span>- Benefits (Med/Den):</span> <span>${{ calcResult.benefitAmt.toFixed(2) }}</span></div>
-                                <div class="flex justify-between text-slate-400"><span>- Taxes (Fed/St/FICA):</span> <span>${{ (calcResult.taxes + calcResult.fica).toFixed(2) }}</span></div>
-                                <div class="flex justify-between text-slate-400 pb-2 border-b border-slate-700"><span>- Post-Tax Ded:</span> <span>${{ calcResult.postTaxTotal.toFixed(2) }}</span></div>
-                                <div class="flex justify-between text-xl font-bold text-emerald-300 pt-2"><span>Net Pay:</span> <span>${{ calcResult.netPay.toFixed(2) }}</span></div>
-                                
-                                <div class="mt-4 pt-4 border-t border-slate-700">
-                                    <div class="text-[10px] text-slate-500 uppercase mb-1">Paycheck Anatomy</div>
-                                    <div class="flex w-full h-2 rounded-full overflow-hidden">
-                                        <div class="bg-emerald-500 h-full" :style="{width: (calcResult.netPay/calcResult.gross)*100 + '%'}"></div>
-                                        <div class="bg-red-500 h-full" :style="{width: ((calcResult.taxes+calcResult.fica)/calcResult.gross)*100 + '%'}"></div>
-                                        <div class="bg-blue-500 h-full" :style="{width: ((calcResult.preTaxTotal+calcResult.postTaxTotal)/calcResult.gross)*100 + '%'}"></div>
-                                    </div>
-                                    <div class="flex justify-between text-[9px] text-slate-400 mt-1">
-                                        <span class="text-emerald-400">Net {{ Math.round((calcResult.netPay/calcResult.gross)*100) }}%</span>
-                                        <span class="text-red-400">Tax {{ Math.round(((calcResult.taxes+calcResult.fica)/calcResult.gross)*100) }}%</span>
-                                        <span class="text-blue-400">Ded {{ Math.round(((calcResult.preTaxTotal+calcResult.postTaxTotal)/calcResult.gross)*100) }}%</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-else class="text-center text-slate-500 py-12 text-xs">
-                                Click "Calculate" to see the breakdown.
-                            </div>
-                        </div>
-
-                        <div id="tour-active-incomes" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Active Income Sources</h3>
-                            <div v-if="incomes.length === 0" class="text-center text-slate-400 text-xs py-4">No incomes added yet.</div>
-                            <div v-for="inc in incomes" :key="inc.id" class="p-3 border rounded-lg mb-2 hover:bg-slate-50 cursor-pointer group" @click="loadIncomeIntoCalculator(inc)">
-                                <div class="flex justify-between items-center mb-1"><div class="font-bold text-sm text-slate-800">{{ inc.name }}</div><button @click.stop="deleteIncome(inc.id)" class="text-xs text-red-300 hover:text-red-500">✕</button></div>
-                                <div class="flex justify-between text-xs text-slate-500"><span>{{ inc.frequency }}</span><span class="font-mono font-bold text-emerald-600">${{ inc.amount.toLocaleString() }}/check</span></div>
-                            </div>
-                        </div>
+                        <div id="tour-paycheck-result" class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300"><h2 class="text-lg font-bold mb-4 text-emerald-400">💰 Calculator Result</h2><div v-if="calcResult" class="space-y-4 text-sm font-mono"><div class="flex justify-between border-b border-slate-700 pb-2"><span>Gross Pay:</span> <span>${{ calcResult.gross.toFixed(2) }}</span></div><div class="flex justify-between text-slate-400"><span>- 401k Contrib:</span> <span>${{ calcResult.tradAmt.toFixed(2) }}</span></div><div class="flex justify-between text-slate-400" v-if="calcResult.benefitAmt > 0"><span>- Benefits (Med/Den):</span> <span>${{ calcResult.benefitAmt.toFixed(2) }}</span></div><div class="flex justify-between text-slate-400"><span>- Taxes (Fed/St/FICA):</span> <span>${{ (calcResult.taxes + calcResult.fica).toFixed(2) }}</span></div><div class="flex justify-between text-slate-400 pb-2 border-b border-slate-700"><span>- Post-Tax Ded:</span> <span>${{ calcResult.postTaxTotal.toFixed(2) }}</span></div><div class="flex justify-between text-xl font-bold text-emerald-300 pt-2"><span>Net Pay:</span> <span>${{ calcResult.netPay.toFixed(2) }}</span></div><div class="mt-4 pt-4 border-t border-slate-700"><div class="text-[10px] text-slate-500 uppercase mb-1">Paycheck Anatomy</div><div class="flex w-full h-2 rounded-full overflow-hidden"><div class="bg-emerald-500 h-full" :style="{width: (calcResult.netPay/calcResult.gross)*100 + '%'}"></div><div class="bg-red-500 h-full" :style="{width: ((calcResult.taxes+calcResult.fica)/calcResult.gross)*100 + '%'}"></div><div class="bg-blue-500 h-full" :style="{width: ((calcResult.preTaxTotal+calcResult.postTaxTotal)/calcResult.gross)*100 + '%'}"></div></div><div class="flex justify-between text-[9px] text-slate-400 mt-1"><span class="text-emerald-400">Net {{ Math.round((calcResult.netPay/calcResult.gross)*100) }}%</span><span class="text-red-400">Tax {{ Math.round(((calcResult.taxes+calcResult.fica)/calcResult.gross)*100) }}%</span><span class="text-blue-400">Ded {{ Math.round(((calcResult.preTaxTotal+calcResult.postTaxTotal)/calcResult.gross)*100) }}%</span></div></div></div><div v-else class="text-center text-slate-500 py-12 text-xs">Click "Calculate" to see the breakdown.</div></div>
+                        <div id="tour-active-incomes" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Active Income Sources</h3><div v-if="incomes.length === 0" class="text-center text-slate-400 text-xs py-4">No incomes added yet.</div><div v-for="inc in incomes" :key="inc.id" class="p-3 border rounded-lg mb-2 hover:bg-slate-50 cursor-pointer group" @click="loadIncomeIntoCalculator(inc)"><div class="flex justify-between items-center mb-1"><div class="font-bold text-sm text-slate-800">{{ inc.name }}</div><button @click.stop="deleteIncome(inc.id)" class="text-xs text-red-300 hover:text-red-500">✕</button></div><div class="flex justify-between text-xs text-slate-500"><span>{{ inc.frequency }}</span><span class="font-mono font-bold text-emerald-600">${{ inc.amount.toLocaleString() }}/check</span></div></div></div>
                     </div>
                 </div>
             </div>
             
             <div v-if="currentView==='budget'" class="animate-fade-in print:hidden">
-                
-                <div class="w-full flex justify-end mb-4">
-                    <button @click="startBudgetTour" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-800 text-xs font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition shadow-sm border border-indigo-100">
-                        <span>📍</span> Tour This Tab
-                    </button>
-                </div>
+                <div class="w-full flex justify-end mb-4"><button @click="startBudgetTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Tour This Tab</button></div>
+                <div class="mb-8"><header class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full"><div id="tour-net-pay" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><div class="flex justify-between items-start"><h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Monthly Pay</h2><div v-if="useTempPay" class="flex items-center gap-1 bg-emerald-100 rounded px-2 py-0.5"><span class="text-[10px] font-bold text-emerald-700">⚡ Session Mode</span><button @click="useTempPay=false; calculateAndSave('reset')" class="text-[10px] text-emerald-500 hover:text-emerald-800 font-bold ml-1">✕</button></div></div><div class="flex items-center gap-1 mt-1"><span class="text-xl text-slate-400">$</span><div class="text-2xl font-bold w-full text-slate-700">{{ activeMonthlyPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div><div class="text-[10px] text-slate-400 mt-1">{{ useTempPay ? 'Using calculated temp pay' : 'Sum of all active income sources' }}</div></div><div id="tour-scenario-burn" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2><div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div class="text-[10px] text-slate-400 mt-1">Includes smoothed Quarterly/Yearly items</div></div><div id="tour-projected-end" class="bg-slate-900 text-white p-4 rounded-2xl shadow-xl shadow-slate-300 relative overflow-hidden"><div class="relative z-10"><h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2"><span :class="isScenarioActive ? 'text-emerald-400' : 'text-slate-400'">{{ isScenarioActive ? '⚡ Active' : 'Projected End' }}</span></h2><div class="text-3xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">${{ projectedBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div></div></header></div>
+                <div id="tour-manage-budget" class="mb-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div @click="showPlanner = !showPlanner" class="p-4 bg-slate-50 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition select-none"><h3 class="font-bold text-slate-700 flex items-center gap-2"><span>🔮</span> Manage Budget & Scenarios</h3><div class="text-slate-400 transform transition-transform" :class="showPlanner ? 'rotate-180' : ''">▼</div></div><transition name="accordion"><div v-if="showPlanner" class="border-t border-slate-200 bg-white"><div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-8"><div><div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-lg"><button @click="setScenarioMode('survival')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'survival' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🛡️ Survival</button><button @click="setScenarioMode('standard')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'standard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">⚖️ Standard</button><button @click="setScenarioMode('dream')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'dream' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🚀 Dream</button></div><h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Active Bills</h4><div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-6"><div v-for="item in standardItems" :key="item.id" class="flex items-center justify-between p-3 border rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-white' : 'bg-slate-50 opacity-50 grayscale'"><div class="flex-1"><div class="flex items-center gap-1"><span v-if="item.is_core" class="text-xs">⭐</span><div class="font-bold text-sm">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 px-1">✏️</button><button @click="deleteBudgetItem(item)" class="text-xs text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1">🗑️</button></div><div class="text-xs text-slate-500 font-mono flex gap-1">${{ item.amount.toFixed(2) }} <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded flex items-center gap-1">{{ item.frequency }} <span class="text-purple-400 font-normal">(~${{ getMonthlyCost(item).toFixed(0) }}/mo)</span></span></div></div><input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 cursor-pointer"></div></div><h4 class="text-xs font-bold text-purple-400 uppercase mb-2 flex items-center gap-2">✨ Wishlist / Sandbox <span class="text-[9px] bg-purple-100 text-purple-600 px-1 rounded">Not Billed</span></h4><div class="space-y-2 max-h-[300px] overflow-y-auto pr-2"><div v-for="item in wishlistItems" :key="item.id" class="flex items-center justify-between p-3 border border-purple-100 rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-purple-50' : 'bg-slate-50 opacity-50 grayscale'"><div><div class="flex items-center gap-1"><div class="font-bold text-sm text-purple-900">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 px-1">✏️</button><button @click="deleteBudgetItem(item)" class="text-xs text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1">🗑️</button></div><div class="text-xs text-purple-700 font-mono">${{ item.amount.toFixed(2) }}</div></div><input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 border-purple-200 cursor-pointer"></div><div v-if="wishlistItems.length === 0" class="text-xs text-slate-400 italic p-2 text-center">No items. Create one and check "Wishlist".</div></div></div><div class="bg-slate-50 p-4 rounded-xl border h-fit transition-all" :class="isEditing ? 'bg-white border-blue-300 ring-2 ring-blue-100' : ''"><div class="flex justify-between items-center cursor-pointer" @click="showAddForm = !showAddForm"><h4 class="text-sm font-bold text-slate-700">{{ isEditing ? 'Edit Item' : 'Add Item' }}</h4><span>{{ showAddForm ? '-' : '+' }}</span></div><div v-if="showAddForm" class="mt-3 space-y-3 pt-3 border-t"><input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded-lg text-sm"><div class="grid grid-cols-2 gap-2"><input v-model="newItem.amount" type="number" step="0.01" placeholder="$" class="w-full p-2 border rounded-lg text-sm"><input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" placeholder="Day" class="w-full p-2 border rounded-lg text-sm"><div v-else class="text-center text-sm text-slate-400 p-2 border bg-slate-100 rounded-lg">Flex</div></div><div class="grid grid-cols-2 gap-2"><label class="flex items-center gap-2 text-xs"><input type="checkbox" v-model="newItem.isFlexible"> Flexible Date</label><select v-model="newItem.frequency" class="w-full p-2 border rounded-lg text-xs"><option>Monthly</option><option>Quarterly</option><option>Yearly</option><option>One-Time</option></select></div><div class="flex flex-col gap-2 p-2 bg-white rounded-lg border"><label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_core"> Core Item</label><label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_autopay"> Autopay</label><label class="text-sm flex gap-2 cursor-pointer text-purple-700 font-bold"><input type="checkbox" v-model="newItem.is_wishlist"> ✨ Wishlist / Sandbox</label><label class="text-xs font-bold text-slate-400 uppercase mt-2">Category</label><select v-model="newItem.category" class="w-full p-2 border rounded-lg text-sm bg-white mb-2"><option v-for="cat in categories" :value="cat">{{ cat }}</option></select><label class="text-sm flex gap-2 cursor-pointer text-blue-700 font-bold"><input type="checkbox" v-model="newItem.is_variable"> 🛒 Variable Budget (Groceries/Gas)</label><div v-if="newItem.is_wishlist" class="mt-2 pt-2 border-t"><label class="text-xs font-bold text-slate-500 uppercase block mb-1">Replaces existing bill?</label><select v-model="newItem.replaces_id" class="w-full p-1.5 border rounded text-xs"><option :value="null">-- None --</option><option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option></select></div></div><div class="flex gap-2"><button @click="handleSave" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Save</button><button v-if="isEditing" @click="resetForm" class="px-4 bg-slate-200 rounded-lg text-sm">Cancel</button></div></div></div></div></div></transition></div>
+                <div id="tour-ledger" class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2"><h3 class="text-lg font-bold">📅 Current Bills</h3><div class="flex gap-2 items-center"><button @click="showPaidBills = !showPaidBills" class="text-xs px-2 py-1 rounded border border-slate-200 text-slate-500 hover:bg-slate-100 transition">{{ showPaidBills ? 'Hide Paid' : 'Show Paid' }}</button><button @click="openGenerateModal(0)" class="flex-1 md:flex-none text-xs bg-slate-900 text-white px-3 py-2 rounded shadow">+ Review & Add</button><button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600 px-2">Refresh</button></div></div>
+                <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><table class="w-full text-left"><thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead><tbody class="divide-y divide-slate-100"><tr v-if="visibleBills.length === 0"><td colspan="5" class="p-8 text-center text-slate-400">All bills paid! 🎉</td></tr><tr v-for="bill in visibleBills" :key="bill.id" class="group hover:bg-slate-50" :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}"><td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td><td class="p-4 text-xs font-bold"><span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span><span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span><span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 px-2 py-1 bg-orange-100 rounded">TODAY</span><span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span><span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span></td><td class="p-4 font-medium"><div class="flex flex-col"><span class="text-slate-900">{{ bill.budget_items.name }}</span><span class="text-[10px] text-slate-400 uppercase tracking-wider">{{bill.budget_items.category}}</span></div> <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td><td class="p-4 text-right font-mono">${{ bill.budget_items.amount.toFixed(2) }}</td><td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td></tr></tbody></table></div>
+                <div class="md:hidden space-y-3"><div v-if="visibleBills.length === 0" class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">All bills paid! 🎉</div><div v-for="bill in visibleBills" :key="bill.id" class="bg-white p-4 rounded-xl shadow-sm border" :class="{'bg-green-50 border-green-200': bill.is_paid, 'bg-red-50 border-red-200': !bill.is_paid && getDaysLeft(bill.due_date) < 0}"><div class="flex justify-between items-start mb-2"><div><div class="font-bold text-slate-800">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a></div><div class="text-[10px] text-slate-400 uppercase">{{bill.budget_items.category}}</div><div class="flex gap-1 mt-1"><span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span><span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span></div></div><div class="font-mono text-lg text-slate-700">${{ bill.budget_items.amount.toFixed(2) }}</div></div><div class="flex justify-between items-center text-sm mb-3 text-slate-500"><span>{{ bill.budget_items.due_day === 0 ? 'Flexible' : formatDate(bill.due_date) }}</span><span v-if="!bill.is_paid" :class="getDaysLeft(bill.due_date) < 0 ? 'text-red-600 font-bold' : (getDaysLeft(bill.due_date) <= 3 ? 'text-orange-500 font-bold' : 'text-slate-400')">{{ getDaysLeft(bill.due_date) < 0 ? 'Overdue' : getDaysLeft(bill.due_date) + ' days' }}</span></div><div class="flex justify-between pt-3 border-t"><button @click="deleteBill(bill)" class="text-slate-300">🗑️ Remove</button><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5"></div></div></div>
+            </div>
 
-                <header class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mb-8">
-                    <div id="tour-net-pay" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                        <div class="flex justify-between items-start">
-                            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Monthly Pay</h2>
-                            <div v-if="useTempPay" class="flex items-center gap-1 bg-emerald-100 rounded px-2 py-0.5"><span class="text-[10px] font-bold text-emerald-700">⚡ Session Mode</span><button @click="useTempPay=false; calculateAndSave('reset')" class="text-[10px] text-emerald-500 hover:text-emerald-800 font-bold ml-1">✕</button></div>
-                        </div>
-                        <div class="flex items-center gap-1 mt-1"><span class="text-xl text-slate-400">$</span><div class="text-2xl font-bold w-full text-slate-700">{{ activeMonthlyPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div>
-                        <div class="text-[10px] text-slate-400 mt-1">{{ useTempPay ? 'Using calculated temp pay' : 'Sum of all active income sources' }}</div>
+            <div v-if="currentView==='forecast'" class="animate-fade-in">
+                <div class="w-full flex justify-end mb-4 print:hidden"><button @click="startForecastTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Tour This Tab</button></div>
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div class="lg:col-span-1 space-y-4 print:hidden">
+                        <div id="tour-forecast-settings" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3><label class="block text-xs mb-1">Bank Balance Now</label><input v-model="forecastSettings.currentBalance" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Safety Margin</label><input v-model="forecastSettings.safetyMargin" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Months to Forecast</label><select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg bg-slate-50"><option v-for="n in 24" :value="n">{{ n }} Months</option></select><button @click="runForecast" class="w-full mt-3 bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800">Refresh Forecast</button></div>
+                        <div id="tour-retirement-forecast" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-indigo-600 uppercase mb-3 flex items-center gap-2"><span>👴</span> Retirement Nest Egg</h3><div class="space-y-2 mb-4"><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Balance</label><input v-model="forecastSettings.retirementBalance" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div><div><label class="block text-[10px] text-slate-400">Rate of Return %</label><input v-model="forecastSettings.expectedReturn" @change="saveRetirementSettings" type="number" step="0.1" class="w-full p-1.5 border rounded text-xs"></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Age</label><input v-model="forecastSettings.currentAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div><div><label class="block text-[10px] text-slate-400">Retire Age</label><input v-model="forecastSettings.retirementAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div></div><div class="text-[10px] text-slate-400 mt-2">Monthly Contribution: <span class="font-bold text-slate-700">${{ totalMonthlyRetirementContribution.toLocaleString() }}</span></div></div><div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100 text-center"><div class="text-xs text-indigo-400 uppercase tracking-widest mb-1">Projected at Age {{ forecastSettings.retirementAge }}</div><div class="text-2xl font-black text-indigo-700">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div></div></div>
+                        <div id="tour-goal-project" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3><button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button><button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button></div><div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100"><div class="font-bold text-blue-900">{{ project.name }}</div><div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div><div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div></div><div v-else class="text-xs text-slate-400 italic text-center py-2">No active goals</div></div>
                     </div>
-                    <div id="tour-scenario-burn" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
-                        <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
-                        <div class="text-[10px] text-slate-400 mt-1">Includes smoothed Quarterly/Yearly items</div>
-                    </div>
-                    <div id="tour-projected-end" class="bg-slate-900 text-white p-4 rounded-2xl shadow-xl shadow-slate-300 relative overflow-hidden">
-                        <div class="relative z-10">
-                            <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2"><span :class="isScenarioActive ? 'text-emerald-400' : 'text-slate-400'">{{ isScenarioActive ? '⚡ Active' : 'Projected End' }}</span></h2>
-                            <div class="text-3xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">${{ projectedBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
-                        </div>
-                    </div>
-                </header>
-
-                <div id="tour-manage-budget" class="mb-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div @click="showPlanner = !showPlanner" class="p-4 bg-slate-50 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition select-none">
-                        <h3 class="font-bold text-slate-700 flex items-center gap-2"><span>🔮</span> Manage Budget & Scenarios</h3>
-                        <div class="text-slate-400 transform transition-transform" :class="showPlanner ? 'rotate-180' : ''">▼</div>
-                    </div>
-                    <transition name="accordion">
-                        <div v-if="showPlanner" class="border-t border-slate-200 bg-white">
-                            <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <div>
-                                    <div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-lg">
-                                        <button @click="setScenarioMode('survival')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'survival' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🛡️ Survival</button>
-                                        <button @click="setScenarioMode('standard')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'standard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">⚖️ Standard</button>
-                                        <button @click="setScenarioMode('dream')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'dream' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'">🚀 Dream</button>
-                                    </div>
-                                    <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Active Bills</h4>
-                                    <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-6">
-                                        <div v-for="item in standardItems" :key="item.id" class="flex items-center justify-between p-3 border rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-white' : 'bg-slate-50 opacity-50 grayscale'">
-                                            <div class="flex-1">
-                                                <div class="flex items-center gap-1"><span v-if="item.is_core" class="text-xs">⭐</span><div class="font-bold text-sm">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 px-1">✏️</button><button @click="deleteBudgetItem(item)" class="text-xs text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1">🗑️</button></div>
-                                                <div class="text-xs text-slate-500 font-mono flex gap-1">${{ item.amount.toFixed(2) }} <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded flex items-center gap-1">{{ item.frequency }} <span class="text-purple-400 font-normal">(~${{ getMonthlyCost(item).toFixed(0) }}/mo)</span></span></div>
-                                            </div>
-                                            <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 cursor-pointer">
-                                        </div>
-                                    </div>
-                                    <h4 class="text-xs font-bold text-purple-400 uppercase mb-2 flex items-center gap-2">✨ Wishlist / Sandbox <span class="text-[9px] bg-purple-100 text-purple-600 px-1 rounded">Not Billed</span></h4>
-                                    <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                                        <div v-for="item in wishlistItems" :key="item.id" class="flex items-center justify-between p-3 border border-purple-100 rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-purple-50' : 'bg-slate-50 opacity-50 grayscale'">
-                                            <div>
-                                                <div class="flex items-center gap-1"><div class="font-bold text-sm text-purple-900">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 px-1">✏️</button><button @click="deleteBudgetItem(item)" class="text-xs text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1">🗑️</button></div>
-                                                <div class="text-xs text-purple-700 font-mono">${{ item.amount.toFixed(2) }}</div>
-                                            </div>
-                                            <input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 border-purple-200 cursor-pointer">
-                                        </div>
-                                        <div v-if="wishlistItems.length === 0" class="text-xs text-slate-400 italic p-2 text-center">No items. Create one and check "Wishlist".</div>
-                                    </div>
-                                </div>
-                                <div class="bg-slate-50 p-4 rounded-xl border h-fit transition-all" :class="isEditing ? 'bg-white border-blue-300 ring-2 ring-blue-100' : ''">
-                                    <div class="flex justify-between items-center cursor-pointer" @click="showAddForm = !showAddForm"><h4 class="text-sm font-bold text-slate-700">{{ isEditing ? 'Edit Item' : 'Add Item' }}</h4><span>{{ showAddForm ? '-' : '+' }}</span></div>
-                                    <div v-if="showAddForm" class="mt-3 space-y-3 pt-3 border-t">
-                                        <input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded-lg text-sm">
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <input v-model="newItem.amount" type="number" step="0.01" placeholder="$" class="w-full p-2 border rounded-lg text-sm">
-                                            <input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" placeholder="Day" class="w-full p-2 border rounded-lg text-sm">
-                                            <div v-else class="text-center text-sm text-slate-400 p-2 border bg-slate-100 rounded-lg">Flex</div>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <label class="flex items-center gap-2 text-xs"><input type="checkbox" v-model="newItem.isFlexible"> Flexible Date</label>
-                                            <select v-model="newItem.frequency" class="w-full p-2 border rounded-lg text-xs"><option>Monthly</option><option>Quarterly</option><option>Yearly</option><option>One-Time</option></select>
-                                        </div>
-                                        <div class="flex flex-col gap-2 p-2 bg-white rounded-lg border">
-                                            <label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_core"> Core Item</label>
-                                            <label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_autopay"> Autopay</label>
-                                            <label class="text-sm flex gap-2 cursor-pointer text-purple-700 font-bold"><input type="checkbox" v-model="newItem.is_wishlist"> ✨ Wishlist / Sandbox</label>
-                                            <label class="text-xs font-bold text-slate-400 uppercase mt-2">Category</label>
-                                            <select v-model="newItem.category" class="w-full p-2 border rounded-lg text-sm bg-white mb-2">
-                                                <option v-for="cat in categories" :value="cat">{{ cat }}</option>
-                                            </select>
-                                            <label class="text-sm flex gap-2 cursor-pointer text-blue-700 font-bold"><input type="checkbox" v-model="newItem.is_variable"> 🛒 Variable Budget (Groceries/Gas)</label>
-                                            <div v-if="newItem.is_wishlist" class="mt-2 pt-2 border-t"><label class="text-xs font-bold text-slate-500 uppercase block mb-1">Replaces existing bill?</label><select v-model="newItem.replaces_id" class="w-full p-1.5 border rounded text-xs"><option :value="null">-- None --</option><option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option></select></div>
-                                        </div>
-                                        <div class="flex gap-2">
-                                            <button @click="handleSave" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Save</button>
-                                            <button v-if="isEditing" @click="resetForm" class="px-4 bg-slate-200 rounded-lg text-sm">Cancel</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </transition>
-                </div>
-
-                <div id="tour-ledger" class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
-                    <h3 class="text-lg font-bold">📅 Current Bills</h3>
-                    <div class="flex gap-2 items-center">
-                        <button @click="showPaidBills = !showPaidBills" class="text-xs px-2 py-1 rounded border border-slate-200 text-slate-500 hover:bg-slate-100 transition">{{ showPaidBills ? 'Hide Paid' : 'Show Paid' }}</button>
-                        <button @click="openGenerateModal(0)" class="flex-1 md:flex-none text-xs bg-slate-900 text-white px-3 py-2 rounded shadow">+ Review & Add</button>
-                        <button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600 px-2">Refresh</button>
-                    </div>
-                </div>
-
-                <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold border-b"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead>
-                        <tbody class="divide-y divide-slate-100">
-                            <tr v-if="visibleBills.length === 0"><td colspan="5" class="p-8 text-center text-slate-400">All bills paid! 🎉</td></tr>
-                            <tr v-for="bill in visibleBills" :key="bill.id" class="group hover:bg-slate-50" :class="{'bg-green-50': bill.is_paid, 'bg-red-50': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
-                                <td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td>
-                                <td class="p-4 text-xs font-bold"><span v-if="bill.is_paid" class="text-emerald-600 px-2 py-1 bg-emerald-100 rounded">PAID</span><span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 px-2 py-1 bg-red-100 rounded">OVERDUE</span><span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 px-2 py-1 bg-orange-100 rounded">TODAY</span><span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span><span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span></td>
-                                <td class="p-4 font-medium"><div class="flex flex-col"><span class="text-slate-900">{{ bill.budget_items.name }}</span><span class="text-[10px] text-slate-400 uppercase tracking-wider">{{bill.budget_items.category}}</span></div> <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 px-1 rounded">CORE</span></td>
-                                <td class="p-4 text-right font-mono">${{ bill.budget_items.amount.toFixed(2) }}</td>
-                                <td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="md:hidden space-y-3">
-                    <div v-if="visibleBills.length === 0" class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">All bills paid! 🎉</div>
-                    <div v-for="bill in visibleBills" :key="bill.id" class="bg-white p-4 rounded-xl shadow-sm border" :class="{'bg-green-50 border-green-200': bill.is_paid, 'bg-red-50 border-red-200': !bill.is_paid && getDaysLeft(bill.due_date) < 0}">
-                        <div class="flex justify-between items-start mb-2"><div><div class="font-bold text-slate-800">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a></div><div class="text-[10px] text-slate-400 uppercase">{{bill.budget_items.category}}</div><div class="flex gap-1 mt-1"><span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200">CORE</span><span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span></div></div><div class="font-mono text-lg text-slate-700">${{ bill.budget_items.amount.toFixed(2) }}</div></div>
-                        <div class="flex justify-between items-center text-sm mb-3 text-slate-500"><span>{{ bill.budget_items.due_day === 0 ? 'Flexible' : formatDate(bill.due_date) }}</span><span v-if="!bill.is_paid" :class="getDaysLeft(bill.due_date) < 0 ? 'text-red-600 font-bold' : (getDaysLeft(bill.due_date) <= 3 ? 'text-orange-500 font-bold' : 'text-slate-400')">{{ getDaysLeft(bill.due_date) < 0 ? 'Overdue' : getDaysLeft(bill.due_date) + ' days' }}</span></div>
-                        <div class="flex justify-between pt-3 border-t"><button @click="deleteBill(bill)" class="text-slate-300">🗑️ Remove</button><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5"></div>
+                    <div class="lg:col-span-3 print:col-span-4 space-y-6">
+                        <div id="tour-forecast-chart" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 print:border-0 print:shadow-none"><div class="flex justify-between items-center mb-2 print:hidden"><h3 class="font-bold">{{ project ? project.name + ' Projection' : 'Financial Projection' }}</h3><div class="flex gap-1 bg-slate-100 p-0.5 rounded-lg"><button @click="setForecastMode('survival'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='survival'?'bg-white shadow text-orange-600':'text-slate-500 hover:text-slate-800'">🛡️ Survival</button><button @click="setForecastMode('standard'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='standard'?'bg-white shadow text-blue-600':'text-slate-500 hover:text-slate-800'">⚖️ Standard</button><button @click="setForecastMode('dream'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='dream'?'bg-white shadow text-purple-600':'text-slate-500 hover:text-slate-800'">🚀 Dream</button></div><button @click="printReport" class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🖨️ Print Report</button></div><canvas id="forecastChart" style="max-height: 300px; width: 100%;"></canvas></div>
+                        <div id="tour-monthly-details" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none"><div class="p-4 border-b bg-slate-50 font-bold text-sm text-slate-500 print:bg-white print:border-b-2 print:text-black">Monthly Details</div><div v-for="(month, idx) in forecastData" :key="idx" class="border-b last:border-0 print:border-slate-200 no-break"><div @click="month.isOpen = !month.isOpen" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 print:cursor-default"><div class="font-bold text-sm text-slate-700">{{ month.name }}</div><div class="flex gap-4 text-sm font-mono"><span class="text-slate-400">In: ${{ month.income.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span><span :class="month.endBalance < 0 ? 'text-red-500' : 'text-emerald-600'">End: ${{ month.endBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span><span class="text-slate-300 text-xs transform transition print:hidden" :class="month.isOpen ? 'rotate-180' : ''">▼</span></div></div><div v-if="month.isOpen" class="p-3 bg-slate-50 text-xs border-t print:bg-white print:block"><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 print:grid-cols-2"><div class="print:hidden"><div class="flex justify-between items-center mb-1"><label class="block font-bold text-slate-400">Total Income</label><button v-if="useTempPay && tempCalculatedPay !== month.income" @click="month.income = tempCalculatedPay; runForecast()" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold hover:bg-emerald-200 ml-2">⚡ Apply Session Pay (${{ tempCalculatedPay.toLocaleString() }})</button><button v-else-if="!useTempPay && activeMonthlyPay !== month.income" @click="month.income = activeMonthlyPay; runForecast()" class="text-[10px] text-blue-500 hover:underline ml-2">Reset to Base</button></div><input type="number" v-model.number="month.income" @change="runForecast" step="0.01" class="p-1 border rounded w-full"></div><div class="flex flex-col justify-center"><div class="text-slate-500">Core Burn: <span class="font-mono text-red-400">-${{ coreExpenses.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div><div class="text-slate-500">Optional: <span class="font-mono text-orange-400">-${{ month.extraExpenses.reduce((a,b)=>a+b.amount,0).toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div></div></div><div class="bg-orange-50/50 p-2 rounded border border-orange-100 print:bg-white print:border-0"><h6 class="font-bold text-orange-400 mb-2 print:text-black">Optional Expenses</h6><div class="space-y-2 mb-2"><div v-for="(exp, eIdx) in month.extraExpenses" :key="eIdx" class="flex justify-between items-center bg-white p-1 px-2 rounded border border-orange-100 shadow-sm print:border-0 print:shadow-none print:px-0"><span>{{ exp.name }}</span><div class="flex items-center gap-2"><span class="font-mono">${{ exp.amount.toFixed(2) }}</span><button @click="month.extraExpenses.splice(eIdx, 1); runForecast()" class="text-red-400 hover:text-red-600 font-bold print:hidden">&times;</button></div></div><div v-if="month.extraExpenses.length === 0" class="text-slate-400 italic text-center py-1">None added</div></div><div class="flex gap-2 items-end print:hidden"><div class="flex-1"><select v-model="month.newExpenseId" @change="fillExpense(month)" class="w-full p-1 border rounded text-xs mb-1"><option value="">-- Pick from Budget --</option><option v-for="item in budgetItems" :value="item.id">{{ item.name }} (${{ item.amount.toFixed(2) }})</option></select><input v-model="month.newExpenseName" placeholder="Name" class="w-full p-1 border rounded"></div><div class="w-20"><input v-model.number="month.newExpenseAmount" type="number" step="0.01" placeholder="$" class="w-full p-1 border rounded"></div><button @click="addExpense(month)" class="bg-orange-400 text-white px-3 py-1 rounded font-bold hover:bg-orange-500">Add</button></div></div></div></div></div></div>
                     </div>
                 </div>
             </div>
-   
-        <div v-if="currentView==='forecast'" class="animate-fade-in">
-                
-                <div class="w-full flex justify-end mb-4 print:hidden">
-                    <button @click="startForecastTour" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-800 text-xs font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition shadow-sm border border-indigo-100">
-                        <span>📍</span> Tour This Tab
-                    </button>
-                </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    
-                    <div class="lg:col-span-1 space-y-4 print:hidden">
-                        
-                        <div id="tour-forecast-settings" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3>
-                            <label class="block text-xs mb-1">Bank Balance Now</label>
-                            <input v-model="forecastSettings.currentBalance" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50">
-                            <label class="block text-xs mb-1">Safety Margin</label>
-                            <input v-model="forecastSettings.safetyMargin" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50">
-                            <label class="block text-xs mb-1">Months to Forecast</label>
-                            <select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg bg-slate-50">
-                                <option v-for="n in 24" :value="n">{{ n }} Months</option>
-                            </select>
-                            <button @click="runForecast" class="w-full mt-3 bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800">Refresh Forecast</button>
-                        </div>
-            
-                        <div id="tour-retirement-forecast" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <h3 class="font-bold text-sm text-indigo-600 uppercase mb-3 flex items-center gap-2"><span>👴</span> Retirement Nest Egg</h3>
-                            <div class="space-y-2 mb-4">
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div><label class="block text-[10px] text-slate-400">Current Balance</label><input v-model="forecastSettings.retirementBalance" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div>
-                                    <div><label class="block text-[10px] text-slate-400">Rate of Return %</label><input v-model="forecastSettings.expectedReturn" @change="saveRetirementSettings" type="number" step="0.1" class="w-full p-1.5 border rounded text-xs"></div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div><label class="block text-[10px] text-slate-400">Current Age</label><input v-model="forecastSettings.currentAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div>
-                                    <div><label class="block text-[10px] text-slate-400">Retire Age</label><input v-model="forecastSettings.retirementAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div>
-                                </div>
-                                <div class="text-[10px] text-slate-400 mt-2">
-                                    Monthly Contribution: <span class="font-bold text-slate-700">${{ totalMonthlyRetirementContribution.toLocaleString() }}</span>
-                                </div>
-                            </div>
-                            <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100 text-center">
-                                <div class="text-xs text-indigo-400 uppercase tracking-widest mb-1">Projected at Age {{ forecastSettings.retirementAge }}</div>
-                                <div class="text-2xl font-black text-indigo-700">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div>
-                            </div>
-                        </div>
-
-                        <div id="tour-goal-project" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <div class="flex justify-between items-center mb-2">
-                                <h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3>
-                                <button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button>
-                                <button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button>
-                            </div>
-                            <div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100">
-                                <div class="font-bold text-blue-900">{{ project.name }}</div>
-                                <div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
-                                <div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div>
-                                <div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div>
-                            </div>
-                            <div v-else class="text-xs text-slate-400 italic text-center py-2">No active goals</div>
-                        </div>
+            <div v-if="currentView==='debt'" class="animate-fade-in print:hidden">
+                <div class="w-full flex justify-end mb-4"><button @click="startDebtTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Tour This Tab</button></div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1 space-y-6">
+                        <button id="tour-add-debt" v-if="!showDebtForm" @click="showDebtForm = true" class="w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-dashed text-slate-500 font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2">+ Add New Liability</button>
+                        <div v-else class="bg-white p-6 rounded-2xl shadow-lg border border-blue-200 ring-2 ring-blue-50"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm text-slate-800 uppercase">Add Liability</h3><button @click="showDebtForm = false" class="text-slate-400 hover:text-slate-600">&times;</button></div><div class="space-y-3"><input v-model="newDebt.name" type="text" placeholder="Debt Name (e.g. Visa)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><div class="grid grid-cols-2 gap-2"><input v-model="newDebt.balance" type="number" step="0.01" placeholder="Balance ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><input v-model="newDebt.rate" type="number" step="0.01" placeholder="Rate (%)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"></div><input v-model="newDebt.min_payment" type="number" step="0.01" placeholder="Min Payment ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><div class="flex gap-2 pt-2"><button @click="addDebt" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Save Debt</button><button @click="showDebtForm = false" class="px-4 bg-slate-100 text-slate-500 font-bold py-2 rounded-lg text-sm">Cancel</button></div></div></div>
+                        <div id="tour-debt-list" class="space-y-3" id="debt-list-container"><div v-for="(debt, index) in debts" :key="debt.id" :data-id="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group cursor-default"><div class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 cursor-grab sortable-handle p-2 hover:text-slate-500">⋮⋮</div><div class="pl-6 flex justify-between items-start"><div><div class="font-bold text-slate-800">{{ debt.name }}</div><div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div></div><div class="font-mono text-lg font-bold text-slate-700">${{ debt.balance.toLocaleString() }}</div></div><button @click="deleteDebt(debt)" class="absolute top-2 right-2 text-xs text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">Delete</button></div><div v-if="debts.length === 0" class="text-center text-slate-400 py-8 italic">No debts added yet.</div></div>
                     </div>
-
-                    <div class="lg:col-span-3 print:col-span-4 space-y-6">
-                        
-                        <div id="tour-forecast-chart" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 print:border-0 print:shadow-none">
-                            <div class="flex justify-between items-center mb-2 print:hidden">
-                                <h3 class="font-bold">{{ project ? project.name + ' Projection' : 'Financial Projection' }}</h3>
-                                <div class="flex gap-1 bg-slate-100 p-0.5 rounded-lg">
-                                    <button @click="setForecastMode('survival'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='survival'?'bg-white shadow text-orange-600':'text-slate-500 hover:text-slate-800'">🛡️ Survival</button>
-                                    <button @click="setForecastMode('standard'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='standard'?'bg-white shadow text-blue-600':'text-slate-500 hover:text-slate-800'">⚖️ Standard</button>
-                                    <button @click="setForecastMode('dream'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='dream'?'bg-white shadow text-purple-600':'text-slate-500 hover:text-slate-800'">🚀 Dream</button>
-                                </div>
-                                <button @click="printReport" class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🖨️ Print Report</button>
-                            </div>
-                            <canvas id="forecastChart" style="max-height: 300px; width: 100%;"></canvas>
-                        </div>
-
-                        <div id="tour-monthly-details" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none">
-                            <div class="p-4 border-b bg-slate-50 font-bold text-sm text-slate-500 print:bg-white print:border-b-2 print:text-black">Monthly Details</div>
-                            <div v-for="(month, idx) in forecastData" :key="idx" class="border-b last:border-0 print:border-slate-200 no-break">
-                                <div @click="month.isOpen = !month.isOpen" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 print:cursor-default">
-                                    <div class="font-bold text-sm text-slate-700">{{ month.name }}</div>
-                                    <div class="flex gap-4 text-sm font-mono">
-                                        <span class="text-slate-400">In: ${{ month.income.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span>
-                                        <span :class="month.endBalance < 0 ? 'text-red-500' : 'text-emerald-600'">End: ${{ month.endBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span>
-                                        <span class="text-slate-300 text-xs transform transition print:hidden" :class="month.isOpen ? 'rotate-180' : ''">▼</span>
-                                    </div>
-                                </div>
-                                <div v-if="month.isOpen" class="p-3 bg-slate-50 text-xs border-t print:bg-white print:block">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 print:grid-cols-2">
-                                        <div class="print:hidden">
-                                            <div class="flex justify-between items-center mb-1">
-                                                <label class="block font-bold text-slate-400">Total Income</label>
-                                                <button v-if="useTempPay && tempCalculatedPay !== month.income" @click="month.income = tempCalculatedPay; runForecast()" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold hover:bg-emerald-200 ml-2">⚡ Apply Session Pay (${{ tempCalculatedPay.toLocaleString() }})</button>
-                                                <button v-else-if="!useTempPay && activeMonthlyPay !== month.income" @click="month.income = activeMonthlyPay; runForecast()" class="text-[10px] text-blue-500 hover:underline ml-2">Reset to Base</button>
-                                            </div>
-                                            <input type="number" v-model.number="month.income" @change="runForecast" step="0.01" class="p-1 border rounded w-full">
-                                        </div>
-                                        <div class="flex flex-col justify-center">
-                                            <div class="text-slate-500">Core Burn: <span class="font-mono text-red-400">-${{ coreExpenses.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
-                                            <div class="text-slate-500">Optional: <span class="font-mono text-orange-400">-${{ month.extraExpenses.reduce((a,b)=>a+b.amount,0).toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
-                                        </div>
-                                    </div>
-                                    <div class="bg-orange-50/50 p-2 rounded border border-orange-100 print:bg-white print:border-0">
-                                        <h6 class="font-bold text-orange-400 mb-2 print:text-black">Optional Expenses</h6>
-                                        <div class="space-y-2 mb-2">
-                                            <div v-for="(exp, eIdx) in month.extraExpenses" :key="eIdx" class="flex justify-between items-center bg-white p-1 px-2 rounded border border-orange-100 shadow-sm print:border-0 print:shadow-none print:px-0">
-                                                <span>{{ exp.name }}</span>
-                                                <div class="flex items-center gap-2">
-                                                    <span class="font-mono">${{ exp.amount.toFixed(2) }}</span>
-                                                    <button @click="month.extraExpenses.splice(eIdx, 1); runForecast()" class="text-red-400 hover:text-red-600 font-bold print:hidden">&times;</button>
-                                                </div>
-                                            </div>
-                                            <div v-if="month.extraExpenses.length === 0" class="text-slate-400 italic text-center py-1">None added</div>
-                                        </div>
-                                        <div class="flex gap-2 items-end print:hidden">
-                                            <div class="flex-1">
-                                                <select v-model="month.newExpenseId" @change="fillExpense(month)" class="w-full p-1 border rounded text-xs mb-1">
-                                                    <option value="">-- Pick from Budget --</option>
-                                                    <option v-for="item in budgetItems" :value="item.id">{{ item.name }} (${{ item.amount.toFixed(2) }})</option>
-                                                </select>
-                                                <input v-model="month.newExpenseName" placeholder="Name" class="w-full p-1 border rounded">
-                                            </div>
-                                            <div class="w-20"><input v-model.number="month.newExpenseAmount" type="number" step="0.01" placeholder="$" class="w-full p-1 border rounded"></div>
-                                            <button @click="addExpense(month)" class="bg-orange-400 text-white px-3 py-1 rounded font-bold hover:bg-orange-500">Add</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="lg:col-span-2">
+                        <div id="tour-debt-attack" class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300 mb-6"><div class="flex justify-between items-end mb-4"><div><h2 class="text-2xl font-bold">⚔️ Attack Plan</h2><p class="text-slate-400 text-sm">Drag cards on left to prioritize payoff order.</p></div><div class="text-right"><div class="text-xs text-slate-400 uppercase">Debt Free By</div><div class="text-3xl font-bold text-emerald-400">{{ debtPlan.payoffDate }}</div></div></div><div class="bg-slate-800 p-4 rounded-lg border border-slate-700"><div class="flex justify-between text-sm mb-2"><span class="font-bold text-slate-300">Extra Monthly Attack</span><span class="font-mono text-emerald-300">${{ extraDebtPayment }}</span></div><input type="range" v-model.number="extraDebtPayment" min="0" max="2000" step="50" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500"><div class="flex justify-between text-xs text-slate-500 mt-2"><span>$0</span><span>$2,000</span></div></div><div class="grid grid-cols-2 gap-4 mt-6"><div class="bg-slate-800/50 p-3 rounded"><div class="text-xs text-slate-400 uppercase">Total Interest</div><div class="text-xl font-bold text-red-300">${{ debtPlan.totalInterest.toLocaleString() }}</div></div><div class="bg-emerald-900/30 p-3 rounded border border-emerald-900"><div class="text-xs text-emerald-400 uppercase">Interest Saved</div><div class="text-xl font-bold text-emerald-300">${{ debtPlan.savedInterest.toLocaleString() }}</div></div></div></div>
+                        <div id="tour-payoff-timeline" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Payoff Timeline</h3><div class="max-h-[300px] overflow-y-auto space-y-2"><div v-for="(log, idx) in debtPlan.timeline" :key="idx" class="flex justify-between text-xs border-b pb-2 last:border-0"><span class="font-bold w-20 text-slate-400">{{ log.date }}</span><span class="text-slate-700 font-bold flex-1">{{ log.action }}</span><span class="font-mono text-slate-500 text-[10px]">rem: ${{ log.remaining.toLocaleString() }}</span></div></div></div>
                     </div>
                 </div>
             </div>
@@ -1103,6 +653,21 @@
                     });
                     tour.drive();
                 };
+                
+                // --- DEBT TOUR (Driver.js) ---
+                const startDebtTour = () => {
+                    const driver = window.driver.js.driver;
+                    const tour = driver({
+                        showProgress: true,
+                        steps: [
+                            { element: '#tour-add-debt', popover: { title: '1. Add Debt', description: 'Start here by listing all your debts (Credit Cards, Loans, etc.). Be accurate with the interest rate!' } },
+                            { element: '#tour-debt-list', popover: { title: '2. Prioritize', description: 'Drag and drop these cards to change the payoff order. We recommend the "Avalanche" method (Highest Interest Rate First) to save money.' } },
+                            { element: '#tour-debt-attack', popover: { title: '3. Attack Plan', description: 'This is the magic. Use the slider to see how adding just a little extra money each month drastically cuts your payoff time.' } },
+                            { element: '#tour-payoff-timeline', popover: { title: '4. Freedom Date', description: 'Your timeline to being debt-free. Watch the months disappear as you increase your monthly attack!' } }
+                        ]
+                    });
+                    tour.drive();
+                };
 
                 watch(currentView, async (newView) => { await nextTick(); if (newView === 'dashboard') { if(bills.value.length > 0 || budgetItems.value.length > 0) { renderCategoryChart(); renderDashboardChart(); } } else if (newView === 'forecast') { runForecast(); } });
 
@@ -1111,7 +676,7 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour };
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour };
             }
         }).mount('#app');
     </script>
