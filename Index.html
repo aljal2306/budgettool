@@ -394,29 +394,27 @@
                     </button>
                 </div>
 
-                <div class="mb-8">
-                    <header class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-                        <div id="tour-net-pay" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <div class="flex justify-between items-start">
-                                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Monthly Pay</h2>
-                                <div v-if="useTempPay" class="flex items-center gap-1 bg-emerald-100 rounded px-2 py-0.5"><span class="text-[10px] font-bold text-emerald-700">⚡ Session Mode</span><button @click="useTempPay=false; calculateAndSave('reset')" class="text-[10px] text-emerald-500 hover:text-emerald-800 font-bold ml-1">✕</button></div>
-                            </div>
-                            <div class="flex items-center gap-1 mt-1"><span class="text-xl text-slate-400">$</span><div class="text-2xl font-bold w-full text-slate-700">{{ activeMonthlyPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div>
-                            <div class="text-[10px] text-slate-400 mt-1">{{ useTempPay ? 'Using calculated temp pay' : 'Sum of all active income sources' }}</div>
+                <header class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mb-8">
+                    <div id="tour-net-pay" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex justify-between items-start">
+                            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Monthly Pay</h2>
+                            <div v-if="useTempPay" class="flex items-center gap-1 bg-emerald-100 rounded px-2 py-0.5"><span class="text-[10px] font-bold text-emerald-700">⚡ Session Mode</span><button @click="useTempPay=false; calculateAndSave('reset')" class="text-[10px] text-emerald-500 hover:text-emerald-800 font-bold ml-1">✕</button></div>
                         </div>
-                        <div id="tour-scenario-burn" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
-                            <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
-                            <div class="text-[10px] text-slate-400 mt-1">Includes smoothed Quarterly/Yearly items</div>
+                        <div class="flex items-center gap-1 mt-1"><span class="text-xl text-slate-400">$</span><div class="text-2xl font-bold w-full text-slate-700">{{ activeMonthlyPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div>
+                        <div class="text-[10px] text-slate-400 mt-1">{{ useTempPay ? 'Using calculated temp pay' : 'Sum of all active income sources' }}</div>
+                    </div>
+                    <div id="tour-scenario-burn" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2>
+                        <div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
+                        <div class="text-[10px] text-slate-400 mt-1">Includes smoothed Quarterly/Yearly items</div>
+                    </div>
+                    <div id="tour-projected-end" class="bg-slate-900 text-white p-4 rounded-2xl shadow-xl shadow-slate-300 relative overflow-hidden">
+                        <div class="relative z-10">
+                            <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2"><span :class="isScenarioActive ? 'text-emerald-400' : 'text-slate-400'">{{ isScenarioActive ? '⚡ Active' : 'Projected End' }}</span></h2>
+                            <div class="text-3xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">${{ projectedBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
                         </div>
-                        <div id="tour-projected-end" class="bg-slate-900 text-white p-4 rounded-2xl shadow-xl shadow-slate-300 relative overflow-hidden">
-                            <div class="relative z-10">
-                                <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2"><span :class="isScenarioActive ? 'text-emerald-400' : 'text-slate-400'">{{ isScenarioActive ? '⚡ Active' : 'Projected End' }}</span></h2>
-                                <div class="text-3xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">${{ projectedBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
-                            </div>
-                        </div>
-                    </header>
-                </div>
+                    </div>
+                </header>
 
                 <div id="tour-manage-budget" class="mb-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div @click="showPlanner = !showPlanner" class="p-4 bg-slate-50 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition select-none">
@@ -916,7 +914,7 @@
                             { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'This is your "Guilt-Free" money. It is calculated by taking your Net Pay and subtracting your Core Bills.' } },
                             { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'A live projection of your retirement savings based on your current 401k contributions and age.' } },
                             { element: '#tour-debt-free', popover: { title: '3. Debt Free Date', description: 'When you will be debt free based on your "Attack Plan" (set in the Debt tab).' } },
-                            { element: '#tour-variable-budgets', popover: { title: '4. Variable Budgets', description: 'Pro Tip: Check the "Variable Budget" box for fluctuating costs like Groceries. This creates a dedicated tracker on your Dashboard to log receipts against.' } },
+                            { element: '#tour-variable-budgets', popover: { title: '4. Variable Budgets', description: 'Track fluctuating expenses here (Groceries, Gas). You must manually log expenses for these.' } },
                             { element: '#tour-due-soon', popover: { title: '5. Due Soon', description: 'Fixed bills due in the next 7 days. Click the checkbox to mark them as paid.' } },
                             { element: '#tour-cash-flow', popover: { title: '6. 30-Day Forecast', description: 'Your projected bank balance for the next month. Use "Can I Afford It?" to test large purchases.' } },
                             { element: '#tour-breakdown', popover: { title: '7. Spending Breakdown', description: 'See where your money goes. Toggle between % and $ to see the impact of each category.' } }
@@ -949,7 +947,7 @@
                             { element: '#tour-net-pay', popover: { title: '1. Net Monthly Pay', description: 'Your financial fuel. This is the total monthly income from all your "Active" income sources in the Paycheck tab.' } },
                             { element: '#tour-scenario-burn', popover: { title: '2. Scenario Commitments', description: 'Your burn rate. This sums up all bills currently active in this scenario (Survival, Standard, or Dream).' } },
                             { element: '#tour-projected-end', popover: { title: '3. Projected End Balance', description: 'The bottom line. Income minus Commitments. Green means you are saving; red means you are overspending.' } },
-                            { element: '#tour-manage-budget', popover: { title: '4. The Control Center', description: 'Click here to add bills. Important: Check the "Variable Item" box for fluctuating expenses (like groceries) to track them against an allotment.' } },
+                            { element: '#tour-manage-budget', popover: { title: '4. The Control Center', description: 'Click here to add bills. **Pro Tip:** For fluctuating costs like Groceries or Gas, check the **Variable Budget** box. This sets up a dedicated tracker on the Dashboard so you can log receipts and stay within your limit.' } },
                             { element: '#tour-ledger', popover: { title: '5. Current Bills Ledger', description: 'This list is auto-generated from your budget items. Use this to track actual payments due this month.' } }
                         ]
                     });
@@ -969,5 +967,3 @@
     </script>
 </body>
 </html>
-
-    
