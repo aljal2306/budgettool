@@ -609,8 +609,8 @@
         <transition name="fade"><div v-if="showProjectModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"><h3 class="font-bold text-lg mb-4">Add Project Goal</h3><input v-model="newProject.name" placeholder="Project Name" class="w-full p-2 border rounded mb-2"><input v-model="newProject.cost" type="number" step="0.01" placeholder="Total Cost" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button @click="saveProject" class="flex-1 bg-slate-900 text-white py-2 rounded font-bold">Save</button><button @click="showProjectModal=false" class="px-4 py-2 bg-slate-200 rounded">Cancel</button></div></div></div></div></transition>
 
     </div>
-    
-   <script>
+
+    <script>
         const {createApp,ref,computed,onMounted,nextTick,watch}=Vue;const{createClient}=supabase;
         
         // ⚠️ REPLACE KEYS BELOW ⚠️
@@ -653,7 +653,7 @@
                 const showOnboarding=ref(false),onboardingStep=ref(1),onboardingData=ref({
                     balance:'',safety:'',salary:'',frequency:'Semi-Monthly',
                     medical:'',dental:'',trad401k:'',
-                    filingStatus:'Single', stateTaxRate:'', // Added Tax Fields
+                    filingStatus:'Single', stateTaxRate:'',
                     billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''
                 });
                 
@@ -689,24 +689,6 @@
 
                 let chartInstance=null,dashboardChartInstance=null, categoryChartInstance=null;
                 
-                // --- DASHBOARD TOUR (Driver.js) ---
-                const startDashboardTour = () => {
-                    const driver = window.driver.js.driver;
-                    const tour = driver({
-                        showProgress: true,
-                        steps: [
-                            { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'This is your "Guilt-Free" money. It is calculated by taking your Net Pay and subtracting your Core Bills.' } },
-                            { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'A live projection of your retirement savings based on your current 401k contributions and age.' } },
-                            { element: '#tour-debt-free', popover: { title: '3. Debt Free Date', description: 'When you will be debt free based on your "Attack Plan" (set in the Debt tab).' } },
-                            { element: '#tour-variable-budgets', popover: { title: '4. Variable Budgets', description: 'Track fluctuating expenses here (Groceries, Gas). You must manually log expenses for these.' } },
-                            { element: '#tour-due-soon', popover: { title: '5. Due Soon', description: 'Fixed bills due in the next 7 days. Click the checkbox to mark them as paid.' } },
-                            { element: '#tour-cash-flow', popover: { title: '6. 30-Day Forecast', description: 'Your projected bank balance for the next month. Use "Can I Afford It?" to test large purchases.' } },
-                            { element: '#tour-breakdown', popover: { title: '7. Spending Breakdown', description: 'See where your money goes. Toggle between % and $ to see the impact of each category.' } }
-                        ]
-                    });
-                    tour.drive();
-                };
-
                 // --- ONBOARDING ---
                 const nextOnboardingStep=async()=>{if(onboardingStep.value===5)await finishOnboarding();else onboardingStep.value++};
                 const finishOnboarding=async()=>{
@@ -719,7 +701,6 @@
 
                     if(salary !== ''){
                         const annualSalary = Number(salary);
-                        // Rough estimate for immediate display, exact calc happens in Calculator
                         const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); 
                         const net = grossPay * 0.75; 
                         const finalPay=round(net);
@@ -948,6 +929,7 @@
                 const dashboardBurn=computed(()=>round(activeMonthlyPay.value-safeToSpend.value));
                 const burnRate=computed(()=>activeMonthlyPay.value>0?Math.round((dashboardBurn.value/activeMonthlyPay.value)*100):0);
                 const cashFlowLowPoint=computed(()=>lowPointData.value);
+                
                 const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
                 const getFinancialSnapshot=()=>{return{income:activeMonthlyPay.value,savings:forecastSettings.value.currentBalance,total_debt:debts.value.reduce((a,b)=>a+Number(b.balance),0),core_burn:budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),discretionary_burn:budgetItems.value.filter(i=>!i.is_core&&!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),debt_list:debts.value,budget_list:budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name,amt:i.amount,core:i.is_core})),survival_months:(forecastSettings.value.currentBalance/(budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)}};
                 
@@ -1042,3 +1024,5 @@
     </script>
 </body>
 </html>
+    
+   
