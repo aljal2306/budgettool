@@ -179,7 +179,10 @@
                     <div class="lg:col-span-1 space-y-4 print:hidden">
                         <div id="tour-forecast-settings" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3><label class="block text-xs mb-1">Bank Balance Now</label><input v-model="forecastSettings.currentBalance" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Safety Margin</label><input v-model="forecastSettings.safetyMargin" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Months to Forecast</label><select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg bg-slate-50"><option v-for="n in 24" :value="n">{{ n }} Months</option></select><button @click="runForecast" class="w-full mt-3 bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800">Refresh Forecast</button></div>
                         <div id="tour-retirement-forecast" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-indigo-600 uppercase mb-3 flex items-center gap-2"><span>👴</span> Retirement Nest Egg</h3><div class="space-y-2 mb-4"><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Balance</label><input v-model="forecastSettings.retirementBalance" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div><div><label class="block text-[10px] text-slate-400">Rate of Return %</label><input v-model="forecastSettings.expectedReturn" @change="saveRetirementSettings" type="number" step="0.1" class="w-full p-1.5 border rounded text-xs"></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Age</label><input v-model="forecastSettings.currentAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div><div><label class="block text-[10px] text-slate-400">Retire Age</label><input v-model="forecastSettings.retirementAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div></div><div class="text-[10px] text-slate-400 mt-2">Monthly Contribution: <span class="font-bold text-slate-700">${{ totalMonthlyRetirementContribution.toLocaleString() }}</span></div></div><div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100 text-center"><div class="text-xs text-indigo-400 uppercase tracking-widest mb-1">Projected at Age {{ forecastSettings.retirementAge }}</div><div class="text-2xl font-black text-indigo-700">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div></div></div>
-                        <div id="tour-goal-project" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3><button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button><button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button></div><div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100"><div class="font-bold text-blue-900">{{ project.name }}</div><div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div><div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div></div><div v-else class="text-xs text-slate-400 italic text-center py-2">No active goals</div></div>
+                        <div id="tour-goal-project" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3><div class="flex gap-1"><button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button><button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button></div></div>
+                        <div class="flex gap-1 mb-2 border-b pb-2"><button v-for="i in 3" @click="savedForecasts[i-1] ? loadForecastSlot(i-1) : saveForecastSlot(i-1)" class="flex-1 text-[10px] py-1 rounded border transition" :class="savedForecasts[i-1] ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'">{{ savedForecasts[i-1] ? 'Load ' + (i) : 'Save ' + (i) }}</button></div>
+                        
+                        <div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100"><div class="font-bold text-blue-900">{{ project.name }}</div><div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div><div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div></div><div v-else class="text-xs text-slate-400 italic text-center py-2">No active goals</div></div>
                     </div>
                     <div class="lg:col-span-3 print:col-span-4 space-y-6">
                         <div id="tour-forecast-chart" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 print:border-0 print:shadow-none"><div class="flex justify-between items-center mb-2 print:hidden"><h3 class="font-bold">{{ project ? project.name + ' Projection' : 'Financial Projection' }}</h3><div class="flex gap-1 bg-slate-100 p-0.5 rounded-lg"><button @click="setForecastMode('survival'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='survival'?'bg-white shadow text-orange-600':'text-slate-500 hover:text-slate-800'">🛡️ Survival</button><button @click="setForecastMode('standard'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='standard'?'bg-white shadow text-blue-600':'text-slate-500 hover:text-slate-800'">⚖️ Standard</button><button @click="setForecastMode('dream'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='dream'?'bg-white shadow text-purple-600':'text-slate-500 hover:text-slate-800'">🚀 Dream</button></div><button @click="printReport" class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🖨️ Print Report</button></div><canvas id="forecastChart" style="max-height: 300px; width: 100%;"></canvas></div>
@@ -336,7 +339,7 @@
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
         
-        // Helper: Calculate monthly cost for any frequency
+        // Helper: Calculate monthly cost
         const getMonthlyCost = (i) => {
             let a = Number(i.amount);
             if (i.frequency === 'Quarterly') return a / 3;
@@ -395,6 +398,7 @@
                 const forecastMode = ref('standard'), forecastData = ref([]), forecastResults = ref({affordableMonth:null});
                 const project = ref(null), showProjectModal = ref(false), newProject = ref({name:'', cost:''});
                 const lowPointData = ref({amount:0, date:'-'});
+                const savedForecasts = ref([null, null, null]);
 
                 // Debt
                 const newDebt = ref({name:'', balance:'', rate:'', min_payment:''}), extraDebtPayment = ref(0), showDebtForm = ref(false);
@@ -408,7 +412,6 @@
                 // --- 1. CORE BUDGET LOGIC ---
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode;
-                    // Force a new array reference to trigger reactivity
                     const freshItems = budgetItems.value.map(item => ({...item}));
                     freshItems.forEach(item => {
                         if (item.frequency === 'One-Time') { item.includedInScenario = false; return; }
@@ -439,7 +442,7 @@
                 const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
 
-                // --- 2. FORECAST LOGIC ---
+                // --- 2. FORECAST LOGIC (Updated for Dynamic Burn & Saves) ---
                 const addExpense = (month) => {
                     if (month.newExpenseName && month.newExpenseAmount) {
                         month.extraExpenses.push({ name: month.newExpenseName, amount: Number(month.newExpenseAmount) });
@@ -454,6 +457,31 @@
                 };
                 
                 const printReport = () => { window.print(); };
+
+                // Logic to save a forecast state to a specific slot (0, 1, or 2)
+                const saveForecastSlot = (index) => {
+                    const data = {
+                        settings: { ...forecastSettings.value },
+                        project: project.value ? { ...project.value } : null,
+                        mode: forecastMode.value
+                    };
+                    // Vue reactivity update
+                    const newSaves = [...savedForecasts.value];
+                    newSaves[index] = data;
+                    savedForecasts.value = newSaves;
+                    
+                    localStorage.setItem('finance_forecast_slots', JSON.stringify(savedForecasts.value));
+                };
+
+                // Logic to load a forecast state
+                const loadForecastSlot = (index) => {
+                    const data = savedForecasts.value[index];
+                    if(!data) return;
+                    forecastSettings.value = { ...data.settings };
+                    project.value = data.project;
+                    setForecastMode(data.mode); // This triggers the chart update
+                    runForecast();
+                };
 
                 // --- 3. OTHER COMPUTED PROPS ---
                 const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist));
@@ -523,7 +551,6 @@
                 const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
                 const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
                 const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
-                
                 const resetDemo = async () => { if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); window.location.reload(); };
                 const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
                 const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
@@ -556,7 +583,57 @@
                 // Charts
                 const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
                 const renderDashboardChart=()=>{ const ctx=document.getElementById('dashboardChart');if(!ctx)return;if(dashboardChartInstance)dashboardChartInstance.destroy(); const labels=[],dataCurrent=[],dataImpulse=[]; let currentSimBalance=forecastSettings.value.currentBalance||0,impulseSimBalance=currentSimBalance; const today=new Date(); let simIncomes = incomes.value.map(inc => ({ amount: Number(inc.amount), nextDate: new Date(inc.next_pay_date), freq: inc.frequency })); const runImpulse=impulseResult.value!==null||(impulseItem.value.cost&&showImpulseModal.value===false); const impulseCost=Number(impulseItem.value.cost),impulseDate=impulseItem.value.date; for(let i=0;i<30;i++){ const d=new Date();d.setDate(today.getDate()+i);const dayOfMonth=d.getDate();const dStr=d.toISOString().split('T')[0]; const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); labels.push(dateLabel); const billsDue=bills.value.filter(b=>!b.is_paid&&b.due_date===dStr && !b.budget_items.is_variable); const realDrop=billsDue.reduce((sum,b)=>sum+b.budget_items.amount,0); const virtualDrop=budgetItems.value.reduce((sum,item)=>{ if(!item.is_variable && item.frequency==='Monthly' && item.due_day===dayOfMonth){ const hasRealBill=bills.value.some(b=>b.budget_item_id===item.id && b.due_date===dStr); if(!hasRealBill)return sum+item.amount } return sum },0); const totalDrop=realDrop+virtualDrop; currentSimBalance-=totalDrop;impulseSimBalance-=totalDrop; if (useTempPay.value) { let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null; const freq = calcInputs.value.payFrequency; const amt = calcResult.value ? calcResult.value.netPay : 0; if(nextPay && dStr === nextPay.toISOString().split('T')[0]){ currentSimBalance+=amt; impulseSimBalance+=amt; if(freq==='Bi-Weekly') nextPay.setDate(nextPay.getDate()+14); else if(freq==='Semi-Monthly') nextPay.setDate(nextPay.getDate()+15); else if(freq==='Monthly') nextPay.setMonth(nextPay.getMonth()+1); } } else { simIncomes.forEach(inc => { if (dStr === inc.nextDate.toISOString().split('T')[0]) { currentSimBalance += inc.amount; impulseSimBalance += inc.amount; if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14); else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15); else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1); } }); } if(runImpulse&&dStr===impulseDate)impulseSimBalance-=impulseCost; dataCurrent.push(currentSimBalance);dataImpulse.push(impulseSimBalance); } const activeData=runImpulse?dataImpulse:dataCurrent;const min=Math.min(...activeData);const index=activeData.indexOf(min);const d=new Date();d.setDate(today.getDate()+index);lowPointData.value={amount:min,date:d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}; dashboardChartInstance=new Chart(ctx,{type:'line',data:{labels:labels,datasets:datasets=[{label:'Current',data:dataCurrent,borderColor:'#3B82F6',borderWidth:2,pointRadius:0,fill:false,tension:0.1}]}}); if(runImpulse)dashboardChartInstance.data.datasets.push({label:'With Purchase',data:dataImpulse,borderColor:'#9333EA',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false,tension:0.1}); dashboardChartInstance.update(); };
-                const runForecast=()=>{let balance=round(forecastSettings.value.currentBalance);const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const now=new Date();if(forecastData.value.length!==forecastSettings.value.months){forecastData.value=[];for(let i=0;i<forecastSettings.value.months;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);forecastData.value.push({name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,income:activeMonthlyPay.value,extraExpenses:[],newExpenseId:'',newExpenseName:'',newExpenseAmount:'',isOpen:false})}}forecastResults.value.affordableMonth=null;forecastData.value.forEach((m,idx)=>{let monthlyBurn=0;if(forecastMode.value==='survival')monthlyBurn=budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);else if(forecastMode.value==='standard')monthlyBurn=budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);else if(forecastMode.value==='dream'){budgetItems.value.forEach(i=>{if(i.is_wishlist)monthlyBurn+=getMonthlyCost(i);else{const replaced=budgetItems.value.find(w=>w.is_wishlist&&w.replaces_id===i.id);if(!replaced)monthlyBurn+=getMonthlyCost(i)}})}const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);const monthlyNet=m.income-monthlyBurn-totalExtra;balance=round(balance+monthlyNet);m.endBalance=balance;if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){forecastResults.value.affordableMonth=m.name;forecastResults.value.affordableIndex=idx}});renderChart()};
+                
+                // FIXED: Dynamic Burn Calculation for Dropdown
+                const runForecast=()=>{
+                    let balance=round(forecastSettings.value.currentBalance);
+                    const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                    const now=new Date();
+                    
+                    if(forecastData.value.length!==forecastSettings.value.months){
+                        forecastData.value=[];
+                        for(let i=0;i<forecastSettings.value.months;i++){
+                            const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+                            forecastData.value.push({name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,income:activeMonthlyPay.value,extraExpenses:[],newExpenseId:'',newExpenseName:'',newExpenseAmount:'',isOpen:false, burn: 0})
+                        }
+                    }
+                    
+                    forecastResults.value.affordableMonth=null;
+                    
+                    forecastData.value.forEach((m,idx)=>{
+                        let monthlyBurn=0;
+                        
+                        // Calculate burn specifically based on the current mode
+                        if(forecastMode.value==='survival') {
+                            monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
+                        } else if(forecastMode.value==='standard') {
+                            monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
+                        } else if(forecastMode.value==='dream') {
+                            budgetItems.value.forEach(i=>{
+                                if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i);
+                                else {
+                                    const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id);
+                                    if(!replaced) monthlyBurn+=getMonthlyCost(i);
+                                }
+                            });
+                        }
+                        
+                        // Store the dynamic burn in the month object so the HTML can display it
+                        m.burn = round(monthlyBurn);
+
+                        const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);
+                        const monthlyNet=m.income-monthlyBurn-totalExtra;
+                        balance=round(balance+monthlyNet);
+                        m.endBalance=balance;
+                        
+                        if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){
+                            forecastResults.value.affordableMonth=m.name;
+                            forecastResults.value.affordableIndex=idx
+                        }
+                    });
+                    renderChart();
+                };
+
                 const renderChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
                 const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
                 const clearImpulse=()=>{impulseItem.value={name:'',cost:'',date:new Date().toISOString().split('T')[0]};impulseResult.value=null;renderDashboardChart()};
@@ -573,15 +650,22 @@
                 const startForecastTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-forecast-settings', popover: { title: '1. Control the Future', description: 'Set your current balance, safety margin, and how far ahead you want to look.' } }, { element: '#tour-retirement-forecast', popover: { title: '2. The Long Game', description: 'See how your nest egg grows based on your contributions and expected return.' } }, { element: '#tour-goal-project', popover: { title: '3. Dream Big', description: 'Add a specific financial target (like a house or car) to see exactly when you can afford it.' } }, { element: '#tour-forecast-chart', popover: { title: '4. Visual Timeline', description: 'Watch your balance grow (or shrink) over time. The "Star" indicates when you hit your goal.' } }, { element: '#tour-monthly-details', popover: { title: '5. Monthly Deep Dive', description: 'Expand any month to see exactly what income came in and what bills went out. Easily apply calculated paychecks with commission to the appropriate month. You can even add one-time expenses here.' } } ] }).drive(); };
                 const startDebtTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-add-debt', popover: { title: '1. Add Debt', description: 'Start here by listing all your debts (Credit Cards, Loans, etc.). Be accurate with the interest rate!' } }, { element: '#tour-debt-list', popover: { title: '2. Prioritize', description: 'Drag and drop these cards to change the payoff order. We recommend the "Avalanche" method (Highest Interest Rate First) to save money.' } }, { element: '#tour-debt-attack', popover: { title: '3. Attack Plan', description: 'This is the magic. Use the slider to see how adding just a little extra money each month drastically cuts your payoff time.' } }, { element: '#tour-payoff-timeline', popover: { title: '4. Freedom Date', description: 'Your timeline to being debt-free. Watch the months disappear as you increase your monthly attack!' } } ] }).drive(); };
 
-                watch(currentView, async (newView) => { await nextTick(); if (newView === 'dashboard') { if(bills.value.length > 0 || budgetItems.value.length > 0) { renderCategoryChart(); renderDashboardChart(); } } else if (newView === 'forecast') { runForecast(); } });
+                watch(currentView, async (newView) => { await nextTick(); if (newView === 'dashboard') { if(bills.value.length > 0 || budgetItems.value.length > 0) { renderCategoryChart(); renderDashboardChart(); } } else if (newView === 'forecast') { 
+                    // Load saved slots on view change
+                    const saved = localStorage.getItem('finance_forecast_slots');
+                    if (saved) savedForecasts.value = JSON.parse(saved);
+                    runForecast(); 
+                } });
 
                 onMounted(() => {
                     _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchSettings(); fetchIncomes(); fetchBudgetItems().then(() => { fetchBills().then(() => { nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); }); }); fetchDebts().then(() => { const el = document.getElementById('debt-list-container'); if(el) { new Sortable(el, { handle: '.sortable-handle', animation: 150, onEnd: async (evt) => { const item = debts.value.splice(evt.oldIndex, 1)[0]; debts.value.splice(evt.newIndex, 0, item); const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index, user_id: session.value.user.id, name: d.name, balance: d.balance, rate: d.rate, min_payment: d.min_payment })); await _supabase.from('debts').upsert(updates); } }); } }); } });
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
+                    // Load slots on mount
+                    const saved = localStorage.getItem('finance_forecast_slots');
+                    if (saved) savedForecasts.value = JSON.parse(saved);
                 });
 
-                // ✅ FIXED: Included ALL necessary functions in the return statement
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport };
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, savedForecasts };
             }
         }).mount('#app');
     </script>
