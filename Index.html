@@ -27,6 +27,7 @@
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
         .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: .9rem; line-height: 1.5; }
         .chat-user { background-color: #3b82f6; color: #fff; border-bottom-right-radius: 4px; margin-left: auto; }
         .chat-ai { background-color: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; margin-right: auto; }
@@ -34,28 +35,34 @@
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        
         .driver-popover.driverjs-theme { background-color: #ffffff; color: #1e293b; padding: 15px; border-radius: 12px; }
         .driver-popover.driverjs-theme .driver-popover-title { font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; color: #0f172a; }
         .driver-popover.driverjs-theme button { background-color: #4F46E5; color: white; border: none; text-shadow: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 0.8rem; }
         .driver-popover.driverjs-theme button:hover { background-color: #4338ca; }
+        
         @media print {
             body { background-color: #fff; color: #000; }
             .print\:hidden { display: none !important; }
             .print\:block { display: block !important; }
             .shadow-lg, .shadow-sm, .shadow-xl { box-shadow: none !important; }
+            #app { padding: 0; }
         }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans selection:bg-emerald-100">
 
     <div id="app" v-cloak class="max-w-6xl mx-auto p-4 md:p-8 pb-20">
-        <div v-if="!session" class="min-h-[80vh] flex flex-col items-center justify-center">
+
+        <div v-if="!session" class="min-h-[80vh] flex flex-col items-center justify-center print:hidden">
             <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-100 text-center">
                 <div class="text-6xl mb-6">🔐</div>
                 <h1 class="text-2xl font-black mb-2 text-slate-900">Finance Master</h1>
                 <p class="text-slate-400 text-sm mb-6">Enter your email to receive a Magic Link.</p>
                 <input v-model="authEmail" type="email" placeholder="name@example.com" class="w-full p-4 border border-slate-200 rounded-xl mb-4 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500" @keyup.enter="handleLogin">
-                <button @click="handleLogin" :disabled="loading" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 disabled:opacity-50 shadow-lg">{{ loading ? 'Sending...' : 'Send Magic Link' }}</button>
+                <button @click="handleLogin" :disabled="loading" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 disabled:opacity-50 shadow-lg">
+                    {{ loading ? 'Sending...' : 'Send Magic Link' }}
+                </button>
                 <p v-if="authMessage" class="mt-4 text-emerald-600 text-sm p-3 bg-emerald-50 rounded-lg font-bold border border-emerald-100">{{ authMessage }}</p>
             </div>
         </div>
@@ -82,7 +89,9 @@
 
             <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
                 <div class="w-full flex justify-end mb-4">
-                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Take a Tour</button>
+                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform">
+                        <span>📍</span> Take a Tour
+                    </button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div id="tour-safe-spend" class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 text-white relative overflow-hidden group">
@@ -307,6 +316,7 @@
                     </div>
                 </div>
             </transition>
+
     </div>
 
     <script>
@@ -326,7 +336,6 @@
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
         
-        // Helper: Calculate monthly cost for any frequency
         const getMonthlyCost = (i) => {
             let a = Number(i.amount);
             if (i.frequency === 'Quarterly') return a / 3;
@@ -335,7 +344,6 @@
             return a;
         };
         
-        // Tax Brackets
         const taxBrackets = {
             Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}],
             Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}],
@@ -398,7 +406,7 @@
                 // --- 1. CORE BUDGET LOGIC ---
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode;
-                    // Force a new array reference to trigger reactivity
+                    // Reactivity Fix: Create fresh array copy
                     const freshItems = budgetItems.value.map(item => ({...item}));
                     freshItems.forEach(item => {
                         if (item.frequency === 'One-Time') { item.includedInScenario = false; return; }
@@ -442,6 +450,8 @@
                     const selected = budgetItems.value.find(i => i.id === month.newExpenseId);
                     if (selected) { month.newExpenseName = selected.name; month.newExpenseAmount = selected.amount; }
                 };
+                
+                const printReport = () => { window.print(); };
 
                 // --- 3. OTHER COMPUTED PROPS ---
                 const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist));
@@ -503,7 +513,6 @@
                 const logExpense = async () => { if(!expenseData.value.budgetId || !expenseData.value.amount) return; const { error } = await _supabase.from('ledger').insert([{ user_id: session.value.user.id, budget_item_id: expenseData.value.budgetId, amount_paid: Number(expenseData.value.amount), is_paid: true, due_date: expenseData.value.date, transaction_name: expenseData.value.description }]); if(!error){ showExpenseModal.value = false; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; fetchBills(); renderDashboardChart(); } else { alert("Error logging expense"); } };
                 const saveSettings = async () => { await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: forecastSettings.value.currentBalance, safety_margin: forecastSettings.value.safetyMargin }); };
                 const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
-                
                 const deleteIncome = async (id) => { if(!confirm("Delete this income source?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
                 const deleteBill = async (bill) => { if(!confirm("Remove this bill instance?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
                 const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating bill status'); } else { renderDashboardChart(); } };
@@ -521,7 +530,6 @@
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
                 const setForecastMode=(mode)=>{forecastMode.value=mode;};
                 
-                // Fixed Logout: Clear URL Hash
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
                 const handleLogout = async () => { 
                     await _supabase.auth.signOut(); 
@@ -571,12 +579,10 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                // ✅ FIXED: Added setScenarioMode, addExpense, and fillExpense to the return block
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense };
+                // ✅ FIXED: Correctly exposing all functions to the template
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport };
             }
         }).mount('#app');
     </script>
-</body>
-</html>
 
     
