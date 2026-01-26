@@ -27,7 +27,6 @@
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        
         .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: .9rem; line-height: 1.5; }
         .chat-user { background-color: #3b82f6; color: #fff; border-bottom-right-radius: 4px; margin-left: auto; }
         .chat-ai { background-color: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; margin-right: auto; }
@@ -35,12 +34,10 @@
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-        
         .driver-popover.driverjs-theme { background-color: #ffffff; color: #1e293b; padding: 15px; border-radius: 12px; }
         .driver-popover.driverjs-theme .driver-popover-title { font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; color: #0f172a; }
         .driver-popover.driverjs-theme button { background-color: #4F46E5; color: white; border: none; text-shadow: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 0.8rem; }
         .driver-popover.driverjs-theme button:hover { background-color: #4338ca; }
-        
         @media print {
             body { background-color: #fff; color: #000; }
             .print\:hidden { display: none !important; }
@@ -53,16 +50,13 @@
 <body class="bg-slate-50 text-slate-800 font-sans selection:bg-emerald-100">
 
     <div id="app" v-cloak class="max-w-6xl mx-auto p-4 md:p-8 pb-20">
-
         <div v-if="!session" class="min-h-[80vh] flex flex-col items-center justify-center print:hidden">
             <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-100 text-center">
                 <div class="text-6xl mb-6">🔐</div>
                 <h1 class="text-2xl font-black mb-2 text-slate-900">Finance Master</h1>
                 <p class="text-slate-400 text-sm mb-6">Enter your email to receive a Magic Link.</p>
                 <input v-model="authEmail" type="email" placeholder="name@example.com" class="w-full p-4 border border-slate-200 rounded-xl mb-4 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500" @keyup.enter="handleLogin">
-                <button @click="handleLogin" :disabled="loading" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 disabled:opacity-50 shadow-lg">
-                    {{ loading ? 'Sending...' : 'Send Magic Link' }}
-                </button>
+                <button @click="handleLogin" :disabled="loading" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 disabled:opacity-50 shadow-lg">{{ loading ? 'Sending...' : 'Send Magic Link' }}</button>
                 <p v-if="authMessage" class="mt-4 text-emerald-600 text-sm p-3 bg-emerald-50 rounded-lg font-bold border border-emerald-100">{{ authMessage }}</p>
             </div>
         </div>
@@ -89,9 +83,7 @@
 
             <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
                 <div class="w-full flex justify-end mb-4">
-                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform">
-                        <span>📍</span> Take a Tour
-                    </button>
+                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Take a Tour</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div id="tour-safe-spend" class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 text-white relative overflow-hidden group">
@@ -180,7 +172,20 @@
                         <div id="tour-forecast-settings" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3><label class="block text-xs mb-1">Bank Balance Now</label><input v-model="forecastSettings.currentBalance" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Safety Margin</label><input v-model="forecastSettings.safetyMargin" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50"><label class="block text-xs mb-1">Months to Forecast</label><select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg bg-slate-50"><option v-for="n in 24" :value="n">{{ n }} Months</option></select><button @click="runForecast" class="w-full mt-3 bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800">Refresh Forecast</button></div>
                         <div id="tour-retirement-forecast" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="font-bold text-sm text-indigo-600 uppercase mb-3 flex items-center gap-2"><span>👴</span> Retirement Nest Egg</h3><div class="space-y-2 mb-4"><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Balance</label><input v-model="forecastSettings.retirementBalance" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div><div><label class="block text-[10px] text-slate-400">Rate of Return %</label><input v-model="forecastSettings.expectedReturn" @change="saveRetirementSettings" type="number" step="0.1" class="w-full p-1.5 border rounded text-xs"></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Age</label><input v-model="forecastSettings.currentAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div><div><label class="block text-[10px] text-slate-400">Retire Age</label><input v-model="forecastSettings.retirementAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs"></div></div><div class="text-[10px] text-slate-400 mt-2">Monthly Contribution: <span class="font-bold text-slate-700">${{ totalMonthlyRetirementContribution.toLocaleString() }}</span></div></div><div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100 text-center"><div class="text-xs text-indigo-400 uppercase tracking-widest mb-1">Projected at Age {{ forecastSettings.retirementAge }}</div><div class="text-2xl font-black text-indigo-700">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div></div></div>
                         <div id="tour-goal-project" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-slate-500 uppercase">Goal / Project</h3><div class="flex gap-1"><button v-if="!project" @click="showProjectModal = true" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">+ Add</button><button v-if="project" @click="project = null; runForecast()" class="text-xs text-red-400">Remove</button></div></div>
-                        <div class="flex gap-1 mb-2 border-b pb-2"><button v-for="i in 3" @click="savedForecasts[i-1] ? loadForecastSlot(i-1) : saveForecastSlot(i-1)" class="flex-1 text-[10px] py-1 rounded border transition" :class="savedForecasts[i-1] ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'">{{ savedForecasts[i-1] ? 'Load ' + (i) : 'Save ' + (i) }}</button></div>
+                        
+                        <div class="flex gap-1 mb-2 border-b pb-2">
+                            <div v-for="i in 3" class="flex-1 flex gap-1 min-w-0">
+                                <template v-if="savedForecasts[i-1]">
+                                    <button @click="loadForecastSlot(i-1)" class="flex-1 text-[10px] py-1 px-1 rounded border bg-indigo-50 border-indigo-200 text-indigo-700 font-bold hover:bg-indigo-100 truncate" :title="'Load: ' + savedForecasts[i-1].name">
+                                        {{ savedForecasts[i-1].name }}
+                                    </button>
+                                    <button @click="clearForecastSlot(i-1)" class="px-2 text-[10px] rounded border bg-white text-red-400 hover:bg-red-50 flex-shrink-0" title="Delete Save">✕</button>
+                                </template>
+                                <button v-else @click="saveForecastSlot(i-1)" class="w-full text-[10px] py-1 rounded border bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition">
+                                    + Save {{i}}
+                                </button>
+                            </div>
+                        </div>
                         
                         <div v-if="project" class="p-3 bg-blue-50 rounded border border-blue-100"><div class="font-bold text-blue-900">{{ project.name }}</div><div class="text-xl font-bold text-blue-700">${{ project.cost.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div v-if="forecastResults.affordableMonth" class="mt-2 text-xs font-bold text-green-600">✅ Affordable in {{ forecastResults.affordableMonth }}</div><div v-else class="mt-2 text-xs font-bold text-red-500">❌ Not affordable yet</div></div><div v-else class="text-xs text-slate-400 italic text-center py-2">No active goals</div></div>
                     </div>
@@ -339,7 +344,7 @@
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
         
-        // Helper: Calculate monthly cost
+        // Helper: Calculate monthly cost for any frequency
         const getMonthlyCost = (i) => {
             let a = Number(i.amount);
             if (i.frequency === 'Quarterly') return a / 3;
@@ -412,6 +417,7 @@
                 // --- 1. CORE BUDGET LOGIC ---
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode;
+                    // Force a new array reference to trigger reactivity
                     const freshItems = budgetItems.value.map(item => ({...item}));
                     freshItems.forEach(item => {
                         if (item.frequency === 'One-Time') { item.includedInScenario = false; return; }
@@ -442,7 +448,7 @@
                 const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
 
-                // --- 2. FORECAST LOGIC (Updated for Dynamic Burn & Saves) ---
+                // --- 2. FORECAST LOGIC ---
                 const addExpense = (month) => {
                     if (month.newExpenseName && month.newExpenseAmount) {
                         month.extraExpenses.push({ name: month.newExpenseName, amount: Number(month.newExpenseAmount) });
@@ -458,29 +464,41 @@
                 
                 const printReport = () => { window.print(); };
 
-                // Logic to save a forecast state to a specific slot (0, 1, or 2)
+                // NAMED SAVE SLOTS
                 const saveForecastSlot = (index) => {
+                    const name = prompt("Name this scenario (e.g. 'New Job', 'Buying House'):");
+                    if (!name) return; // User cancelled
+
                     const data = {
+                        name: name,
                         settings: { ...forecastSettings.value },
                         project: project.value ? { ...project.value } : null,
                         mode: forecastMode.value
                     };
-                    // Vue reactivity update
+                    
                     const newSaves = [...savedForecasts.value];
                     newSaves[index] = data;
                     savedForecasts.value = newSaves;
-                    
                     localStorage.setItem('finance_forecast_slots', JSON.stringify(savedForecasts.value));
                 };
 
-                // Logic to load a forecast state
                 const loadForecastSlot = (index) => {
                     const data = savedForecasts.value[index];
                     if(!data) return;
+                    if(!confirm(`Load scenario: "${data.name}"? This will overwrite current forecast settings.`)) return;
+                    
                     forecastSettings.value = { ...data.settings };
                     project.value = data.project;
-                    setForecastMode(data.mode); // This triggers the chart update
+                    setForecastMode(data.mode);
                     runForecast();
+                };
+
+                const clearForecastSlot = (index) => {
+                    if(!confirm("Clear this save slot?")) return;
+                    const newSaves = [...savedForecasts.value];
+                    newSaves[index] = null;
+                    savedForecasts.value = newSaves;
+                    localStorage.setItem('finance_forecast_slots', JSON.stringify(savedForecasts.value));
                 };
 
                 // --- 3. OTHER COMPUTED PROPS ---
@@ -543,6 +561,7 @@
                 const logExpense = async () => { if(!expenseData.value.budgetId || !expenseData.value.amount) return; const { error } = await _supabase.from('ledger').insert([{ user_id: session.value.user.id, budget_item_id: expenseData.value.budgetId, amount_paid: Number(expenseData.value.amount), is_paid: true, due_date: expenseData.value.date, transaction_name: expenseData.value.description }]); if(!error){ showExpenseModal.value = false; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; fetchBills(); renderDashboardChart(); } else { alert("Error logging expense"); } };
                 const saveSettings = async () => { await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: forecastSettings.value.currentBalance, safety_margin: forecastSettings.value.safetyMargin }); };
                 const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
+                
                 const deleteIncome = async (id) => { if(!confirm("Delete this income source?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
                 const deleteBill = async (bill) => { if(!confirm("Remove this bill instance?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
                 const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating bill status'); } else { renderDashboardChart(); } };
@@ -665,7 +684,8 @@
                     if (saved) savedForecasts.value = JSON.parse(saved);
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, savedForecasts };
+                // ✅ FIXED: Included ALL necessary functions in the return statement
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts };
             }
         }).mount('#app');
     </script>
