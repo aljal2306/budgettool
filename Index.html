@@ -89,7 +89,9 @@
 
             <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
                 <div class="w-full flex justify-end mb-4">
-                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Take a Tour</button>
+                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform">
+                        <span>📍</span> Take a Tour
+                    </button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div id="tour-safe-spend" class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 text-white relative overflow-hidden group">
@@ -417,7 +419,7 @@
                 const currentScenarioMode = ref('survival'), dashboardMode = ref('standard');
                 const showPlanner = ref(false), showAddForm = ref(false), isSubmitting = ref(false), isEditing = ref(false), editingId = ref(null);
                 const newItem = ref({name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false, replaces_id:null, category:'Essentials', is_variable:false});
-                const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Entertainment', 'Subscriptions', 'Other']);
+                const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
                 const showChartPercentages = ref(false); 
                 
                 // Ledger
@@ -431,8 +433,8 @@
                 const lowPointData = ref({amount:0, date:'-'});
                 const savedForecasts = ref([null, null, null]);
                 
-                // NEW: Store manual edits to specific months (Income changes, One-off expenses)
-                const forecastOverrides = ref({}); // Structure: { "Jan 2026": { income: 5000, extraExpenses: [...] } }
+                // Store manual edits to specific months
+                const forecastOverrides = ref({}); 
 
                 // Debt
                 const newDebt = ref({name:'', balance:'', rate:'', min_payment:''}), extraDebtPayment = ref(0), showDebtForm = ref(false);
@@ -446,7 +448,6 @@
                 // --- 1. CORE BUDGET LOGIC ---
                 const setScenarioMode = (mode) => {
                     currentScenarioMode.value = mode;
-                    // Force a new array reference to trigger reactivity
                     const freshItems = budgetItems.value.map(item => ({...item}));
                     freshItems.forEach(item => {
                         if (item.frequency === 'One-Time') { item.includedInScenario = false; return; }
@@ -471,9 +472,7 @@
                 const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
 
-                // --- 2. FORECAST LOGIC (Updated for Persistence & Overrides) ---
-                
-                // Helper to initialize or get override for a month
+                // --- 2. FORECAST LOGIC ---
                 const getOverride = (monthName) => {
                     if (!forecastOverrides.value[monthName]) {
                         forecastOverrides.value[monthName] = { income: null, extraExpenses: [] };
@@ -533,7 +532,7 @@
                             settings: { ...forecastSettings.value },
                             project: project.value ? { ...project.value } : null,
                             mode: forecastMode.value,
-                            overrides: { ...forecastOverrides.value } // Save the manual edits too!
+                            overrides: { ...forecastOverrides.value } 
                         }
                     };
 
@@ -541,7 +540,7 @@
                     if (error) {
                         alert("Error saving: " + error.message);
                     } else {
-                        await fetchForecastSlots(); // Reload from DB
+                        await fetchForecastSlots(); 
                     }
                 };
 
@@ -663,10 +662,9 @@
                 const getCalendarLink = (bill) => { const title = encodeURIComponent(`Pay ${bill.budget_items.name}`); const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`); const dStr = bill.due_date.replace(/-/g, ''); return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`; };
                 
                 // Charts
-                const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
+                const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
                 const renderDashboardChart=()=>{ const ctx=document.getElementById('dashboardChart');if(!ctx)return;if(dashboardChartInstance)dashboardChartInstance.destroy(); const labels=[],dataCurrent=[],dataImpulse=[]; let currentSimBalance=forecastSettings.value.currentBalance||0,impulseSimBalance=currentSimBalance; const today=new Date(); let simIncomes = incomes.value.map(inc => ({ amount: Number(inc.amount), nextDate: new Date(inc.next_pay_date), freq: inc.frequency })); const runImpulse=impulseResult.value!==null||(impulseItem.value.cost&&showImpulseModal.value===false); const impulseCost=Number(impulseItem.value.cost),impulseDate=impulseItem.value.date; for(let i=0;i<30;i++){ const d=new Date();d.setDate(today.getDate()+i);const dayOfMonth=d.getDate();const dStr=d.toISOString().split('T')[0]; const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); labels.push(dateLabel); const billsDue=bills.value.filter(b=>!b.is_paid&&b.due_date===dStr && !b.budget_items.is_variable); const realDrop=billsDue.reduce((sum,b)=>sum+b.budget_items.amount,0); const virtualDrop=budgetItems.value.reduce((sum,item)=>{ if(!item.is_variable && item.frequency==='Monthly' && item.due_day===dayOfMonth){ const hasRealBill=bills.value.some(b=>b.budget_item_id===item.id && b.due_date===dStr); if(!hasRealBill)return sum+item.amount } return sum },0); const totalDrop=realDrop+virtualDrop; currentSimBalance-=totalDrop;impulseSimBalance-=totalDrop; if (useTempPay.value) { let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null; const freq = calcInputs.value.payFrequency; const amt = calcResult.value ? calcResult.value.netPay : 0; if(nextPay && dStr === nextPay.toISOString().split('T')[0]){ currentSimBalance+=amt; impulseSimBalance+=amt; if(freq==='Bi-Weekly') nextPay.setDate(nextPay.getDate()+14); else if(freq==='Semi-Monthly') nextPay.setDate(nextPay.getDate()+15); else if(freq==='Monthly') nextPay.setMonth(nextPay.getMonth()+1); } } else { simIncomes.forEach(inc => { if (dStr === inc.nextDate.toISOString().split('T')[0]) { currentSimBalance += inc.amount; impulseSimBalance += inc.amount; if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14); else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15); else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1); } }); } if(runImpulse&&dStr===impulseDate)impulseSimBalance-=impulseCost; dataCurrent.push(currentSimBalance);dataImpulse.push(impulseSimBalance); } const activeData=runImpulse?dataImpulse:dataCurrent;const min=Math.min(...activeData);const index=activeData.indexOf(min);const d=new Date();d.setDate(today.getDate()+index);lowPointData.value={amount:min,date:d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}; dashboardChartInstance=new Chart(ctx,{type:'line',data:{labels:labels,datasets:datasets=[{label:'Current',data:dataCurrent,borderColor:'#3B82F6',borderWidth:2,pointRadius:0,fill:false,tension:0.1}]}}); if(runImpulse)dashboardChartInstance.data.datasets.push({label:'With Purchase',data:dataImpulse,borderColor:'#9333EA',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false,tension:0.1}); dashboardChartInstance.update(); };
                 
-                // FIXED: Dynamic Burn Calculation for Dropdown
                 const runForecast=()=>{
                     let balance=round(forecastSettings.value.currentBalance);
                     const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -696,11 +694,8 @@
                         const ov = forecastOverrides.value[m.name];
                         if (ov) {
                             if (ov.income !== null && ov.income !== undefined) m.income = Number(ov.income);
-                            // Merge extra expenses instead of overwriting, to preserve reactivity if needed
-                            // But here we rely on the override being the source of truth for *added* items
                             if (ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses]; 
                         } else {
-                            // If no override, reset to default income
                             if (!useTempPay.value) m.income = activeMonthlyPay.value; 
                         }
 
