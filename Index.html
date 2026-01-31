@@ -379,7 +379,6 @@
         return a;
     };
     
-    // Tax Brackets & Logic
     const taxBrackets = { Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}], Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}], Head: [{limit: 17000, rate: 0.10},{limit: 64850, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}] };
     const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
     const calculateFederalTax = (annualInc, status='Single') => { let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000)); let t = 0, l = 0; const brackets = taxBrackets[status] || taxBrackets.Single; for(const b of brackets){ if(taxable > b.limit){ t += (b.limit - l) * b.rate; l = b.limit; } else { t += (taxable - l) * b.rate; break; } } return t; };
@@ -555,11 +554,42 @@
             // --- 6. INTELLIGENT ADVISOR ---
             const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
             
+            // Make handleSuggestion global so onclick events in HTML strings work
+            window.handleSuggestion = (text) => { app.config.globalProperties.sendQuery(text); };
+
+            const sendQuery = async (text) => {
+                if(!text) return;
+                chatMessages.value.push({ role: 'user', text });
+                userQuery.value = '';
+                isThinking.value = true;
+                nextTick(scrollChat);
+                
+                setTimeout(() => {
+                    const snapshot = getFinancialSnapshot();
+                    const { response, suggestions } = generateSmartResponse(text, snapshot);
+                    
+                    // Append suggestions as styled HTML buttons to the response
+                    let finalHtml = response;
+                    if(suggestions.length > 0) {
+                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
+                        suggestions.forEach(s => {
+                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
+                        });
+                        finalHtml += `</div>`;
+                    }
+
+                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
+                    isThinking.value = false;
+                    nextTick(scrollChat);
+                }, 1000);
+            };
+
             const generateSmartResponse = (query, data) => {
                 const q = query.toLowerCase();
                 let response = '';
                 let suggestions = [];
 
+                // Logic Engine
                 if (q.includes('review') || q.includes('budget') || q.includes('analysis')) {
                     const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt);
                     const totalWaste = nonCore.reduce((a,b) => a + b.amt, 0);
@@ -699,32 +729,6 @@
                 return { response, suggestions };
             };
 
-            const sendQuery = async (text) => {
-                if(!text) return;
-                chatMessages.value.push({ role: 'user', text });
-                userQuery.value = '';
-                isThinking.value = true;
-                nextTick(scrollChat);
-                
-                setTimeout(() => {
-                    const snapshot = getFinancialSnapshot();
-                    const { response, suggestions } = generateSmartResponse(text, snapshot);
-                    
-                    let finalHtml = response;
-                    if(suggestions.length > 0) {
-                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
-                        suggestions.forEach(s => {
-                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
-                        });
-                        finalHtml += `</div>`;
-                    }
-
-                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
-                    isThinking.value = false;
-                    nextTick(scrollChat);
-                }, 1000);
-            };
-
             const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
             const renderMarkdown=(text)=>{return marked.parse(text)};
             const getFinancialSnapshot=()=>{return{income:activeMonthlyPay.value,savings:forecastSettings.value.currentBalance,total_debt:debts.value.reduce((a,b)=>a+Number(b.balance),0),core_burn:budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),discretionary_burn:budgetItems.value.filter(i=>!i.is_core&&!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),debt_list:debts.value,budget_list:budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name,amt:i.amount,core:i.is_core})),survival_months:(forecastSettings.value.currentBalance/(budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)}};
@@ -745,15 +749,12 @@
                 _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 
                 // Attach helper to window for HTML buttons
-                window.handleSuggestion = (text) => app.config.globalProperties.sendQuery(text);
+                window.handleSuggestion = (text) => sendQuery(text);
             });
-
-            // Attach to globalProperties for access inside window function
-            app.config.globalProperties.sendQuery = sendQuery;
 
             return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense };
         }
     }).mount('#app');
 </script>
 
-   
+    
