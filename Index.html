@@ -89,9 +89,7 @@
 
             <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
                 <div class="w-full flex justify-end mb-4">
-                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform">
-                        <span>📍</span> Take a Tour
-                    </button>
+                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Take a Tour</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div id="tour-safe-spend" class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 text-white relative overflow-hidden group">
@@ -355,24 +353,19 @@
 
     </div>
 
-    <script>
+   <script>
         const {createApp, ref, computed, onMounted, nextTick, watch} = Vue;
         const {createClient} = supabase;
         
         // ⚠️ PASTE YOUR SUPABASE KEYS HERE ⚠️
-        const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
+        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co'
+        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'
         
-        // ERROR CHECK
-        if(SUPABASE_URL.includes('YOUR_PROJECT')){
-            document.getElementById('app').innerHTML = '<div class="p-8 text-center text-red-600 font-bold">⚠️ CRITICAL ERROR: You forgot to paste your Supabase Keys at the bottom of the script!</div>'; 
-            throw new Error("Missing Keys");
-        }
+        if(SUPABASE_URL.includes('YOUR_PROJECT')) throw new Error("Missing Keys");
 
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
         
-        // Helper: Calculate monthly cost for any frequency
         const getMonthlyCost = (i) => {
             let a = Number(i.amount);
             if (i.frequency === 'Quarterly') return a / 3;
@@ -381,190 +374,62 @@
             return a;
         };
         
-        // Tax Brackets
-        const taxBrackets = {
-            Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}],
-            Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}],
-            Head: [{limit: 17000, rate: 0.10},{limit: 64850, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}]
-        };
+        // Tax & Calculations
+        const taxBrackets = { Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}], Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}], Head: [{limit: 17000, rate: 0.10},{limit: 64850, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}] };
         const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
-
-        const calculateFederalTax = (annualInc, status='Single') => {
-            let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000));
-            let t = 0, l = 0; 
-            const brackets = taxBrackets[status] || taxBrackets.Single;
-            for(const b of brackets){
-                if(taxable > b.limit){ t += (b.limit - l) * b.rate; l = b.limit; }
-                else { t += (taxable - l) * b.rate; break; }
-            }
-            return t;
-        };
+        const calculateFederalTax = (annualInc, status='Single') => { let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000)); let t = 0, l = 0; const brackets = taxBrackets[status] || taxBrackets.Single; for(const b of brackets){ if(taxable > b.limit){ t += (b.limit - l) * b.rate; l = b.limit; } else { t += (taxable - l) * b.rate; break; } } return t; };
         
-        createApp({
+        const app = createApp({
             setup() {
-                // --- STATE VARIABLES ---
                 const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
                 const useTempPay = ref(false), tempCalculatedPay = ref(0);
                 const budgetItems = ref([]), bills = ref([]), debts = ref([]), incomes = ref([]);
                 
-                // Onboarding
+                // State
                 const showOnboarding = ref(false), onboardingStep = ref(1), onboardingData = ref({balance:'', safety:'', salary:'', frequency:'Semi-Monthly', medical:'', dental:'', trad401k:'', filingStatus:'Single', stateTaxRate:'', billName:'', billAmount:'', billDay:1, isCore:true, isVariable:false, incomeName:'', category:'Mortgage/Rent', wishName:'', wishAmount:'', goalName:'', goalCost:''});
-                
-                // Calculator
                 const showCalcForm = ref(false), showCalcDetails = ref(false); 
                 const calcInputs = ref({name:'', salary:0, commission:0, medical:0, dental:0, fsa:0, postTax:0, trad401k:0, roth401k:0, match401k:0, nextPayDate:'', payFrequency:'Semi-Monthly', filingStatus:'Single', stateTaxRate:0, dependents:0, extraWithholding:0});
                 const calcResult = ref(null), savingBase = ref(false);
-                
-                // Budget
                 const currentScenarioMode = ref('survival'), dashboardMode = ref('standard');
                 const showPlanner = ref(false), showAddForm = ref(false), isSubmitting = ref(false), isEditing = ref(false), editingId = ref(null);
                 const newItem = ref({name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false, replaces_id:null, category:'Essentials', is_variable:false});
-                const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
+                const showPaidBills = ref(false);
                 const showChartPercentages = ref(false); 
-                
-                // Ledger
                 const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
                 const showExpenseModal = ref(false), expenseData = ref({budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]});
-
-                // Forecast
                 const forecastSettings = ref({currentBalance:5000, safetyMargin:2000, months:12, currentAge:30, retirementAge:65, retirementBalance:0, expectedReturn:7.0});
                 const forecastMode = ref('standard'), forecastData = ref([]), forecastResults = ref({affordableMonth:null});
                 const project = ref(null), showProjectModal = ref(false), newProject = ref({name:'', cost:''});
                 const lowPointData = ref({amount:0, date:'-'});
                 const savedForecasts = ref([null, null, null]);
-                
-                // Store manual edits to specific months
                 const forecastOverrides = ref({}); 
-
-                // Debt
                 const newDebt = ref({name:'', balance:'', rate:'', min_payment:''}), extraDebtPayment = ref(0), showDebtForm = ref(false);
-
-                // Impulse/Consultant
                 const showImpulseModal = ref(false), impulseItem = ref({name:'', cost:'', date:new Date().toISOString().split('T')[0]}), impulseResult = ref(null);
                 const showConsultant = ref(false), chatMessages = ref([]), userQuery = ref(''), isThinking = ref(false);
-
                 let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
 
-                // --- 1. CORE BUDGET LOGIC ---
-                const setScenarioMode = (mode) => {
-                    currentScenarioMode.value = mode;
-                    const freshItems = budgetItems.value.map(item => ({...item}));
-                    freshItems.forEach(item => {
-                        if (item.frequency === 'One-Time') { item.includedInScenario = false; return; }
-                        if (mode === 'survival') item.includedInScenario = !!item.is_core;
-                        else if (mode === 'standard') item.includedInScenario = !item.is_wishlist;
-                        else if (mode === 'dream') item.includedInScenario = true;
-                    });
-                    if (mode === 'dream') {
-                        const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario);
-                        activeWishlist.forEach(w => {
-                            if (w.replaces_id) {
-                                const target = freshItems.find(t => t.id === w.replaces_id);
-                                if (target) target.includedInScenario = false;
-                            }
-                        });
-                    }
-                    budgetItems.value = freshItems;
-                };
+                // Added "Debts" to categories
+                const categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
 
+                // --- 1. CORE LOGIC ---
+                const setScenarioMode = (mode) => { currentScenarioMode.value = mode; const freshItems = budgetItems.value.map(item => ({...item})); freshItems.forEach(item => { if (item.frequency === 'One-Time') { item.includedInScenario = false; return; } if (mode === 'survival') item.includedInScenario = !!item.is_core; else if (mode === 'standard') item.includedInScenario = !item.is_wishlist; else if (mode === 'dream') item.includedInScenario = true; }); if (mode === 'dream') { const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario); activeWishlist.forEach(w => { if (w.replaces_id) { const target = freshItems.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false; } }); } budgetItems.value = freshItems; };
                 const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + getMonthlyCost(i), 0)));
                 const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { let m = Number(inc.amount); if (inc.frequency === 'Bi-Weekly') m *= 2.166; else if (inc.frequency === 'Semi-Monthly') m *= 2; return total + m; }, 0));
                 const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
                 const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
 
-                // --- 2. FORECAST LOGIC ---
-                const getOverride = (monthName) => {
-                    if (!forecastOverrides.value[monthName]) {
-                        forecastOverrides.value[monthName] = { income: null, extraExpenses: [] };
-                    }
-                    return forecastOverrides.value[monthName];
-                };
+                // --- 2. FORECAST ---
+                const getOverride=(m)=>forecastOverrides.value[m]?forecastOverrides.value[m]:forecastOverrides.value[m]={income:null,extraExpenses:[]};
+                const updateMonthIncome=(m)=>{getOverride(m.name).income=Number(m.income);runForecast()};
+                const addExpense=(m)=>{if(m.newExpenseName&&m.newExpenseAmount){getOverride(m.name).extraExpenses.push({name:m.newExpenseName,amount:Number(m.newExpenseAmount)});m.newExpenseName='';m.newExpenseAmount='';m.newExpenseId='';runForecast()}};
+                const fillExpense=(m)=>{const s=budgetItems.value.find(i=>i.id===m.newExpenseId);if(s){m.newExpenseName=s.name;m.newExpenseAmount=s.amount}};
+                const removeExpense=(m,i)=>{getOverride(m.name).extraExpenses.splice(i,1);runForecast()};
+                const fetchForecastSlots=async()=>{const{data}=await _supabase.from('forecast_slots').select('*').order('slot_index');if(data){const l=[null,null,null];data.forEach(s=>{if(s.slot_index>=0&&s.slot_index<3)l[s.slot_index]=s});savedForecasts.value=l}};
+                const saveForecastSlot=async(i)=>{const n=prompt("Name scenario:");if(!n)return;const p={user_id:session.value.user.id,slot_index:i,name:n,data:{settings:{...forecastSettings.value},project:project.value?{...project.value}:null,mode:forecastMode.value,overrides:{...forecastOverrides.value}}};await _supabase.from('forecast_slots').upsert(p,{onConflict:'user_id,slot_index'});await fetchForecastSlots()};
+                const loadForecastSlot=(i)=>{const s=savedForecasts.value[i];if(!s||!confirm(`Load "${s.name}"?`))return;const d=s.data;forecastSettings.value={...d.settings};project.value=d.project;setForecastMode(d.mode);if(d.overrides)forecastOverrides.value={...d.overrides};runForecast()};
+                const clearForecastSlot=async(i)=>{if(confirm("Clear slot?")){await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id,slot_index:i});await fetchForecastSlots()}};
 
-                const updateMonthIncome = (month) => {
-                    const ov = getOverride(month.name);
-                    ov.income = Number(month.income);
-                    runForecast();
-                };
-
-                const addExpense = (month) => {
-                    if (month.newExpenseName && month.newExpenseAmount) {
-                        const ov = getOverride(month.name);
-                        ov.extraExpenses.push({ name: month.newExpenseName, amount: Number(month.newExpenseAmount) });
-                        month.newExpenseName = ''; month.newExpenseAmount = ''; month.newExpenseId = '';
-                        runForecast();
-                    }
-                };
-
-                const fillExpense = (month) => {
-                    const selected = budgetItems.value.find(i => i.id === month.newExpenseId);
-                    if (selected) { month.newExpenseName = selected.name; month.newExpenseAmount = selected.amount; }
-                };
-                
-                const removeExpense = (month, index) => {
-                    const ov = getOverride(month.name);
-                    ov.extraExpenses.splice(index, 1);
-                    runForecast();
-                };
-                
-                const printReport = () => { window.print(); };
-
-                // --- DATABASE SAVE SLOTS ---
-                const fetchForecastSlots = async () => {
-                    const { data, error } = await _supabase.from('forecast_slots').select('*').order('slot_index');
-                    if (data) {
-                        const loaded = [null, null, null];
-                        data.forEach(slot => {
-                            if(slot.slot_index >= 0 && slot.slot_index < 3) loaded[slot.slot_index] = slot;
-                        });
-                        savedForecasts.value = loaded;
-                    }
-                };
-
-                const saveForecastSlot = async (index) => {
-                    const name = prompt("Name this scenario (e.g. 'New Job', 'Buying House'):");
-                    if (!name) return;
-
-                    const payload = {
-                        user_id: session.value.user.id,
-                        slot_index: index,
-                        name: name,
-                        data: {
-                            settings: { ...forecastSettings.value },
-                            project: project.value ? { ...project.value } : null,
-                            mode: forecastMode.value,
-                            overrides: { ...forecastOverrides.value } 
-                        }
-                    };
-
-                    const { error } = await _supabase.from('forecast_slots').upsert(payload, { onConflict: 'user_id, slot_index' });
-                    if (error) {
-                        alert("Error saving: " + error.message);
-                    } else {
-                        await fetchForecastSlots(); 
-                    }
-                };
-
-                const loadForecastSlot = (index) => {
-                    const slot = savedForecasts.value[index];
-                    if(!slot) return;
-                    if(!confirm(`Load "${slot.name}"? Unsaved changes will be lost.`)) return;
-
-                    const data = slot.data;
-                    forecastSettings.value = { ...data.settings };
-                    project.value = data.project;
-                    setForecastMode(data.mode);
-                    if (data.overrides) forecastOverrides.value = { ...data.overrides };
-                    
-                    runForecast();
-                };
-
-                const clearForecastSlot = async (index) => {
-                    if(!confirm("Clear this save slot?")) return;
-                    await _supabase.from('forecast_slots').delete().match({ user_id: session.value.user.id, slot_index: index });
-                    await fetchForecastSlots();
-                };
-
-                // --- 3. OTHER COMPUTED PROPS ---
+                // --- 3. COMPUTED ---
                 const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist));
                 const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist));
                 const variableBudgets = computed(() => budgetItems.value.filter(i => i.is_variable).map(item => { const currentMonthStr = new Date().toISOString().slice(0, 7); const spent = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).reduce((sum, b) => sum + (b.amount_paid || b.budget_items.amount), 0); return { ...item, spent: spent, remaining: item.amount - spent, progress: (spent / item.amount) * 100 }; }));
@@ -576,11 +441,10 @@
                 const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0);
                 const cashFlowLowPoint = computed(() => lowPointData.value);
                 const totalMonthlyRetirementContribution = computed(() => incomes.value.reduce((sum, inc) => { const salary = Number(inc.details?.salary || 0); const rate = (Number(inc.details?.trad401k || 0) + Number(inc.details?.roth401k || 0) + Number(inc.details?.match401k || 0)) / 100; return sum + ((salary / 12) * rate); }, 0));
-                
                 const retirementProjection = computed(() => { const P = Number(forecastSettings.value.retirementBalance || 0); const PMT = totalMonthlyRetirementContribution.value; const r = (Number(forecastSettings.value.expectedReturn || 7) / 100); const n = 12; const t = Math.max(0, Number(forecastSettings.value.retirementAge) - Number(forecastSettings.value.currentAge)); if (t <= 0) return P; const fvLumpSum = P * Math.pow((1 + r/n), (n*t)); const fvContrib = PMT * ( (Math.pow((1 + r/n), (n*t)) - 1) / (r/n) ); return fvLumpSum + fvContrib; });
                 const debtPlan = computed(() => { if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }; const simulate = (extra) => { let simDebts = JSON.parse(JSON.stringify(debts.value)).map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment), paid_off: false })); let totalInterest = 0, months = 0, timeline = [], active = true, permanentSnowball = extra; while (active && months < 480) { months++; let anyBalanceLeft = false, monthlySurplus = permanentSnowball; for (let d of simDebts) { if (d.paid_off) { monthlySurplus += d.min; continue; } anyBalanceLeft = true; let interest = d.balance * (d.rate / 100 / 12); totalInterest += interest; d.balance += interest; let payment = Math.min(d.balance, d.min); d.balance -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }); monthlySurplus += (d.min - payment); } } for (let d of simDebts) { if (d.paid_off) continue; if (monthlySurplus <= 0) break; let payment = Math.min(d.balance, monthlySurplus); d.balance -= payment; monthlySurplus -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }); } } if (!anyBalanceLeft) active = false; } return { months, totalInterest, timeline }; }; const base = simulate(0); const attack = simulate(extraDebtPayment.value); const now = new Date(); now.setMonth(now.getMonth() + attack.months); return { payoffDate: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), totalInterest: round(attack.totalInterest), savedInterest: round(base.totalInterest - attack.totalInterest), timeline: attack.timeline }; });
 
-                // --- 4. DATA FETCHING ---
+                // --- 4. ASYNC ---
                 const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) { budgetItems.value = data.map(i => ({...i, includedInScenario: false})); setScenarioMode('survival'); } };
                 const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { if (data.current_balance !== null) forecastSettings.value.currentBalance = data.current_balance; if (data.safety_margin !== null) forecastSettings.value.safetyMargin = data.safety_margin; if (data.retirement_balance !== null) forecastSettings.value.retirementBalance = data.retirement_balance; if (data.current_age !== null) forecastSettings.value.currentAge = data.current_age; if (data.retirement_age !== null) forecastSettings.value.retirementAge = data.retirement_age; if (data.expected_return !== null) forecastSettings.value.expectedReturn = data.expected_return; } };
                 const fetchIncomes = async () => { const { data } = await _supabase.from('incomes').select('*').order('created_at', { ascending: true }); if (data) incomes.value = data; };
@@ -592,23 +456,7 @@
                 const calculateAndSave = async (mode) => {
                     savingBase.value = true;
                     const { name, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding } = calcInputs.value;
-                    const payPeriods = 24;
-                    const grossPay = (salary / payPeriods) + (Number(commission)||0);
-                    const benefitAmt = Number(medical) + Number(dental) + Number(fsa);
-                    const ficaWages = Math.max(0, grossPay - benefitAmt);
-                    const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062;
-                    const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0);
-                    const tradAmt = grossPay * (Number(trad401k) / 100);
-                    const rothAmt = grossPay * (Number(roth401k) / 100);
-                    const taxable = grossPay - tradAmt - benefitAmt;
-                    const annualTaxable = Math.max(0, (taxable * payPeriods));
-                    let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods);
-                    if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods);
-                    if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding);
-                    fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod);
-                    const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100);
-                    const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax;
-                    const finalPay = round(net);
+                    const payPeriods = 24; const grossPay = (salary / payPeriods) + (Number(commission)||0); const benefitAmt = Number(medical) + Number(dental) + Number(fsa); const ficaWages = Math.max(0, grossPay - benefitAmt); const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0); const tradAmt = grossPay * (Number(trad401k) / 100); const rothAmt = grossPay * (Number(roth401k) / 100); const taxable = grossPay - tradAmt - benefitAmt; const annualTaxable = Math.max(0, (taxable * payPeriods)); let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods); if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods); if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding); fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod); const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100); const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax; const finalPay = round(net);
                     calcResult.value = { gross: round(grossPay), benefitAmt: round(benefitAmt), tradAmt: round(tradAmt), preTaxTotal: round(benefitAmt + tradAmt), taxes: round(fedTaxPerPeriod + stateTaxPerPeriod), fedTax: round(fedTaxPerPeriod), stateTax: round(stateTaxPerPeriod), fica: round(ssTax + medTax), postTaxTotal: round(Number(postTax) + rothAmt), netPay: finalPay };
                     if (mode === 'default') {
                         const payload = { user_id: session.value.user.id, name: name || 'New Income', amount: finalPay, frequency: payFrequency, next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding } };
@@ -621,37 +469,31 @@
                     savingBase.value = false;
                 };
 
-                const logExpense = async () => { if(!expenseData.value.budgetId || !expenseData.value.amount) return; const { error } = await _supabase.from('ledger').insert([{ user_id: session.value.user.id, budget_item_id: expenseData.value.budgetId, amount_paid: Number(expenseData.value.amount), is_paid: true, due_date: expenseData.value.date, transaction_name: expenseData.value.description }]); if(!error){ showExpenseModal.value = false; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; fetchBills(); renderDashboardChart(); } else { alert("Error logging expense"); } };
-                const saveSettings = async () => { await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: forecastSettings.value.currentBalance, safety_margin: forecastSettings.value.safetyMargin }); };
-                const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
-                const deleteIncome = async (id) => { if(!confirm("Delete this income source?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
-                const deleteBill = async (bill) => { if(!confirm("Remove this bill instance?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-                const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating bill status'); } else { renderDashboardChart(); } };
-                const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying bill."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
-                const deleteBudgetItem = async (item) => { if (!confirm('Delete item?')) return; const { error } = await _supabase.from('budget_items').delete().eq('id', item.id); if (!error) { budgetItems.value = budgetItems.value.filter(i => i.id !== item.id); bills.value = bills.value.filter(b => b.budget_item_id !== item.id); renderCategoryChart(); renderDashboardChart(); } };
-                const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
-                const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
-                const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
-                const resetDemo = async () => { if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); window.location.reload(); };
-                const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
+                // Basic Actions
+                const logExpense=async()=>{if(!expenseData.value.budgetId||!expenseData.value.amount)return;const{error}=await _supabase.from('ledger').insert([{user_id:session.value.user.id,budget_item_id:expenseData.value.budgetId,amount_paid:Number(expenseData.value.amount),is_paid:true,due_date:expenseData.value.date,transaction_name:expenseData.value.description}]);if(!error){showExpenseModal.value=false;expenseData.value={budgetId:'',amount:'',description:'',date:new Date().toISOString().split('T')[0]};fetchBills();renderDashboardChart()}else{alert("Error logging expense")}};
+                const saveSettings=async()=>{await _supabase.from('user_settings').upsert({user_id:session.value.user.id,current_balance:forecastSettings.value.currentBalance,safety_margin:forecastSettings.value.safetyMargin})};
+                const saveRetirementSettings=async()=>{await _supabase.from('user_settings').update({current_age:forecastSettings.value.currentAge,retirement_age:forecastSettings.value.retirementAge,retirement_balance:forecastSettings.value.retirementBalance,expected_return:forecastSettings.value.expectedReturn}).eq('user_id',session.value.user.id)};
+                const deleteIncome=async(id)=>{if(!confirm("Delete?"))return;await _supabase.from('incomes').delete().eq('id',id);fetchIncomes()};
+                const deleteBill=async(bill)=>{if(!confirm("Remove?"))return;const{error}=await _supabase.from('ledger').delete().eq('id',bill.id);if(!error){bills.value=bills.value.filter(b=>b.id!==bill.id);renderDashboardChart()}};
+                const toggleBillPaid=async(bill)=>{const{error}=await _supabase.from('ledger').update({is_paid:bill.is_paid}).eq('id',bill.id);if(error){bill.is_paid=!bill.is_paid;alert('Error')}else{renderDashboardChart()}};
+                const quickPay=async(bill)=>{const newStatus=!bill.is_paid;const{error}=await _supabase.from('ledger').update({is_paid:newStatus}).eq('id',bill.id);if(error){alert("Error")}else{bill.is_paid=newStatus;renderDashboardChart()}};
+                const deleteBudgetItem=async(item)=>{if(!confirm('Delete?'))return;const{error}=await _supabase.from('budget_items').delete().eq('id',item.id);if(!error){budgetItems.value=budgetItems.value.filter(i=>i.id!==item.id);bills.value=bills.value.filter(b=>b.budget_item_id!==item.id);renderCategoryChart();renderDashboardChart()}};
+                const startEditing=(item)=>{isEditing.value=true;editingId.value=item.id;newItem.value={...item,isFlexible:item.due_day===0,replaces_id:item.replaces_id||null};showAddForm.value=true};
+                const resetForm=()=>{isEditing.value=false;editingId.value=null;newItem.value={name:'',amount:'',due_day:'',isFlexible:false,frequency:'Monthly',is_core:false,is_autopay:false,is_wishlist:false,replaces_id:null,category:'Essentials',is_variable:false};showAddForm.value=false};
+                const nextOnboardingStep=async()=>{if(onboardingStep.value===5)await finishOnboarding();else onboardingStep.value++};
+                const resetDemo=async()=>{if(!confirm("⚠️ DELETE ALL DATA?"))return;loading.value=true;const uid=session.value.user.id;await _supabase.from('ledger').delete().eq('user_id',uid);await _supabase.from('budget_items').delete().eq('user_id',uid);await _supabase.from('debts').delete().eq('user_id',uid);await _supabase.from('incomes').delete().eq('user_id',uid);await _supabase.from('user_settings').delete().eq('user_id',uid);window.location.reload()};
+                const finishOnboarding=async()=>{isSubmitting.value=true;const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value;const settingsPayload={user_id:session.value.user.id};if(balance!=='')settingsPayload.current_balance=Number(balance);if(safety!=='')settingsPayload.safety_margin=Number(safety);if(salary!==''){const annualSalary=Number(salary);const grossPay=annualSalary/(frequency==='Monthly'?12:24);const net=grossPay*0.75;const finalPay=round(net);await _supabase.from('incomes').insert([{user_id:session.value.user.id,name:incomeName||'Main Job',amount:finalPay,frequency:frequency,next_pay_date:new Date().toISOString().split('T')[0],details:{salary:annualSalary,medical:Number(medical),dental:Number(dental),trad401k:Number(trad401k),filingStatus:filingStatus||'Single',stateTaxRate:Number(stateTaxRate)||0}}])}const{error}=await _supabase.from('user_settings').upsert(settingsPayload);if(balance!=='')forecastSettings.value.currentBalance=Number(balance);if(billName&&billAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:billName,amount:Number(billAmount),due_day:isVariable?0:(Number(billDay)||1),is_core:isCore,is_variable:isVariable,category:category||'Other',is_active:true}]);if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true,category:'Entertainment'}]);if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)};await fetchIncomes();await fetchBudgetItems();await fetchSettings();confetti({particleCount:150,spread:70,origin:{y:0.6}});showOnboarding.value=false;isSubmitting.value=false;setTimeout(()=>window.location.reload(),500)};
                 const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
                 const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
                 const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
                 const setForecastMode=(mode)=>{forecastMode.value=mode;};
                 
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
-                const handleLogout = async () => { 
-                    await _supabase.auth.signOut(); 
-                    session.value = null; 
-                    const cleanUrl = window.location.origin + window.location.pathname;
-                    window.history.replaceState(null, '', cleanUrl);
-                    window.location.href = cleanUrl; 
-                };
-                
+                const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; const cleanUrl = window.location.origin + window.location.pathname; window.history.replaceState(null, '', cleanUrl); window.location.href = cleanUrl; };
                 const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
                 const handleSave=async()=>{isEditing.value?updateItem():addItem()};
-                const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
-                const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
+                const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true,is_variable:newItem.value.is_variable,category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
+                const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable,category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
                 const openGenerateModal=async(offset=0)=>{generateMonthOffset.value=offset;const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+offset);const startOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth(),1).toISOString();const endOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0).toISOString();const{data:t}=await _supabase.from('budget_items').select('*').eq('is_active',true).eq('is_wishlist',false).eq('user_id',session.value.user.id);const{data:e}=await _supabase.from('ledger').select('budget_item_id').gte('due_date',startOfMonth).lte('due_date',endOfMonth);const existingIds=new Set(e.map(b=>b.budget_item_id));potentialBills.value=t.filter(x=>!existingIds.has(x.id)).map(x=>({...x,selected:x.frequency==='Monthly'}));showGenModal.value=true};
                 const confirmGenerate=async()=>{const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+generateMonthOffset.value);const toCreate=potentialBills.value.filter(i=>i.selected).map(t=>({user_id:session.value.user.id,budget_item_id:t.id,amount_paid:0,due_date:new Date(targetDate.getFullYear(),targetDate.getMonth(),t.due_day||1).toISOString(),is_paid:false}));if(toCreate.length>0){await _supabase.from('ledger').insert(toCreate);await fetchBills()}showGenModal.value=false};
                 const toggleChartMode = () => { showChartPercentages.value = !showChartPercentages.value; renderCategoryChart(); };
@@ -665,6 +507,7 @@
                 const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
                 const renderDashboardChart=()=>{ const ctx=document.getElementById('dashboardChart');if(!ctx)return;if(dashboardChartInstance)dashboardChartInstance.destroy(); const labels=[],dataCurrent=[],dataImpulse=[]; let currentSimBalance=forecastSettings.value.currentBalance||0,impulseSimBalance=currentSimBalance; const today=new Date(); let simIncomes = incomes.value.map(inc => ({ amount: Number(inc.amount), nextDate: new Date(inc.next_pay_date), freq: inc.frequency })); const runImpulse=impulseResult.value!==null||(impulseItem.value.cost&&showImpulseModal.value===false); const impulseCost=Number(impulseItem.value.cost),impulseDate=impulseItem.value.date; for(let i=0;i<30;i++){ const d=new Date();d.setDate(today.getDate()+i);const dayOfMonth=d.getDate();const dStr=d.toISOString().split('T')[0]; const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); labels.push(dateLabel); const billsDue=bills.value.filter(b=>!b.is_paid&&b.due_date===dStr && !b.budget_items.is_variable); const realDrop=billsDue.reduce((sum,b)=>sum+b.budget_items.amount,0); const virtualDrop=budgetItems.value.reduce((sum,item)=>{ if(!item.is_variable && item.frequency==='Monthly' && item.due_day===dayOfMonth){ const hasRealBill=bills.value.some(b=>b.budget_item_id===item.id && b.due_date===dStr); if(!hasRealBill)return sum+item.amount } return sum },0); const totalDrop=realDrop+virtualDrop; currentSimBalance-=totalDrop;impulseSimBalance-=totalDrop; if (useTempPay.value) { let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null; const freq = calcInputs.value.payFrequency; const amt = calcResult.value ? calcResult.value.netPay : 0; if(nextPay && dStr === nextPay.toISOString().split('T')[0]){ currentSimBalance+=amt; impulseSimBalance+=amt; if(freq==='Bi-Weekly') nextPay.setDate(nextPay.getDate()+14); else if(freq==='Semi-Monthly') nextPay.setDate(nextPay.getDate()+15); else if(freq==='Monthly') nextPay.setMonth(nextPay.getMonth()+1); } } else { simIncomes.forEach(inc => { if (dStr === inc.nextDate.toISOString().split('T')[0]) { currentSimBalance += inc.amount; impulseSimBalance += inc.amount; if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14); else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15); else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1); } }); } if(runImpulse&&dStr===impulseDate)impulseSimBalance-=impulseCost; dataCurrent.push(currentSimBalance);dataImpulse.push(impulseSimBalance); } const activeData=runImpulse?dataImpulse:dataCurrent;const min=Math.min(...activeData);const index=activeData.indexOf(min);const d=new Date();d.setDate(today.getDate()+index);lowPointData.value={amount:min,date:d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}; dashboardChartInstance=new Chart(ctx,{type:'line',data:{labels:labels,datasets:datasets=[{label:'Current',data:dataCurrent,borderColor:'#3B82F6',borderWidth:2,pointRadius:0,fill:false,tension:0.1}]}}); if(runImpulse)dashboardChartInstance.data.datasets.push({label:'With Purchase',data:dataImpulse,borderColor:'#9333EA',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false,tension:0.1}); dashboardChartInstance.update(); };
                 
+                // Forecast logic
                 const runForecast=()=>{
                     let balance=round(forecastSettings.value.currentBalance);
                     const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -674,57 +517,33 @@
                         forecastData.value=[];
                         for(let i=0;i<forecastSettings.value.months;i++){
                             const d=new Date(now.getFullYear(),now.getMonth()+i,1);
-                            forecastData.value.push({
-                                name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,
-                                income:activeMonthlyPay.value,
-                                extraExpenses:[],
-                                newExpenseId:'',
-                                newExpenseName:'',
-                                newExpenseAmount:'',
-                                isOpen:false,
-                                burn: 0
-                            })
+                            forecastData.value.push({name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,income:activeMonthlyPay.value,extraExpenses:[],newExpenseId:'',newExpenseName:'',newExpenseAmount:'',isOpen:false,burn: 0})
                         }
                     }
                     
                     forecastResults.value.affordableMonth=null;
-                    
                     forecastData.value.forEach((m,idx)=>{
-                        // Apply Overrides (Income & Expenses)
                         const ov = forecastOverrides.value[m.name];
                         if (ov) {
                             if (ov.income !== null && ov.income !== undefined) m.income = Number(ov.income);
                             if (ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses]; 
-                        } else {
-                            if (!useTempPay.value) m.income = activeMonthlyPay.value; 
-                        }
+                        } else { if (!useTempPay.value) m.income = activeMonthlyPay.value; }
 
-                        // Calculate Dynamic Burn
                         let monthlyBurn=0;
-                        if(forecastMode.value==='survival') {
-                            monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
-                        } else if(forecastMode.value==='standard') {
-                            monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
-                        } else if(forecastMode.value==='dream') {
+                        if(forecastMode.value==='survival') monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
+                        else if(forecastMode.value==='standard') monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
+                        else if(forecastMode.value==='dream') {
                             budgetItems.value.forEach(i=>{
                                 if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i);
-                                else {
-                                    const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id);
-                                    if(!replaced) monthlyBurn+=getMonthlyCost(i);
-                                }
+                                else { const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id); if(!replaced) monthlyBurn+=getMonthlyCost(i); }
                             });
                         }
                         m.burn = round(monthlyBurn);
-
                         const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);
                         const monthlyNet=m.income-monthlyBurn-totalExtra;
                         balance=round(balance+monthlyNet);
                         m.endBalance=balance;
-                        
-                        if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){
-                            forecastResults.value.affordableMonth=m.name;
-                            forecastResults.value.affordableIndex=idx
-                        }
+                        if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){ forecastResults.value.affordableMonth=m.name; forecastResults.value.affordableIndex=idx }
                     });
                     renderChart();
                 };
@@ -732,9 +551,127 @@
                 const renderChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
                 const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
                 const clearImpulse=()=>{impulseItem.value={name:'',cost:'',date:new Date().toISOString().split('T')[0]};impulseResult.value=null;renderDashboardChart()};
+                
+                // --- 6. INTELLIGENT ADVISOR ---
                 const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
-                const sendQuery=async(text)=>{if(!text)return;chatMessages.value.push({role:'user',text});userQuery.value='';isThinking.value=true;nextTick(scrollChat);setTimeout(()=>{const snapshot=getFinancialSnapshot();const response=generateMockResponse(text,snapshot);chatMessages.value.push({role:'assistant',text:response});isThinking.value=false;nextTick(scrollChat)},1200)};
-                const generateMockResponse=(query,data)=>{ const q=query.toLowerCase(); if(q.includes('ruthless')||q.includes('cut')){const nonCore=data.budget_list.filter(i=>!i.core).sort((a,b)=>b.amt-a.amt);let totalWaste=nonCore.reduce((a,b)=>a+b.amt,0);let top3=nonCore.slice(0,3).map(i=>`• **${i.name}**: $${i.amt}`).join('<br>');return`Found **$${totalWaste.toLocaleString()}** in non-essential spending.<br>Top 3 targets:<br>${top3}`} if(q.includes('debt')){if(data.debt_list.length===0)return"No debts! Great job.";const highestRate=[...data.debt_list].sort((a,b)=>b.rate-a.rate)[0];const totalInterest=data.debt_list.reduce((acc,d)=>acc+(d.balance*(d.rate/100/365)),0);return`Total Debt: **$${data.total_debt.toLocaleString()}**.<br>Losing **$${totalInterest.toFixed(2)}/day** in interest.<br>Attack **${highestRate.name}** (${highestRate.rate}%) first.`} if(q.includes('stress')||q.includes('survive')){return`**Runway:** ${data.survival_months} months based on savings of $${data.savings.toLocaleString()}.`} if(q.includes('1%')||q.includes('boost')||q.includes('nest egg')){ const totalGross = incomes.value.reduce((sum, inc) => { let gross = Number(inc.details?.salary || 0) / 12; gross += Number(inc.details?.commission || 0); if(inc.frequency==='Bi-Weekly') gross = gross + (Number(inc.details?.commission||0) * 2.166); else if(inc.frequency==='Semi-Monthly') gross = gross + (Number(inc.details?.commission||0) * 2); return sum + gross; }, 0); const onePercent = totalGross * 0.01; const currentP = retirementProjection.value; const r = (Number(forecastSettings.value.expectedReturn || 7) / 100); const n = 12; const t = Math.max(0, Number(forecastSettings.value.retirementAge) - Number(forecastSettings.value.currentAge)); const boostedPMT = totalMonthlyRetirementContribution.value + onePercent; const fvLumpSum = Number(forecastSettings.value.retirementBalance) * Math.pow((1 + r/n), (n*t)); const fvContrib = boostedPMT * ((Math.pow((1 + r/n), (n*t)) - 1) / (r/n)); const boostedProjection = fvLumpSum + fvContrib; const diff = boostedProjection - currentP; return `Increasing contributions by just **1%** ($${onePercent.toFixed(0)}/mo) could add **$${diff.toLocaleString(undefined, {maximumFractionDigits:0})}** to your nest egg by age ${forecastSettings.value.retirementAge}.<br><br>New Projection: **$${boostedProjection.toLocaleString(undefined, {maximumFractionDigits:0})}**`; } return"I analyzed your finances. Income: $"+data.income.toLocaleString()+". Ask for a Stress Test or Debt Strategy."; };
+                
+                // Make handleSuggestion global so onclick events in HTML strings work
+                window.handleSuggestion = (text) => { app.config.globalProperties.sendQuery(text); };
+
+                const sendQuery = async (text) => {
+                    if(!text) return;
+                    chatMessages.value.push({ role: 'user', text });
+                    userQuery.value = '';
+                    isThinking.value = true;
+                    nextTick(scrollChat);
+                    
+                    setTimeout(() => {
+                        const snapshot = getFinancialSnapshot();
+                        const { response, suggestions } = generateSmartResponse(text, snapshot);
+                        
+                        // Append suggestions as styled HTML buttons to the response
+                        let finalHtml = response;
+                        if(suggestions.length > 0) {
+                            finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
+                            suggestions.forEach(s => {
+                                finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
+                            });
+                            finalHtml += `</div>`;
+                        }
+
+                        chatMessages.value.push({ role: 'assistant', text: finalHtml });
+                        isThinking.value = false;
+                        nextTick(scrollChat);
+                    }, 1000);
+                };
+
+                const generateSmartResponse = (query, data) => {
+                    const q = query.toLowerCase();
+                    let response = '';
+                    let suggestions = [];
+
+                    // Logic Engine
+                    if (q.includes('review') || q.includes('budget') || q.includes('analysis')) {
+                        const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt);
+                        const totalWaste = nonCore.reduce((a,b) => a + b.amt, 0);
+                        const top3 = nonCore.slice(0,3).map(i => `• <b>${i.name}</b>: $${i.amt}`).join('<br>');
+                        response = `I've analyzed your monthly spending.<br><br>You are spending <b>$${totalWaste.toLocaleString()}</b> on non-essential items. Here are your top 3 discretionary expenses:<br>${top3}`;
+                        suggestions = [
+                            { label: "✂️ Identify cuts to save 10%", text: "Suggest a strategy to cut my discretionary spending by 10%" },
+                            { label: "📺 Check subscription costs", text: "How much am I spending on subscriptions specifically?" },
+                            { label: "🔮 Forecast my savings", text: "If I stick to this budget, how much will I save in 6 months?" }
+                        ];
+                    } 
+                    else if (q.includes('debt') || q.includes('loan') || q.includes('card')) {
+                        if (data.debt_list.length === 0) {
+                            response = "You are debt-free! This puts you ahead of 77% of Americans. Focus on maximizing your retirement or saving for a big goal.";
+                            suggestions = [
+                                { label: "👴 Check retirement projection", text: "How is my retirement looking?" },
+                                { label: "🏡 Plan for a house", text: "I want to save $50,000 for a house" }
+                            ];
+                        } else {
+                            const totalDebt = data.total_debt;
+                            const dailyInterest = data.debt_list.reduce((acc,d) => acc + (d.balance * (d.rate/100/365)), 0);
+                            response = `You have <b>$${totalDebt.toLocaleString()}</b> in total debt.<br>It is costing you approximately <b>$${dailyInterest.toFixed(2)} per day</b> in interest.`;
+                            suggestions = [
+                                { label: "❄️ Simulate Snowball (Smallest First)", text: "Show me the Snowball payoff strategy" },
+                                { label: "🏔️ Simulate Avalanche (High Interest)", text: "Show me the Avalanche payoff strategy" },
+                                { label: "💰 Effect of +$100/mo payment", text: "How much time and interest do I save if I pay an extra $100 per month?" }
+                            ];
+                        }
+                    } 
+                    else if (q.includes('retirement') || q.includes('invest') || q.includes('nest egg')) {
+                        response = `Based on your current settings, you are projected to have <b>$${retirementProjection.value.toLocaleString(undefined, {maximumFractionDigits:0})}</b> by age ${forecastSettings.value.retirementAge}.`;
+                        suggestions = [
+                            { label: "📈 Impact of 1% increase", text: "How would increasing my contribution by 1% affect my nest egg?" },
+                            { label: "🛑 Coast FIRE calculation", text: "What if I stopped contributing today?" }
+                        ];
+                    } 
+                    else if (q.includes('subscription')) {
+                        const subs = budgetItems.value.filter(i => i.category === 'Subscriptions' || i.category === 'Entertainment');
+                        const total = subs.reduce((a,b) => a + b.amount, 0);
+                        response = `I found ${subs.length} items tagged as Subscriptions or Entertainment, totaling <b>$${total}/mo</b> ($${total*12}/yr).`;
+                        suggestions = [
+                            { label: "✂️ Suggest cuts", text: "Which subscription should I cancel?" },
+                            { label: "🔙 Back to Budget", text: "Review my full budget" }
+                        ];
+                    }
+                    else if (q.includes('snowball') || q.includes('avalanche')) {
+                        response = "Comparing strategies...<br><b>Avalanche</b> (High Interest First) usually saves the most money.<br><b>Snowball</b> (Smallest Balance First) builds momentum faster.<br><br>Check the <b>Debt Tab</b> to see the exact timeline difference.";
+                        suggestions = [
+                            { label: "📍 Go to Debt Tab", text: "Take me to the Debt tab" }, // Logic for this would need view switching
+                            { label: "💵 Analyze Cash Flow", text: "Analyze my monthly cash flow" }
+                        ];
+                    }
+                    else if (q.includes('forecast') || q.includes('save') || q.includes('savings')) {
+                        const monthlyNet = activeMonthlyPay.value - totalMonthlyBurn.value;
+                        const sixMonth = monthlyNet * 6;
+                        response = `You are currently saving roughly <b>$${monthlyNet.toLocaleString()}/mo</b>.<br>In 6 months, you will have added <b>$${sixMonth.toLocaleString()}</b> to your balance.`;
+                        suggestions = [
+                            { label: "📉 Stress Test: Job Loss", text: "If I lost my job, how long would my savings last?" },
+                            { label: "🎯 Set a Goal", text: "I want to buy a car for $20,000" }
+                        ];
+                    }
+                    else if (q.includes('stress') || q.includes('survive') || q.includes('job')) {
+                        const survivalBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
+                        const runway = (forecastSettings.value.currentBalance / survivalBurn).toFixed(1);
+                        response = `<b>Stress Test Results:</b><br>With your current cash ($${forecastSettings.value.currentBalance.toLocaleString()}) and a "Survival" budget of $${survivalBurn.toLocaleString()}/mo, you have a runway of <b>${runway} months</b>.`;
+                        suggestions = [
+                            { label: "🛡️ Switch to Survival Mode", text: "Switch dashboard to Survival Mode" } // Would need view logic
+                        ];
+                    }
+                    else {
+                        response = "I can help you analyze your finances. What's on your mind?";
+                        suggestions = [
+                            { label: "📊 Review Budget", text: "Review my budget" },
+                            { label: "💳 Analyze Debt", text: "Analyze my debt" },
+                            { label: "👴 Retirement Check", text: "Check my retirement status" }
+                        ];
+                    }
+
+                    return { response, suggestions };
+                };
+
                 const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
                 const renderMarkdown=(text)=>{return marked.parse(text)};
                 const getFinancialSnapshot=()=>{return{income:activeMonthlyPay.value,savings:forecastSettings.value.currentBalance,total_debt:debts.value.reduce((a,b)=>a+Number(b.balance),0),core_burn:budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),discretionary_burn:budgetItems.value.filter(i=>!i.is_core&&!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),debt_list:debts.value,budget_list:budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name,amt:i.amount,core:i.is_core})),survival_months:(forecastSettings.value.currentBalance/(budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)}};
@@ -755,7 +692,14 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense };
+                // Attach to window so HTML buttons can see it
+                app.config.globalProperties.sendQuery = sendQuery;
+
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense };
             }
-        }).mount('#app');
+        });
+        
+        const vm = app.mount('#app');
     </script>
+</body>
+</html>
