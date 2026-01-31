@@ -362,7 +362,11 @@
     const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
     
-    if(SUPABASE_URL.includes('YOUR_PROJECT')) document.getElementById('app').innerHTML = '<div class="p-8 text-center text-red-600 font-bold">⚠️ CRITICAL ERROR: You forgot to paste your Supabase Keys at the bottom of the script!</div>';
+    // Error Check
+    if(SUPABASE_URL.includes('YOUR_PROJECT')){
+        document.getElementById('app').innerHTML = '<div class="p-8 text-center text-red-600 font-bold">⚠️ CRITICAL ERROR: You forgot to paste your Supabase Keys at the bottom of the script!</div>'; 
+        throw new Error("Missing Keys");
+    }
 
     const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -375,12 +379,12 @@
         return a;
     };
     
-    // Tax Brackets
+    // Tax Brackets & Logic
     const taxBrackets = { Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}], Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}], Head: [{limit: 17000, rate: 0.10},{limit: 64850, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}] };
     const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
     const calculateFederalTax = (annualInc, status='Single') => { let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000)); let t = 0, l = 0; const brackets = taxBrackets[status] || taxBrackets.Single; for(const b of brackets){ if(taxable > b.limit){ t += (b.limit - l) * b.rate; l = b.limit; } else { t += (taxable - l) * b.rate; break; } } return t; };
     
-    const app = createApp({
+    createApp({
         setup() {
             const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
@@ -551,42 +555,11 @@
             // --- 6. INTELLIGENT ADVISOR ---
             const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
             
-            // Make handleSuggestion global so onclick events in HTML strings work
-            window.handleSuggestion = (text) => { app.config.globalProperties.sendQuery(text); };
-
-            const sendQuery = async (text) => {
-                if(!text) return;
-                chatMessages.value.push({ role: 'user', text });
-                userQuery.value = '';
-                isThinking.value = true;
-                nextTick(scrollChat);
-                
-                setTimeout(() => {
-                    const snapshot = getFinancialSnapshot();
-                    const { response, suggestions } = generateSmartResponse(text, snapshot);
-                    
-                    // Append suggestions as styled HTML buttons to the response
-                    let finalHtml = response;
-                    if(suggestions.length > 0) {
-                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
-                        suggestions.forEach(s => {
-                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
-                        });
-                        finalHtml += `</div>`;
-                    }
-
-                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
-                    isThinking.value = false;
-                    nextTick(scrollChat);
-                }, 1000);
-            };
-
             const generateSmartResponse = (query, data) => {
                 const q = query.toLowerCase();
                 let response = '';
                 let suggestions = [];
 
-                // Logic Engine
                 if (q.includes('review') || q.includes('budget') || q.includes('analysis')) {
                     const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt);
                     const totalWaste = nonCore.reduce((a,b) => a + b.amt, 0);
@@ -609,12 +582,10 @@
                         const totalDebt = data.total_debt;
                         const dailyInterest = data.debt_list.reduce((acc,d) => acc + (d.balance * (d.rate/100/365)), 0);
                         
-                        // Default response for debt query
                         response = `You have <b>$${totalDebt.toLocaleString()}</b> in total debt.<br>It is costing you approximately <b>$${dailyInterest.toFixed(2)} per day</b> in interest.`;
 
                         // Debt Simulation Logic (Snowball vs Avalanche)
                         if (q.includes('snowball') || q.includes('avalanche')) {
-                            // Quick Simulation
                              const sim = (mode) => {
                                 let dList = JSON.parse(JSON.stringify(data.debt_list));
                                 if(mode==='snow') dList.sort((a,b)=>a.balance-b.balance);
@@ -644,9 +615,11 @@
                              response = `<b>Comparison Results:</b><br>
                                          ❄️ <b>Snowball:</b> Debt free in ${Math.floor(sResults.months/12)}y ${sResults.months%12}m. Total Interest: $${Math.round(sResults.interest).toLocaleString()}<br>
                                          🏔️ <b>Avalanche:</b> Debt free in ${Math.floor(aResults.months/12)}y ${aResults.months%12}m. Total Interest: $${Math.round(aResults.interest).toLocaleString()}<br><br>
-                                         Avalanche saves you <b>$${Math.round(diff).toLocaleString()}</b>.`;
+                                         Avalanche saves you <b>$${Math.round(diff).toLocaleString()}</b> in interest.`;
                         } else if (q.includes('extra') || q.includes('100')) {
-                             response = "Calculating the impact of +$100/mo... (Simulation logic would go here). Generally, adding $100/mo to your highest interest debt can cut years off your timeline.";
+                             // Simple extra payment logic simulation
+                             const currentInt = data.debt_list.reduce((acc,d) => acc + (d.balance * (d.rate/100/12)), 0);
+                             response = `Adding <b>$100/month</b> to your debt payments is highly recommended. It goes directly to principal, saving you money immediately. Currently, about <b>$${Math.round(currentInt)}</b> of your monthly payments goes just to interest.`;
                         }
                         
                         suggestions = [
@@ -726,6 +699,32 @@
                 return { response, suggestions };
             };
 
+            const sendQuery = async (text) => {
+                if(!text) return;
+                chatMessages.value.push({ role: 'user', text });
+                userQuery.value = '';
+                isThinking.value = true;
+                nextTick(scrollChat);
+                
+                setTimeout(() => {
+                    const snapshot = getFinancialSnapshot();
+                    const { response, suggestions } = generateSmartResponse(text, snapshot);
+                    
+                    let finalHtml = response;
+                    if(suggestions.length > 0) {
+                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
+                        suggestions.forEach(s => {
+                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
+                        });
+                        finalHtml += `</div>`;
+                    }
+
+                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
+                    isThinking.value = false;
+                    nextTick(scrollChat);
+                }, 1000);
+            };
+
             const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
             const renderMarkdown=(text)=>{return marked.parse(text)};
             const getFinancialSnapshot=()=>{return{income:activeMonthlyPay.value,savings:forecastSettings.value.currentBalance,total_debt:debts.value.reduce((a,b)=>a+Number(b.balance),0),core_burn:budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),discretionary_burn:budgetItems.value.filter(i=>!i.is_core&&!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),debt_list:debts.value,budget_list:budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name,amt:i.amount,core:i.is_core})),survival_months:(forecastSettings.value.currentBalance/(budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)}};
@@ -756,3 +755,5 @@
         }
     }).mount('#app');
 </script>
+
+   
