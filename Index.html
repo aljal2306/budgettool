@@ -513,57 +513,33 @@
                     forecastData.value=[];
                     for(let i=0;i<forecastSettings.value.months;i++){
                         const d=new Date(now.getFullYear(),now.getMonth()+i,1);
-                        forecastData.value.push({
-                            name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,
-                            income:activeMonthlyPay.value,
-                            extraExpenses:[],
-                            newExpenseId:'',
-                            newExpenseName:'',
-                            newExpenseAmount:'',
-                            isOpen:false,
-                            burn: 0
-                        })
+                        forecastData.value.push({name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,income:activeMonthlyPay.value,extraExpenses:[],newExpenseId:'',newExpenseName:'',newExpenseAmount:'',isOpen:false,burn: 0})
                     }
                 }
                 
                 forecastResults.value.affordableMonth=null;
-                
                 forecastData.value.forEach((m,idx)=>{
-                    // Apply Overrides (Income & Expenses)
                     const ov = forecastOverrides.value[m.name];
                     if (ov) {
                         if (ov.income !== null && ov.income !== undefined) m.income = Number(ov.income);
                         if (ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses]; 
-                    } else {
-                        if (!useTempPay.value) m.income = activeMonthlyPay.value; 
-                    }
+                    } else { if (!useTempPay.value) m.income = activeMonthlyPay.value; }
 
-                    // Calculate Dynamic Burn
                     let monthlyBurn=0;
-                    if(forecastMode.value==='survival') {
-                        monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
-                    } else if(forecastMode.value==='standard') {
-                        monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
-                    } else if(forecastMode.value==='dream') {
+                    if(forecastMode.value==='survival') monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
+                    else if(forecastMode.value==='standard') monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
+                    else if(forecastMode.value==='dream') {
                         budgetItems.value.forEach(i=>{
                             if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i);
-                            else {
-                                const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id);
-                                if(!replaced) monthlyBurn+=getMonthlyCost(i);
-                            }
+                            else { const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id); if(!replaced) monthlyBurn+=getMonthlyCost(i); }
                         });
                     }
                     m.burn = round(monthlyBurn);
-
                     const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);
                     const monthlyNet=m.income-monthlyBurn-totalExtra;
                     balance=round(balance+monthlyNet);
                     m.endBalance=balance;
-                    
-                    if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){
-                        forecastResults.value.affordableMonth=m.name;
-                        forecastResults.value.affordableIndex=idx
-                    }
+                    if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){ forecastResults.value.affordableMonth=m.name; forecastResults.value.affordableIndex=idx }
                 });
                 renderChart();
             };
@@ -575,24 +551,43 @@
             // --- 6. INTELLIGENT ADVISOR ---
             const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
             
+            // Make handleSuggestion global so onclick events in HTML strings work
+            const sendQuery = async (text) => {
+                if(!text) return;
+                chatMessages.value.push({ role: 'user', text });
+                userQuery.value = '';
+                isThinking.value = true;
+                nextTick(scrollChat);
+                
+                setTimeout(() => {
+                    const snapshot = getFinancialSnapshot();
+                    const { response, suggestions } = generateSmartResponse(text, snapshot);
+                    
+                    // Append suggestions as styled HTML buttons to the response
+                    let finalHtml = response;
+                    if(suggestions.length > 0) {
+                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
+                        suggestions.forEach(s => {
+                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
+                        });
+                        finalHtml += `</div>`;
+                    }
+
+                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
+                    isThinking.value = false;
+                    nextTick(scrollChat);
+                }, 1000);
+            };
+
             const generateSmartResponse = (query, data) => {
                 const q = query.toLowerCase();
                 let response = '';
                 let suggestions = [];
 
-                // Logic Engine
-                if (q.includes('review') || q.includes('budget') || q.includes('analysis')) {
-                    const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt);
-                    const totalWaste = nonCore.reduce((a,b) => a + b.amt, 0);
-                    const top3 = nonCore.slice(0,3).map(i => `• <b>${i.name}</b>: $${i.amt}`).join('<br>');
-                    response = `I've analyzed your monthly spending.<br><br>You are spending <b>$${totalWaste.toLocaleString()}</b> on non-essential items. Here are your top 3 discretionary expenses:<br>${top3}`;
-                    suggestions = [
-                        { label: "✂️ Suggest 10% Cuts", text: "Suggest a strategy to cut my discretionary spending by 10%" },
-                        { label: "📺 Check Subscriptions", text: "How much am I spending on subscriptions specifically?" },
-                        { label: "🔮 Forecast Savings", text: "If I stick to this budget, how much will I save in 6 months?" }
-                    ];
-                } 
-                else if (q.includes('debt') || q.includes('loan') || q.includes('card')) {
+                // Re-ordered Logic Engine to prevent conflicts
+                
+                // 1. Debt Logic (Specific)
+                if (q.includes('debt') || q.includes('loan') || q.includes('card') || q.includes('snowball') || q.includes('avalanche')) {
                     if (data.debt_list.length === 0) {
                         response = "You are debt-free! This puts you ahead of 77% of Americans. Focus on maximizing your retirement or saving for a big goal.";
                         suggestions = [
@@ -605,7 +600,6 @@
                         
                         response = `You have <b>$${totalDebt.toLocaleString()}</b> in total debt.<br>It is costing you approximately <b>$${dailyInterest.toFixed(2)} per day</b> in interest.`;
 
-                        // Debt Simulation Logic (Snowball vs Avalanche)
                         if (q.includes('snowball') || q.includes('avalanche')) {
                              const sim = (mode) => {
                                 let dList = JSON.parse(JSON.stringify(data.debt_list));
@@ -638,7 +632,6 @@
                                          🏔️ <b>Avalanche:</b> Debt free in ${Math.floor(aResults.months/12)}y ${aResults.months%12}m. Total Interest: $${Math.round(aResults.interest).toLocaleString()}<br><br>
                                          Avalanche saves you <b>$${Math.round(diff).toLocaleString()}</b> in interest.`;
                         } else if (q.includes('extra') || q.includes('100')) {
-                             // Simple extra payment logic simulation
                              const currentInt = data.debt_list.reduce((acc,d) => acc + (d.balance * (d.rate/100/12)), 0);
                              response = `Adding <b>$100/month</b> to your debt payments is highly recommended. It goes directly to principal, saving you money immediately. Currently, about <b>$${Math.round(currentInt)}</b> of your monthly payments goes just to interest.`;
                         }
@@ -648,7 +641,17 @@
                             { label: "💰 Extra Payment Effect", text: "How much do I save if I pay an extra $100 per month?" }
                         ];
                     }
-                } 
+                }
+                // 2. Stress Test (Specific)
+                else if (q.includes('stress') || q.includes('survive') || q.includes('job')) {
+                    const survivalBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
+                    const runway = survivalBurn > 0 ? (forecastSettings.value.currentBalance / survivalBurn).toFixed(1) : "Infinite";
+                    response = `<b>Stress Test Results:</b><br>With your current cash ($${forecastSettings.value.currentBalance.toLocaleString()}) and a "Survival" budget of $${survivalBurn.toLocaleString()}/mo, you have a runway of <b>${runway} months</b>.`;
+                    suggestions = [
+                        { label: "📊 Back to Budget", text: "Review my budget" }
+                    ];
+                }
+                // 3. Retirement (Specific)
                 else if (q.includes('retirement') || q.includes('invest') || q.includes('nest egg') || q.includes('boost')) {
                     const currentP = retirementProjection.value;
                     const r = (Number(forecastSettings.value.expectedReturn || 7) / 100);
@@ -656,14 +659,11 @@
                     const t = Math.max(0, Number(forecastSettings.value.retirementAge) - Number(forecastSettings.value.currentAge));
                     
                     if(q.includes('boost') || q.includes('1%')) {
-                        // Calculate 1% of gross income
                         const totalGross = incomes.value.reduce((sum, inc) => { 
                              let gross = Number(inc.details?.salary || 0) / 12; 
                              return sum + gross; 
                         }, 0);
                         const onePercent = totalGross * 0.01;
-                        
-                        // Recalculate Projection
                         const boostedPMT = totalMonthlyRetirementContribution.value + onePercent;
                         const fvLumpSum = Number(forecastSettings.value.retirementBalance) * Math.pow((1 + r/n), (n*t));
                         const fvContrib = boostedPMT * ((Math.pow((1 + r/n), (n*t)) - 1) / (r/n));
@@ -683,6 +683,7 @@
                         { label: "🛑 Coast FIRE Check", text: "What if I stopped contributing today?" }
                     ];
                 } 
+                // 4. Subscriptions (Specific)
                 else if (q.includes('subscription')) {
                     const subs = budgetItems.value.filter(i => i.category === 'Subscriptions' || i.category === 'Entertainment');
                     const total = subs.reduce((a,b) => a + b.amount, 0);
@@ -692,6 +693,7 @@
                         { label: "🔙 Back to Overview", text: "Review my full budget" }
                     ];
                 }
+                // 5. Savings / Forecast (Specific)
                 else if (q.includes('forecast') || q.includes('save') || q.includes('savings')) {
                     const monthlyNet = activeMonthlyPay.value - totalMonthlyBurn.value;
                     const sixMonth = monthlyNet * 6;
@@ -701,12 +703,16 @@
                         { label: "🎯 Set a Goal", text: "I want to buy a car for $20,000" }
                     ];
                 }
-                else if (q.includes('stress') || q.includes('survive') || q.includes('job')) {
-                    const survivalBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
-                    const runway = (forecastSettings.value.currentBalance / survivalBurn).toFixed(1);
-                    response = `<b>Stress Test Results:</b><br>With your current cash ($${forecastSettings.value.currentBalance.toLocaleString()}) and a "Survival" budget of $${survivalBurn.toLocaleString()}/mo, you have a runway of <b>${runway} months</b>.`;
+                // 6. Generic Review (Fallback)
+                else if (q.includes('review') || q.includes('budget') || q.includes('analysis')) {
+                    const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt);
+                    const totalWaste = nonCore.reduce((a,b) => a + b.amt, 0);
+                    const top3 = nonCore.slice(0,3).map(i => `• <b>${i.name}</b>: $${i.amt}`).join('<br>');
+                    response = `I've analyzed your monthly spending.<br><br>You are spending <b>$${totalWaste.toLocaleString()}</b> on non-essential items. Here are your top 3 discretionary expenses:<br>${top3}`;
                     suggestions = [
-                        { label: "📊 Back to Budget", text: "Review my budget" }
+                        { label: "✂️ Suggest 10% Cuts", text: "Suggest a strategy to cut my discretionary spending by 10%" },
+                        { label: "📺 Check Subscriptions", text: "How much am I spending on subscriptions specifically?" },
+                        { label: "🔮 Forecast Savings", text: "If I stick to this budget, how much will I save in 6 months?" }
                     ];
                 }
                 else {
@@ -718,32 +724,6 @@
                     ];
                 }
                 return { response, suggestions };
-            };
-
-            const sendQuery = async (text) => {
-                if(!text) return;
-                chatMessages.value.push({ role: 'user', text });
-                userQuery.value = '';
-                isThinking.value = true;
-                nextTick(scrollChat);
-                
-                setTimeout(() => {
-                    const snapshot = getFinancialSnapshot();
-                    const { response, suggestions } = generateSmartResponse(text, snapshot);
-                    
-                    let finalHtml = response;
-                    if(suggestions.length > 0) {
-                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
-                        suggestions.forEach(s => {
-                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
-                        });
-                        finalHtml += `</div>`;
-                    }
-
-                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
-                    isThinking.value = false;
-                    nextTick(scrollChat);
-                }, 1000);
             };
 
             const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
