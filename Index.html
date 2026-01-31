@@ -353,7 +353,7 @@
 
     </div>
 
-  <script>
+ <script>
     const {createApp, ref, computed, onMounted, nextTick, watch} = Vue;
     const {createClient} = supabase;
     
@@ -383,7 +383,7 @@
     const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
     const calculateFederalTax = (annualInc, status='Single') => { let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000)); let t = 0, l = 0; const brackets = taxBrackets[status] || taxBrackets.Single; for(const b of brackets){ if(taxable > b.limit){ t += (b.limit - l) * b.rate; l = b.limit; } else { t += (taxable - l) * b.rate; break; } } return t; };
     
-    createApp({
+    const app = createApp({
         setup() {
             const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
@@ -558,46 +558,76 @@
             // --- 6. INTELLIGENT ADVISOR ---
             const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
             
-            // Context Engine for Responses
+            // Make handleSuggestion global so onclick events in HTML strings work
+            window.handleSuggestion = (text) => { app.config.globalProperties.sendQuery(text); };
+
+            const sendQuery = async (text) => {
+                if(!text) return;
+                chatMessages.value.push({ role: 'user', text });
+                userQuery.value = '';
+                isThinking.value = true;
+                nextTick(scrollChat);
+                
+                setTimeout(() => {
+                    const snapshot = getFinancialSnapshot();
+                    const { response, suggestions } = generateSmartResponse(text, snapshot);
+                    
+                    // Append suggestions as styled HTML buttons to the response
+                    let finalHtml = response;
+                    if(suggestions.length > 0) {
+                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
+                        suggestions.forEach(s => {
+                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
+                        });
+                        finalHtml += `</div>`;
+                    }
+
+                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
+                    isThinking.value = false;
+                    nextTick(scrollChat);
+                }, 1000);
+            };
+
             const generateSmartResponse = (query, data) => {
                 const q = query.toLowerCase();
                 let response = '';
                 let suggestions = [];
 
+                // Logic Engine
                 if (q.includes('review') || q.includes('budget') || q.includes('analysis')) {
                     const nonCore = data.budget_list.filter(i => !i.core).sort((a,b) => b.amt - a.amt);
                     const totalWaste = nonCore.reduce((a,b) => a + b.amt, 0);
                     const top3 = nonCore.slice(0,3).map(i => `• <b>${i.name}</b>: $${i.amt}`).join('<br>');
                     response = `I've analyzed your monthly spending.<br><br>You are spending <b>$${totalWaste.toLocaleString()}</b> on non-essential items. Here are your top 3 discretionary expenses:<br>${top3}`;
                     suggestions = [
-                        { label: "✂️ Suggest 10% Cuts", text: "Suggest a strategy to cut my discretionary spending by 10%" },
-                        { label: "📺 Check Subscriptions", text: "How much am I spending on subscriptions specifically?" },
-                        { label: "🔮 Forecast Savings", text: "If I stick to this budget, how much will I save in 6 months?" }
+                        { label: "✂️ Identify cuts to save 10%", text: "Suggest a strategy to cut my discretionary spending by 10%" },
+                        { label: "📺 Check subscription costs", text: "How much am I spending on subscriptions specifically?" },
+                        { label: "🔮 Forecast my savings", text: "If I stick to this budget, how much will I save in 6 months?" }
                     ];
                 } 
                 else if (q.includes('debt') || q.includes('loan') || q.includes('card')) {
                     if (data.debt_list.length === 0) {
                         response = "You are debt-free! This puts you ahead of 77% of Americans. Focus on maximizing your retirement or saving for a big goal.";
                         suggestions = [
-                            { label: "👴 Retirement Status", text: "How is my retirement looking?" },
-                            { label: "🏡 Plan a Purchase", text: "I want to save $50,000 for a house" }
+                            { label: "👴 Check retirement projection", text: "How is my retirement looking?" },
+                            { label: "🏡 Plan for a house", text: "I want to save $50,000 for a house" }
                         ];
                     } else {
                         const totalDebt = data.total_debt;
                         const dailyInterest = data.debt_list.reduce((acc,d) => acc + (d.balance * (d.rate/100/365)), 0);
                         response = `You have <b>$${totalDebt.toLocaleString()}</b> in total debt.<br>It is costing you approximately <b>$${dailyInterest.toFixed(2)} per day</b> in interest.`;
                         suggestions = [
-                            { label: "❄️ Snowball Method", text: "Show me the Snowball payoff strategy" },
-                            { label: "🏔️ Avalanche Method", text: "Show me the Avalanche payoff strategy" },
-                            { label: "💰 Extra Payment Effect", text: "How much time and interest do I save if I pay an extra $100 per month?" }
+                            { label: "❄️ Simulate Snowball (Smallest First)", text: "Show me the Snowball payoff strategy" },
+                            { label: "🏔️ Simulate Avalanche (High Interest)", text: "Show me the Avalanche payoff strategy" },
+                            { label: "💰 Effect of +$100/mo payment", text: "How much time and interest do I save if I pay an extra $100 per month?" }
                         ];
                     }
                 } 
                 else if (q.includes('retirement') || q.includes('invest') || q.includes('nest egg')) {
                     response = `Based on your current settings, you are projected to have <b>$${retirementProjection.value.toLocaleString(undefined, {maximumFractionDigits:0})}</b> by age ${forecastSettings.value.retirementAge}.`;
                     suggestions = [
-                        { label: "📈 Boost by 1%", text: "How would increasing my contribution by 1% affect my nest egg?" },
-                        { label: "🛑 Coast FIRE Check", text: "What if I stopped contributing today?" }
+                        { label: "📈 Impact of 1% increase", text: "How would increasing my contribution by 1% affect my nest egg?" },
+                        { label: "🛑 Coast FIRE calculation", text: "What if I stopped contributing today?" }
                     ];
                 } 
                 else if (q.includes('subscription')) {
@@ -605,14 +635,15 @@
                     const total = subs.reduce((a,b) => a + b.amount, 0);
                     response = `I found ${subs.length} items tagged as Subscriptions or Entertainment, totaling <b>$${total}/mo</b> ($${total*12}/yr).`;
                     suggestions = [
-                        { label: "✂️ Recommend Cuts", text: "Which subscription should I cancel?" },
-                        { label: "🔙 Back to Overview", text: "Review my full budget" }
+                        { label: "✂️ Suggest cuts", text: "Which subscription should I cancel?" },
+                        { label: "🔙 Back to Budget", text: "Review my full budget" }
                     ];
                 }
                 else if (q.includes('snowball') || q.includes('avalanche')) {
                     response = "Comparing strategies...<br><b>Avalanche</b> (High Interest First) usually saves the most money.<br><b>Snowball</b> (Smallest Balance First) builds momentum faster.<br><br>Check the <b>Debt Tab</b> to see the exact timeline difference.";
                     suggestions = [
-                        { label: "💵 Monthly Cash Flow", text: "Analyze my monthly cash flow" }
+                        { label: "📍 Go to Debt Tab", text: "Take me to the Debt tab" }, // Logic for this would need view switching
+                        { label: "💵 Analyze Cash Flow", text: "Analyze my monthly cash flow" }
                     ];
                 }
                 else if (q.includes('forecast') || q.includes('save') || q.includes('savings')) {
@@ -629,7 +660,7 @@
                     const runway = (forecastSettings.value.currentBalance / survivalBurn).toFixed(1);
                     response = `<b>Stress Test Results:</b><br>With your current cash ($${forecastSettings.value.currentBalance.toLocaleString()}) and a "Survival" budget of $${survivalBurn.toLocaleString()}/mo, you have a runway of <b>${runway} months</b>.`;
                     suggestions = [
-                        { label: "📊 Back to Budget", text: "Review my budget" }
+                        { label: "🛡️ Switch to Survival Mode", text: "Switch dashboard to Survival Mode" } // Would need view logic
                     ];
                 }
                 else {
@@ -640,33 +671,8 @@
                         { label: "👴 Retirement Check", text: "Check my retirement status" }
                     ];
                 }
+
                 return { response, suggestions };
-            };
-
-            const sendQuery = async (text) => {
-                if(!text) return;
-                chatMessages.value.push({ role: 'user', text });
-                userQuery.value = '';
-                isThinking.value = true;
-                nextTick(scrollChat);
-                
-                setTimeout(() => {
-                    const snapshot = getFinancialSnapshot();
-                    const { response, suggestions } = generateSmartResponse(text, snapshot);
-                    
-                    let finalHtml = response;
-                    if(suggestions.length > 0) {
-                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
-                        suggestions.forEach(s => {
-                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
-                        });
-                        finalHtml += `</div>`;
-                    }
-
-                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
-                    isThinking.value = false;
-                    nextTick(scrollChat);
-                }, 1000);
             };
 
             const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
@@ -689,8 +695,11 @@
                 _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 
                 // Attach helper to window for HTML buttons
-                window.handleSuggestion = (text) => sendQuery(text);
+                window.handleSuggestion = (text) => app.config.globalProperties.sendQuery(text);
             });
+
+            // Attach to globalProperties for access inside window function
+            app.config.globalProperties.sendQuery = sendQuery;
 
             return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense };
         }
