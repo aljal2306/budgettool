@@ -379,7 +379,7 @@
     const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
     const calculateFederalTax = (annualInc, status='Single') => { let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000)); let t = 0, l = 0; const brackets = taxBrackets[status] || taxBrackets.Single; for(const b of brackets){ if(taxable > b.limit){ t += (b.limit - l) * b.rate; l = b.limit; } else { t += (taxable - l) * b.rate; break; } } return t; };
     
-    const app = createApp({
+    createApp({
         setup() {
             const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
@@ -437,7 +437,7 @@
             const fillExpense=(m)=>{const s=budgetItems.value.find(i=>i.id===m.newExpenseId);if(s){m.newExpenseName=s.name;m.newExpenseAmount=s.amount}};
             const removeExpense=(m,i)=>{getOverride(m.name).extraExpenses.splice(i,1);runForecast()};
             const printReport = () => { window.print(); };
-
+            
             const fetchForecastSlots=async()=>{const{data}=await _supabase.from('forecast_slots').select('*').order('slot_index');if(data){const l=[null,null,null];data.forEach(s=>{if(s.slot_index>=0&&s.slot_index<3)l[s.slot_index]=s});savedForecasts.value=l}};
             const saveForecastSlot=async(i)=>{const n=prompt("Name scenario:");if(!n)return;const p={user_id:session.value.user.id,slot_index:i,name:n,data:{settings:{...forecastSettings.value},project:project.value?{...project.value}:null,mode:forecastMode.value,overrides:{...forecastOverrides.value}}};await _supabase.from('forecast_slots').upsert(p,{onConflict:'user_id,slot_index'});await fetchForecastSlots()};
             const loadForecastSlot=(i)=>{const s=savedForecasts.value[i];if(!s||!confirm(`Load "${s.name}"?`))return;const d=s.data;forecastSettings.value={...d.settings};project.value=d.project;setForecastMode(d.mode);if(d.overrides)forecastOverrides.value={...d.overrides};runForecast()};
@@ -552,8 +552,6 @@
             const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
             
             // Make handleSuggestion global so onclick events in HTML strings work
-            window.handleSuggestion = (text) => { app.config.globalProperties.sendQuery(text); };
-
             const sendQuery = async (text) => {
                 if(!text) return;
                 chatMessages.value.push({ role: 'user', text });
@@ -746,15 +744,12 @@
                 _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 
                 // Attach helper to window for HTML buttons
-                window.handleSuggestion = (text) => app.config.globalProperties.sendQuery(text);
+                window.handleSuggestion = (text) => sendQuery(text);
             });
 
-            // Attach to globalProperties for access inside window function
-            app.config.globalProperties.sendQuery = sendQuery;
-
-            return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense };
+            return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse: generateSmartResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense };
         }
     }).mount('#app');
 </script>
 
-    
+   
