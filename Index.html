@@ -361,11 +361,7 @@
     const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbGZvZnhhcmNlZXRhY3hmZWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzg5NzAsImV4cCI6MjA4MzkxNDk3MH0.TTgtFZqm3BsO2dNDA0OxQ8Pfy5Z74HoCzuR9NUlUoCQ'
     
-    // ERROR CHECK
-    if(SUPABASE_URL.includes('YOUR_PROJECT')){
-        document.getElementById('app').innerHTML = '<div class="p-8 text-center text-red-600 font-bold">⚠️ CRITICAL ERROR: You forgot to paste your Supabase Keys at the bottom of the script!</div>'; 
-        throw new Error("Missing Keys");
-    }
+    if(SUPABASE_URL.includes('YOUR_PROJECT')) console.warn("Supabase keys missing. App will render but not save.");
 
     const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -383,7 +379,7 @@
     const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
     const calculateFederalTax = (annualInc, status='Single') => { let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000)); let t = 0, l = 0; const brackets = taxBrackets[status] || taxBrackets.Single; for(const b of brackets){ if(taxable > b.limit){ t += (b.limit - l) * b.rate; l = b.limit; } else { t += (taxable - l) * b.rate; break; } } return t; };
     
-    createApp({
+    const app = createApp({
         setup() {
             const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
@@ -435,8 +431,6 @@
 
             // --- METHODS ---
             const setScenarioMode = (mode) => { currentScenarioMode.value = mode; const freshItems = budgetItems.value.map(item => ({...item})); freshItems.forEach(item => { if (item.frequency === 'One-Time') { item.includedInScenario = false; return; } if (mode === 'survival') item.includedInScenario = !!item.is_core; else if (mode === 'standard') item.includedInScenario = !item.is_wishlist; else if (mode === 'dream') item.includedInScenario = true; }); if (mode === 'dream') { const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario); activeWishlist.forEach(w => { if (w.replaces_id) { const target = freshItems.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false; } }); } budgetItems.value = freshItems; };
-            
-            // Forecast Overrides
             const getOverride=(m)=>forecastOverrides.value[m]?forecastOverrides.value[m]:forecastOverrides.value[m]={income:null,extraExpenses:[]};
             const updateMonthIncome=(m)=>{getOverride(m.name).income=Number(m.income);runForecast()};
             const addExpense=(m)=>{if(m.newExpenseName&&m.newExpenseAmount){getOverride(m.name).extraExpenses.push({name:m.newExpenseName,amount:Number(m.newExpenseAmount)});m.newExpenseName='';m.newExpenseAmount='';m.newExpenseId='';runForecast()}};
@@ -509,37 +503,78 @@
             const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
             const renderDashboardChart=()=>{ const ctx=document.getElementById('dashboardChart');if(!ctx)return;if(dashboardChartInstance)dashboardChartInstance.destroy(); const labels=[],dataCurrent=[],dataImpulse=[]; let currentSimBalance=forecastSettings.value.currentBalance||0,impulseSimBalance=currentSimBalance; const today=new Date(); let simIncomes = incomes.value.map(inc => ({ amount: Number(inc.amount), nextDate: new Date(inc.next_pay_date), freq: inc.frequency })); const runImpulse=impulseResult.value!==null||(impulseItem.value.cost&&showImpulseModal.value===false); const impulseCost=Number(impulseItem.value.cost),impulseDate=impulseItem.value.date; for(let i=0;i<30;i++){ const d=new Date();d.setDate(today.getDate()+i);const dayOfMonth=d.getDate();const dStr=d.toISOString().split('T')[0]; const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); labels.push(dateLabel); const billsDue=bills.value.filter(b=>!b.is_paid&&b.due_date===dStr && !b.budget_items.is_variable); const realDrop=billsDue.reduce((sum,b)=>sum+b.budget_items.amount,0); const virtualDrop=budgetItems.value.reduce((sum,item)=>{ if(!item.is_variable && item.frequency==='Monthly' && item.due_day===dayOfMonth){ const hasRealBill=bills.value.some(b=>b.budget_item_id===item.id && b.due_date===dStr); if(!hasRealBill)return sum+item.amount } return sum },0); const totalDrop=realDrop+virtualDrop; currentSimBalance-=totalDrop;impulseSimBalance-=totalDrop; if (useTempPay.value) { let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null; const freq = calcInputs.value.payFrequency; const amt = calcResult.value ? calcResult.value.netPay : 0; if(nextPay && dStr === nextPay.toISOString().split('T')[0]){ currentSimBalance+=amt; impulseSimBalance+=amt; if(freq==='Bi-Weekly') nextPay.setDate(nextPay.getDate()+14); else if(freq==='Semi-Monthly') nextPay.setDate(nextPay.getDate()+15); else if(freq==='Monthly') nextPay.setMonth(nextPay.getMonth()+1); } } else { simIncomes.forEach(inc => { if (dStr === inc.nextDate.toISOString().split('T')[0]) { currentSimBalance += inc.amount; impulseSimBalance += inc.amount; if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14); else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15); else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1); } }); } if(runImpulse&&dStr===impulseDate)impulseSimBalance-=impulseCost; dataCurrent.push(currentSimBalance);dataImpulse.push(impulseSimBalance); } const activeData=runImpulse?dataImpulse:dataCurrent;const min=Math.min(...activeData);const index=activeData.indexOf(min);const d=new Date();d.setDate(today.getDate()+index);lowPointData.value={amount:min,date:d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}; dashboardChartInstance=new Chart(ctx,{type:'line',data:{labels:labels,datasets:datasets=[{label:'Current',data:dataCurrent,borderColor:'#3B82F6',borderWidth:2,pointRadius:0,fill:false,tension:0.1}]}}); if(runImpulse)dashboardChartInstance.data.datasets.push({label:'With Purchase',data:dataImpulse,borderColor:'#9333EA',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false,tension:0.1}); dashboardChartInstance.update(); };
             
+            // Forecast logic
+            const runForecast=()=>{
+                let balance=round(forecastSettings.value.currentBalance);
+                const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                const now=new Date();
+                
+                if(forecastData.value.length!==forecastSettings.value.months){
+                    forecastData.value=[];
+                    for(let i=0;i<forecastSettings.value.months;i++){
+                        const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+                        forecastData.value.push({
+                            name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,
+                            income:activeMonthlyPay.value,
+                            extraExpenses:[],
+                            newExpenseId:'',
+                            newExpenseName:'',
+                            newExpenseAmount:'',
+                            isOpen:false,
+                            burn: 0
+                        })
+                    }
+                }
+                
+                forecastResults.value.affordableMonth=null;
+                
+                forecastData.value.forEach((m,idx)=>{
+                    // Apply Overrides (Income & Expenses)
+                    const ov = forecastOverrides.value[m.name];
+                    if (ov) {
+                        if (ov.income !== null && ov.income !== undefined) m.income = Number(ov.income);
+                        if (ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses]; 
+                    } else {
+                        if (!useTempPay.value) m.income = activeMonthlyPay.value; 
+                    }
+
+                    // Calculate Dynamic Burn
+                    let monthlyBurn=0;
+                    if(forecastMode.value==='survival') {
+                        monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
+                    } else if(forecastMode.value==='standard') {
+                        monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
+                    } else if(forecastMode.value==='dream') {
+                        budgetItems.value.forEach(i=>{
+                            if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i);
+                            else {
+                                const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id);
+                                if(!replaced) monthlyBurn+=getMonthlyCost(i);
+                            }
+                        });
+                    }
+                    m.burn = round(monthlyBurn);
+
+                    const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);
+                    const monthlyNet=m.income-monthlyBurn-totalExtra;
+                    balance=round(balance+monthlyNet);
+                    m.endBalance=balance;
+                    
+                    if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){
+                        forecastResults.value.affordableMonth=m.name;
+                        forecastResults.value.affordableIndex=idx
+                    }
+                });
+                renderChart();
+            };
+
+            const renderChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
+            const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
+            const clearImpulse=()=>{impulseItem.value={name:'',cost:'',date:new Date().toISOString().split('T')[0]};impulseResult.value=null;renderDashboardChart()};
+            
             // --- 6. INTELLIGENT ADVISOR ---
             const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
             
-            // Make handleSuggestion global so onclick events in HTML strings work
-            const sendQuery = async (text) => {
-                if(!text) return;
-                chatMessages.value.push({ role: 'user', text });
-                userQuery.value = '';
-                isThinking.value = true;
-                nextTick(scrollChat);
-                
-                setTimeout(() => {
-                    const snapshot = getFinancialSnapshot();
-                    const { response, suggestions } = generateSmartResponse(text, snapshot);
-                    
-                    // Append suggestions as styled HTML buttons to the response
-                    let finalHtml = response;
-                    if(suggestions.length > 0) {
-                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
-                        suggestions.forEach(s => {
-                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
-                        });
-                        finalHtml += `</div>`;
-                    }
-
-                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
-                    isThinking.value = false;
-                    nextTick(scrollChat);
-                }, 1000);
-            };
-
             const generateSmartResponse = (query, data) => {
                 const q = query.toLowerCase();
                 let response = '';
@@ -683,6 +718,32 @@
                     ];
                 }
                 return { response, suggestions };
+            };
+
+            const sendQuery = async (text) => {
+                if(!text) return;
+                chatMessages.value.push({ role: 'user', text });
+                userQuery.value = '';
+                isThinking.value = true;
+                nextTick(scrollChat);
+                
+                setTimeout(() => {
+                    const snapshot = getFinancialSnapshot();
+                    const { response, suggestions } = generateSmartResponse(text, snapshot);
+                    
+                    let finalHtml = response;
+                    if(suggestions.length > 0) {
+                        finalHtml += `<div class="mt-3 space-y-1"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Suggested Actions</div>`;
+                        suggestions.forEach(s => {
+                            finalHtml += `<button onclick="window.handleSuggestion('${s.text}')" class="block w-full text-left p-2 border rounded hover:bg-slate-50 text-xs text-indigo-600 font-bold transition flex items-center justify-between group"><span>${s.label}</span><span class="opacity-0 group-hover:opacity-100 transition">→</span></button>`;
+                        });
+                        finalHtml += `</div>`;
+                    }
+
+                    chatMessages.value.push({ role: 'assistant', text: finalHtml });
+                    isThinking.value = false;
+                    nextTick(scrollChat);
+                }, 1000);
             };
 
             const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
