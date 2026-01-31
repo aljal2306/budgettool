@@ -89,7 +89,9 @@
 
             <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
                 <div class="w-full flex justify-end mb-4">
-                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Take a Tour</button>
+                    <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform">
+                        <span>📍</span> Take a Tour
+                    </button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div id="tour-safe-spend" class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 text-white relative overflow-hidden group">
@@ -352,7 +354,6 @@
             </transition>
 
     </div>
-
 <script>
         const {createApp, ref, computed, onMounted, nextTick, watch} = Vue;
         const {createClient} = supabase;
