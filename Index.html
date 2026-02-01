@@ -499,12 +499,10 @@
                 // Ledger
                 const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
                 
-                // --- MODIFIED EXPENSE LOGGING STATE ---
+                // Expenses & Logging
                 const showExpenseModal = ref(false);
-                const editingExpenseId = ref(null); // Track if we are editing
+                const editingExpenseId = ref(null); 
                 const expenseData = ref({budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]});
-                
-                // --- NEW LOG HISTORY STATE ---
                 const showLogModal = ref(false);
                 const selectedBudgetLog = ref(null);
                 const currentLogEntries = ref([]);
@@ -519,6 +517,7 @@
 
                 // Debt
                 const newDebt = ref({name:'', balance:'', rate:'', min_payment:''}), extraDebtPayment = ref(0), showDebtForm = ref(false);
+                const editingDebtId = ref(null); // Added for editing debts
 
                 // Impulse/Consultant
                 const showImpulseModal = ref(false), impulseItem = ref({name:'', cost:'', date:new Date().toISOString().split('T')[0]}), impulseResult = ref(null);
@@ -555,9 +554,7 @@
 
                 // --- 2. FORECAST LOGIC ---
                 const getOverride = (monthName) => {
-                    if (!forecastOverrides.value[monthName]) {
-                        forecastOverrides.value[monthName] = { income: null, extraExpenses: [] };
-                    }
+                    if (!forecastOverrides.value[monthName]) forecastOverrides.value[monthName] = { income: null, extraExpenses: [] };
                     return forecastOverrides.value[monthName];
                 };
 
@@ -683,95 +680,43 @@
                     savingBase.value = false;
                 };
 
-                // === MODIFIED: Log Expense (Handles both INSERT and UPDATE) ===
                 const logExpense = async () => { 
                     if(!expenseData.value.budgetId || !expenseData.value.amount) return; 
-                    
-                    const payload = { 
-                        user_id: session.value.user.id, 
-                        budget_item_id: expenseData.value.budgetId, 
-                        amount_paid: Number(expenseData.value.amount), 
-                        is_paid: true, 
-                        due_date: expenseData.value.date, 
-                        transaction_name: expenseData.value.description 
-                    };
-
+                    const payload = { user_id: session.value.user.id, budget_item_id: expenseData.value.budgetId, amount_paid: Number(expenseData.value.amount), is_paid: true, due_date: expenseData.value.date, transaction_name: expenseData.value.description };
                     let error;
                     if (editingExpenseId.value) {
-                        // Update existing entry
                         const res = await _supabase.from('ledger').update(payload).eq('id', editingExpenseId.value);
                         error = res.error;
                     } else {
-                        // Insert new entry
                         const res = await _supabase.from('ledger').insert([payload]);
                         error = res.error;
                     }
-
                     if(!error){ 
-                        showExpenseModal.value = false; 
-                        expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; 
-                        editingExpenseId.value = null; // Reset edit flag
-                        
-                        await fetchBills(); // Reload global bills
-                        renderDashboardChart(); 
-                        
-                        // If Log Modal is open, refresh it
-                        if(showLogModal.value && selectedBudgetLog.value) {
-                            openLogModal(selectedBudgetLog.value);
-                        }
-                    } else { 
-                        alert("Error logging expense"); 
-                    } 
+                        showExpenseModal.value = false; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; editingExpenseId.value = null; 
+                        await fetchBills(); renderDashboardChart(); 
+                        if(showLogModal.value && selectedBudgetLog.value) openLogModal(selectedBudgetLog.value);
+                    } else { alert("Error logging expense"); } 
                 };
                 
-                // === NEW: Open Log History Modal ===
                 const openLogModal = (item) => {
                     selectedBudgetLog.value = item;
                     const currentMonthStr = new Date().toISOString().slice(0, 7);
-                    // Filter bills for this item & this month
-                    currentLogEntries.value = bills.value.filter(b => 
-                        b.budget_item_id === item.id && 
-                        b.due_date.startsWith(currentMonthStr)
-                    ).sort((a,b) => b.due_date.localeCompare(a.due_date));
+                    currentLogEntries.value = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).sort((a,b) => b.due_date.localeCompare(a.due_date));
                     showLogModal.value = true;
                 };
 
-                // === NEW: Delete Log Entry ===
                 const deleteLogEntry = async (entry) => {
                     if(!confirm("Remove this transaction?")) return;
                     const { error } = await _supabase.from('ledger').delete().eq('id', entry.id);
-                    if(!error) {
-                        // Update UI immediately
-                        bills.value = bills.value.filter(b => b.id !== entry.id);
-                        currentLogEntries.value = currentLogEntries.value.filter(b => b.id !== entry.id);
-                        renderCategoryChart();
-                        renderDashboardChart();
-                    }
+                    if(!error) { bills.value = bills.value.filter(b => b.id !== entry.id); currentLogEntries.value = currentLogEntries.value.filter(b => b.id !== entry.id); renderCategoryChart(); renderDashboardChart(); }
                 };
 
-                // === NEW: Edit Log Entry ===
                 const editLogEntry = (entry) => {
-                    // Pre-fill form with entry data
-                    expenseData.value = {
-                        budgetId: entry.budget_item_id,
-                        amount: entry.amount_paid,
-                        description: entry.transaction_name,
-                        date: entry.due_date
-                    };
-                    editingExpenseId.value = entry.id; // Set ID so logExpense knows to update
-                    showLogModal.value = false; // Close log modal
-                    showExpenseModal.value = true; // Open form
+                    expenseData.value = { budgetId: entry.budget_item_id, amount: entry.amount_paid, description: entry.transaction_name, date: entry.due_date };
+                    editingExpenseId.value = entry.id; showLogModal.value = false; showExpenseModal.value = true;
                 };
 
-                // Reset editing state when opening modal fresh
-                watch(showExpenseModal, (val) => {
-                    if(!val) {
-                        editingExpenseId.value = null;
-                        expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]};
-                    }
-                });
-
-                // ============================================
+                watch(showExpenseModal, (val) => { if(!val) { editingExpenseId.value = null; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; } });
 
                 const saveSettings = async () => { await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: forecastSettings.value.currentBalance, safety_margin: forecastSettings.value.safetyMargin }); };
                 const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
@@ -779,135 +724,59 @@
                 const deleteBill = async (bill) => { if(!confirm("Remove this bill instance?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
                 const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating bill status'); } else { renderDashboardChart(); } };
                 const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying bill."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
+                
+                // === FIXED DELETE ===
                 const deleteBudgetItem = async (item) => { 
                     if (!confirm('Delete ' + item.name + '? This will also remove all its history/logs.')) return; 
-                    
-                    // 1. Delete associated ledger/history entries FIRST
                     const { error: ledgerError } = await _supabase.from('ledger').delete().eq('budget_item_id', item.id);
-                    
-                    if (ledgerError) {
-                        alert("Error deleting history: " + ledgerError.message);
-                        return;
-                    }
-
-                    // 2. NOW delete the actual budget item
+                    if (ledgerError) { alert("Error deleting history: " + ledgerError.message); return; }
                     const { error } = await _supabase.from('budget_items').delete().eq('id', item.id); 
-                    
-                    if (!error) { 
-                        budgetItems.value = budgetItems.value.filter(i => i.id !== item.id); 
-                        bills.value = bills.value.filter(b => b.budget_item_id !== item.id); 
-                        renderCategoryChart(); 
-                        renderDashboardChart(); 
-                    } else {
-                        alert("Error deleting item: " + error.message);
-                    }
+                    if (!error) { budgetItems.value = budgetItems.value.filter(i => i.id !== item.id); bills.value = bills.value.filter(b => b.budget_item_id !== item.id); renderCategoryChart(); renderDashboardChart(); } 
+                    else { alert("Error deleting item: " + error.message); }
                 };
+
                 const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
                 const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
                 const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
                 const resetDemo = async () => { if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); window.location.reload(); };
                 const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
                 const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
-                // --- FIXED DEBT FUNCTIONS ---
-                const editDebt = (d) => {
-                    newDebt.value = { ...d }; // Fill form with existing data
-                    editingDebtId.value = d.id; // Mark as editing
-                    showDebtForm.value = true; // Open form
-                };
-
+                
+                // === FIXED DEBT FUNCTIONS ===
+                const editDebt = (d) => { newDebt.value = { ...d }; editingDebtId.value = d.id; showDebtForm.value = true; };
                 const addDebt = async () => {
-                    // Check required fields
                     if (!newDebt.value.name || !newDebt.value.balance) return;
-
-                    const payload = {
-                        user_id: session.value.user.id,
-                        name: newDebt.value.name,
-                        balance: Number(newDebt.value.balance),
-                        rate: Number(newDebt.value.rate),
-                        min_payment: Number(newDebt.value.min_payment)
-                    };
-
+                    const payload = { user_id: session.value.user.id, name: newDebt.value.name, balance: Number(newDebt.value.balance), rate: Number(newDebt.value.rate), min_payment: Number(newDebt.value.min_payment) };
                     let data, error;
-
                     if (editingDebtId.value) {
-                        // UPDATE existing debt
-                        const res = await _supabase.from('debts').update(payload).eq('id', editingDebtId.value).select();
-                        data = res.data;
-                        error = res.error;
+                        const res = await _supabase.from('debts').update(payload).eq('id', editingDebtId.value).select(); data = res.data; error = res.error;
                     } else {
-                        // INSERT new debt
-                        // Calculate next order index
-                        const maxOrder = debts.value.length > 0 ? Math.max(...debts.value.map(d => d.order_index || 0)) : 0;
-                        payload.order_index = maxOrder + 1;
-                        
-                        const res = await _supabase.from('debts').insert([payload]).select();
-                        data = res.data;
-                        error = res.error;
+                        const maxOrder = debts.value.length > 0 ? Math.max(...debts.value.map(d => d.order_index || 0)) : 0; payload.order_index = maxOrder + 1;
+                        const res = await _supabase.from('debts').insert([payload]).select(); data = res.data; error = res.error;
                     }
-
                     if (data) {
-                        if (editingDebtId.value) {
-                            // Find and replace in local array
-                            const idx = debts.value.findIndex(d => d.id === editingDebtId.value);
-                            if (idx !== -1) debts.value[idx] = data[0];
-                        } else {
-                            // Add to list
-                            debts.value.push(data[0]);
-                        }
-                        
-                        // Reset Form
-                        newDebt.value = { name: '', balance: '', rate: '', min_payment: '' };
-                        editingDebtId.value = null;
-                        showDebtForm.value = false;
-                    } else if (error) {
-                        alert("Error saving debt: " + error.message);
-                    }
+                        if (editingDebtId.value) { const idx = debts.value.findIndex(d => d.id === editingDebtId.value); if (idx !== -1) debts.value[idx] = data[0]; } else { debts.value.push(data[0]); }
+                        newDebt.value = { name: '', balance: '', rate: '', min_payment: '' }; editingDebtId.value = null; showDebtForm.value = false;
+                    } else if (error) { alert("Error saving debt: " + error.message); }
                 };
+                const deleteDebt = async (d) => { if (confirm('Delete debt?')) { await _supabase.from('debts').delete().eq('id', d.id); debts.value = debts.value.filter(x => x.id !== d.id); } };
 
-                const deleteDebt = async (d) => {
-                    if (confirm('Delete debt?')) {
-                        await _supabase.from('debts').delete().eq('id', d.id);
-                        debts.value = debts.value.filter(x => x.id !== d.id);
-                    }
-                };
                 const setForecastMode=(mode)=>{forecastMode.value=mode;};
                 
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
-                const handleLogout = async () => { 
-                    await _supabase.auth.signOut(); 
-                    session.value = null; 
-                    const cleanUrl = window.location.origin + window.location.pathname;
-                    window.history.replaceState(null, '', cleanUrl);
-                    window.location.href = cleanUrl; 
-                };
-                
+                const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; const cleanUrl = window.location.origin + window.location.pathname; window.history.replaceState(null, '', cleanUrl); window.location.href = cleanUrl; };
                 const resetChat = () => { chatMessages.value = []; };
 
                 // === EXPORT FUNCTION ===
                 const exportData = () => {
-                    if (bills.value.length === 0) {
-                        alert("No transaction data to export!");
-                        return;
-                    }
+                    if (bills.value.length === 0) { alert("No transaction data to export!"); return; }
                     const headers = ['Date', 'Bill Name', 'Category', 'Amount', 'Status', 'Core/Variable'];
-                    const rows = bills.value.map(b => [
-                        b.due_date,
-                        `"${b.budget_items.name}"`,
-                        `"${b.budget_items.category}"`,
-                        b.budget_items.amount.toFixed(2),
-                        b.is_paid ? 'Paid' : 'Unpaid',
-                        b.budget_items.is_core ? 'Core' : (b.budget_items.is_variable ? 'Variable' : 'Standard')
-                    ]);
+                    const rows = bills.value.map(b => [ b.due_date, `"${b.budget_items.name}"`, `"${b.budget_items.category}"`, b.budget_items.amount.toFixed(2), b.is_paid ? 'Paid' : 'Unpaid', b.budget_items.is_core ? 'Core' : (b.budget_items.is_variable ? 'Variable' : 'Standard') ]);
                     const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", url);
-                    link.setAttribute("download", `finance_master_export_${new Date().toISOString().split('T')[0]}.csv`);
-                    link.style.visibility = 'hidden';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `finance_master_export_${new Date().toISOString().split('T')[0]}.csv`);
+                    link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
                 };
 
                 const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
@@ -923,7 +792,6 @@
                 const getDaysLeft = (dateStr) => { const today = new Date(); today.setHours(0,0,0,0); const [y, m, d] = dateStr.split('-'); const due = new Date(y, m - 1, d); const diffTime = due - today; return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); };
                 const getCalendarLink = (bill) => { const title = encodeURIComponent(`Pay ${bill.budget_items.name}`); const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`); const dStr = bill.due_date.replace(/-/g, ''); return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`; };
                 
-                // Charts
                 const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
                 const renderDashboardChart=()=>{ const ctx=document.getElementById('dashboardChart');if(!ctx)return;if(dashboardChartInstance)dashboardChartInstance.destroy(); const labels=[],dataCurrent=[],dataImpulse=[]; let currentSimBalance=forecastSettings.value.currentBalance||0,impulseSimBalance=currentSimBalance; const today=new Date(); let simIncomes = incomes.value.map(inc => ({ amount: Number(inc.amount), nextDate: new Date(inc.next_pay_date), freq: inc.frequency })); const runImpulse=impulseResult.value!==null||(impulseItem.value.cost&&showImpulseModal.value===false); const impulseCost=Number(impulseItem.value.cost),impulseDate=impulseItem.value.date; for(let i=0;i<30;i++){ const d=new Date();d.setDate(today.getDate()+i);const dayOfMonth=d.getDate();const dStr=d.toISOString().split('T')[0]; const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); labels.push(dateLabel); const billsDue=bills.value.filter(b=>!b.is_paid&&b.due_date===dStr && !b.budget_items.is_variable); const realDrop=billsDue.reduce((sum,b)=>sum+b.budget_items.amount,0); const virtualDrop=budgetItems.value.reduce((sum,item)=>{ if(!item.is_variable && item.frequency==='Monthly' && item.due_day===dayOfMonth){ const hasRealBill=bills.value.some(b=>b.budget_item_id===item.id && b.due_date===dStr); if(!hasRealBill)return sum+item.amount } return sum },0); const totalDrop=realDrop+virtualDrop; currentSimBalance-=totalDrop;impulseSimBalance-=totalDrop; if (useTempPay.value) { let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null; const freq = calcInputs.value.payFrequency; const amt = calcResult.value ? calcResult.value.netPay : 0; if(nextPay && dStr === nextPay.toISOString().split('T')[0]){ currentSimBalance+=amt; impulseSimBalance+=amt; if(freq==='Bi-Weekly') nextPay.setDate(nextPay.getDate()+14); else if(freq==='Semi-Monthly') nextPay.setDate(nextPay.getDate()+15); else if(freq==='Monthly') nextPay.setMonth(nextPay.getMonth()+1); } } else { simIncomes.forEach(inc => { if (dStr === inc.nextDate.toISOString().split('T')[0]) { currentSimBalance += inc.amount; impulseSimBalance += inc.amount; if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14); else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15); else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1); } }); } if(runImpulse&&dStr===impulseDate)impulseSimBalance-=impulseCost; dataCurrent.push(currentSimBalance);dataImpulse.push(impulseSimBalance); } const activeData=runImpulse?dataImpulse:dataCurrent;const min=Math.min(...activeData);const index=activeData.indexOf(min);const d=new Date();d.setDate(today.getDate()+index);lowPointData.value={amount:min,date:d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}; dashboardChartInstance=new Chart(ctx,{type:'line',data:{labels:labels,datasets:datasets=[{label:'Current',data:dataCurrent,borderColor:'#3B82F6',borderWidth:2,pointRadius:0,fill:false,tension:0.1}]}}); if(runImpulse)dashboardChartInstance.data.datasets.push({label:'With Purchase',data:dataImpulse,borderColor:'#9333EA',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false,tension:0.1}); dashboardChartInstance.update(); };
                 
@@ -931,62 +799,29 @@
                     let balance=round(forecastSettings.value.currentBalance);
                     const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
                     const now=new Date();
-                    
                     if(forecastData.value.length!==forecastSettings.value.months){
                         forecastData.value=[];
                         for(let i=0;i<forecastSettings.value.months;i++){
                             const d=new Date(now.getFullYear(),now.getMonth()+i,1);
                             forecastData.value.push({
-                                name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`,
-                                income:activeMonthlyPay.value,
-                                extraExpenses:[],
-                                newExpenseId:'',
-                                newExpenseName:'',
-                                newExpenseAmount:'',
-                                isOpen:false,
-                                burn: 0
+                                name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`, income:activeMonthlyPay.value, extraExpenses:[], newExpenseId:'', newExpenseName:'', newExpenseAmount:'', isOpen:false, burn: 0
                             })
                         }
                     }
-                    
                     forecastResults.value.affordableMonth=null;
-                    
                     forecastData.value.forEach((m,idx)=>{
-                        // Apply Overrides (Income & Expenses)
                         const ov = forecastOverrides.value[m.name];
-                        if (ov) {
-                            if (ov.income !== null && ov.income !== undefined) m.income = Number(ov.income);
-                            if (ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses]; 
-                        } else {
-                            if (!useTempPay.value) m.income = activeMonthlyPay.value; 
-                        }
-
-                        // Calculate Dynamic Burn
+                        if (ov) { if (ov.income !== null && ov.income !== undefined) m.income = Number(ov.income); if (ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses]; } else { if (!useTempPay.value) m.income = activeMonthlyPay.value; }
                         let monthlyBurn=0;
-                        if(forecastMode.value==='survival') {
-                            monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
-                        } else if(forecastMode.value==='standard') {
-                            monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
-                        } else if(forecastMode.value==='dream') {
-                            budgetItems.value.forEach(i=>{
-                                if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i);
-                                else {
-                                    const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id);
-                                    if(!replaced) monthlyBurn+=getMonthlyCost(i);
-                                }
-                            });
-                        }
+                        if(forecastMode.value==='survival') monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
+                        else if(forecastMode.value==='standard') monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
+                        else if(forecastMode.value==='dream') budgetItems.value.forEach(i=>{ if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i); else { const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id); if(!replaced) monthlyBurn+=getMonthlyCost(i); } });
                         m.burn = round(monthlyBurn);
-
                         const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);
                         const monthlyNet=m.income-monthlyBurn-totalExtra;
                         balance=round(balance+monthlyNet);
                         m.endBalance=balance;
-                        
-                        if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){
-                            forecastResults.value.affordableMonth=m.name;
-                            forecastResults.value.affordableIndex=idx
-                        }
+                        if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){ forecastResults.value.affordableMonth=m.name; forecastResults.value.affordableIndex=idx }
                     });
                     renderChart();
                 };
@@ -1017,7 +852,7 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, resetChat, exportData, editingExpenseId, openLogModal, showLogModal, currentLogEntries, selectedBudgetLog, deleteLogEntry, editLogEntry, editdebt };
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, resetChat, exportData, editingExpenseId, openLogModal, showLogModal, currentLogEntries, selectedBudgetLog, deleteLogEntry, editLogEntry, editDebt, editingDebtId };
             }
         }).mount('#app');
     </script>
