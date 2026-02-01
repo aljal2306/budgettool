@@ -250,7 +250,25 @@
                     <div class="lg:col-span-1 space-y-6">
                         <button id="tour-add-debt" v-if="!showDebtForm" @click="showDebtForm = true" class="w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-dashed text-slate-500 font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2">+ Add New Liability</button>
                         <div v-else class="bg-white p-6 rounded-2xl shadow-lg border border-blue-200 ring-2 ring-blue-50"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm text-slate-800 uppercase">Add Liability</h3><button @click="showDebtForm = false" class="text-slate-400 hover:text-slate-600">&times;</button></div><div class="space-y-3"><input v-model="newDebt.name" type="text" placeholder="Debt Name (e.g. Visa)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><div class="grid grid-cols-2 gap-2"><input v-model="newDebt.balance" type="number" step="0.01" placeholder="Balance ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><input v-model="newDebt.rate" type="number" step="0.01" placeholder="Rate (%)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"></div><input v-model="newDebt.min_payment" type="number" step="0.01" placeholder="Min Payment ($)" class="w-full p-3 border rounded-lg text-sm bg-slate-50"><div class="flex gap-2 pt-2"><button @click="addDebt" class="flex-1 bg-slate-900 text-white font-bold py-2 rounded-lg text-sm">Save Debt</button><button @click="showDebtForm = false" class="px-4 bg-slate-100 text-slate-500 font-bold py-2 rounded-lg text-sm">Cancel</button></div></div></div>
-                        <div id="tour-debt-list" class="space-y-3" id="debt-list-container"><div v-for="(debt, index) in debts" :key="debt.id" :data-id="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group cursor-default"><div class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 cursor-grab sortable-handle p-2 hover:text-slate-500">⋮⋮</div><div class="pl-6 flex justify-between items-start"><div><div class="font-bold text-slate-800">{{ debt.name }}</div><div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div></div><div class="font-mono text-lg font-bold text-slate-700">${{ debt.balance.toLocaleString() }}</div></div><button @click="deleteDebt(debt)" class="absolute top-2 right-2 text-xs text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">Delete</button></div><div v-if="debts.length === 0" class="text-center text-slate-400 py-8 italic">No debts added yet.</div></div>
+                       <div id="tour-debt-list" class="space-y-3" id="debt-list-container">
+    <div v-for="(debt, index) in debts" :key="debt.id" :data-id="debt.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative group cursor-default">
+        <div class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 cursor-grab sortable-handle p-2 hover:text-slate-500">⋮⋮</div>
+        
+        <div class="pl-6 flex justify-between items-start">
+            <div>
+                <div class="font-bold text-slate-800">{{ debt.name }}</div>
+                <div class="text-xs text-slate-500">{{ debt.rate }}% APR &bull; Min: ${{ debt.min_payment }}</div>
+            </div>
+            <div class="font-mono text-lg font-bold text-slate-700">${{ debt.balance.toLocaleString() }}</div>
+        </div>
+
+        <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+            <button @click="editDebt(debt)" class="text-xs bg-slate-100 text-blue-500 px-2 py-1 rounded hover:bg-blue-100 font-bold">✎</button>
+            <button @click="deleteDebt(debt)" class="text-xs bg-slate-100 text-red-400 hover:bg-red-100 hover:text-red-600 px-2 py-1 rounded font-bold">✕</button>
+        </div>
+    </div>
+    <div v-if="debts.length === 0" class="text-center text-slate-400 py-8 italic">No debts added yet.</div>
+</div>
                     </div>
                     <div class="lg:col-span-2">
                         <div id="tour-debt-attack" class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-slate-300 mb-6"><div class="flex justify-between items-end mb-4"><div><h2 class="text-2xl font-bold">⚔️ Attack Plan</h2><p class="text-slate-400 text-sm">Drag cards on left to prioritize payoff order.</p></div><div class="text-right"><div class="text-xs text-slate-400 uppercase">Debt Free By</div><div class="text-3xl font-bold text-emerald-400">{{ debtPlan.payoffDate }}</div></div></div><div class="bg-slate-800 p-4 rounded-lg border border-slate-700"><div class="flex justify-between text-sm mb-2"><span class="font-bold text-slate-300">Extra Monthly Attack</span><span class="font-mono text-emerald-300">${{ extraDebtPayment }}</span></div><input type="range" v-model.number="extraDebtPayment" min="0" max="2000" step="50" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500"><div class="flex justify-between text-xs text-slate-500 mt-2"><span>$0</span><span>$2,000</span></div></div><div class="grid grid-cols-2 gap-4 mt-6"><div class="bg-slate-800/50 p-3 rounded"><div class="text-xs text-slate-400 uppercase">Total Interest</div><div class="text-xl font-bold text-red-300">${{ debtPlan.totalInterest.toLocaleString() }}</div></div><div class="bg-emerald-900/30 p-3 rounded border border-emerald-900"><div class="text-xs text-emerald-400 uppercase">Interest Saved</div><div class="text-xl font-bold text-emerald-300">${{ debtPlan.savedInterest.toLocaleString() }}</div></div></div></div>
@@ -790,8 +808,68 @@
                 const resetDemo = async () => { if(!confirm("⚠️ WARNING: This will DELETE ALL DATA. Are you sure?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); window.location.reload(); };
                 const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
                 const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
-                const addDebt=async()=>{const maxOrder=debts.value.length>0?Math.max(...debts.value.map(d=>d.order_index||0)):0;if(newDebt.value.name&&newDebt.value.balance){const{data}=await _supabase.from('debts').insert([{user_id:session.value.user.id,name:newDebt.value.name,balance:newDebt.value.balance,rate:newDebt.value.rate,min_payment:newDebt.value.min_payment,order_index:maxOrder+1}]).select();if(data)debts.value.push(data[0]);newDebt.value={name:'',balance:'',rate:'',min_payment:''};showDebtForm.value=false}};
-                const deleteDebt=async(d)=>{if(confirm('Delete?')){await _supabase.from('debts').delete().eq('id',d.id);debts.value=debts.value.filter(x=>x.id!==d.id)}};
+                // --- FIXED DEBT FUNCTIONS ---
+                const editDebt = (d) => {
+                    newDebt.value = { ...d }; // Fill form with existing data
+                    editingDebtId.value = d.id; // Mark as editing
+                    showDebtForm.value = true; // Open form
+                };
+
+                const addDebt = async () => {
+                    // Check required fields
+                    if (!newDebt.value.name || !newDebt.value.balance) return;
+
+                    const payload = {
+                        user_id: session.value.user.id,
+                        name: newDebt.value.name,
+                        balance: Number(newDebt.value.balance),
+                        rate: Number(newDebt.value.rate),
+                        min_payment: Number(newDebt.value.min_payment)
+                    };
+
+                    let data, error;
+
+                    if (editingDebtId.value) {
+                        // UPDATE existing debt
+                        const res = await _supabase.from('debts').update(payload).eq('id', editingDebtId.value).select();
+                        data = res.data;
+                        error = res.error;
+                    } else {
+                        // INSERT new debt
+                        // Calculate next order index
+                        const maxOrder = debts.value.length > 0 ? Math.max(...debts.value.map(d => d.order_index || 0)) : 0;
+                        payload.order_index = maxOrder + 1;
+                        
+                        const res = await _supabase.from('debts').insert([payload]).select();
+                        data = res.data;
+                        error = res.error;
+                    }
+
+                    if (data) {
+                        if (editingDebtId.value) {
+                            // Find and replace in local array
+                            const idx = debts.value.findIndex(d => d.id === editingDebtId.value);
+                            if (idx !== -1) debts.value[idx] = data[0];
+                        } else {
+                            // Add to list
+                            debts.value.push(data[0]);
+                        }
+                        
+                        // Reset Form
+                        newDebt.value = { name: '', balance: '', rate: '', min_payment: '' };
+                        editingDebtId.value = null;
+                        showDebtForm.value = false;
+                    } else if (error) {
+                        alert("Error saving debt: " + error.message);
+                    }
+                };
+
+                const deleteDebt = async (d) => {
+                    if (confirm('Delete debt?')) {
+                        await _supabase.from('debts').delete().eq('id', d.id);
+                        debts.value = debts.value.filter(x => x.id !== d.id);
+                    }
+                };
                 const setForecastMode=(mode)=>{forecastMode.value=mode;};
                 
                 const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
@@ -939,7 +1017,7 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, resetChat, exportData, editingExpenseId, openLogModal, showLogModal, currentLogEntries, selectedBudgetLog, deleteLogEntry, editLogEntry };
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, resetChat, exportData, editingExpenseId, openLogModal, showLogModal, currentLogEntries, selectedBudgetLog, deleteLogEntry, editLogEntry, editdebt };
             }
         }).mount('#app');
     </script>
