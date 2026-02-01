@@ -762,6 +762,31 @@
                 window.handleSuggestion = (text) => sendQuery(text);
             });
 
+            // Define the missing function
+        const nextOnboardingStep = () => {
+            console.log("Moving to next onboarding step");
+            // Assuming 'onboardingStep' is a ref you defined earlier
+            if (onboardingStep && onboardingStep.value !== undefined) {
+                onboardingStep.value++;
+            }
+        };
+
+        // You likely need this one too, since it is in your return list
+        const finishOnboarding = () => {
+            console.log("Finishing onboarding");
+            if (showOnboarding) showOnboarding.value = false;
+        };
+
+        const startWizard = () => {
+             if (onboardingStep) onboardingStep.value = 1;
+             if (showOnboarding) showOnboarding.value = true;
+        };
+
+        const resetDemo = () => {
+            console.log("Resetting demo...");
+            // Add your reset logic here
+        };
+
             return { 
                 session, authEmail, loading, authMessage, handleLogin, handleLogout, 
                 currentView, showOnboarding, onboardingStep, onboardingData, 
