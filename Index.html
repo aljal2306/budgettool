@@ -761,7 +761,29 @@
                 const deleteBill = async (bill) => { if(!confirm("Remove this bill instance?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
                 const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating bill status'); } else { renderDashboardChart(); } };
                 const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying bill."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
-                const deleteBudgetItem = async (item) => { if (!confirm('Delete item?')) return; const { error } = await _supabase.from('budget_items').delete().eq('id', item.id); if (!error) { budgetItems.value = budgetItems.value.filter(i => i.id !== item.id); bills.value = bills.value.filter(b => b.budget_item_id !== item.id); renderCategoryChart(); renderDashboardChart(); } };
+                const deleteBudgetItem = async (item) => { 
+                    if (!confirm('Delete ' + item.name + '? This will also remove all its history/logs.')) return; 
+                    
+                    // 1. Delete associated ledger/history entries FIRST
+                    const { error: ledgerError } = await _supabase.from('ledger').delete().eq('budget_item_id', item.id);
+                    
+                    if (ledgerError) {
+                        alert("Error deleting history: " + ledgerError.message);
+                        return;
+                    }
+
+                    // 2. NOW delete the actual budget item
+                    const { error } = await _supabase.from('budget_items').delete().eq('id', item.id); 
+                    
+                    if (!error) { 
+                        budgetItems.value = budgetItems.value.filter(i => i.id !== item.id); 
+                        bills.value = bills.value.filter(b => b.budget_item_id !== item.id); 
+                        renderCategoryChart(); 
+                        renderDashboardChart(); 
+                    } else {
+                        alert("Error deleting item: " + error.message);
+                    }
+                };
                 const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
                 const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
                 const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
