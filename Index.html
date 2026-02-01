@@ -535,7 +535,7 @@
             const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
             const showChartPercentages = ref(false);
 
-            // Ledger & Calendar
+            // Ledger, Calendar, History
             const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
             const calendarDate = ref(new Date()); // Tracks calendar view month
             const showExpenseModal = ref(false), editingExpenseId = ref(null);
@@ -787,10 +787,10 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                calendarDate, calendarDays, changeCalendarMonth, checkImpulse // Added to ensure it is returned
+                calendarDate, calendarDays, changeCalendarMonth, checkImpulse 
             };
         }
     }).mount('#app');
 </script>
 
-   
+    
