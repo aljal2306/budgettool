@@ -274,7 +274,7 @@
             </div>
     </div>
 
-    <script>
+  <script>
     const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
     const { createClient } = supabase;
 
@@ -311,12 +311,6 @@
         const diffTime = due - today;
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
-    const getCalendarLink = (bill) => {
-        const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
-        const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
-        const dStr = bill.due_date.replace(/-/g, '');
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
-    };
     const calculateFederalTax = (annualInc, status = 'Single') => {
         const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
         let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000));
@@ -333,6 +327,12 @@
         }
         return t;
     };
+    const getCalendarLink = (bill) => {
+        const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
+        const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
+        const dStr = bill.due_date.replace(/-/g, '');
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
+    };
 
     createApp({
         setup() {
@@ -341,40 +341,38 @@
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
             const budgetItems = ref([]), bills = ref([]), debts = ref([]), incomes = ref([]);
             const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
-
-            // Onboarding
-            const showOnboarding = ref(false), onboardingStep = ref(1), onboardingData = ref({balance:'', safety:'', salary:'', frequency:'Semi-Monthly', medical:'', dental:'', trad401k:'', filingStatus:'Single', stateTaxRate:'', billName:'', billAmount:'', billDay:1, isCore:true, isVariable:false, incomeName:'', category:'Mortgage/Rent', wishName:'', wishAmount:'', goalName:'', goalCost:''});
             
-            // Calculator
+            // Onboarding & Calc
+            const showOnboarding = ref(false), onboardingStep = ref(1), onboardingData = ref({ balance: '', safety: '', salary: '', frequency: 'Semi-Monthly', medical: '', dental: '', trad401k: '', filingStatus: 'Single', stateTaxRate: '', billName: '', billAmount: '', billDay: 1, isCore: true, isVariable: false, incomeName: '', category: 'Mortgage/Rent', wishName: '', wishAmount: '', goalName: '', goalCost: '' });
             const showCalcForm = ref(false), showCalcDetails = ref(false);
-            const calcInputs = ref({name:'', salary:0, commission:0, medical:0, dental:0, fsa:0, postTax:0, trad401k:0, roth401k:0, match401k:0, nextPayDate:'', payFrequency:'Semi-Monthly', filingStatus:'Single', stateTaxRate:0, dependents:0, extraWithholding:0});
+            const calcInputs = ref({ name: '', salary: 0, commission: 0, medical: 0, dental: 0, fsa: 0, postTax: 0, trad401k: 0, roth401k: 0, match401k: 0, nextPayDate: '', payFrequency: 'Semi-Monthly', filingStatus: 'Single', stateTaxRate: 0, dependents: 0, extraWithholding: 0 });
             const calcResult = ref(null), savingBase = ref(false);
 
             // Budget
             const currentScenarioMode = ref('survival'), dashboardMode = ref('standard');
             const showPlanner = ref(false), showAddForm = ref(false), isSubmitting = ref(false), isEditing = ref(false), editingId = ref(null);
-            const newItem = ref({name:'', amount:'', due_day:'', isFlexible:false, frequency:'Monthly', is_core:false, is_autopay:false, is_wishlist:false, replaces_id:null, category:'Essentials', is_variable:false});
+            const newItem = ref({ name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false });
             const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
             const showChartPercentages = ref(false);
 
             // Ledger
             const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
             const showExpenseModal = ref(false), editingExpenseId = ref(null);
-            const expenseData = ref({budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]});
+            const expenseData = ref({ budgetId: '', amount: '', description: '', date: new Date().toISOString().split('T')[0] });
             const showLogModal = ref(false), selectedBudgetLog = ref(null), currentLogEntries = ref([]);
 
             // Forecast
-            const forecastSettings = ref({currentBalance:5000, safetyMargin:2000, months:12, currentAge:30, retirementAge:65, retirementBalance:0, expectedReturn:7.0});
-            const forecastMode = ref('standard'), forecastData = ref([]), forecastResults = ref({affordableMonth:null});
-            const project = ref(null), showProjectModal = ref(false), newProject = ref({name:'', cost:''});
-            const lowPointData = ref({amount:0, date:'-'});
+            const forecastSettings = ref({ currentBalance: 5000, safetyMargin: 2000, months: 12, currentAge: 30, retirementAge: 65, retirementBalance: 0, expectedReturn: 7.0 });
+            const forecastMode = ref('standard'), forecastData = ref([]), forecastResults = ref({ affordableMonth: null });
+            const project = ref(null), showProjectModal = ref(false), newProject = ref({ name: '', cost: '' });
+            const lowPointData = ref({ amount: 0, date: '-' });
             const savedForecasts = ref([null, null, null]), forecastOverrides = ref({});
 
             // Debt
-            const newDebt = ref({name:'', balance:'', rate:'', min_payment:''}), extraDebtPayment = ref(0), showDebtForm = ref(false), editingDebtId = ref(null);
+            const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' }), extraDebtPayment = ref(0), showDebtForm = ref(false), editingDebtId = ref(null);
 
-            // Consultant
-            const showImpulseModal = ref(false), impulseItem = ref({name:'', cost:'', date:new Date().toISOString().split('T')[0]}), impulseResult = ref(null);
+            // Advisor
+            const showImpulseModal = ref(false), impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] }), impulseResult = ref(null);
             const showConsultant = ref(false), chatMessages = ref([]), userQuery = ref(''), isThinking = ref(false);
 
             let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
@@ -538,6 +536,7 @@
             watch(showExpenseModal, (val) => { if(!val) { editingExpenseId.value = null; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; } });
 
             const saveSettings = async () => { await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: forecastSettings.value.currentBalance, safety_margin: forecastSettings.value.safetyMargin }); };
+            // ** DEFINED HERE **
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
