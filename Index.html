@@ -85,12 +85,10 @@
                         <button @click="currentView='debt'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='debt'?'bg-red-500 text-white shadow':'text-slate-500 hover:text-red-600'"><span>⚔️</span> Debt</button>
                         <div class="w-px h-6 bg-slate-200 mx-1 self-center"></div>
                         <button @click="openConsultant" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap bg-indigo-600 text-white shadow hover:bg-indigo-700"><span>🤖</span> Advisor</button>
+                        <button @click="exportData" class="hidden md:flex items-center gap-2 text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 px-4 py-3 rounded-xl hover:bg-emerald-100 transition shadow-sm" title="Export Data to CSV">
+                            <span>📥</span> Export
+                        </button>
                     </div>
-                    
-                    <button @click="exportData" class="hidden md:flex items-center gap-2 text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 px-4 py-3 rounded-xl hover:bg-emerald-100 transition shadow-sm" title="Export Data to CSV">
-                        <span>📥</span> Export
-                    </button>
-
                     <button @click="handleLogout" class="hidden md:block text-xs font-bold text-red-400 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition">Sign Out</button>
                 </div>
             </div>
@@ -132,9 +130,25 @@
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
                     <div id="tour-variable-budgets" class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
-                        <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-purple-100 text-purple-600 p-1 rounded">🛒</span> Budgets</h3><button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+ Log Expense</button></div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-sm text-slate-800 uppercase flex items-center gap-2"><span class="bg-purple-100 text-purple-600 p-1 rounded">🛒</span> Budgets</h3>
+                            <button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+ Log Expense</button>
+                        </div>
                         <div v-if="variableBudgets.length === 0" class="flex-1 flex items-center justify-center text-center text-slate-400 text-xs py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">No variable budgets yet.</div>
-                        <div class="space-y-4 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar"><div v-for="item in variableBudgets" :key="item.id" class="group"><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-700">{{item.name}}</span><span class="font-mono" :class="item.remaining < 0 ? 'text-red-500 font-bold' : 'text-slate-500'">${{item.remaining.toLocaleString()}} left</span></div><div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden"><div class="h-full rounded-full transition-all duration-500" :class="item.remaining < 0 ? 'bg-red-500' : (item.progress > 85 ? 'bg-orange-400' : 'bg-purple-500')" :style="{width: Math.min(item.progress, 100) + '%'}"></div></div></div></div>
+                        <div class="space-y-4 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar">
+                            <div v-for="item in variableBudgets" :key="item.id" class="group relative">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-slate-700">{{item.name}}</span>
+                                        <button @click="openLogModal(item)" class="text-[10px] text-slate-400 hover:text-blue-500 bg-slate-100 px-1.5 rounded" title="View History">📜</button>
+                                    </div>
+                                    <span class="font-mono" :class="item.remaining < 0 ? 'text-red-500 font-bold' : 'text-slate-500'">${{item.remaining.toLocaleString()}} left</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                    <div class="h-full rounded-full transition-all duration-500" :class="item.remaining < 0 ? 'bg-red-500' : (item.progress > 85 ? 'bg-orange-400' : 'bg-purple-500')" :style="{width: Math.min(item.progress, 100) + '%'}"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div id="tour-due-soon" class="lg:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
                          <h3 class="font-bold text-sm text-slate-800 uppercase mb-4 flex items-center gap-2"><span class="bg-red-100 text-red-600 p-1 rounded">🚨</span> Due Soon</h3>
@@ -249,7 +263,7 @@
                 <div v-if="showExpenseModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
                     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-lg text-slate-800">💸 Log Expense</h3>
+                            <h3 class="font-bold text-lg text-slate-800">💸 {{ editingExpenseId ? 'Edit Expense' : 'Log Expense' }}</h3>
                             <button @click="showExpenseModal=false" class="text-slate-400 hover:text-slate-600">&times;</button>
                         </div>
                         <div class="space-y-4">
@@ -267,7 +281,40 @@
                                 <input v-model="expenseData.amount" type="number" placeholder="Amount ($)" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
                                 <input v-model="expenseData.date" type="date" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
                             </div>
-                            <button @click="logExpense" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-700 transition shadow-lg">Save Expense</button>
+                            <button @click="logExpense" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-700 transition shadow-lg">{{ editingExpenseId ? 'Update Expense' : 'Save Expense' }}</button>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name="fade">
+                <div v-if="showLogModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100 flex flex-col max-h-[80vh]">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800">{{ selectedBudgetLog?.name }} History</h3>
+                                <p class="text-xs text-slate-400">Transactions this month</p>
+                            </div>
+                            <button @click="showLogModal=false" class="text-slate-400 hover:text-slate-600">&times;</button>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                            <div v-if="currentLogEntries.length === 0" class="text-center text-slate-400 py-8 italic text-sm">
+                                No expenses logged yet.
+                            </div>
+                            <div v-for="entry in currentLogEntries" :key="entry.id" class="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100 group hover:border-slate-300 transition">
+                                <div>
+                                    <div class="font-bold text-sm text-slate-700">{{ entry.transaction_name || 'Expense' }}</div>
+                                    <div class="text-xs text-slate-400">{{ formatDate(entry.due_date) }}</div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="font-mono font-bold text-slate-700">${{ entry.amount_paid.toFixed(2) }}</span>
+                                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                        <button @click="editLogEntry(entry)" class="text-xs bg-white border p-1 rounded hover:bg-blue-50 text-blue-500">✏️</button>
+                                        <button @click="deleteLogEntry(entry)" class="text-xs bg-white border p-1 rounded hover:bg-red-50 text-red-500">🗑️</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -383,7 +430,6 @@
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
         
-        // Helper: Calculate monthly cost for any frequency
         const getMonthlyCost = (i) => {
             let a = Number(i.amount);
             if (i.frequency === 'Quarterly') return a / 3;
@@ -392,7 +438,6 @@
             return a;
         };
         
-        // Tax Brackets
         const taxBrackets = {
             Single: [{limit: 11925, rate: 0.10},{limit: 48475, rate: 0.12},{limit: 103350, rate: 0.22},{limit: 197300, rate: 0.24},{limit: 250525, rate: 0.32},{limit: 626350, rate: 0.35},{limit: Infinity, rate: 0.37}],
             Married: [{limit: 23850, rate: 0.10},{limit: 96950, rate: 0.12},{limit: 206700, rate: 0.22},{limit: 394600, rate: 0.24},{limit: 501050, rate: 0.32},{limit: 751600, rate: 0.35},{limit: Infinity, rate: 0.37}],
@@ -435,7 +480,16 @@
                 
                 // Ledger
                 const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
-                const showExpenseModal = ref(false), expenseData = ref({budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]});
+                
+                // --- MODIFIED EXPENSE LOGGING STATE ---
+                const showExpenseModal = ref(false);
+                const editingExpenseId = ref(null); // Track if we are editing
+                const expenseData = ref({budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]});
+                
+                // --- NEW LOG HISTORY STATE ---
+                const showLogModal = ref(false);
+                const selectedBudgetLog = ref(null);
+                const currentLogEntries = ref([]);
 
                 // Forecast
                 const forecastSettings = ref({currentBalance:5000, safetyMargin:2000, months:12, currentAge:30, retirementAge:65, retirementBalance:0, expectedReturn:7.0});
@@ -443,8 +497,6 @@
                 const project = ref(null), showProjectModal = ref(false), newProject = ref({name:'', cost:''});
                 const lowPointData = ref({amount:0, date:'-'});
                 const savedForecasts = ref([null, null, null]);
-                
-                // Store manual edits to specific months
                 const forecastOverrides = ref({}); 
 
                 // Debt
@@ -534,38 +586,19 @@
                 const saveForecastSlot = async (index) => {
                     const name = prompt("Name this scenario (e.g. 'New Job', 'Buying House'):");
                     if (!name) return;
-
-                    const payload = {
-                        user_id: session.value.user.id,
-                        slot_index: index,
-                        name: name,
-                        data: {
-                            settings: { ...forecastSettings.value },
-                            project: project.value ? { ...project.value } : null,
-                            mode: forecastMode.value,
-                            overrides: { ...forecastOverrides.value } 
-                        }
-                    };
-
+                    const payload = { user_id: session.value.user.id, slot_index: index, name: name, data: { settings: { ...forecastSettings.value }, project: project.value ? { ...project.value } : null, mode: forecastMode.value, overrides: { ...forecastOverrides.value } } };
                     const { error } = await _supabase.from('forecast_slots').upsert(payload, { onConflict: 'user_id, slot_index' });
-                    if (error) {
-                        alert("Error saving: " + error.message);
-                    } else {
-                        await fetchForecastSlots(); 
-                    }
+                    if (error) alert("Error saving: " + error.message); else await fetchForecastSlots(); 
                 };
 
                 const loadForecastSlot = (index) => {
                     const slot = savedForecasts.value[index];
-                    if(!slot) return;
-                    if(!confirm(`Load "${slot.name}"? Unsaved changes will be lost.`)) return;
-
+                    if(!slot || !confirm(`Load "${slot.name}"? Unsaved changes will be lost.`)) return;
                     const data = slot.data;
                     forecastSettings.value = { ...data.settings };
                     project.value = data.project;
                     setForecastMode(data.mode);
                     if (data.overrides) forecastOverrides.value = { ...data.overrides };
-                    
                     runForecast();
                 };
 
@@ -632,7 +665,96 @@
                     savingBase.value = false;
                 };
 
-                const logExpense = async () => { if(!expenseData.value.budgetId || !expenseData.value.amount) return; const { error } = await _supabase.from('ledger').insert([{ user_id: session.value.user.id, budget_item_id: expenseData.value.budgetId, amount_paid: Number(expenseData.value.amount), is_paid: true, due_date: expenseData.value.date, transaction_name: expenseData.value.description }]); if(!error){ showExpenseModal.value = false; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; fetchBills(); renderDashboardChart(); } else { alert("Error logging expense"); } };
+                // === MODIFIED: Log Expense (Handles both INSERT and UPDATE) ===
+                const logExpense = async () => { 
+                    if(!expenseData.value.budgetId || !expenseData.value.amount) return; 
+                    
+                    const payload = { 
+                        user_id: session.value.user.id, 
+                        budget_item_id: expenseData.value.budgetId, 
+                        amount_paid: Number(expenseData.value.amount), 
+                        is_paid: true, 
+                        due_date: expenseData.value.date, 
+                        transaction_name: expenseData.value.description 
+                    };
+
+                    let error;
+                    if (editingExpenseId.value) {
+                        // Update existing entry
+                        const res = await _supabase.from('ledger').update(payload).eq('id', editingExpenseId.value);
+                        error = res.error;
+                    } else {
+                        // Insert new entry
+                        const res = await _supabase.from('ledger').insert([payload]);
+                        error = res.error;
+                    }
+
+                    if(!error){ 
+                        showExpenseModal.value = false; 
+                        expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; 
+                        editingExpenseId.value = null; // Reset edit flag
+                        
+                        await fetchBills(); // Reload global bills
+                        renderDashboardChart(); 
+                        
+                        // If Log Modal is open, refresh it
+                        if(showLogModal.value && selectedBudgetLog.value) {
+                            openLogModal(selectedBudgetLog.value);
+                        }
+                    } else { 
+                        alert("Error logging expense"); 
+                    } 
+                };
+                
+                // === NEW: Open Log History Modal ===
+                const openLogModal = (item) => {
+                    selectedBudgetLog.value = item;
+                    const currentMonthStr = new Date().toISOString().slice(0, 7);
+                    // Filter bills for this item & this month
+                    currentLogEntries.value = bills.value.filter(b => 
+                        b.budget_item_id === item.id && 
+                        b.due_date.startsWith(currentMonthStr)
+                    ).sort((a,b) => b.due_date.localeCompare(a.due_date));
+                    showLogModal.value = true;
+                };
+
+                // === NEW: Delete Log Entry ===
+                const deleteLogEntry = async (entry) => {
+                    if(!confirm("Remove this transaction?")) return;
+                    const { error } = await _supabase.from('ledger').delete().eq('id', entry.id);
+                    if(!error) {
+                        // Update UI immediately
+                        bills.value = bills.value.filter(b => b.id !== entry.id);
+                        currentLogEntries.value = currentLogEntries.value.filter(b => b.id !== entry.id);
+                        renderCategoryChart();
+                        renderDashboardChart();
+                    }
+                };
+
+                // === NEW: Edit Log Entry ===
+                const editLogEntry = (entry) => {
+                    // Pre-fill form with entry data
+                    expenseData.value = {
+                        budgetId: entry.budget_item_id,
+                        amount: entry.amount_paid,
+                        description: entry.transaction_name,
+                        date: entry.due_date
+                    };
+                    editingExpenseId.value = entry.id; // Set ID so logExpense knows to update
+                    showLogModal.value = false; // Close log modal
+                    showExpenseModal.value = true; // Open form
+                };
+
+                // Reset editing state when opening modal fresh
+                watch(showExpenseModal, (val) => {
+                    if(!val) {
+                        editingExpenseId.value = null;
+                        expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]};
+                    }
+                });
+
+                // ============================================
+
                 const saveSettings = async () => { await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: forecastSettings.value.currentBalance, safety_margin: forecastSettings.value.safetyMargin }); };
                 const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
                 const deleteIncome = async (id) => { if(!confirm("Delete this income source?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
@@ -659,11 +781,7 @@
                     window.location.href = cleanUrl; 
                 };
                 
-                // === NEW FUNCTION ===
-                const resetChat = () => {
-                     chatMessages.value = [];
-                };
-                // ====================
+                const resetChat = () => { chatMessages.value = []; };
 
                 // === EXPORT FUNCTION ===
                 const exportData = () => {
@@ -671,27 +789,16 @@
                         alert("No transaction data to export!");
                         return;
                     }
-                    
-                    // Create CSV header
                     const headers = ['Date', 'Bill Name', 'Category', 'Amount', 'Status', 'Core/Variable'];
-                    
-                    // Create rows from bills data
                     const rows = bills.value.map(b => [
                         b.due_date,
-                        `"${b.budget_items.name}"`, // Quote strings to handle commas in names
+                        `"${b.budget_items.name}"`,
                         `"${b.budget_items.category}"`,
                         b.budget_items.amount.toFixed(2),
                         b.is_paid ? 'Paid' : 'Unpaid',
                         b.budget_items.is_core ? 'Core' : (b.budget_items.is_variable ? 'Variable' : 'Standard')
                     ]);
-
-                    // Combine headers and rows
-                    const csvContent = [
-                        headers.join(','), 
-                        ...rows.map(row => row.join(','))
-                    ].join('\n');
-
-                    // Create blob and download link
+                    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
@@ -702,7 +809,6 @@
                     link.click();
                     document.body.removeChild(link);
                 };
-                // =======================
 
                 const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
                 const handleSave=async()=>{isEditing.value?updateItem():addItem()};
@@ -811,8 +917,9 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, resetChat, exportData };
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, resetChat, exportData, editingExpenseId, openLogModal, showLogModal, currentLogEntries, selectedBudgetLog, deleteLogEntry, editLogEntry };
             }
         }).mount('#app');
     </script>
 
+    
