@@ -82,6 +82,7 @@
                         <button @click="currentView='debt'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='debt'?'bg-red-500 text-white shadow':'text-slate-500 hover:text-red-600'"><span>⚔️</span> Debt</button>
                         <div class="w-px h-6 bg-slate-200 mx-1 self-center"></div>
                         <button @click="openConsultant" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap bg-indigo-600 text-white shadow hover:bg-indigo-700"><span>🤖</span> Advisor</button>
+                        <button @click="exportData" class="px-3 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100" title="Export to Excel/CSV"><span>📥</span></button>
                     </div>
                     <button @click="handleLogout" class="hidden md:block text-xs font-bold text-red-400 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition">Sign Out</button>
                 </div>
@@ -358,7 +359,7 @@
 
     </div>
 
-    <script>
+<script>
         const {createApp, ref, computed, onMounted, nextTick, watch} = Vue;
         const {createClient} = supabase;
         
@@ -657,6 +658,45 @@
                 };
                 // ====================
 
+                // === EXPORT FUNCTION ===
+                const exportData = () => {
+                    if (bills.value.length === 0) {
+                        alert("No transaction data to export!");
+                        return;
+                    }
+                    
+                    // Create CSV header
+                    const headers = ['Date', 'Bill Name', 'Category', 'Amount', 'Status', 'Core/Variable'];
+                    
+                    // Create rows from bills data
+                    const rows = bills.value.map(b => [
+                        b.due_date,
+                        `"${b.budget_items.name}"`, // Quote strings to handle commas in names
+                        `"${b.budget_items.category}"`,
+                        b.budget_items.amount.toFixed(2),
+                        b.is_paid ? 'Paid' : 'Unpaid',
+                        b.budget_items.is_core ? 'Core' : (b.budget_items.is_variable ? 'Variable' : 'Standard')
+                    ]);
+
+                    // Combine headers and rows
+                    const csvContent = [
+                        headers.join(','), 
+                        ...rows.map(row => row.join(','))
+                    ].join('\n');
+
+                    // Create blob and download link
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `finance_master_export_${new Date().toISOString().split('T')[0]}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+                // =======================
+
                 const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
                 const handleSave=async()=>{isEditing.value?updateItem():addItem()};
                 const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
@@ -764,9 +804,7 @@
                     _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
                 });
 
-                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, resetChat };
+                return { session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showExpenseModal, expenseData, logExpense, forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, debts, newDebt, showDebtForm, addDebt, deleteDebt, debtPlan, extraDebtPayment, formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, resetChat, exportData };
             }
         }).mount('#app');
     </script>
-</body>
-</html>
