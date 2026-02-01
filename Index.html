@@ -413,7 +413,7 @@
 
     </div>
 
-  <script>
+ <script>
     const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
     const { createClient } = supabase;
 
@@ -450,6 +450,14 @@
         const diffTime = due - today;
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
+    const getCalendarLink = (bill) => {
+        const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
+        const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
+        const dStr = bill.due_date.replace(/-/g, '');
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
+    };
+
+    // --- TAX LOGIC ---
     const calculateFederalTax = (annualInc, status = 'Single') => {
         const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
         let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000));
@@ -469,7 +477,7 @@
 
     createApp({
         setup() {
-            // --- STATE VARIABLES ---
+            // --- 1. STATE VARIABLES ---
             const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
             const budgetItems = ref([]), bills = ref([]), debts = ref([]), incomes = ref([]);
@@ -490,7 +498,7 @@
             // Ledger
             const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
             
-            // Expenses & Logging
+            // Expenses
             const showExpenseModal = ref(false), editingExpenseId = ref(null);
             const expenseData = ref({ budgetId: '', amount: '', description: '', date: new Date().toISOString().split('T')[0] });
             const showLogModal = ref(false), selectedBudgetLog = ref(null), currentLogEntries = ref([]);
@@ -511,7 +519,7 @@
 
             let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
 
-            // --- COMPUTED PROPERTIES ---
+            // --- 2. COMPUTED PROPERTIES ---
             const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist));
             const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist));
             const variableBudgets = computed(() => budgetItems.value.filter(i => i.is_variable).map(item => { const currentMonthStr = new Date().toISOString().slice(0, 7); const spent = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).reduce((sum, b) => sum + (b.amount_paid || b.budget_items.amount), 0); return { ...item, spent: spent, remaining: item.amount - spent, progress: (spent / item.amount) * 100 }; }));
@@ -521,7 +529,7 @@
             const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { let m = Number(inc.amount); if (inc.frequency === 'Bi-Weekly') m *= 2.166; else if (inc.frequency === 'Semi-Monthly') m *= 2; return total + m; }, 0));
             const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
             const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
-            
+
             const safeToSpend = computed(() => { if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value); if (dashboardMode.value === 'dream') { let burn = 0; budgetItems.value.forEach(i => { if (i.is_wishlist) { burn += getMonthlyCost(i); } else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i); } }); return round(activeMonthlyPay.value - burn); } const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc,i) => acc + getMonthlyCost(i), 0); return round(activeMonthlyPay.value - standardBurn); });
             const dashboardBurn = computed(() => round(activeMonthlyPay.value - safeToSpend.value));
             const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0);
@@ -531,7 +539,7 @@
             const debtPlan = computed(() => { if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }; const simulate = (extra) => { let simDebts = JSON.parse(JSON.stringify(debts.value)).map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment), paid_off: false })); let totalInterest = 0, months = 0, timeline = [], active = true, permanentSnowball = extra; while (active && months < 480) { months++; let anyBalanceLeft = false, monthlySurplus = permanentSnowball; for (let d of simDebts) { if (d.paid_off) { monthlySurplus += d.min; continue; } anyBalanceLeft = true; let interest = d.balance * (d.rate / 100 / 12); totalInterest += interest; d.balance += interest; let payment = Math.min(d.balance, d.min); d.balance -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }); monthlySurplus += (d.min - payment); } } for (let d of simDebts) { if (d.paid_off) continue; if (monthlySurplus <= 0) break; let payment = Math.min(d.balance, monthlySurplus); d.balance -= payment; monthlySurplus -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }); } } if (!anyBalanceLeft) active = false; } return { months, totalInterest, timeline }; }; const base = simulate(0); const attack = simulate(extraDebtPayment.value); const now = new Date(); now.setMonth(now.getMonth() + attack.months); return { payoffDate: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), totalInterest: round(attack.totalInterest), savedInterest: round(base.totalInterest - attack.totalInterest), timeline: attack.timeline }; });
             const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + getMonthlyCost(i), 0)));
 
-            // --- 3. HELPER FUNCTIONS ---
+            // --- 3. HELPER FUNCTIONS (DEFINED BEFORE USE) ---
             const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
             const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; const cleanUrl = window.location.origin + window.location.pathname; window.history.replaceState(null, '', cleanUrl); window.location.href = cleanUrl; };
             const resetChat = () => { chatMessages.value = []; };
@@ -601,14 +609,14 @@
             const fillExpense = (m) => { const selected = budgetItems.value.find(i => i.id === m.newExpenseId); if (selected) { m.newExpenseName = selected.name; m.newExpenseAmount = selected.amount; } };
             const removeExpense = (m, index) => { const ov = getOverride(m.name); ov.extraExpenses.splice(index, 1); runForecast(); };
             
-            // ** CRITICAL: Updated Save/Update Logic **
+            // ** UPDATED SAVE LOGIC **
             const saveForecastSlot=async(i)=>{ 
                 const existing = savedForecasts.value[i];
                 let name = existing ? existing.name : '';
                 
                 // If exists, ask to overwrite
                 if(existing){
-                     if(!confirm(`Update "${existing.name}" with current settings?`)) return;
+                     if(!confirm(`Overwrite forecast "${existing.name}"?`)) return;
                 } else {
                      // If new, prompt for name
                      name = prompt("Name this forecast:");
