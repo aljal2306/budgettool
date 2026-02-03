@@ -150,8 +150,23 @@
 
                         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
                             <div id="tour-variable-budgets" class="lg:col-span-1 bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full">
-                                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase flex items-center gap-2"><span class="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 p-1 rounded">🛒</span> Budgets</h3><button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 dark:bg-emerald-600 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+ Log Expense</button></div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase flex items-center gap-2">
+                                        <span class="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 p-1 rounded">🛒</span> Budgets
+                                    </h3>
+                                    <div class="flex gap-2">
+                                        <button @click="startVoiceEntry" 
+                                                class="text-[10px] w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm border"
+                                                :class="isListening ? 'bg-red-500 text-white animate-pulse border-red-600' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'"
+                                                :title="isListening ? 'Listening...' : 'Voice Entry'">
+                                            {{ isListening ? '🎙️' : '🎤' }}
+                                        </button>
+                                        <button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 dark:bg-emerald-600 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+ Log</button>
+                                    </div>
+                                </div>
+                                
                                 <div v-if="variableBudgets.length === 0" class="flex-1 flex items-center justify-center text-center text-slate-400 text-xs py-8 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-600">No variable budgets yet.</div>
+                                
                                 <div class="space-y-4 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar">
                                     <div v-for="item in variableBudgets" :key="item.id" class="group relative">
                                         <div class="flex justify-between text-xs mb-1">
@@ -473,12 +488,6 @@
         const diffTime = due - today;
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
-    const getCalendarLink = (bill) => {
-        const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
-        const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
-        const dStr = bill.due_date.replace(/-/g, '');
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
-    };
     const calculateFederalTax = (annualInc, status = 'Single') => {
         const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
         let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000));
@@ -495,15 +504,22 @@
         }
         return t;
     };
+    const getCalendarLink = (bill) => {
+        const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
+        const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
+        const dStr = bill.due_date.replace(/-/g, '');
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
+    };
 
     createApp({
         setup() {
-            // --- STATE ---
+            // --- STATE VARIABLES ---
             const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
             const budgetItems = ref([]), bills = ref([]), debts = ref([]), incomes = ref([]);
             const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
-            
+            const isListening = ref(false); // New state for voice
+
             // Onboarding & Calc
             const showOnboarding = ref(false), onboardingStep = ref(1), onboardingData = ref({ balance: '', safety: '', salary: '', frequency: 'Semi-Monthly', medical: '', dental: '', trad401k: '', filingStatus: 'Single', stateTaxRate: '', billName: '', billAmount: '', billDay: 1, isCore: true, isVariable: false, incomeName: '', category: 'Mortgage/Rent', wishName: '', wishAmount: '', goalName: '', goalCost: '' });
             const showCalcForm = ref(false), showCalcDetails = ref(false);
@@ -588,122 +604,252 @@
             const fetchForecastSlots = async () => { const { data } = await _supabase.from('forecast_slots').select('*').order('slot_index'); if (data) { const loaded = [null, null, null]; data.forEach(slot => { if(slot.slot_index >= 0 && slot.slot_index < 3) loaded[slot.slot_index] = slot; }); savedForecasts.value = loaded; } };
 
             const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
-            const renderDashboardChart=()=>{ const ctx=document.getElementById('dashboardChart');if(!ctx)return;if(dashboardChartInstance)dashboardChartInstance.destroy(); const labels=[],dataCurrent=[],dataImpulse=[]; let currentSimBalance=forecastSettings.value.currentBalance||0,impulseSimBalance=currentSimBalance; const today=new Date(); let simIncomes = incomes.value.map(inc => ({ amount: Number(inc.amount), nextDate: new Date(inc.next_pay_date), freq: inc.frequency })); const runImpulse=impulseResult.value!==null||(impulseItem.value.cost&&showImpulseModal.value===false); const impulseCost=Number(impulseItem.value.cost),impulseDate=impulseItem.value.date; for(let i=0;i<30;i++){ const d=new Date();d.setDate(today.getDate()+i);const dayOfMonth=d.getDate();const dStr=d.toISOString().split('T')[0]; const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); labels.push(dateLabel); const billsDue=bills.value.filter(b=>!b.is_paid&&b.due_date===dStr && !b.budget_items.is_variable); const realDrop=billsDue.reduce((sum,b)=>sum+b.budget_items.amount,0); const virtualDrop=budgetItems.value.reduce((sum,item)=>{ if(!item.is_variable && item.frequency==='Monthly' && item.due_day===dayOfMonth){ const hasRealBill=bills.value.some(b=>b.budget_item_id===item.id && b.due_date===dStr); if(!hasRealBill)return sum+item.amount } return sum },0); const totalDrop=realDrop+virtualDrop; currentSimBalance-=totalDrop;impulseSimBalance-=totalDrop; if (useTempPay.value) { let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null; const freq = calcInputs.value.payFrequency; const amt = calcResult.value ? calcResult.value.netPay : 0; if(nextPay && dStr === nextPay.toISOString().split('T')[0]){ currentSimBalance+=amt; impulseSimBalance+=amt; if(freq==='Bi-Weekly') nextPay.setDate(nextPay.getDate()+14); else if(freq==='Semi-Monthly') nextPay.setDate(nextPay.getDate()+15); else if(freq==='Monthly') nextPay.setMonth(nextPay.getMonth()+1); } } else { simIncomes.forEach(inc => { if (dStr === inc.nextDate.toISOString().split('T')[0]) { currentSimBalance += inc.amount; impulseSimBalance += inc.amount; if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14); else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15); else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1); } }); } if(runImpulse&&dStr===impulseDate)impulseSimBalance-=impulseCost; dataCurrent.push(currentSimBalance);dataImpulse.push(impulseSimBalance); } const activeData=runImpulse?dataImpulse:dataCurrent;const min=Math.min(...activeData);const index=activeData.indexOf(min);const d=new Date();d.setDate(today.getDate()+index);lowPointData.value={amount:min,date:d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}; dashboardChartInstance=new Chart(ctx,{type:'line',data:{labels:labels,datasets:datasets=[{label:'Current',data:dataCurrent,borderColor:'#3B82F6',borderWidth:2,pointRadius:0,fill:false,tension:0.1}]}}); if(runImpulse)dashboardChartInstance.data.datasets.push({label:'With Purchase',data:dataImpulse,borderColor:'#9333EA',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false,tension:0.1}); dashboardChartInstance.update(); };
-            const renderForecastChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
             
-            const setDashboardMode = (mode) => { dashboardMode.value = mode; nextTick(() => renderCategoryChart()); };
+            const setDashboardMode = (mode) => { dashboardMode.value = mode; nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); };
             const toggleChartMode = () => { showChartPercentages.value = !showChartPercentages.value; renderCategoryChart(); };
 
-            // --- SMART FORECAST LOGIC (CURRENT MONTH AWARE) ---
-            const runForecast = () => {
-                let balance = round(forecastSettings.value.currentBalance);
+            // --- VOICE ENTRY LOGIC ---
+            const startVoiceEntry = () => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) { alert("Your browser doesn't support speech recognition."); return; }
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onstart = () => { isListening.value = true; };
+                recognition.onend = () => { isListening.value = false; };
+                recognition.onerror = (event) => { console.error(event.error); isListening.value = false; alert("Voice error: " + event.error); };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript.toLowerCase();
+                    // 1. Extract Amount
+                    const amountMatch = transcript.match(/(\d+(\.\d{1,2})?)/);
+                    const amount = amountMatch ? amountMatch[0] : '';
+                    // 2. Extract Category (Fuzzy Match)
+                    let bestMatchId = '';
+                    for (const item of variableBudgets.value) {
+                        if (transcript.includes(item.name.toLowerCase())) { bestMatchId = item.id; break; }
+                    }
+                    // 3. Pre-fill Modal
+                    expenseData.value = {
+                        budgetId: bestMatchId,
+                        amount: amount,
+                        description: transcript.charAt(0).toUpperCase() + transcript.slice(1), // Capitalize
+                        date: new Date().toISOString().split('T')[0]
+                    };
+                    showExpenseModal.value = true;
+                };
+                recognition.start();
+            };
+
+            // --- DASHBOARD CHART ---
+            const renderDashboardChart = () => {
+                const ctx = document.getElementById('dashboardChart');
+                if (!ctx) return;
+                if (dashboardChartInstance) dashboardChartInstance.destroy();
+
+                const labels = [];
+                const dataCurrent = [];
+                const dataImpulse = [];
+
+                let currentSimBalance = forecastSettings.value.currentBalance || 0;
+                let impulseSimBalance = currentSimBalance;
+
+                // Push Day 0
+                labels.push('Now');
+                dataCurrent.push(currentSimBalance);
+                dataImpulse.push(impulseSimBalance);
+
+                const today = new Date();
+                let simIncomes = incomes.value.map(inc => ({
+                    amount: Number(inc.amount),
+                    nextDate: new Date(inc.next_pay_date),
+                    freq: inc.frequency
+                }));
+
+                const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false);
+                const impulseCost = Number(impulseItem.value.cost);
+                const impulseDate = impulseItem.value.date;
+
+                // Daily Variable Burn
+                const activeVariableItems = budgetItems.value.filter(item => {
+                    if (!item.is_variable) return false;
+                    if (dashboardMode.value === 'survival') return item.is_core;
+                    if (dashboardMode.value === 'standard') return !item.is_wishlist;
+                    return true;
+                });
+                const monthlyVariableTotal = activeVariableItems.reduce((sum, item) => sum + item.amount, 0);
+                const dailyVariableBurn = monthlyVariableTotal / 30;
+
+                for (let i = 0; i < 30; i++) {
+                    const d = new Date();
+                    d.setDate(today.getDate() + i);
+                    const dStr = d.toISOString().split('T')[0];
+                    const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    labels.push(dateLabel);
+
+                    // 1. Subtract Fixed Bills
+                    const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr && !b.budget_items.is_variable);
+                    const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0);
+
+                    // 2. Subtract Variable Burn
+                    currentSimBalance -= (dailyDrop + dailyVariableBurn);
+                    impulseSimBalance -= (dailyDrop + dailyVariableBurn);
+
+                    // 3. Add Income
+                    if (useTempPay.value) {
+                        let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null;
+                        const freq = calcInputs.value.payFrequency;
+                        const amt = calcResult.value ? calcResult.value.netPay : 0;
+                        if (nextPay && dStr === nextPay.toISOString().split('T')[0]) {
+                            currentSimBalance += amt;
+                            impulseSimBalance += amt;
+                            if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
+                            else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
+                            else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
+                        }
+                    } else {
+                        simIncomes.forEach(inc => {
+                            if (dStr === inc.nextDate.toISOString().split('T')[0]) {
+                                currentSimBalance += inc.amount;
+                                impulseSimBalance += inc.amount;
+                                if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14);
+                                else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15);
+                                else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1);
+                            }
+                        });
+                    }
+
+                    // 4. Impulse
+                    if (runImpulse && dStr === impulseDate) {
+                        impulseSimBalance -= impulseCost;
+                    }
+
+                    dataCurrent.push(currentSimBalance);
+                    dataImpulse.push(impulseSimBalance);
+                }
+
+                // Low Point
+                const activeData = runImpulse ? dataImpulse : dataCurrent;
+                const min = Math.min(...activeData);
+                const index = activeData.indexOf(min);
+                const d = new Date();
+                d.setDate(today.getDate() + (index - 1)); 
+                lowPointData.value = { 
+                    amount: min, 
+                    date: index === 0 ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
+                };
+
+                dashboardChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Current',
+                            data: dataCurrent,
+                            borderColor: '#3B82F6',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.1
+                        }]
+                    }
+                });
+
+                if (runImpulse) {
+                    dashboardChartInstance.data.datasets.push({
+                        label: 'With Purchase',
+                        data: dataImpulse,
+                        borderColor: '#9333EA',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.1
+                    });
+                }
+                dashboardChartInstance.update();
+            };
+
+            const renderForecastChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
+
+            // --- FORECAST LOGIC ---
+            const runForecast=()=>{
+                let balance=round(forecastSettings.value.currentBalance);
                 const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
                 const today = new Date();
-                const currentMonthStr = today.toISOString().slice(0, 7); // YYYY-MM
+                const currentMonthStr = today.toISOString().slice(0, 7); 
                 
-                if (forecastData.value.length !== forecastSettings.value.months) {
-                    forecastData.value = [];
-                    for (let i = 0; i < forecastSettings.value.months; i++) {
-                        const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-                        forecastData.value.push({ name: `${monthNames[d.getMonth()]} ${d.getFullYear()}`, income: activeMonthlyPay.value, extraExpenses: [], newExpenseId: '', newExpenseName: '', newExpenseAmount: '', isOpen: false, burn: 0 });
+                if(forecastData.value.length!==forecastSettings.value.months){
+                    forecastData.value=[];
+                    for(let i=0;i<forecastSettings.value.months;i++){
+                        const d=new Date(today.getFullYear(),today.getMonth()+i,1);
+                        forecastData.value.push({ name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`, income:activeMonthlyPay.value, extraExpenses:[], newExpenseId:'', newExpenseName:'', newExpenseAmount:'', isOpen:false, burn: 0 })
                     }
                 }
+                forecastResults.value.affordableMonth=null;
                 
-                forecastResults.value.affordableMonth = null;
-
-                forecastData.value.forEach((m, idx) => {
+                forecastData.value.forEach((m,idx)=>{
                     const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1);
                     const isCurrentMonth = idx === 0;
                     
-                    // --- 1. INCOME CALCULATION ---
                     let monthlyIncome = 0;
                     if (isCurrentMonth) {
-                        // Calculate Remaining Income for Current Month
+                        // Smart Income: Remaining checks only
                         incomes.value.forEach(inc => {
                             let nextPay = new Date(inc.next_pay_date);
-                            // Loop while pay date is in this month
                             while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) {
-                                if (nextPay >= today) { // Only count future paychecks
-                                    monthlyIncome += Number(inc.amount);
-                                }
-                                // Advance date
+                                if (nextPay >= today) monthlyIncome += Number(inc.amount);
                                 if (inc.frequency === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
                                 else if (inc.frequency === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
                                 else if (inc.frequency === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
                                 else break; 
                             }
                         });
-                        // Use Temp Pay override if active? For now, stick to smart logic as it's cleaner.
-                        if(useTempPay.value && monthlyIncome === 0) monthlyIncome = tempCalculatedPay.value; // Fallback
+                        if(useTempPay.value && monthlyIncome === 0) monthlyIncome = tempCalculatedPay.value; 
                     } else {
                         monthlyIncome = activeMonthlyPay.value;
                     }
-
-                    // Check for manual overrides
+                    
                     const ov = forecastOverrides.value[m.name];
                     if (ov && ov.income !== undefined) monthlyIncome = Number(ov.income);
-                    
                     m.income = monthlyIncome; 
                     if (ov && ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses];
 
-                    // --- 2. EXPENSE CALCULATION ---
                     let monthlyBurn = 0;
-
                     if (isCurrentMonth) {
-                        // A. Unpaid Fixed Bills from Ledger
+                        // Smart Expense: Unpaid Bills + Remaining Variables
                         const unpaidBills = bills.value.filter(b => {
-                            if (!b.due_date.startsWith(currentMonthStr)) return false; // Not this month
-                            if (b.is_paid) return false; // Already paid
-                            
+                            if (!b.due_date.startsWith(currentMonthStr)) return false; 
+                            if (b.is_paid) return false; 
                             const item = b.budget_items;
-                            if (item.is_variable) return false; // Variables handled below
-                            
-                            // Check Mode
+                            if (item.is_variable) return false; 
                             if (forecastMode.value === 'survival' && !item.is_core) return false;
                             if (forecastMode.value === 'standard' && item.is_wishlist) return false;
-                            // Dream includes all (except explicitly disabled ones, technically)
                             return true;
                         });
                         const fixedBurn = unpaidBills.reduce((sum, b) => sum + b.budget_items.amount, 0);
 
-                        // B. Remaining Variable Budget
                         const activeVariables = variableBudgets.value.filter(v => {
                             if (forecastMode.value === 'survival') return v.is_core;
                             if (forecastMode.value === 'standard') return !v.is_wishlist;
                             return true;
                         });
-                        // Sum up remaining balances (ignore if negative/overspent)
                         const variableBurn = activeVariables.reduce((sum, v) => sum + Math.max(0, v.remaining), 0);
-
                         monthlyBurn = fixedBurn + variableBurn;
-
                     } else {
-                        // Future Months: Standard Calculation
-                        if (forecastMode.value === 'survival') monthlyBurn = budgetItems.value.filter(i => i.is_core).reduce((a, b) => a + getMonthlyCost(b), 0);
-                        else if (forecastMode.value === 'standard') monthlyBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((a, b) => a + getMonthlyCost(b), 0);
-                        else if (forecastMode.value === 'dream') {
-                            budgetItems.value.forEach(i => {
-                                if (i.is_wishlist) monthlyBurn += getMonthlyCost(i);
-                                else {
-                                    const replaced = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id);
-                                    if (!replaced) monthlyBurn += getMonthlyCost(i);
-                                }
-                            });
-                        }
+                        if(forecastMode.value==='survival') monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
+                        else if(forecastMode.value==='standard') monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
+                        else if(forecastMode.value==='dream') budgetItems.value.forEach(i=>{ if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i); else { const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id); if(!replaced) monthlyBurn+=getMonthlyCost(i); } });
                     }
 
                     m.burn = round(monthlyBurn);
-                    const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0);
-                    
-                    // Net Calculation
-                    const monthlyNet = monthlyIncome - monthlyBurn - totalExtra;
-                    balance = round(balance + monthlyNet);
-                    m.endBalance = balance;
-
-                    if (project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) {
-                        forecastResults.value.affordableMonth = m.name;
-                        forecastResults.value.affordableIndex = idx;
-                    }
+                    const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);
+                    const monthlyNet=m.income-monthlyBurn-totalExtra;
+                    balance=round(balance+monthlyNet);
+                    m.endBalance=balance;
+                    if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){ forecastResults.value.affordableMonth=m.name; forecastResults.value.affordableIndex=idx }
                 });
                 renderForecastChart();
             };
@@ -714,16 +860,11 @@
             const fillExpense = (m) => { const selected = budgetItems.value.find(i => i.id === m.newExpenseId); if (selected) { m.newExpenseName = selected.name; m.newExpenseAmount = selected.amount; } };
             const removeExpense = (m, index) => { const ov = getOverride(m.name); ov.extraExpenses.splice(index, 1); runForecast(); };
             
-            // ** SAVING & LOADING FORECASTS **
             const saveForecastSlot=async(i)=>{ 
                 const existing = savedForecasts.value[i];
                 let name = existing ? existing.name : '';
-                if(existing){
-                    if(!confirm(`Update "${existing.name}"?`)) return;
-                } else {
-                    name = prompt("Name this forecast:");
-                    if(!name) return;
-                }
+                if(existing){ if(!confirm(`Update "${existing.name}"?`)) return; } 
+                else { name = prompt("Name this forecast:"); if(!name) return; }
                 const payload = { user_id:session.value.user.id, slot_index:i, name:name, data:{settings:{...forecastSettings.value}, project:project.value, mode:forecastMode.value, overrides:forecastOverrides.value}};
                 const { error } = await _supabase.from('forecast_slots').upsert(payload, {onConflict:'user_id,slot_index'});
                 if(error) alert("Error saving: "+error.message); else await fetchForecastSlots();
@@ -838,7 +979,7 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                isDarkMode, toggleDarkMode
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening
             };
         }
     }).mount('#app');
