@@ -48,6 +48,7 @@
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
         
+        /* Driver.js Customization */
         .driver-popover.driverjs-theme { background-color: #ffffff; color: #1e293b; padding: 15px; border-radius: 12px; }
         .driver-popover.driverjs-theme .driver-popover-title { font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; color: #0f172a; }
         .driver-popover.driverjs-theme button { background-color: #4F46E5; color: white; border: none; text-shadow: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 0.8rem; }
@@ -103,31 +104,19 @@
                             </div>
 
                             <button @click="toggleDarkMode" class="hidden md:block text-xl p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition" title="Toggle Dark Mode">{{ isDarkMode ? '☀️' : '🌙' }}</button>
-
-                            <button @click="exportData" class="hidden md:flex items-center gap-2 text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 px-4 py-3 rounded-xl hover:bg-emerald-100 dark:bg-slate-800 dark:border-slate-700 dark:text-emerald-400 dark:hover:bg-slate-700 transition shadow-sm" title="Export Data to CSV">
-                                <span>📥</span> Export
-                            </button>
-
+                            <button @click="exportData" class="hidden md:flex items-center gap-2 text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 px-4 py-3 rounded-xl hover:bg-emerald-100 dark:bg-slate-800 dark:border-slate-700 dark:text-emerald-400 dark:hover:bg-slate-700 transition shadow-sm" title="Export Data to CSV"><span>📥</span> Export</button>
                             <button @click="handleLogout" class="hidden md:block text-xs font-bold text-red-400 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-slate-800 transition">Sign Out</button>
                         </div>
                     </div>
 
                     <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
-                        <div class="w-full flex justify-end mb-4">
-                            <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Take a Tour</button>
-                        </div>
+                        <div class="w-full flex justify-end mb-4"><button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Take a Tour</button></div>
+                        
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                             <div id="tour-safe-spend" class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 dark:shadow-none text-white relative overflow-hidden group">
                                 <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">💰</div>
                                 <div class="relative z-10">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <h3 class="text-xs font-bold text-emerald-100 uppercase tracking-widest">Safe To Spend</h3>
-                                        <div class="flex bg-black/20 rounded-lg p-0.5 backdrop-blur-sm">
-                                            <button @click="setDashboardMode('survival')" class="px-2 py-0.5 text-[10px] rounded font-bold transition" :class="dashboardMode==='survival'?'bg-white text-emerald-600 shadow':'text-emerald-100 hover:text-white'">🛡️</button>
-                                            <button @click="setDashboardMode('standard')" class="px-2 py-0.5 text-[10px] rounded font-bold transition" :class="dashboardMode==='standard'?'bg-white text-emerald-600 shadow':'text-emerald-100 hover:text-white'">⚖️</button>
-                                            <button @click="setDashboardMode('dream')" class="px-2 py-0.5 text-[10px] rounded font-bold transition" :class="dashboardMode==='dream'?'bg-white text-emerald-600 shadow':'text-emerald-100 hover:text-white'">🚀</button>
-                                        </div>
-                                    </div>
+                                    <div class="flex justify-between items-start mb-2"><h3 class="text-xs font-bold text-emerald-100 uppercase tracking-widest">Safe To Spend</h3><div class="flex bg-black/20 rounded-lg p-0.5 backdrop-blur-sm"><button @click="setDashboardMode('survival')" class="px-2 py-0.5 text-[10px] rounded font-bold transition" :class="dashboardMode==='survival'?'bg-white text-emerald-600 shadow':'text-emerald-100 hover:text-white'">🛡️</button><button @click="setDashboardMode('standard')" class="px-2 py-0.5 text-[10px] rounded font-bold transition" :class="dashboardMode==='standard'?'bg-white text-emerald-600 shadow':'text-emerald-100 hover:text-white'">⚖️</button><button @click="setDashboardMode('dream')" class="px-2 py-0.5 text-[10px] rounded font-bold transition" :class="dashboardMode==='dream'?'bg-white text-emerald-600 shadow':'text-emerald-100 hover:text-white'">🚀</button></div></div>
                                     <div class="text-4xl font-black tracking-tight mt-1" :class="safeToSpend>=0?'':'text-red-200'">${{safeToSpend.toLocaleString()}}</div>
                                     <div class="text-xs text-emerald-100 mt-2 font-medium opacity-80">{{dashboardMode==='survival'?'Net Pay - Core Bills':(dashboardMode==='dream'?'Net Pay - (Bills - Replaced + Wishlist)':'Net Pay - Standard Bills')}}</div>
                                 </div>
@@ -164,9 +153,7 @@
                                         <button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 dark:bg-emerald-600 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+ Log</button>
                                     </div>
                                 </div>
-                                
                                 <div v-if="variableBudgets.length === 0" class="flex-1 flex items-center justify-center text-center text-slate-400 text-xs py-8 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-600">No variable budgets yet.</div>
-                                
                                 <div class="space-y-4 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar">
                                     <div v-for="item in variableBudgets" :key="item.id" class="group relative">
                                         <div class="flex justify-between text-xs mb-1">
@@ -191,6 +178,47 @@
                                 <div class="h-48 w-full relative"><canvas id="dashboardChart"></canvas></div>
                                 <div v-if="cashFlowLowPoint && !impulseResult" class="mt-2 flex items-center justify-center gap-2 text-xs font-medium p-2 rounded-lg border" :class="cashFlowLowPoint.amount<0?'bg-red-50 dark:bg-red-900/30 border-red-100 dark:border-red-800 text-red-700 dark:text-red-300':'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'"><span class="text-lg">{{cashFlowLowPoint.amount<0?'⚠️':'✅'}}</span> Low Point: <span class="font-mono font-bold">${{cashFlowLowPoint.amount.toLocaleString()}}</span> on {{cashFlowLowPoint.date}}</div>
                                 <div v-if="impulseResult" class="mt-2 flex items-center justify-center gap-2 text-xs font-medium p-2 rounded-lg border" :class="impulseResult.safe?'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300':'bg-red-50 dark:bg-red-900/30 border-red-100 dark:border-red-800 text-red-700 dark:text-red-300'"><span class="text-lg">{{impulseResult.safe?'✅':'❌'}}</span><span>{{impulseResult.message}}</span><button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase flex items-center gap-2">
+                                        <span class="bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-300 p-1 rounded">🎁</span> Gift Cards
+                                    </h3>
+                                    <div class="flex gap-2">
+                                        <button @click="startVoiceGift" class="text-[10px] w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm border" :class="isListeningGift ? 'bg-red-500 text-white animate-pulse border-red-600' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50'" title="Voice Log">
+                                            {{ isListeningGift ? '🎙️' : '🎤' }}
+                                        </button>
+                                        <button @click="showGiftModal = true" class="text-[10px] bg-slate-900 dark:bg-emerald-600 text-white px-3 py-1.5 rounded font-bold shadow hover:bg-slate-800">+ Add Card</button>
+                                    </div>
+                                </div>
+
+                                <div v-if="giftCards.length === 0" class="text-center text-slate-400 py-8 text-sm bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-600">
+                                    No active gift cards. Add one to track balances!
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div v-for="card in giftCards" :key="card.id" class="relative group bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm hover:shadow-md transition">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <div class="font-bold text-slate-800 dark:text-white">{{ card.name }}</div>
+                                                <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold">{{ card.owner || 'Family' }}</div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-mono font-bold text-lg text-emerald-600 dark:text-emerald-400">${{ card.balance.toLocaleString() }}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-600">
+                                            <button @click="openGiftSpend(card)" class="flex-1 text-xs bg-white dark:bg-slate-600 border dark:border-slate-500 py-1.5 rounded text-slate-600 dark:text-slate-200 font-bold hover:text-emerald-600 hover:border-emerald-300">Log Spend</button>
+                                            <button @click="viewGiftImage(card)" v-if="card.image_data" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-600 border dark:border-slate-500 rounded text-slate-500 hover:text-blue-500">📷</button>
+                                            <button @click="openGiftHistory(card)" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-600 border dark:border-slate-500 rounded text-slate-500 hover:text-purple-500">📜</button>
+                                            <button @click="deleteGiftCard(card)" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-600 border dark:border-slate-500 rounded text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">🗑️</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -224,15 +252,6 @@
                                 <div id="tour-active-incomes" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Active Income Sources</h3><div v-if="incomes.length === 0" class="text-center text-slate-400 text-xs py-4">No incomes added yet.</div><div v-for="inc in incomes" :key="inc.id" class="p-3 border dark:border-slate-600 rounded-lg mb-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer group" @click="loadIncomeIntoCalculator(inc)"><div class="flex justify-between items-center mb-1"><div class="font-bold text-sm text-slate-800 dark:text-white">{{ inc.name }}</div><button @click.stop="deleteIncome(inc.id)" class="text-xs text-red-300 hover:text-red-500">✕</button></div><div class="flex justify-between text-xs text-slate-500"><span>{{ inc.frequency }}</span><span class="font-mono font-bold text-emerald-600">${{ inc.amount.toLocaleString() }}/check</span></div></div></div>
                             </div>
                         </div>
-                    </div>
-
-                    <div v-if="currentView==='budget'" class="animate-fade-in print:hidden">
-                        <div class="w-full flex justify-end mb-4"><button @click="startBudgetTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Tour This Tab</button></div>
-                        <div class="mb-8"><header class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full"><div id="tour-net-pay" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><div class="flex justify-between items-start"><h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Monthly Pay</h2><div v-if="useTempPay" class="flex items-center gap-1 bg-emerald-100 rounded px-2 py-0.5"><span class="text-[10px] font-bold text-emerald-700">⚡ Session Mode</span><button @click="useTempPay=false; calculateAndSave('reset')" class="text-[10px] text-emerald-500 hover:text-emerald-800 font-bold ml-1">✕</button></div></div><div class="flex items-center gap-1 mt-1"><span class="text-xl text-slate-400">$</span><div class="text-2xl font-bold w-full text-slate-700 dark:text-white">{{ activeMonthlyPay.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div><div class="text-[10px] text-slate-400 mt-1">{{ useTempPay ? 'Using calculated temp pay' : 'Sum of all active income sources' }}</div></div><div id="tour-scenario-burn" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scenario Commitments</h2><div class="text-2xl font-bold mt-1 text-red-500">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div><div class="text-[10px] text-slate-400 mt-1">Includes smoothed Quarterly/Yearly items</div></div><div id="tour-projected-end" class="bg-slate-900 dark:bg-slate-800 text-white p-4 rounded-2xl shadow-xl shadow-slate-300 dark:shadow-none relative overflow-hidden"><div class="relative z-10"><h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2"><span :class="isScenarioActive ? 'text-emerald-400' : 'text-slate-400'">{{ isScenarioActive ? '⚡ Active' : 'Projected End' }}</span></h2><div class="text-3xl font-bold mt-2" :class="projectedBalance >= 0 ? 'text-emerald-300' : 'text-red-300'">${{ projectedBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div></div></div></header></div>
-                        <div id="tour-manage-budget" class="mb-8 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"><div @click="showPlanner = !showPlanner" class="p-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center transition select-none"><h3 class="font-bold text-slate-700 dark:text-white flex items-center gap-2"><span>🔮</span> Manage Budget & Scenarios</h3><div class="text-slate-400 transform transition-transform" :class="showPlanner ? 'rotate-180' : ''">▼</div></div><transition name="accordion"><div v-if="showPlanner" class="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"><div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-8"><div><div class="flex gap-2 mb-4 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg"><button @click="setScenarioMode('survival')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'survival' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-white dark:hover:bg-slate-600'">🛡️ Survival</button><button @click="setScenarioMode('standard')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'standard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white dark:hover:bg-slate-600'">⚖️ Standard</button><button @click="setScenarioMode('dream')" class="flex-1 text-xs py-2 rounded-lg font-bold transition flex items-center justify-center gap-1" :class="currentScenarioMode === 'dream' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-white dark:hover:bg-slate-600'">🚀 Dream</button></div><h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Active Bills</h4><div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-6 custom-scrollbar"><div v-for="item in standardItems" :key="item.id" class="flex items-center justify-between p-3 border dark:border-slate-700 rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-900 opacity-50 grayscale'"><div class="flex-1"><div class="flex items-center gap-1"><span v-if="item.is_core" class="text-xs">⭐</span><div class="font-bold text-sm dark:text-white">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 px-1">✏️</button><button @click="deleteBudgetItem(item)" class="text-xs text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1">🗑️</button></div><div class="text-xs text-slate-500 dark:text-slate-400 font-mono flex gap-1">${{ item.amount.toFixed(2) }} <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-1 rounded flex items-center gap-1">{{ item.frequency }} <span class="text-purple-400 font-normal">(~${{ getMonthlyCost(item).toFixed(0) }}/mo)</span></span></div></div><input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 cursor-pointer"></div></div><h4 class="text-xs font-bold text-purple-400 uppercase mb-2 flex items-center gap-2">✨ Wishlist / Sandbox <span class="text-[9px] bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 px-1 rounded">Not Billed</span></h4><div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"><div v-for="item in wishlistItems" :key="item.id" class="flex items-center justify-between p-3 border border-purple-100 dark:border-purple-900 rounded-lg transition-all group" :class="item.includedInScenario ? 'bg-purple-50 dark:bg-purple-900/20' : 'bg-slate-50 dark:bg-slate-900 opacity-50 grayscale'"><div><div class="flex items-center gap-1"><div class="font-bold text-sm text-purple-900 dark:text-purple-300">{{ item.name }}</div><button @click="startEditing(item)" class="text-xs text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 px-1">✏️</button><button @click="deleteBudgetItem(item)" class="text-xs text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1">🗑️</button></div><div class="text-xs text-purple-700 dark:text-purple-400 font-mono">${{ item.amount.toFixed(2) }}</div></div><input type="checkbox" :id="'toggle-'+item.id" v-model="item.includedInScenario" class="toggle-checkbox w-5 h-5 rounded-full border-4 border-purple-200 cursor-pointer"></div><div v-if="wishlistItems.length === 0" class="text-xs text-slate-400 italic p-2 text-center">No items. Create one and check "Wishlist".</div></div></div><div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border dark:border-slate-600 h-fit transition-all" :class="isEditing ? 'bg-white border-blue-300 ring-2 ring-blue-100' : ''"><div class="flex justify-between items-center cursor-pointer" @click="showAddForm = !showAddForm"><h4 class="text-sm font-bold text-slate-700 dark:text-white">{{ isEditing ? 'Edit Item' : 'Add Item' }}</h4><span>{{ showAddForm ? '-' : '+' }}</span></div><div v-if="showAddForm" class="mt-3 space-y-3 pt-3 border-t dark:border-slate-600"><input v-model="newItem.name" type="text" placeholder="Name" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-600 dark:text-white dark:border-slate-500"><div class="grid grid-cols-2 gap-2"><input v-model="newItem.amount" type="number" step="0.01" placeholder="$" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-600 dark:text-white dark:border-slate-500"><input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" placeholder="Day" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-600 dark:text-white dark:border-slate-500"><div v-else class="text-center text-sm text-slate-400 p-2 border bg-slate-100 rounded-lg">Flex</div></div><div class="grid grid-cols-2 gap-2"><label class="flex items-center gap-2 text-xs"><input type="checkbox" v-model="newItem.isFlexible"> Flexible Date</label><select v-model="newItem.frequency" class="w-full p-2 border rounded-lg text-xs dark:bg-slate-600 dark:text-white dark:border-slate-500"><option>Monthly</option><option>Quarterly</option><option>Yearly</option><option>One-Time</option></select></div><div class="flex flex-col gap-2 p-2 bg-white dark:bg-slate-600 rounded-lg border dark:border-slate-500"><label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_core"> Core Item</label><label class="text-sm flex gap-2 cursor-pointer"><input type="checkbox" v-model="newItem.is_autopay"> Autopay</label><label class="text-sm flex gap-2 cursor-pointer text-purple-700 dark:text-purple-300 font-bold"><input type="checkbox" v-model="newItem.is_wishlist"> ✨ Wishlist / Sandbox</label><label class="text-xs font-bold text-slate-400 uppercase mt-2">Category</label><select v-model="newItem.category" class="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white mb-2"><option v-for="cat in categories" :value="cat">{{ cat }}</option></select><label class="text-sm flex gap-2 cursor-pointer text-blue-700 dark:text-blue-300 font-bold"><input type="checkbox" v-model="newItem.is_variable"> 🛒 Variable Budget (Groceries/Gas)</label><div v-if="newItem.is_wishlist" class="mt-2 pt-2 border-t dark:border-slate-500"><label class="text-xs font-bold text-slate-500 uppercase block mb-1">Replaces existing bill?</label><select v-model="newItem.replaces_id" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700 dark:text-white dark:border-slate-500"><option :value="null">-- None --</option><option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option></select></div></div><div class="flex gap-2"><button @click="handleSave" class="flex-1 bg-slate-900 dark:bg-emerald-600 text-white font-bold py-2 rounded-lg text-sm">Save</button><button v-if="isEditing" @click="resetForm" class="px-4 bg-slate-200 dark:bg-slate-600 rounded-lg text-sm">Cancel</button></div></div></div></div></div></transition></div>
-                        <div id="tour-ledger" class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2"><h3 class="text-lg font-bold">📅 Current Bills</h3><div class="flex gap-2 items-center"><button @click="showPaidBills = !showPaidBills" class="text-xs px-2 py-1 rounded border border-slate-200 text-slate-500 hover:bg-slate-100 transition">{{ showPaidBills ? 'Hide Paid' : 'Show Paid' }}</button><button @click="openGenerateModal(0)" class="flex-1 md:flex-none text-xs bg-slate-900 text-white px-3 py-2 rounded shadow">+ Review & Add</button><button @click="fetchBills" class="text-xs text-slate-400 hover:text-slate-600 px-2">Refresh</button></div></div>
-                        <div class="hidden md:block bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"><table class="w-full text-left"><thead class="bg-slate-50 dark:bg-slate-700 text-xs uppercase text-slate-500 font-semibold border-b dark:border-slate-600"><tr><th class="p-4">Due</th><th class="p-4">Status</th><th class="p-4">Bill</th><th class="p-4 text-right">Amt</th><th class="p-4 text-center">Act</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-700"><tr v-if="visibleBills.length === 0"><td colspan="5" class="p-8 text-center text-slate-400">All bills paid! 🎉</td></tr><tr v-for="bill in visibleBills" :key="bill.id" class="group hover:bg-slate-50 dark:hover:bg-slate-700" :class="{'bg-green-50 dark:bg-green-900/20': bill.is_paid, 'bg-red-50 dark:bg-red-900/20': !bill.is_paid && getDaysLeft(bill.due_date) < 0}"><td class="p-4 text-sm">{{ bill.budget_items.due_day === 0 ? 'Flex' : formatDate(bill.due_date) }}</td><td class="p-4 text-xs font-bold"><span v-if="bill.is_paid" class="text-emerald-600 dark:text-emerald-400 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/50 rounded">PAID</span><span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-red-600 dark:text-red-400 px-2 py-1 bg-red-100 dark:bg-red-900/50 rounded">OVERDUE</span><span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-orange-600 dark:text-orange-400 px-2 py-1 bg-orange-100 dark:bg-orange-900/50 rounded">TODAY</span><span v-else-if="getDaysLeft(bill.due_date) <= 3" class="text-orange-500">In {{ getDaysLeft(bill.due_date) }} Days</span><span v-else class="text-slate-400">{{ getDaysLeft(bill.due_date) }} days</span></td><td class="p-4 font-medium"><div class="flex flex-col"><span class="text-slate-900 dark:text-white">{{ bill.budget_items.name }}</span><span class="text-[10px] text-slate-400 uppercase tracking-wider">{{bill.budget_items.category}}</span></div> <a :href="getCalendarLink(bill)" target="_blank">📅</a> <span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 px-1 rounded">CORE</span></td><td class="p-4 text-right font-mono">${{ bill.budget_items.amount.toFixed(2) }}</td><td class="p-4 text-center"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="accent-emerald-600 w-5 h-5"><button @click="deleteBill(bill)" class="ml-2 text-slate-300 hover:text-red-500">🗑️</button></td></tr></tbody></table></div>
-                        <div class="md:hidden space-y-3"><div v-if="visibleBills.length === 0" class="p-8 text-center text-slate-400 bg-white dark:bg-slate-800 rounded-xl border border-slate-200">All bills paid! 🎉</div><div v-for="bill in visibleBills" :key="bill.id" class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border dark:border-slate-700" :class="{'bg-green-50 dark:bg-green-900/20 border-green-200': bill.is_paid, 'bg-red-50 dark:bg-red-900/20 border-red-200': !bill.is_paid && getDaysLeft(bill.due_date) < 0}"><div class="flex justify-between items-start mb-2"><div><div class="font-bold text-slate-800 dark:text-white">{{ bill.budget_items.name }} <a :href="getCalendarLink(bill)" target="_blank">📅</a></div><div class="text-[10px] text-slate-400 uppercase">{{bill.budget_items.category}}</div><div class="flex gap-1 mt-1"><span v-if="bill.budget_items.is_core" class="text-[9px] bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 px-1 rounded border border-yellow-200 dark:border-yellow-800">CORE</span><span v-if="bill.budget_items.is_autopay" class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 flex items-center gap-1">🔄 Auto</span></div></div><div class="font-mono text-lg text-slate-700 dark:text-white">${{ bill.budget_items.amount.toFixed(2) }}</div></div><div class="flex justify-between items-center text-sm mb-3 text-slate-500"><span>{{ bill.budget_items.due_day === 0 ? 'Flexible' : formatDate(bill.due_date) }}</span><span v-if="!bill.is_paid" :class="getDaysLeft(bill.due_date) < 0 ? 'text-red-600 font-bold' : (getDaysLeft(bill.due_date) <= 3 ? 'text-orange-500 font-bold' : 'text-slate-400')">{{ getDaysLeft(bill.due_date) < 0 ? 'Overdue' : getDaysLeft(bill.due_date) + ' days' }}</span></div><div class="flex justify-between pt-3 border-t dark:border-slate-700"><button @click="deleteBill(bill)" class="text-slate-300">🗑️ Remove</button><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="w-5 h-5"></div></div></div>
                     </div>
 
             <div v-if="currentView==='forecast'" class="animate-fade-in">
@@ -447,10 +466,78 @@
                 </div>
             </transition>
 
+            <transition name="fade">
+                <div v-if="showGiftModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                        <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Add Gift Card</h3>
+                        <div class="space-y-3">
+                            <input v-model="newGiftCard.name" placeholder="Store Name (e.g. Amazon)" class="w-full p-3 border rounded-xl text-sm dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                            <div class="grid grid-cols-2 gap-3">
+                                <input v-model="newGiftCard.owner" placeholder="Owner (e.g. Dad)" class="w-full p-3 border rounded-xl text-sm dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                <input v-model.number="newGiftCard.balance" type="number" step="0.01" placeholder="Balance ($)" class="w-full p-3 border rounded-xl text-sm dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                            </div>
+                            <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 relative">
+                                <input type="file" accept="image/*" @change="handleImageUpload" class="absolute inset-0 opacity-0 cursor-pointer">
+                                <div v-if="newGiftCard.image_data" class="text-emerald-500 text-xs font-bold">✅ Image Selected</div>
+                                <div v-else class="text-slate-400 text-xs">📷 Tap to take photo of card</div>
+                            </div>
+                            <button @click="addGiftCard" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl">Save Card</button>
+                            <button @click="showGiftModal=false" class="w-full text-slate-400 text-sm mt-2">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name="fade">
+                <div v-if="showGiftSpendModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                        <h3 class="font-bold text-lg mb-2 text-slate-800 dark:text-white">Log Purchase</h3>
+                        <p class="text-xs text-slate-500 mb-4">{{ selectedGiftCard?.name }} (Bal: ${{ selectedGiftCard?.balance }})</p>
+                        <div class="space-y-3">
+                            <input v-model.number="giftSpend.amount" type="number" step="0.01" placeholder="Amount Spent ($)" class="w-full p-3 border rounded-xl text-sm dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                            <input v-model="giftSpend.description" placeholder="Description" class="w-full p-3 border rounded-xl text-sm dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                            <button @click="confirmGiftSpend" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl">Log Spend</button>
+                            <button @click="showGiftSpendModal=false" class="w-full text-slate-400 text-sm mt-2">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name="fade">
+                <div v-if="showGiftImageModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" @click="showGiftImageModal=false">
+                    <img :src="selectedGiftCard?.image_data" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl">
+                </div>
+            </transition>
+
+            <transition name="fade">
+                <div v-if="showGiftHistoryModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col max-h-[60vh]">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg text-slate-800 dark:text-white">History: {{ selectedGiftCard?.name }}</h3>
+                            <button @click="showGiftHistoryModal=false" class="text-slate-400">&times;</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto space-y-2">
+                            <div v-if="currentGiftLogs.length === 0" class="text-center text-slate-400 text-sm py-4">No purchases yet.</div>
+                            <div v-for="log in currentGiftLogs" :key="log.id" class="flex justify-between items-center p-2 border-b dark:border-slate-700">
+                                <div>
+                                    <div class="text-xs font-bold text-slate-700 dark:text-slate-200">{{ log.description || 'Purchase' }}</div>
+                                    <div class="text-[10px] text-slate-400">{{ formatDate(log.created_at.split('T')[0]) }}</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-red-500 font-mono text-xs">-${{ log.amount }}</span>
+                                    <button @click="deleteGiftLog(log)" class="text-[10px] text-slate-300 hover:text-red-500">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
     </div>
+
 </body>
 </html>
-            
+
 <script>
     const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
     const { createClient } = supabase;
@@ -466,7 +553,7 @@
 
     const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // --- GLOBAL UTILITIES ---
+    // --- UTILS ---
     const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
     const getMonthlyCost = (i) => {
         let a = Number(i.amount);
@@ -488,6 +575,12 @@
         const diffTime = due - today;
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
+    const getCalendarLink = (bill) => {
+        const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
+        const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
+        const dStr = bill.due_date.replace(/-/g, '');
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
+    };
     const calculateFederalTax = (annualInc, status = 'Single') => {
         const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
         let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000));
@@ -504,12 +597,6 @@
         }
         return t;
     };
-    const getCalendarLink = (bill) => {
-        const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
-        const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
-        const dStr = bill.due_date.replace(/-/g, '');
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
-    };
 
     createApp({
         setup() {
@@ -518,7 +605,7 @@
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
             const budgetItems = ref([]), bills = ref([]), debts = ref([]), incomes = ref([]);
             const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
-            const isListening = ref(false); // New state for voice
+            const isListening = ref(false), isListeningGift = ref(false);
 
             // Onboarding & Calc
             const showOnboarding = ref(false), onboardingStep = ref(1), onboardingData = ref({ balance: '', safety: '', salary: '', frequency: 'Semi-Monthly', medical: '', dental: '', trad401k: '', filingStatus: 'Single', stateTaxRate: '', billName: '', billAmount: '', billDay: 1, isCore: true, isVariable: false, incomeName: '', category: 'Mortgage/Rent', wishName: '', wishAmount: '', goalName: '', goalCost: '' });
@@ -533,7 +620,7 @@
             const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
             const showChartPercentages = ref(false);
 
-            // Ledger & Logging
+            // Ledger
             const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
             const showExpenseModal = ref(false), editingExpenseId = ref(null);
             const expenseData = ref({ budgetId: '', amount: '', description: '', date: new Date().toISOString().split('T')[0] });
@@ -548,6 +635,11 @@
 
             // Debt
             const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' }), extraDebtPayment = ref(0), showDebtForm = ref(false), editingDebtId = ref(null);
+
+            // Gift Cards
+            const giftCards = ref([]), showGiftModal = ref(false), newGiftCard = ref({ name: '', owner: '', balance: '', image_data: null });
+            const showGiftSpendModal = ref(false), selectedGiftCard = ref(null), giftSpend = ref({ amount: '', description: '' });
+            const showGiftImageModal = ref(false), showGiftHistoryModal = ref(false), currentGiftLogs = ref([]);
 
             // Advisor
             const showImpulseModal = ref(false), impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] }), impulseResult = ref(null);
@@ -595,6 +687,8 @@
 
             const setForecastMode = (mode) => { forecastMode.value = mode; };
             const setScenarioMode = (mode) => { currentScenarioMode.value = mode; const freshItems = budgetItems.value.map(item => ({...item})); freshItems.forEach(item => { if (item.frequency === 'One-Time') { item.includedInScenario = false; return; } if (mode === 'survival') item.includedInScenario = !!item.is_core; else if (mode === 'standard') item.includedInScenario = !item.is_wishlist; else if (mode === 'dream') item.includedInScenario = true; }); if (mode === 'dream') { const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario); activeWishlist.forEach(w => { if (w.replaces_id) { const target = freshItems.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false; } }); } budgetItems.value = freshItems; };
+            const setDashboardMode = (mode) => { dashboardMode.value = mode; nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); };
+            const toggleChartMode = () => { showChartPercentages.value = !showChartPercentages.value; renderCategoryChart(); };
             
             const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) { budgetItems.value = data.map(i => ({...i, includedInScenario: false})); setScenarioMode('survival'); } };
             const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { if (data.current_balance !== null) forecastSettings.value.currentBalance = data.current_balance; if (data.safety_margin !== null) forecastSettings.value.safetyMargin = data.safety_margin; if (data.retirement_balance !== null) forecastSettings.value.retirementBalance = data.retirement_balance; if (data.current_age !== null) forecastSettings.value.currentAge = data.current_age; if (data.retirement_age !== null) forecastSettings.value.retirementAge = data.retirement_age; if (data.expected_return !== null) forecastSettings.value.expectedReturn = data.expected_return; } };
@@ -602,365 +696,144 @@
             const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if (data) bills.value = data.sort((a,b)=>a.due_date>b.due_date?1:-1); };
             const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data; };
             const fetchForecastSlots = async () => { const { data } = await _supabase.from('forecast_slots').select('*').order('slot_index'); if (data) { const loaded = [null, null, null]; data.forEach(slot => { if(slot.slot_index >= 0 && slot.slot_index < 3) loaded[slot.slot_index] = slot; }); savedForecasts.value = loaded; } };
-
-            const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
             
-            const setDashboardMode = (mode) => { dashboardMode.value = mode; nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); };
-            const toggleChartMode = () => { showChartPercentages.value = !showChartPercentages.value; renderCategoryChart(); };
+            // NEW GIFT CARD FUNCTIONS
+            const fetchGiftCards = async () => { const { data } = await _supabase.from('gift_cards').select('*').order('created_at'); if(data) giftCards.value = data; };
+            
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => { newGiftCard.value.image_data = evt.target.result; };
+                reader.readAsDataURL(file);
+            };
 
-            // --- VOICE ENTRY LOGIC ---
-            const startVoiceEntry = () => {
+            const addGiftCard = async () => {
+                if(!newGiftCard.value.name) return;
+                const payload = {
+                    user_id: session.value.user.id,
+                    name: newGiftCard.value.name,
+                    owner: newGiftCard.value.owner,
+                    balance: Number(newGiftCard.value.balance) || 0,
+                    image_data: newGiftCard.value.image_data
+                };
+                const { error } = await _supabase.from('gift_cards').insert([payload]);
+                if(error) alert(error.message);
+                else { showGiftModal.value = false; newGiftCard.value = {name:'', owner:'', balance:'', image_data:null}; fetchGiftCards(); }
+            };
+
+            const openGiftSpend = (card) => { selectedGiftCard.value = card; showGiftSpendModal.value = true; };
+            const confirmGiftSpend = async () => {
+                if(!giftSpend.value.amount || !selectedGiftCard.value) return;
+                const amt = Number(giftSpend.value.amount);
+                const newBal = selectedGiftCard.value.balance - amt;
+                
+                // 1. Update Card Balance
+                await _supabase.from('gift_cards').update({ balance: newBal }).eq('id', selectedGiftCard.value.id);
+                // 2. Log Transaction
+                await _supabase.from('gift_card_logs').insert([{ gift_card_id: selectedGiftCard.value.id, amount: amt, description: giftSpend.value.description || 'Spend' }]);
+                
+                showGiftSpendModal.value = false;
+                giftSpend.value = { amount:'', description:'' };
+                fetchGiftCards();
+            };
+
+            const deleteGiftCard = async (card) => { if(confirm("Delete card?")) { await _supabase.from('gift_cards').delete().eq('id', card.id); fetchGiftCards(); }};
+            const viewGiftImage = (card) => { selectedGiftCard.value = card; showGiftImageModal.value = true; };
+            const openGiftHistory = async (card) => {
+                selectedGiftCard.value = card;
+                const { data } = await _supabase.from('gift_card_logs').select('*').eq('gift_card_id', card.id).order('created_at', {ascending: false});
+                if(data) currentGiftLogs.value = data;
+                showGiftHistoryModal.value = true;
+            };
+            const deleteGiftLog = async (log) => {
+                if(!confirm("Delete log? Balance will NOT automatically refund.")) return;
+                await _supabase.from('gift_card_logs').delete().eq('id', log.id);
+                openGiftHistory(selectedGiftCard.value); // Refresh
+            };
+
+            const startVoiceGift = () => {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SpeechRecognition) { alert("Your browser doesn't support speech recognition."); return; }
+                if (!SpeechRecognition) { alert("Not supported"); return; }
                 const recognition = new SpeechRecognition();
                 recognition.lang = 'en-US';
-                recognition.interimResults = false;
-                recognition.maxAlternatives = 1;
-
-                recognition.onstart = () => { isListening.value = true; };
-                recognition.onend = () => { isListening.value = false; };
-                recognition.onerror = (event) => { console.error(event.error); isListening.value = false; alert("Voice error: " + event.error); };
-
+                recognition.onstart = () => { isListeningGift.value = true; };
+                recognition.onend = () => { isListeningGift.value = false; };
                 recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript.toLowerCase();
-                    // 1. Extract Amount
                     const amountMatch = transcript.match(/(\d+(\.\d{1,2})?)/);
                     const amount = amountMatch ? amountMatch[0] : '';
-                    // 2. Extract Category (Fuzzy Match)
-                    let bestMatchId = '';
-                    for (const item of variableBudgets.value) {
-                        if (transcript.includes(item.name.toLowerCase())) { bestMatchId = item.id; break; }
+                    let bestMatch = null;
+                    for(const c of giftCards.value) { if(transcript.includes(c.name.toLowerCase())) { bestMatch = c; break; } }
+                    
+                    if(bestMatch) {
+                        selectedGiftCard.value = bestMatch;
+                        giftSpend.value = { amount: amount, description: transcript.charAt(0).toUpperCase() + transcript.slice(1) };
+                        showGiftSpendModal.value = true;
+                    } else {
+                        alert("Could not match card name in: " + transcript);
                     }
-                    // 3. Pre-fill Modal
-                    expenseData.value = {
-                        budgetId: bestMatchId,
-                        amount: amount,
-                        description: transcript.charAt(0).toUpperCase() + transcript.slice(1), // Capitalize
-                        date: new Date().toISOString().split('T')[0]
-                    };
-                    showExpenseModal.value = true;
                 };
                 recognition.start();
             };
 
-            // --- DASHBOARD CHART ---
+            // ... Existing Chart & Logic ...
+            const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
             const renderDashboardChart = () => {
-                const ctx = document.getElementById('dashboardChart');
-                if (!ctx) return;
-                if (dashboardChartInstance) dashboardChartInstance.destroy();
-
-                const labels = [];
-                const dataCurrent = [];
-                const dataImpulse = [];
-
-                let currentSimBalance = forecastSettings.value.currentBalance || 0;
-                let impulseSimBalance = currentSimBalance;
-
-                // Push Day 0
-                labels.push('Now');
-                dataCurrent.push(currentSimBalance);
-                dataImpulse.push(impulseSimBalance);
-
+                const ctx = document.getElementById('dashboardChart'); if (!ctx) return; if (dashboardChartInstance) dashboardChartInstance.destroy();
+                const labels = [], dataCurrent = [], dataImpulse = [];
+                let currentSimBalance = forecastSettings.value.currentBalance || 0; let impulseSimBalance = currentSimBalance;
+                labels.push('Now'); dataCurrent.push(currentSimBalance); dataImpulse.push(impulseSimBalance);
                 const today = new Date();
-                let simIncomes = incomes.value.map(inc => ({
-                    amount: Number(inc.amount),
-                    nextDate: new Date(inc.next_pay_date),
-                    freq: inc.frequency
-                }));
-
-                const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false);
-                const impulseCost = Number(impulseItem.value.cost);
-                const impulseDate = impulseItem.value.date;
-
-                // Daily Variable Burn
-                const activeVariableItems = budgetItems.value.filter(item => {
-                    if (!item.is_variable) return false;
-                    if (dashboardMode.value === 'survival') return item.is_core;
-                    if (dashboardMode.value === 'standard') return !item.is_wishlist;
-                    return true;
-                });
-                const monthlyVariableTotal = activeVariableItems.reduce((sum, item) => sum + item.amount, 0);
-                const dailyVariableBurn = monthlyVariableTotal / 30;
-
+                let simIncomes = incomes.value.map(inc => ({ amount: Number(inc.amount), nextDate: new Date(inc.next_pay_date), freq: inc.frequency }));
+                const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false); const impulseCost = Number(impulseItem.value.cost); const impulseDate = impulseItem.value.date;
+                const activeVariableItems = budgetItems.value.filter(item => { if (!item.is_variable) return false; if (dashboardMode.value === 'survival') return item.is_core; if (dashboardMode.value === 'standard') return !item.is_wishlist; return true; });
+                const monthlyVariableTotal = activeVariableItems.reduce((sum, item) => sum + item.amount, 0); const dailyVariableBurn = monthlyVariableTotal / 30;
                 for (let i = 0; i < 30; i++) {
-                    const d = new Date();
-                    d.setDate(today.getDate() + i);
-                    const dStr = d.toISOString().split('T')[0];
-                    const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    labels.push(dateLabel);
-
-                    // 1. Subtract Fixed Bills
-                    const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr && !b.budget_items.is_variable);
-                    const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0);
-
-                    // 2. Subtract Variable Burn
-                    currentSimBalance -= (dailyDrop + dailyVariableBurn);
-                    impulseSimBalance -= (dailyDrop + dailyVariableBurn);
-
-                    // 3. Add Income
-                    if (useTempPay.value) {
-                        let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null;
-                        const freq = calcInputs.value.payFrequency;
-                        const amt = calcResult.value ? calcResult.value.netPay : 0;
-                        if (nextPay && dStr === nextPay.toISOString().split('T')[0]) {
-                            currentSimBalance += amt;
-                            impulseSimBalance += amt;
-                            if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
-                            else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
-                            else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
-                        }
-                    } else {
-                        simIncomes.forEach(inc => {
-                            if (dStr === inc.nextDate.toISOString().split('T')[0]) {
-                                currentSimBalance += inc.amount;
-                                impulseSimBalance += inc.amount;
-                                if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14);
-                                else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15);
-                                else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1);
-                            }
-                        });
-                    }
-
-                    // 4. Impulse
-                    if (runImpulse && dStr === impulseDate) {
-                        impulseSimBalance -= impulseCost;
-                    }
-
-                    dataCurrent.push(currentSimBalance);
-                    dataImpulse.push(impulseSimBalance);
+                    const d = new Date(); d.setDate(today.getDate() + i); const dStr = d.toISOString().split('T')[0]; const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); labels.push(dateLabel);
+                    const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr && !b.budget_items.is_variable); const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0);
+                    currentSimBalance -= (dailyDrop + dailyVariableBurn); impulseSimBalance -= (dailyDrop + dailyVariableBurn);
+                    if (useTempPay.value) { let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null; const freq = calcInputs.value.payFrequency; const amt = calcResult.value ? calcResult.value.netPay : 0; if (nextPay && dStr === nextPay.toISOString().split('T')[0]) { currentSimBalance += amt; impulseSimBalance += amt; if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14); else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15); else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1); } } else { simIncomes.forEach(inc => { if (dStr === inc.nextDate.toISOString().split('T')[0]) { currentSimBalance += inc.amount; impulseSimBalance += inc.amount; if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14); else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15); else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1); } }); }
+                    if (runImpulse && dStr === impulseDate) { impulseSimBalance -= impulseCost; }
+                    dataCurrent.push(currentSimBalance); dataImpulse.push(impulseSimBalance);
                 }
-
-                // Low Point
-                const activeData = runImpulse ? dataImpulse : dataCurrent;
-                const min = Math.min(...activeData);
-                const index = activeData.indexOf(min);
-                const d = new Date();
-                d.setDate(today.getDate() + (index - 1)); 
-                lowPointData.value = { 
-                    amount: min, 
-                    date: index === 0 ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
-                };
-
-                dashboardChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Current',
-                            data: dataCurrent,
-                            borderColor: '#3B82F6',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            fill: false,
-                            tension: 0.1
-                        }]
-                    }
-                });
-
-                if (runImpulse) {
-                    dashboardChartInstance.data.datasets.push({
-                        label: 'With Purchase',
-                        data: dataImpulse,
-                        borderColor: '#9333EA',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0.1
-                    });
-                }
+                const activeData = runImpulse ? dataImpulse : dataCurrent; const min = Math.min(...activeData); const index = activeData.indexOf(min); const d = new Date(); d.setDate(today.getDate() + (index - 1)); lowPointData.value = { amount: min, date: index === 0 ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) };
+                dashboardChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Current', data: dataCurrent, borderColor: '#3B82F6', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.1 }] } });
+                if (runImpulse) { dashboardChartInstance.data.datasets.push({ label: 'With Purchase', data: dataImpulse, borderColor: '#9333EA', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0.1 }); }
                 dashboardChartInstance.update();
             };
-
             const renderForecastChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
-
-            // --- FORECAST LOGIC ---
             const runForecast=()=>{
-                let balance=round(forecastSettings.value.currentBalance);
-                const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-                const today = new Date();
-                const currentMonthStr = today.toISOString().slice(0, 7); 
-                
-                if(forecastData.value.length!==forecastSettings.value.months){
-                    forecastData.value=[];
-                    for(let i=0;i<forecastSettings.value.months;i++){
-                        const d=new Date(today.getFullYear(),today.getMonth()+i,1);
-                        forecastData.value.push({ name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`, income:activeMonthlyPay.value, extraExpenses:[], newExpenseId:'', newExpenseName:'', newExpenseAmount:'', isOpen:false, burn: 0 })
-                    }
-                }
+                let balance=round(forecastSettings.value.currentBalance); const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; const today = new Date(); const currentMonthStr = today.toISOString().slice(0, 7); 
+                if(forecastData.value.length!==forecastSettings.value.months){ forecastData.value=[]; for(let i=0;i<forecastSettings.value.months;i++){ const d=new Date(today.getFullYear(),today.getMonth()+i,1); forecastData.value.push({ name:`${monthNames[d.getMonth()]} ${d.getFullYear()}`, income:activeMonthlyPay.value, extraExpenses:[], newExpenseId:'', newExpenseName:'', newExpenseAmount:'', isOpen:false, burn: 0 }) } }
                 forecastResults.value.affordableMonth=null;
-                
                 forecastData.value.forEach((m,idx)=>{
-                    const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1);
-                    const isCurrentMonth = idx === 0;
-                    
-                    let monthlyIncome = 0;
-                    if (isCurrentMonth) {
-                        // Smart Income: Remaining checks only
-                        incomes.value.forEach(inc => {
-                            let nextPay = new Date(inc.next_pay_date);
-                            while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) {
-                                if (nextPay >= today) monthlyIncome += Number(inc.amount);
-                                if (inc.frequency === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
-                                else if (inc.frequency === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
-                                else if (inc.frequency === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
-                                else break; 
-                            }
-                        });
-                        if(useTempPay.value && monthlyIncome === 0) monthlyIncome = tempCalculatedPay.value; 
-                    } else {
-                        monthlyIncome = activeMonthlyPay.value;
-                    }
-                    
-                    const ov = forecastOverrides.value[m.name];
-                    if (ov && ov.income !== undefined) monthlyIncome = Number(ov.income);
-                    m.income = monthlyIncome; 
-                    if (ov && ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses];
-
+                    const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1); const isCurrentMonth = idx === 0; let monthlyIncome = 0;
+                    if (isCurrentMonth) { incomes.value.forEach(inc => { let nextPay = new Date(inc.next_pay_date); while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) { if (nextPay >= today) monthlyIncome += Number(inc.amount); if (inc.frequency === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14); else if (inc.frequency === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15); else if (inc.frequency === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1); else break; } }); if(useTempPay.value && monthlyIncome === 0) monthlyIncome = tempCalculatedPay.value; } else { monthlyIncome = activeMonthlyPay.value; }
+                    const ov = forecastOverrides.value[m.name]; if (ov && ov.income !== undefined) monthlyIncome = Number(ov.income); m.income = monthlyIncome; if (ov && ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses];
                     let monthlyBurn = 0;
-                    if (isCurrentMonth) {
-                        // Smart Expense: Unpaid Bills + Remaining Variables
-                        const unpaidBills = bills.value.filter(b => {
-                            if (!b.due_date.startsWith(currentMonthStr)) return false; 
-                            if (b.is_paid) return false; 
-                            const item = b.budget_items;
-                            if (item.is_variable) return false; 
-                            if (forecastMode.value === 'survival' && !item.is_core) return false;
-                            if (forecastMode.value === 'standard' && item.is_wishlist) return false;
-                            return true;
-                        });
-                        const fixedBurn = unpaidBills.reduce((sum, b) => sum + b.budget_items.amount, 0);
-
-                        const activeVariables = variableBudgets.value.filter(v => {
-                            if (forecastMode.value === 'survival') return v.is_core;
-                            if (forecastMode.value === 'standard') return !v.is_wishlist;
-                            return true;
-                        });
-                        const variableBurn = activeVariables.reduce((sum, v) => sum + Math.max(0, v.remaining), 0);
-                        monthlyBurn = fixedBurn + variableBurn;
-                    } else {
-                        if(forecastMode.value==='survival') monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0);
-                        else if(forecastMode.value==='standard') monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
-                        else if(forecastMode.value==='dream') budgetItems.value.forEach(i=>{ if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i); else { const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id); if(!replaced) monthlyBurn+=getMonthlyCost(i); } });
-                    }
-
-                    m.burn = round(monthlyBurn);
-                    const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);
-                    const monthlyNet=m.income-monthlyBurn-totalExtra;
-                    balance=round(balance+monthlyNet);
-                    m.endBalance=balance;
+                    if (isCurrentMonth) { const unpaidBills = bills.value.filter(b => { if (!b.due_date.startsWith(currentMonthStr)) return false; if (b.is_paid) return false; const item = b.budget_items; if (item.is_variable) return false; if (forecastMode.value === 'survival' && !item.is_core) return false; if (forecastMode.value === 'standard' && item.is_wishlist) return false; return true; }); const fixedBurn = unpaidBills.reduce((sum, b) => sum + b.budget_items.amount, 0); const activeVariables = variableBudgets.value.filter(v => { if (forecastMode.value === 'survival') return v.is_core; if (forecastMode.value === 'standard') return !v.is_wishlist; return true; }); const variableBurn = activeVariables.reduce((sum, v) => sum + Math.max(0, v.remaining), 0); monthlyBurn = fixedBurn + variableBurn; } else { if(forecastMode.value==='survival') monthlyBurn = budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0); else if(forecastMode.value==='standard') monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0); else if(forecastMode.value==='dream') budgetItems.value.forEach(i=>{ if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i); else { const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id); if(!replaced) monthlyBurn+=getMonthlyCost(i); } }); }
+                    m.burn = round(monthlyBurn); const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0); const monthlyNet=m.income-monthlyBurn-totalExtra; balance=round(balance+monthlyNet); m.endBalance=balance;
                     if(project.value&&!forecastResults.value.affordableMonth&&(balance-project.value.cost>=forecastSettings.value.safetyMargin)){ forecastResults.value.affordableMonth=m.name; forecastResults.value.affordableIndex=idx }
-                });
-                renderForecastChart();
+                }); renderForecastChart();
             };
 
-            const getOverride = (monthName) => { if (!forecastOverrides.value[monthName]) forecastOverrides.value[monthName] = { income: null, extraExpenses: [] }; return forecastOverrides.value[monthName]; };
-            const updateMonthIncome = (m) => { const ov = getOverride(m.name); ov.income = Number(m.income); runForecast(); };
-            const addExpense = (m) => { if (m.newExpenseName && m.newExpenseAmount) { const ov = getOverride(m.name); ov.extraExpenses.push({ name: m.newExpenseName, amount: Number(m.newExpenseAmount) }); m.newExpenseName = ''; m.newExpenseAmount = ''; m.newExpenseId = ''; runForecast(); } };
-            const fillExpense = (m) => { const selected = budgetItems.value.find(i => i.id === m.newExpenseId); if (selected) { m.newExpenseName = selected.name; m.newExpenseAmount = selected.amount; } };
-            const removeExpense = (m, index) => { const ov = getOverride(m.name); ov.extraExpenses.splice(index, 1); runForecast(); };
-            
-            const saveForecastSlot=async(i)=>{ 
-                const existing = savedForecasts.value[i];
-                let name = existing ? existing.name : '';
-                if(existing){ if(!confirm(`Update "${existing.name}"?`)) return; } 
-                else { name = prompt("Name this forecast:"); if(!name) return; }
-                const payload = { user_id:session.value.user.id, slot_index:i, name:name, data:{settings:{...forecastSettings.value}, project:project.value, mode:forecastMode.value, overrides:forecastOverrides.value}};
-                const { error } = await _supabase.from('forecast_slots').upsert(payload, {onConflict:'user_id,slot_index'});
-                if(error) alert("Error saving: "+error.message); else await fetchForecastSlots();
+            // ... Existing voice logic ...
+            const startVoiceEntry = () => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) { alert("Your browser doesn't support speech recognition."); return; }
+                const recognition = new SpeechRecognition(); recognition.lang = 'en-US'; recognition.interimResults = false; recognition.maxAlternatives = 1;
+                recognition.onstart = () => { isListening.value = true; }; recognition.onend = () => { isListening.value = false; }; recognition.onerror = (event) => { console.error(event.error); isListening.value = false; alert("Voice error: " + event.error); };
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript.toLowerCase(); const amountMatch = transcript.match(/(\d+(\.\d{1,2})?)/); const amount = amountMatch ? amountMatch[0] : ''; let bestMatchId = '';
+                    for (const item of variableBudgets.value) { if (transcript.includes(item.name.toLowerCase())) { bestMatchId = item.id; break; } }
+                    expenseData.value = { budgetId: bestMatchId, amount: amount, description: transcript.charAt(0).toUpperCase() + transcript.slice(1), date: new Date().toISOString().split('T')[0] };
+                    showExpenseModal.value = true;
+                }; recognition.start();
             };
-            const loadForecastSlot=(i)=>{ const s=savedForecasts.value[i]; if(s && confirm("Load?")){ forecastSettings.value=s.data.settings; project.value=s.data.project; setForecastMode(s.data.mode); forecastOverrides.value=s.data.overrides||{}; runForecast(); }};
-            const clearForecastSlot=async(i)=>{ if(confirm("Clear?")){ await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); await fetchForecastSlots(); }};
-
-            // --- PAYCHECK CALCULATOR ---
-            const loadIncomeIntoCalculator = (inc) => { calcInputs.value = { ...calcInputs.value, id: inc.id, name: inc.name, nextPayDate: inc.next_pay_date, payFrequency: inc.frequency, ...inc.details }; showCalcForm.value = true; calculateAndSave('preview'); };
-            const calculateAndSave = async (mode) => {
-                savingBase.value = true;
-                const { name, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding } = calcInputs.value;
-                const payPeriods = 24; const grossPay = (salary / payPeriods) + (Number(commission)||0); const benefitAmt = Number(medical) + Number(dental) + Number(fsa);
-                const ficaWages = Math.max(0, grossPay - benefitAmt); const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0);
-                const tradAmt = grossPay * (Number(trad401k) / 100); const rothAmt = grossPay * (Number(roth401k) / 100); const taxable = grossPay - tradAmt - benefitAmt; const annualTaxable = Math.max(0, (taxable * payPeriods));
-                let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods); if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods); if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding); fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod);
-                const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100); const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax; const finalPay = round(net);
-                calcResult.value = { gross: round(grossPay), benefitAmt: round(benefitAmt), tradAmt: round(tradAmt), preTaxTotal: round(benefitAmt + tradAmt), taxes: round(fedTaxPerPeriod + stateTaxPerPeriod), fedTax: round(fedTaxPerPeriod), stateTax: round(stateTaxPerPeriod), fica: round(ssTax + medTax), postTaxTotal: round(Number(postTax) + rothAmt), netPay: finalPay };
-                if (mode === 'default') {
-                    const payload = { user_id: session.value.user.id, name: name || 'New Income', amount: finalPay, frequency: payFrequency, next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding } };
-                    if (calcInputs.value.id) await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id); else await _supabase.from('incomes').insert([payload]); await fetchIncomes(); showCalcForm.value = false; alert("Income Saved!");
-                } else if (mode === 'temp') { let monthlyEq = 0; if (payFrequency === 'Monthly') monthlyEq = finalPay; else if (payFrequency === 'Bi-Weekly') monthlyEq = finalPay * 2.166; else if (payFrequency === 'Semi-Monthly') monthlyEq = finalPay * 2; tempCalculatedPay.value = round(monthlyEq); useTempPay.value = true; currentView.value = 'forecast'; alert("Session Pay Calculated ($" + finalPay + ")! Go to Forecast to apply it."); }
-                savingBase.value = false;
-            };
-            const deleteIncome = async (id) => { if(!confirm("Delete?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
-
-            // --- BUDGET ITEMS & MODALS ---
-            const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
-            const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
-            const handleSave = async () => { if (isEditing.value) await updateItem(); else await addItem(); };
-            const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
-            const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
-            const deleteBudgetItem = async (item) => { 
-                if (!confirm('Delete ' + item.name + '? This will also remove all its history/logs.')) return; 
-                const { error: ledgerError } = await _supabase.from('ledger').delete().eq('budget_item_id', item.id);
-                if (ledgerError) { alert("Error deleting history: " + ledgerError.message); return; }
-                const { error } = await _supabase.from('budget_items').delete().eq('id', item.id); 
-                if (!error) { budgetItems.value = budgetItems.value.filter(i => i.id !== item.id); bills.value = bills.value.filter(b => b.budget_item_id !== item.id); renderCategoryChart(); renderDashboardChart(); } 
-                else { alert("Error deleting item: " + error.message); }
-            };
-
-            // --- LEDGER & LOGGING ---
-            const openGenerateModal=async(offset=0)=>{generateMonthOffset.value=offset;const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+offset);const startOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth(),1).toISOString();const endOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0).toISOString();const{data:t}=await _supabase.from('budget_items').select('*').eq('is_active',true).eq('is_wishlist',false).eq('user_id',session.value.user.id);const{data:e}=await _supabase.from('ledger').select('budget_item_id').gte('due_date',startOfMonth).lte('due_date',endOfMonth);const existingIds=new Set(e.map(b=>b.budget_item_id));potentialBills.value=t.filter(x=>!existingIds.has(x.id)).map(x=>({...x,selected:x.frequency==='Monthly'}));showGenModal.value=true};
-            const confirmGenerate=async()=>{const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+generateMonthOffset.value);const toCreate=potentialBills.value.filter(i=>i.selected).map(t=>({user_id:session.value.user.id,budget_item_id:t.id,amount_paid:0,due_date:new Date(targetDate.getFullYear(),targetDate.getMonth(),t.due_day||1).toISOString(),is_paid:false}));if(toCreate.length>0){await _supabase.from('ledger').insert(toCreate);await fetchBills()}showGenModal.value=false};
-            const logExpense = async () => { 
-                if(!expenseData.value.budgetId || !expenseData.value.amount) return; 
-                const payload = { user_id: session.value.user.id, budget_item_id: expenseData.value.budgetId, amount_paid: Number(expenseData.value.amount), is_paid: true, due_date: expenseData.value.date, transaction_name: expenseData.value.description };
-                let error;
-                if (editingExpenseId.value) { const res = await _supabase.from('ledger').update(payload).eq('id', editingExpenseId.value); error = res.error; } 
-                else { const res = await _supabase.from('ledger').insert([payload]); error = res.error; }
-                if(!error){ showExpenseModal.value = false; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; editingExpenseId.value = null; await fetchBills(); renderDashboardChart(); if(showLogModal.value && selectedBudgetLog.value) openLogModal(selectedBudgetLog.value); } else { alert("Error logging expense"); } 
-            };
-            const openLogModal = (item) => { selectedBudgetLog.value = item; const currentMonthStr = new Date().toISOString().slice(0, 7); currentLogEntries.value = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).sort((a,b) => b.due_date.localeCompare(a.due_date)); showLogModal.value = true; };
-            const deleteLogEntry = async (entry) => { if(!confirm("Remove this transaction?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', entry.id); if(!error) { bills.value = bills.value.filter(b => b.id !== entry.id); currentLogEntries.value = currentLogEntries.value.filter(b => b.id !== entry.id); renderCategoryChart(); renderDashboardChart(); } };
-            const editLogEntry = (entry) => { expenseData.value = { budgetId: entry.budget_item_id, amount: entry.amount_paid, description: entry.transaction_name, date: entry.due_date }; editingExpenseId.value = entry.id; showLogModal.value = false; showExpenseModal.value = true; };
-            watch(showExpenseModal, (val) => { if(!val) { editingExpenseId.value = null; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; } });
-
-            const saveSettings = async () => { await _supabase.from('user_settings').upsert({ user_id: session.value.user.id, current_balance: forecastSettings.value.currentBalance, safety_margin: forecastSettings.value.safetyMargin }); };
-            // ** DEFINED HERE **
-            const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
-
-            const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-            const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating'); } else { renderDashboardChart(); } };
-            const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
-
-            // --- DEBT ---
-            const editDebt = (d) => { newDebt.value = { ...d }; editingDebtId.value = d.id; showDebtForm.value = true; };
-            const addDebt = async () => { if (!newDebt.value.name || !newDebt.value.balance) return; const payload = { user_id: session.value.user.id, name: newDebt.value.name, balance: Number(newDebt.value.balance), rate: Number(newDebt.value.rate), min_payment: Number(newDebt.value.min_payment) }; let data, error; if (editingDebtId.value) { const res = await _supabase.from('debts').update(payload).eq('id', editingDebtId.value).select(); data = res.data; error = res.error; } else { const maxOrder = debts.value.length > 0 ? Math.max(...debts.value.map(d => d.order_index || 0)) : 0; payload.order_index = maxOrder + 1; const res = await _supabase.from('debts').insert([payload]).select(); data = res.data; error = res.error; } if (data) { if (editingDebtId.value) { const idx = debts.value.findIndex(d => d.id === editingDebtId.value); if (idx !== -1) debts.value[idx] = data[0]; } else { debts.value.push(data[0]); } newDebt.value = { name: '', balance: '', rate: '', min_payment: '' }; editingDebtId.value = null; showDebtForm.value = false; } else if (error) { alert("Error saving debt: " + error.message); } };
-            const deleteDebt = async (d) => { if (confirm('Delete debt?')) { await _supabase.from('debts').delete().eq('id', d.id); debts.value = debts.value.filter(x => x.id !== d.id); } };
-
-            // --- ADVISOR & TOURS & MISC ---
-            const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
-            const clearImpulse=()=>{impulseItem.value={name:'',cost:'',date:new Date().toISOString().split('T')[0]};impulseResult.value=null;renderDashboardChart()};
-            const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
-            const sendQuery=async(text)=>{if(!text)return;chatMessages.value.push({role:'user',text});userQuery.value='';isThinking.value=true;nextTick(scrollChat);setTimeout(()=>{const snapshot=getFinancialSnapshot();const response=generateMockResponse(text,snapshot);chatMessages.value.push({role:'assistant',text:response});isThinking.value=false;nextTick(scrollChat)},1200)};
-            const generateMockResponse=(query,data)=>{ const q=query.toLowerCase(); if(q.includes('ruthless')||q.includes('cut')){const nonCore=data.budget_list.filter(i=>!i.core).sort((a,b)=>b.amt-a.amt);let totalWaste=nonCore.reduce((a,b)=>a+b.amt,0);let top3=nonCore.slice(0,3).map(i=>`• **${i.name}**: $${i.amt}`).join('<br>');return`Found **$${totalWaste.toLocaleString()}** in non-essential spending.<br>Top 3 targets:<br>${top3}`} if(q.includes('debt')){if(data.debt_list.length===0)return"No debts! Great job.";const highestRate=[...data.debt_list].sort((a,b)=>b.rate-a.rate)[0];const totalInterest=data.debt_list.reduce((acc,d)=>acc+(d.balance*(d.rate/100/365)),0);return`Total Debt: **$${data.total_debt.toLocaleString()}**.<br>Losing **$${totalInterest.toFixed(2)}/day** in interest.<br>Attack **${highestRate.name}** (${highestRate.rate}%) first.`} if(q.includes('stress')||q.includes('survive')){return`**Runway:** ${data.survival_months} months based on savings of $${data.savings.toLocaleString()}.`} if(q.includes('1%')||q.includes('boost')||q.includes('nest egg')){ const totalGross = incomes.value.reduce((sum, inc) => { let gross = Number(inc.details?.salary || 0) / 12; gross += Number(inc.details?.commission || 0); if(inc.frequency==='Bi-Weekly') gross = gross + (Number(inc.details?.commission||0) * 2.166); else if(inc.frequency==='Semi-Monthly') gross = gross + (Number(inc.details?.commission||0) * 2); return sum + gross; }, 0); const onePercent = totalGross * 0.01; const currentP = retirementProjection.value; const r = (Number(forecastSettings.value.expectedReturn || 7) / 100); const n = 12; const t = Math.max(0, Number(forecastSettings.value.retirementAge) - Number(forecastSettings.value.currentAge)); const boostedPMT = totalMonthlyRetirementContribution.value + onePercent; const fvLumpSum = Number(forecastSettings.value.retirementBalance) * Math.pow((1 + r/n), (n*t)); const fvContrib = boostedPMT * ((Math.pow((1 + r/n), (n*t)) - 1) / (r/n)); const boostedProjection = fvLumpSum + fvContrib; const diff = boostedProjection - currentP; return `Increasing contributions by just **1%** ($${onePercent.toFixed(0)}/mo) could add **$${diff.toLocaleString(undefined, {maximumFractionDigits:0})}** to your nest egg by age ${forecastSettings.value.retirementAge}.<br><br>New Projection: **$${boostedProjection.toLocaleString(undefined, {maximumFractionDigits:0})}**`; } return"I analyzed your finances. Income: $"+data.income.toLocaleString()+". Ask for a Stress Test or Debt Strategy."; };
-            const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
-            const renderMarkdown=(text)=>{return marked.parse(text)};
-            const getFinancialSnapshot=()=>{return{income:activeMonthlyPay.value,savings:forecastSettings.value.currentBalance,total_debt:debts.value.reduce((a,b)=>a+Number(b.balance),0),core_burn:budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0),discretionary_burn:budgetItems.value.filter(i=>!i.is_core&&!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0),debt_list:debts.value,budget_list:budgetItems.value.filter(i=>!i.is_wishlist).map(i=>({name:i.name,amt:i.amount,core:i.is_core})),survival_months:(forecastSettings.value.currentBalance/(budgetItems.value.filter(i=>i.is_core).reduce((a,b)=>a+getMonthlyCost(b),0)||1)).toFixed(1)}};
-
-            const startDashboardTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'This is your "Guilt-Free" money. It is calculated by taking your Net Pay and subtracting your Core Bills.' } }, { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'A live projection of your retirement savings based on your current 401k contributions and age.' } }, { element: '#tour-debt-free', popover: { title: '3. Debt Free Date', description: 'When you will be debt free based on your "Attack Plan" (set in the Debt tab).' } }, { element: '#tour-variable-budgets', popover: { title: '4. Variable Budgets', description: 'Track fluctuating expenses here (Groceries, Gas). You must manually log expenses for these.' } }, { element: '#tour-due-soon', popover: { title: '5. Due Soon', description: 'Fixed bills due in the next 7 days. Click the checkbox to mark them as paid.' } }, { element: '#tour-cash-flow', popover: { title: '6. 30-Day Forecast', description: 'Your projected bank balance for the next month. Use "Can I Afford It?" to test large purchases.' } }, { element: '#tour-breakdown', popover: { title: '7. Spending Breakdown', description: 'See where your money goes. Toggle between % and $ to see the impact of each category.' } } ] }).drive(); };
-            const startPaycheckTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-paycheck-trigger', popover: { title: 'New Calculation', description: 'Click here to add a new income source or calculate a one-off paycheck.' } }, { element: '#tour-paycheck-save', popover: { title: 'Save or Simulate', description: 'Save the income permanently to your profile, or use "Session Mode" to test different salary scenarios without saving or to determine your pay for months that include commission and apply it to the financial forecast.' } }, { element: '#tour-paycheck-result', popover: { title: 'The Breakdown', description: 'See exactly where your money goes: Taxes, 401k, Benefits, and your final Net Pay.' } }, { element: '#tour-active-incomes', popover: { title: 'Active Incomes', description: 'All your saved income sources live here. Click one to edit or recalculate it.' } } ] }).drive(); };
-            const startBudgetTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-net-pay', popover: { title: '1. Net Monthly Pay', description: 'Your financial fuel. This is the total monthly income from all your "Active" income sources in the Paycheck tab.' } }, { element: '#tour-scenario-burn', popover: { title: '2. Scenario Commitments', description: 'Your burn rate. This sums up all bills currently active in this scenario (Survival, Standard, or Dream).' } }, { element: '#tour-projected-end', popover: { title: '3. Projected End Balance', description: 'The bottom line. Income minus Commitments. Green means you are saving; red means you are overspending.' } }, { element: '#tour-manage-budget', popover: { title: '4. The Control Center', description: 'Click here to add bills. **Pro Tip:** For fluctuating costs like Groceries or Gas, check the **Variable Budget** box. This sets up a dedicated tracker on the Dashboard so you can log receipts and stay within your limit.' } }, { element: '#tour-ledger', popover: { title: '5. Current Bills Ledger', description: 'This list is auto-generated from your budget items. Use this to track actual payments due this month.' } } ] }).drive(); };
-            const startForecastTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-forecast-settings', popover: { title: '1. Control the Future', description: 'Set your current balance, safety margin, and how far ahead you want to look.' } }, { element: '#tour-retirement-forecast', popover: { title: '2. The Long Game', description: 'See how your nest egg grows based on your contributions and expected return.' } }, { element: '#tour-goal-project', popover: { title: '3. Dream Big', description: 'Add a specific financial target (like a house or car) to see exactly when you can afford it.' } }, { element: '#tour-forecast-chart', popover: { title: '4. Visual Timeline', description: 'Watch your balance grow (or shrink) over time. The "Star" indicates when you hit your goal.' } }, { element: '#tour-monthly-details', popover: { title: '5. Monthly Deep Dive', description: 'Expand any month to see exactly what income came in and what bills went out. Easily apply calculated paychecks with commission to the appropriate month. You can even add one-time expenses here.' } } ] }).drive(); };
-            const startDebtTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-add-debt', popover: { title: '1. Add Debt', description: 'Start here by listing all your debts (Credit Cards, Loans, etc.). Be accurate with the interest rate!' } }, { element: '#tour-debt-list', popover: { title: '2. Prioritize', description: 'Drag and drop these cards to change the payoff order. We recommend the "Avalanche" method (Highest Interest Rate First) to save money.' } }, { element: '#tour-debt-attack', popover: { title: '3. Attack Plan', description: 'This is the magic. Use the slider to see how adding just a little extra money each month drastically cuts your payoff time.' } }, { element: '#tour-payoff-timeline', popover: { title: '4. Freedom Date', description: 'Your timeline to being debt-free. Watch the months disappear as you increase your monthly attack!' } } ] }).drive(); };
-            const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
-
-            const resetDemo = async () => { if(!confirm("⚠️ WARNING: DELETE ALL DATA?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); window.location.reload(); };
-            const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
-            const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
-            const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
-
-            watch(currentView, async (newView) => { await nextTick(); if (newView === 'dashboard') { if(bills.value.length > 0 || budgetItems.value.length > 0) { renderCategoryChart(); renderDashboardChart(); } } else if (newView === 'forecast') { fetchForecastSlots(); runForecast(); } });
 
             onMounted(() => {
-                _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchSettings(); fetchIncomes(); fetchBudgetItems().then(() => { fetchBills().then(() => { nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); }); }); fetchDebts().then(() => { const el = document.getElementById('debt-list-container'); if(el) { new Sortable(el, { handle: '.sortable-handle', animation: 150, onEnd: async (evt) => { const item = debts.value.splice(evt.oldIndex, 1)[0]; debts.value.splice(evt.newIndex, 0, item); const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index, user_id: session.value.user.id, name: d.name, balance: d.balance, rate: d.rate, min_payment: d.min_payment })); await _supabase.from('debts').upsert(updates); } }); } }); fetchForecastSlots(); } });
+                _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchSettings(); fetchIncomes(); fetchBudgetItems().then(() => { fetchBills().then(() => { nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); }); }); fetchDebts().then(() => { const el = document.getElementById('debt-list-container'); if(el) { new Sortable(el, { handle: '.sortable-handle', animation: 150, onEnd: async (evt) => { const item = debts.value.splice(evt.oldIndex, 1)[0]; debts.value.splice(evt.newIndex, 0, item); const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index, user_id: session.value.user.id, name: d.name, balance: d.balance, rate: d.rate, min_payment: d.min_payment })); await _supabase.from('debts').upsert(updates); } }); } }); fetchForecastSlots(); fetchGiftCards(); } });
                 _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
             });
 
@@ -979,8 +852,10 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,
+                giftCards, showGiftModal, newGiftCard, addGiftCard, fetchGiftCards, handleImageUpload, deleteGiftCard, showGiftSpendModal, giftSpend, selectedGiftCard, openGiftSpend, confirmGiftSpend, isListeningGift, startVoiceGift, showGiftImageModal, viewGiftImage, openGiftHistory, showGiftHistoryModal, currentGiftLogs, deleteGiftLog
             };
         }
     }).mount('#app');
 </script>
+            
