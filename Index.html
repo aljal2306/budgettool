@@ -567,6 +567,37 @@
         const date = new Date(y, m - 1, d);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
+    // ** FIXED: Moved getDaysLeft here to be safe, though it was globally defined before **
+    const getDaysLeft = (dateStr) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const [y, m, d] = dateStr.split('-');
+        const due = new Date(y, m - 1, d);
+        const diffTime = due - today;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+    const calculateFederalTax = (annualInc, status = 'Single') => {
+        const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
+        let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000));
+        let t = 0, l = 0;
+        const taxBrackets = {
+            Single: [{limit: 11925, rate: 0.10}, {limit: 48475, rate: 0.12}, {limit: 103350, rate: 0.22}, {limit: 197300, rate: 0.24}, {limit: 250525, rate: 0.32}, {limit: 626350, rate: 0.35}, {limit: Infinity, rate: 0.37}],
+            Married: [{limit: 23850, rate: 0.10}, {limit: 96950, rate: 0.12}, {limit: 206700, rate: 0.22}, {limit: 394600, rate: 0.24}, {limit: 501050, rate: 0.32}, {limit: 751600, rate: 0.35}, {limit: Infinity, rate: 0.37}],
+            Head: [{limit: 17000, rate: 0.10}, {limit: 64850, rate: 0.12}, {limit: 103350, rate: 0.22}, {limit: 197300, rate: 0.24}, {limit: 250525, rate: 0.32}, {limit: 626350, rate: 0.35}, {limit: Infinity, rate: 0.37}]
+        };
+        const brackets = taxBrackets[status] || taxBrackets.Single;
+        for (const b of brackets) {
+            if (taxable > b.limit) { t += (b.limit - l) * b.rate; l = b.limit; }
+            else { t += (taxable - l) * b.rate; break; }
+        }
+        return t;
+    };
+    const getCalendarLink = (bill) => {
+        const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
+        const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
+        const dStr = bill.due_date.replace(/-/g, '');
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
+    };
 
     createApp({
         setup() {
@@ -577,13 +608,11 @@
             const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
             const isListening = ref(false);
 
-            // --- GIFT CARD STATE (Matched to your SQL) ---
+            // --- GIFT CARD STATE ---
             const giftCards = ref([]);
             const showGiftCardForm = ref(false);
             const editingCardId = ref(null);
-            // Added 'owner' and 'imageData'
             const giftCardInput = ref({ name: '', owner: '', balance: '', imageData: null });
-            
             const showCardModal = ref(false);
             const selectedCard = ref(null);
             const cardLogs = ref([]);
@@ -672,7 +701,7 @@
             const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data; };
             const fetchForecastSlots = async () => { const { data } = await _supabase.from('forecast_slots').select('*').order('slot_index'); if (data) { const loaded = [null, null, null]; data.forEach(slot => { if(slot.slot_index >= 0 && slot.slot_index < 3) loaded[slot.slot_index] = slot; }); savedForecasts.value = loaded; } };
 
-            // --- GIFT CARD FUNCTIONS (Matched to UUID/Text SQL) ---
+            // --- GIFT CARD FUNCTIONS ---
             const fetchGiftCards = async () => {
                 const { data } = await _supabase.from('gift_cards').select('*').order('created_at', { ascending: false });
                 if (data) giftCards.value = data;
@@ -681,7 +710,6 @@
             const processGiftCardImage = (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
-                // Convert to Base64 String for 'image_data' column
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     giftCardInput.value.imageData = e.target.result;
@@ -698,7 +726,7 @@
                     name: giftCardInput.value.name,
                     owner: giftCardInput.value.owner,
                     balance: Number(giftCardInput.value.balance),
-                    image_data: giftCardInput.value.imageData // Stores the Base64 string directly
+                    image_data: giftCardInput.value.imageData
                 };
                 
                 let error;
@@ -740,7 +768,6 @@
 
             const removeCardImage = async () => {
                 if (editingCardId.value) {
-                    // Update DB directly if editing existing card
                     await _supabase.from('gift_cards').update({ image_data: null }).eq('id', editingCardId.value);
                 }
                 giftCardInput.value.imageData = null;
@@ -758,7 +785,6 @@
                 if (!logInput.value.amount) return;
                 const amt = Number(logInput.value.amount);
                 
-                // 1. Insert Log
                 const logPayload = {
                     gift_card_id: selectedCard.value.id,
                     amount: amt,
@@ -771,15 +797,14 @@
                     return;
                 }
 
-                // 2. Update Card Balance
                 const newBalance = Number(selectedCard.value.balance) - amt;
                 const { error: updateError } = await _supabase.from('gift_cards').update({ balance: newBalance }).eq('id', selectedCard.value.id);
 
                 if (!updateError) {
-                    selectedCard.value.balance = newBalance; // Optimistic update
+                    selectedCard.value.balance = newBalance; 
                     logInput.value = { amount: '', description: '' };
-                    await manageCard(selectedCard.value); // Refresh logs
-                    await fetchGiftCards(); // Refresh dashboard list
+                    await manageCard(selectedCard.value); 
+                    await fetchGiftCards(); 
                 }
             };
 
@@ -788,7 +813,7 @@
             const setDashboardMode = (mode) => { dashboardMode.value = mode; nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); };
             const toggleChartMode = () => { showChartPercentages.value = !showChartPercentages.value; renderCategoryChart(); };
 
-            // --- VOICE ENTRY LOGIC (Updated for Gift Cards) ---
+            // --- VOICE ENTRY LOGIC ---
             const startVoiceEntry = () => {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechRecognition) { alert("Your browser doesn't support speech recognition."); return; }
@@ -803,26 +828,21 @@
 
                 recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript.toLowerCase();
-                    // 1. Extract Amount
                     const amountMatch = transcript.match(/(\d+(\.\d{1,2})?)/);
                     const amount = amountMatch ? amountMatch[0] : '';
                     
-                    // 2. Check if it's a Gift Card Log
-                    // Logic: If user says "Paid 50 on Amazon Card", we find the card and open the modal pre-filled
                     const matchingCard = giftCards.value.find(c => transcript.includes(c.name.toLowerCase()));
                     
                     if (matchingCard) {
-                        // It's a gift card log!
                         selectedCard.value = matchingCard;
                         logInput.value = { 
                             amount: amount, 
                             description: transcript.charAt(0).toUpperCase() + transcript.slice(1) 
                         };
-                        manageCard(matchingCard); // Open modal
+                        manageCard(matchingCard); 
                         return;
                     }
 
-                    // 3. Otherwise, normal Budget Expense
                     let bestMatchId = '';
                     for (const item of variableBudgets.value) {
                         if (transcript.includes(item.name.toLowerCase())) { bestMatchId = item.id; break; }
@@ -852,7 +872,6 @@
                 let currentSimBalance = forecastSettings.value.currentBalance || 0;
                 let impulseSimBalance = currentSimBalance;
 
-                // Push Day 0
                 labels.push('Now');
                 dataCurrent.push(currentSimBalance);
                 dataImpulse.push(impulseSimBalance);
@@ -868,7 +887,6 @@
                 const impulseCost = Number(impulseItem.value.cost);
                 const impulseDate = impulseItem.value.date;
 
-                // Daily Variable Burn
                 const activeVariableItems = budgetItems.value.filter(item => {
                     if (!item.is_variable) return false;
                     if (dashboardMode.value === 'survival') return item.is_core;
@@ -885,15 +903,12 @@
                     const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                     labels.push(dateLabel);
 
-                    // 1. Subtract Fixed Bills
                     const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr && !b.budget_items.is_variable);
                     const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0);
 
-                    // 2. Subtract Variable Burn
                     currentSimBalance -= (dailyDrop + dailyVariableBurn);
                     impulseSimBalance -= (dailyDrop + dailyVariableBurn);
 
-                    // 3. Add Income
                     if (useTempPay.value) {
                         let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null;
                         const freq = calcInputs.value.payFrequency;
@@ -917,7 +932,6 @@
                         });
                     }
 
-                    // 4. Impulse
                     if (runImpulse && dStr === impulseDate) {
                         impulseSimBalance -= impulseCost;
                     }
@@ -926,7 +940,6 @@
                     dataImpulse.push(impulseSimBalance);
                 }
 
-                // Low Point
                 const activeData = runImpulse ? dataImpulse : dataCurrent;
                 const min = Math.min(...activeData);
                 const index = activeData.indexOf(min);
@@ -992,7 +1005,6 @@
                     
                     let monthlyIncome = 0;
                     if (isCurrentMonth) {
-                        // Smart Income: Remaining checks only
                         incomes.value.forEach(inc => {
                             let nextPay = new Date(inc.next_pay_date);
                             while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) {
@@ -1015,7 +1027,6 @@
 
                     let monthlyBurn = 0;
                     if (isCurrentMonth) {
-                        // Smart Expense: Unpaid Bills + Remaining Variables
                         const unpaidBills = bills.value.filter(b => {
                             if (!b.due_date.startsWith(currentMonthStr)) return false; 
                             if (b.is_paid) return false; 
