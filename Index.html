@@ -413,9 +413,23 @@
                             <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
                                 <div class="flex justify-between items-start mb-6"><div><span class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ selectedCard.owner }}'s Card</span><h2 class="text-2xl font-bold dark:text-white">{{ selectedCard.name }}</h2><p class="text-emerald-600 dark:text-emerald-400 font-mono font-bold text-lg">${{ Number(selectedCard.balance).toFixed(2) }}</p></div><button @click="showCardModal=false" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button></div>
                                 <div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-6"><h4 class="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase mb-3">Log Transaction</h4><div class="flex gap-2"><input v-model="logInput.description" placeholder="Where / What?" class="flex-grow p-3 rounded-lg border dark:bg-slate-800 dark:border-slate-600 dark:text-white text-sm"><input v-model="logInput.amount" type="number" step="0.01" placeholder="- $0.00" class="w-32 p-3 rounded-lg border dark:bg-slate-800 dark:border-slate-600 dark:text-white text-sm font-mono"></div><button @click="logCardPurchase" class="w-full mt-3 bg-slate-900 dark:bg-blue-600 text-white py-2 rounded-lg font-bold text-sm hover:opacity-90">Record Transaction</button></div>
-                                <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">History</h4><div class="flex-grow overflow-y-auto space-y-2 pr-1 custom-scrollbar"><div v-if="cardLogs.length === 0" class="text-center py-8 text-slate-400 italic">No transactions.</div><div v-for="log in cardLogs" :key="log.id" class="flex justify-between items-center p-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg"><div><p class="font-bold text-sm dark:text-white">{{ log.description || 'Purchase' }}</p><p class="text-[10px] text-slate-400">{{ new Date(log.created_at).toLocaleDateString() }}</p></div><span class="font-mono font-bold text-sm" :class="log.amount>0?'text-red-500':'text-green-500'">-${{ Number(log.amount).toFixed(2) }}</span></div></div>
-                            </div>
-                        </div>
+                                <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">History<h4 class="text-xs font-bold text-slate-500 uppercase mb-2">History</h4>
+<div class="flex-grow overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+    <div v-if="cardLogs.length === 0" class="text-center py-8 text-slate-400 italic">No transactions.</div>
+    <div v-for="log in cardLogs" :key="log.id" class="flex justify-between items-center p-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg group">
+        <div>
+            <p class="font-bold text-sm dark:text-white">{{ log.description || 'Purchase' }}</p>
+            <p class="text-[10px] text-slate-400">{{ new Date(log.created_at).toLocaleDateString() }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="font-mono font-bold text-sm" :class="log.amount>0?'text-red-500':'text-green-500'">-${{ Number(log.amount).toFixed(2) }}</span>
+            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                <button @click="editCardLog(log)" class="text-xs p-1 hover:bg-slate-100 rounded" title="Edit">✏️</button>
+                <button @click="deleteCardLog(log)" class="text-xs p-1 hover:bg-red-50 text-red-400 rounded" title="Delete">🗑️</button>
+            </div>
+        </div>
+    </div>
+</div>
                     </transition>
 
                     <transition name="fade">
@@ -744,6 +758,70 @@
                 await _supabase.from('gift_cards').update({ balance: newBal }).eq('id', selectedCard.value.id);
                 selectedCard.value.balance = newBal; const cardIndex = giftCards.value.findIndex(c => c.id === selectedCard.value.id); if (cardIndex !== -1) giftCards.value[cardIndex].balance = newBal;
                 logInput.value = { amount: '', description: '' }; await manageCard(selectedCard.value);
+            };
+            // 1. Add state for editing logs
+            const editingLogId = ref(null);
+
+            // 2. Function to delete a transaction
+            const deleteCardLog = async (log) => {
+                if(!confirm("Delete this transaction? The card balance will be restored.")) return;
+                
+                // Delete from DB
+                await _supabase.from('gift_card_logs').delete().eq('id', log.id);
+                
+                // Restore Balance
+                const restoredBalance = Number(selectedCard.value.balance) + Number(log.amount);
+                await _supabase.from('gift_cards').update({ balance: restoredBalance }).eq('id', selectedCard.value.id);
+                
+                // Update Local State
+                selectedCard.value.balance = restoredBalance;
+                const cardIndex = giftCards.value.findIndex(c => c.id === selectedCard.value.id);
+                if (cardIndex !== -1) giftCards.value[cardIndex].balance = restoredBalance;
+                
+                // Refresh Logs
+                manageCard(selectedCard.value);
+            };
+
+            // 3. Function to start editing
+            const editCardLog = (log) => {
+                logInput.value = { amount: log.amount, description: log.description };
+                editingLogId.value = log.id;
+            };
+
+            // 4. UPDATE your existing logCardPurchase function to handle edits
+            const logCardPurchase = async () => {
+                if (!logInput.value.amount) return;
+                const amt = Number(logInput.value.amount);
+                
+                if (editingLogId.value) {
+                    // --- UPDATE EXISTING LOG ---
+                    // 1. Get old log to adjust balance correctly
+                    const oldLog = cardLogs.value.find(l => l.id === editingLogId.value);
+                    const oldAmt = Number(oldLog.amount);
+                    
+                    // 2. Update Log
+                    await _supabase.from('gift_card_logs').update({ amount: amt, description: logInput.value.description }).eq('id', editingLogId.value);
+                    
+                    // 3. Adjust Balance (Revert old amt, apply new amt)
+                    const newBal = Number(selectedCard.value.balance) + oldAmt - amt;
+                    await _supabase.from('gift_cards').update({ balance: newBal }).eq('id', selectedCard.value.id);
+                    selectedCard.value.balance = newBal;
+                    
+                    editingLogId.value = null;
+                } else {
+                    // --- CREATE NEW LOG (Your existing logic) ---
+                    await _supabase.from('gift_card_logs').insert([{ gift_card_id: selectedCard.value.id, amount: amt, description: logInput.value.description }]);
+                    const newBal = Number(selectedCard.value.balance) - amt;
+                    await _supabase.from('gift_cards').update({ balance: newBal }).eq('id', selectedCard.value.id);
+                    selectedCard.value.balance = newBal;
+                }
+
+                // Update main list and reset form
+                const cardIndex = giftCards.value.findIndex(c => c.id === selectedCard.value.id);
+                if (cardIndex !== -1) giftCards.value[cardIndex].balance = selectedCard.value.balance;
+                
+                logInput.value = { amount: '', description: '' };
+                await manageCard(selectedCard.value);
             };
             const viewCardImage = (card) => { selectedCard.value = card; showImageModal.value = true; };
 
@@ -1119,7 +1197,8 @@
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
                 isDarkMode, toggleDarkMode, startVoiceEntry, isListening,
                 // --- GIFT CARD EXPORTS ---
-                giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner
+                giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner,deleteCardLog,
+    editCardLog,
             };
         }
     }).mount('#app');
