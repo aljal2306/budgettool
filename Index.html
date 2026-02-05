@@ -421,7 +421,7 @@
                         <div v-if="showImageModal && selectedCard" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" @click="showImageModal=false"><div class="relative max-w-4xl max-h-full" @click.stop><img v-if="selectedCard.image_data" :src="selectedCard.image_data" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl border-4 border-white"><div v-else class="text-white text-center p-10"><p class="text-xl font-bold mb-4">No image uploaded.</p><button @click="showImageModal=false; editGiftCard(selectedCard)" class="bg-white text-black px-6 py-2 rounded-full font-bold">Upload Now</button></div><button @click="showImageModal=false" class="absolute -top-12 right-0 text-white text-4xl hover:text-gray-300">&times;</button></div></div>
                     </transition>
     ```
-   <script>
+ <script>
     const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
     const { createClient } = supabase;
 
@@ -478,6 +478,7 @@
         }
         return t;
     };
+    
     const getCalendarLink = (bill) => {
         const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
         const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
@@ -504,9 +505,10 @@
             const selectedCard = ref(null);
             const cardLogs = ref([]);
             const logInput = ref({ amount: '', description: '' });
-            const openOwners = ref({}); // Track open accordion folders
+            const openOwners = ref({}); 
 
-            // Modals & Forms
+            // Modals & Forms (Restored missing showPlanner)
+            const showPlanner = ref(false); 
             const showAddForm = ref(false), isEditing = ref(false), editingId = ref(null);
             const newItem = ref({ name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false });
             const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
@@ -538,13 +540,12 @@
 
             // Onboarding
             const showOnboarding = ref(false), onboardingStep = ref(1), onboardingData = ref({ balance: '', safety: '', salary: '', frequency: 'Semi-Monthly', medical: '', dental: '', trad401k: '', filingStatus: 'Single', stateTaxRate: '', billName: '', billAmount: '', billDay: 1, isCore: true, isVariable: false, incomeName: '', category: 'Mortgage/Rent', wishName: '', wishAmount: '', goalName: '', goalCost: '' });
-
+            const isSubmitting = ref(false);
 
             let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
 
             // --- COMPUTED PROPERTIES ---
 
-            // ** Group Gift Cards by Owner **
             const groupedGiftCards = computed(() => {
                 const groups = {};
                 giftCards.value.forEach(card => {
@@ -562,15 +563,17 @@
             const upcomingBills = computed(() => { const today = new Date().toISOString().split('T')[0]; const limit = new Date(); limit.setDate(limit.getDate() + 7); const limitStr = limit.toISOString().split('T')[0]; return bills.value.filter(b => !b.is_paid && !b.budget_items.is_variable && b.due_date <= limitStr).sort((a,b) => a.due_date > b.due_date ? 1 : -1); });
             const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc,i) => acc + getMonthlyCost(i), 0)));
             const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { let m = Number(inc.amount); if (inc.frequency === 'Bi-Weekly') m *= 2.166; else if (inc.frequency === 'Semi-Monthly') m *= 2; return total + m; }, 0));
+            const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + getMonthlyCost(i), 0)));
             const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
             const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
             
             const safeToSpend = computed(() => { if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value); if (dashboardMode.value === 'dream') { let burn = 0; budgetItems.value.forEach(i => { if (i.is_wishlist) { burn += getMonthlyCost(i); } else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i); } }); return round(activeMonthlyPay.value - burn); } const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc,i) => acc + getMonthlyCost(i), 0); return round(activeMonthlyPay.value - standardBurn); });
+            const dashboardBurn = computed(() => round(activeMonthlyPay.value - safeToSpend.value));
+            const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0);
+            const cashFlowLowPoint = computed(() => lowPointData.value);
             const totalMonthlyRetirementContribution = computed(() => incomes.value.reduce((sum, inc) => { const salary = Number(inc.details?.salary || 0); const rate = (Number(inc.details?.trad401k || 0) + Number(inc.details?.roth401k || 0) + Number(inc.details?.match401k || 0)) / 100; return sum + ((salary / 12) * rate); }, 0));
             const retirementProjection = computed(() => { const P = Number(forecastSettings.value.retirementBalance || 0); const PMT = totalMonthlyRetirementContribution.value; const r = (Number(forecastSettings.value.expectedReturn || 7) / 100); const n = 12; const t = Math.max(0, Number(forecastSettings.value.retirementAge) - Number(forecastSettings.value.currentAge)); if (t <= 0) return P; const fvLumpSum = P * Math.pow((1 + r/n), (n*t)); const fvContrib = PMT * ( (Math.pow((1 + r/n), (n*t)) - 1) / (r/n) ); return fvLumpSum + fvContrib; });
             const debtPlan = computed(() => { if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }; const simulate = (extra) => { let simDebts = JSON.parse(JSON.stringify(debts.value)).map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment), paid_off: false })); let totalInterest = 0, months = 0, timeline = [], active = true, permanentSnowball = extra; while (active && months < 480) { months++; let anyBalanceLeft = false, monthlySurplus = permanentSnowball; for (let d of simDebts) { if (d.paid_off) { monthlySurplus += d.min; continue; } anyBalanceLeft = true; let interest = d.balance * (d.rate / 100 / 12); totalInterest += interest; d.balance += interest; let payment = Math.min(d.balance, d.min); d.balance -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }); monthlySurplus += (d.min - payment); } } for (let d of simDebts) { if (d.paid_off) continue; if (monthlySurplus <= 0) break; let payment = Math.min(d.balance, monthlySurplus); d.balance -= payment; monthlySurplus -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }); } } if (!anyBalanceLeft) active = false; } return { months, totalInterest, timeline }; }; const base = simulate(0); const attack = simulate(extraDebtPayment.value); const now = new Date(); now.setMonth(now.getMonth() + attack.months); return { payoffDate: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), totalInterest: round(attack.totalInterest), savedInterest: round(base.totalInterest - attack.totalInterest), timeline: attack.timeline }; });
-            const cashFlowLowPoint = computed(() => lowPointData.value);
-            const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + getMonthlyCost(i), 0)));
 
             // --- HELPER FUNCTIONS ---
             const toggleDarkMode = () => { isDarkMode.value = !isDarkMode.value; if(isDarkMode.value) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light'); };
@@ -593,11 +596,10 @@
             const setForecastMode = (mode) => { forecastMode.value = mode; };
             const setScenarioMode = (mode) => { currentScenarioMode.value = mode; const freshItems = budgetItems.value.map(item => ({...item})); freshItems.forEach(item => { if (item.frequency === 'One-Time') { item.includedInScenario = false; return; } if (mode === 'survival') item.includedInScenario = !!item.is_core; else if (mode === 'standard') item.includedInScenario = !item.is_wishlist; else if (mode === 'dream') item.includedInScenario = true; }); if (mode === 'dream') { const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario); activeWishlist.forEach(w => { if (w.replaces_id) { const target = freshItems.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false; } }); } budgetItems.value = freshItems; };
             
-            // --- DATA FETCHING (CRITICAL: Casting Numbers) ---
+            // --- DATA FETCHING (with fixes) ---
             const fetchBudgetItems = async () => { 
                 const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
                 if (data) { 
-                    // Explicitly cast to Number to prevent .toFixed crashes
                     budgetItems.value = data.map(i => ({...i, amount: Number(i.amount), includedInScenario: false})); 
                     setScenarioMode('survival'); 
                 } 
@@ -626,9 +628,9 @@
                 await fetchGiftCards(); openOwners.value[payload.owner] = true; resetGiftCardForm(); loading.value = false;
             };
 
-            // ** DELETION LOGIC ADDED HERE **
+            // ** DELETION LOGIC **
             const deleteGiftCard = async (id) => { 
-                if(!confirm("Are you sure you want to delete this gift card? This cannot be undone.")) return;
+                if(!confirm("Are you sure you want to delete this gift card?")) return;
                 loading.value = true;
                 const { error } = await _supabase.from('gift_cards').delete().eq('id', id);
                 if (error) { alert("Error: " + error.message); }
@@ -652,63 +654,180 @@
             };
             const viewCardImage = (card) => { selectedCard.value = card; showImageModal.value = true; };
 
-            // --- BUDGET ITEMS ---
-            const handleSave = async () => { 
-                const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), frequency: newItem.value.frequency, is_active: true, is_core: newItem.value.is_core, is_variable: newItem.value.is_variable, category: newItem.value.category, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, replaces_id: newItem.value.replaces_id };
-                if (isEditing.value) await _supabase.from('budget_items').update(payload).eq('id', editingId.value);
-                else await _supabase.from('budget_items').insert([payload]);
-                fetchBudgetItems(); resetForm(); showAddForm.value = false;
+            const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
+            
+            const setDashboardMode = (mode) => { dashboardMode.value = mode; nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); };
+            const toggleChartMode = () => { showChartPercentages.value = !showChartPercentages.value; renderCategoryChart(); };
+
+            // --- VOICE ENTRY LOGIC (Updated) ---
+            const startVoiceEntry = () => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) { alert("Your browser doesn't support speech recognition."); return; }
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onstart = () => { isListening.value = true; };
+                recognition.onend = () => { isListening.value = false; };
+                recognition.onerror = (event) => { console.error(event.error); isListening.value = false; alert("Voice error: " + event.error); };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript.toLowerCase();
+                    const amountMatch = transcript.match(/(\d+(\.\d{1,2})?)/);
+                    const amount = amountMatch ? amountMatch[0] : '';
+                    
+                    // Check Gift Card
+                    const foundCard = giftCards.value.find(c => transcript.includes(c.name.toLowerCase()));
+                    if (foundCard) { 
+                        selectedCard.value = foundCard; 
+                        logInput.value = { amount: amount, description: transcript.replace(foundCard.name.toLowerCase(), '').trim() }; 
+                        manageCard(foundCard); 
+                        return;
+                    }
+
+                    // Else Budget Logic
+                    let bestMatchId = '';
+                    for (const item of variableBudgets.value) {
+                        if (transcript.includes(item.name.toLowerCase())) { bestMatchId = item.id; break; }
+                    }
+                    expenseData.value = { budgetId: bestMatchId, amount: amount, description: transcript.charAt(0).toUpperCase() + transcript.slice(1), date: new Date().toISOString().split('T')[0] };
+                    showExpenseModal.value = true;
+                };
+                recognition.start();
             };
-            const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item }; showAddForm.value = true; };
-            const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false }; showAddForm.value = false; };
-            const deleteBudgetItem = async (item) => { if(confirm('Delete ' + item.name + '?')) { await _supabase.from('budget_items').delete().eq('id', item.id); fetchBudgetItems(); } };
 
-            // --- DEBT ---
-            const addDebt = async () => { const payload = { user_id: session.value.user.id, name: newDebt.value.name, balance: Number(newDebt.value.balance), rate: Number(newDebt.value.rate), min_payment: Number(newDebt.value.min_payment) }; await _supabase.from('debts').insert([payload]); fetchDebts(); showDebtForm.value = false; };
-            const deleteDebt = async (d) => { await _supabase.from('debts').delete().eq('id', d.id); fetchDebts(); };
-            // ** FIXED: Added editDebt definition **
-            const editDebt = (d) => { newDebt.value = { ...d }; editingDebtId.value = d.id; showDebtForm.value = true; };
+            // --- DASHBOARD CHART ---
+            const renderDashboardChart = () => {
+                const ctx = document.getElementById('dashboardChart');
+                if (!ctx) return;
+                if (dashboardChartInstance) dashboardChartInstance.destroy();
 
-            // --- CALCULATOR ---
-            const calculateAndSave = async (mode) => {
-                savingBase.value = true;
-                const { name, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding } = calcInputs.value;
-                const payPeriods = 24; const grossPay = (salary / payPeriods) + (Number(commission)||0); const benefitAmt = Number(medical) + Number(dental) + Number(fsa);
-                const ficaWages = Math.max(0, grossPay - benefitAmt); const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0);
-                const tradAmt = grossPay * (Number(trad401k) / 100); const rothAmt = grossPay * (Number(roth401k) / 100); const taxable = grossPay - tradAmt - benefitAmt; const annualTaxable = Math.max(0, (taxable * payPeriods));
-                let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods); if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods); if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding); fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod);
-                const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100); const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax; const finalPay = round(net);
-                calcResult.value = { gross: round(grossPay), netPay: finalPay };
-                
-                if (mode === 'default') {
-                    const payload = { user_id: session.value.user.id, name: name || 'New Income', amount: finalPay, frequency: payFrequency, next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding } };
-                    await _supabase.from('incomes').insert([payload]); await fetchIncomes(); showCalcForm.value = false; 
-                } else if (mode === 'temp') {
-                    let monthlyEq = 0; if (payFrequency === 'Monthly') monthlyEq = finalPay; else if (payFrequency === 'Bi-Weekly') monthlyEq = finalPay * 2.166; else if (payFrequency === 'Semi-Monthly') monthlyEq = finalPay * 2; tempCalculatedPay.value = round(monthlyEq); useTempPay.value = true; currentView.value = 'forecast'; alert("Session Pay Calculated!");
+                const labels = [];
+                const dataCurrent = [];
+                const dataImpulse = [];
+
+                let currentSimBalance = forecastSettings.value.currentBalance || 0;
+                let impulseSimBalance = currentSimBalance;
+
+                labels.push('Now');
+                dataCurrent.push(currentSimBalance);
+                dataImpulse.push(impulseSimBalance);
+
+                const today = new Date();
+                let simIncomes = incomes.value.map(inc => ({
+                    amount: Number(inc.amount),
+                    nextDate: new Date(inc.next_pay_date),
+                    freq: inc.frequency
+                }));
+
+                const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false);
+                const impulseCost = Number(impulseItem.value.cost);
+                const impulseDate = impulseItem.value.date;
+
+                const activeVariableItems = budgetItems.value.filter(item => {
+                    if (!item.is_variable) return false;
+                    if (dashboardMode.value === 'survival') return item.is_core;
+                    if (dashboardMode.value === 'standard') return !item.is_wishlist;
+                    return true;
+                });
+                const monthlyVariableTotal = activeVariableItems.reduce((sum, item) => sum + item.amount, 0);
+                const dailyVariableBurn = monthlyVariableTotal / 30;
+
+                for (let i = 0; i < 30; i++) {
+                    const d = new Date();
+                    d.setDate(today.getDate() + i);
+                    const dStr = d.toISOString().split('T')[0];
+                    const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    labels.push(dateLabel);
+
+                    const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr && !b.budget_items.is_variable);
+                    const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0);
+
+                    currentSimBalance -= (dailyDrop + dailyVariableBurn);
+                    impulseSimBalance -= (dailyDrop + dailyVariableBurn);
+
+                    if (useTempPay.value) {
+                        let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null;
+                        const freq = calcInputs.value.payFrequency;
+                        const amt = calcResult.value ? calcResult.value.netPay : 0;
+                        if (nextPay && dStr === nextPay.toISOString().split('T')[0]) {
+                            currentSimBalance += amt;
+                            impulseSimBalance += amt;
+                            if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
+                            else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
+                            else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
+                        }
+                    } else {
+                        simIncomes.forEach(inc => {
+                            if (dStr === inc.nextDate.toISOString().split('T')[0]) {
+                                currentSimBalance += inc.amount;
+                                impulseSimBalance += inc.amount;
+                                if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14);
+                                else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15);
+                                else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1);
+                            }
+                        });
+                    }
+
+                    if (runImpulse && dStr === impulseDate) {
+                        impulseSimBalance -= impulseCost;
+                    }
+
+                    dataCurrent.push(currentSimBalance);
+                    dataImpulse.push(impulseSimBalance);
                 }
-                savingBase.value = false;
+
+                const activeData = runImpulse ? dataImpulse : dataCurrent;
+                const min = Math.min(...activeData);
+                const index = activeData.indexOf(min);
+                const d = new Date();
+                d.setDate(today.getDate() + (index - 1)); 
+                lowPointData.value = { 
+                    amount: min, 
+                    date: index === 0 ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
+                };
+
+                dashboardChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Current',
+                            data: dataCurrent,
+                            borderColor: '#3B82F6',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.1
+                        }]
+                    }
+                });
+
+                if (runImpulse) {
+                    dashboardChartInstance.data.datasets.push({
+                        label: 'With Purchase',
+                        data: dataImpulse,
+                        borderColor: '#9333EA',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.1
+                    });
+                }
+                dashboardChartInstance.update();
             };
 
-            const loadIncomeIntoCalculator = (inc) => { calcInputs.value = { ...calcInputs.value, id: inc.id, name: inc.name, nextPayDate: inc.next_pay_date, payFrequency: inc.frequency, ...inc.details }; showCalcForm.value = true; calculateAndSave('preview'); };
-            const deleteIncome = async (id) => { if(!confirm("Delete?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
+            const renderForecastChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
 
-            // --- LEDGER ---
-            const openGenerateModal=async(offset=0)=>{generateMonthOffset.value=offset;const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+offset);const startOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth(),1).toISOString();const endOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0).toISOString();const{data:t}=await _supabase.from('budget_items').select('*').eq('is_active',true).eq('is_wishlist',false).eq('user_id',session.value.user.id);const{data:e}=await _supabase.from('ledger').select('budget_item_id').gte('due_date',startOfMonth).lte('due_date',endOfMonth);const existingIds=new Set(e.map(b=>b.budget_item_id));potentialBills.value=t.filter(x=>!existingIds.has(x.id)).map(x=>({...x,selected:x.frequency==='Monthly'}));showGenModal.value=true};
-            const confirmGenerate=async()=>{const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+generateMonthOffset.value);const toCreate=potentialBills.value.filter(i=>i.selected).map(t=>({user_id:session.value.user.id,budget_item_id:t.id,amount_paid:0,due_date:new Date(targetDate.getFullYear(),targetDate.getMonth(),t.due_day||1).toISOString(),is_paid:false}));if(toCreate.length>0){await _supabase.from('ledger').insert(toCreate);await fetchBills()}showGenModal.value=false};
-            const logExpense = async () => { if(!expenseData.value.budgetId || !expenseData.value.amount) return; const payload = { user_id: session.value.user.id, budget_item_id: expenseData.value.budgetId, amount_paid: Number(expenseData.value.amount), is_paid: true, due_date: expenseData.value.date, transaction_name: expenseData.value.description }; let error; if (editingExpenseId.value) { const res = await _supabase.from('ledger').update(payload).eq('id', editingExpenseId.value); error = res.error; } else { const res = await _supabase.from('ledger').insert([payload]); error = res.error; } if(!error){ showExpenseModal.value = false; expenseData.value = {budgetId:'', amount:'', description:'', date: new Date().toISOString().split('T')[0]}; editingExpenseId.value = null; await fetchBills(); renderDashboardChart(); if(showLogModal.value && selectedBudgetLog.value) openLogModal(selectedBudgetLog.value); } else { alert("Error logging expense"); } };
-            const openLogModal = (item) => { selectedBudgetLog.value = item; const currentMonthStr = new Date().toISOString().slice(0, 7); currentLogEntries.value = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).sort((a,b) => b.due_date.localeCompare(a.due_date)); showLogModal.value = true; };
-            const deleteLogEntry = async (entry) => { if(!confirm("Remove this transaction?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', entry.id); if(!error) { bills.value = bills.value.filter(b => b.id !== entry.id); currentLogEntries.value = currentLogEntries.value.filter(b => b.id !== entry.id); renderCategoryChart(); renderDashboardChart(); } };
-            const editLogEntry = (entry) => { expenseData.value = { budgetId: entry.budget_item_id, amount: entry.amount_paid, description: entry.transaction_name, date: entry.due_date }; editingExpenseId.value = entry.id; showLogModal.value = false; showExpenseModal.value = true; };
-            const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-            const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating'); } else { renderDashboardChart(); } };
-            const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
-
-            // --- FORECAST ---
+            // --- FORECAST LOGIC ---
             const runForecast=()=>{
                 let balance=round(forecastSettings.value.currentBalance);
                 const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
                 const today = new Date();
                 const currentMonthStr = today.toISOString().slice(0, 7); 
+                
                 if(forecastData.value.length!==forecastSettings.value.months){
                     forecastData.value=[];
                     for(let i=0;i<forecastSettings.value.months;i++){
@@ -717,9 +836,11 @@
                     }
                 }
                 forecastResults.value.affordableMonth=null;
+                
                 forecastData.value.forEach((m,idx)=>{
                     const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1);
                     const isCurrentMonth = idx === 0;
+                    
                     let monthlyIncome = 0;
                     if (isCurrentMonth) {
                         incomes.value.forEach(inc => {
@@ -733,10 +854,15 @@
                             }
                         });
                         if(useTempPay.value && monthlyIncome === 0) monthlyIncome = tempCalculatedPay.value; 
-                    } else { monthlyIncome = activeMonthlyPay.value; }
+                    } else {
+                        monthlyIncome = activeMonthlyPay.value;
+                    }
+                    
                     const ov = forecastOverrides.value[m.name];
                     if (ov && ov.income !== undefined) monthlyIncome = Number(ov.income);
-                    m.income = monthlyIncome; if (ov && ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses];
+                    m.income = monthlyIncome; 
+                    if (ov && ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses];
+
                     let monthlyBurn = 0;
                     if (isCurrentMonth) {
                         const unpaidBills = bills.value.filter(b => {
@@ -749,6 +875,7 @@
                             return true;
                         });
                         const fixedBurn = unpaidBills.reduce((sum, b) => sum + b.budget_items.amount, 0);
+
                         const activeVariables = variableBudgets.value.filter(v => {
                             if (forecastMode.value === 'survival') return v.is_core;
                             if (forecastMode.value === 'standard') return !v.is_wishlist;
@@ -761,6 +888,7 @@
                         else if(forecastMode.value==='standard') monthlyBurn = budgetItems.value.filter(i=>!i.is_wishlist).reduce((a,b)=>a+getMonthlyCost(b),0);
                         else if(forecastMode.value==='dream') budgetItems.value.forEach(i=>{ if(i.is_wishlist) monthlyBurn+=getMonthlyCost(i); else { const replaced = budgetItems.value.find(w=>w.is_wishlist && w.replaces_id===i.id); if(!replaced) monthlyBurn+=getMonthlyCost(i); } });
                     }
+
                     m.burn = round(monthlyBurn);
                     const totalExtra=m.extraExpenses.reduce((acc,curr)=>acc+curr.amount,0);
                     const monthlyNet=m.income-monthlyBurn-totalExtra;
@@ -770,35 +898,62 @@
                 });
                 renderForecastChart();
             };
-            const updateMonthIncome = (m) => { if (!forecastOverrides.value[m.name]) forecastOverrides.value[m.name] = { income: null, extraExpenses: [] }; forecastOverrides.value[m.name].income = Number(m.income); runForecast(); };
-            const addExpense = (m) => { if (m.newExpenseName && m.newExpenseAmount) { if (!forecastOverrides.value[m.name]) forecastOverrides.value[m.name] = { income: null, extraExpenses: [] }; forecastOverrides.value[m.name].extraExpenses.push({ name: m.newExpenseName, amount: Number(m.newExpenseAmount) }); m.newExpenseName = ''; m.newExpenseAmount = ''; m.newExpenseId = ''; runForecast(); } };
+
+            const getOverride = (monthName) => { if (!forecastOverrides.value[monthName]) forecastOverrides.value[monthName] = { income: null, extraExpenses: [] }; return forecastOverrides.value[monthName]; };
+            const updateMonthIncome = (m) => { const ov = getOverride(m.name); ov.income = Number(m.income); runForecast(); };
+            const addExpense = (m) => { if (m.newExpenseName && m.newExpenseAmount) { const ov = getOverride(m.name); ov.extraExpenses.push({ name: m.newExpenseName, amount: Number(m.newExpenseAmount) }); m.newExpenseName = ''; m.newExpenseAmount = ''; m.newExpenseId = ''; runForecast(); } };
             const fillExpense = (m) => { const selected = budgetItems.value.find(i => i.id === m.newExpenseId); if (selected) { m.newExpenseName = selected.name; m.newExpenseAmount = selected.amount; } };
-            const removeExpense = (m, index) => { if (!forecastOverrides.value[m.name]) forecastOverrides.value[m.name] = { income: null, extraExpenses: [] }; forecastOverrides.value[m.name].extraExpenses.splice(index, 1); runForecast(); };
-            const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
-
-            // --- VOICE ENTRY ---
-            const startVoiceEntry = () => {
-                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SR) return alert("Browser not supported");
-                const r = new SR(); r.lang = 'en-US';
-                r.onstart = () => isListening.value = true;
-                r.onend = () => isListening.value = false;
-                r.onresult = (e) => {
-                    const t = e.results[0][0].transcript.toLowerCase();
-                    const amtMatch = t.match(/(\d+(\.\d{1,2})?)/);
-                    const amt = amtMatch ? amtMatch[0] : '';
-                    const foundCard = giftCards.value.find(c => t.includes(c.name.toLowerCase()));
-                    if (foundCard) { selectedCard.value = foundCard; logInput.value = { amount: amt, description: t.replace(foundCard.name.toLowerCase(), '').trim() }; manageCard(foundCard); }
-                    else { 
-                        let bestMatchId = ''; for (const item of variableBudgets.value) { if (t.includes(item.name.toLowerCase())) { bestMatchId = item.id; break; } }
-                        expenseData.value = { budgetId: bestMatchId, amount: amt, description: t.charAt(0).toUpperCase() + t.slice(1), date: new Date().toISOString().split('T')[0] };
-                        showExpenseModal.value = true;
-                    }
-                };
-                r.start();
+            const removeExpense = (m, index) => { const ov = getOverride(m.name); ov.extraExpenses.splice(index, 1); runForecast(); };
+            
+            const saveForecastSlot=async(i)=>{ 
+                const existing = savedForecasts.value[i];
+                let name = existing ? existing.name : '';
+                if(existing){ if(!confirm(`Update "${existing.name}"?`)) return; } 
+                else { name = prompt("Name this forecast:"); if(!name) return; }
+                const payload = { user_id:session.value.user.id, slot_index:i, name:name, data:{settings:{...forecastSettings.value}, project:project.value, mode:forecastMode.value, overrides:forecastOverrides.value}};
+                const { error } = await _supabase.from('forecast_slots').upsert(payload, {onConflict:'user_id,slot_index'});
+                if(error) alert("Error saving: "+error.message); else await fetchForecastSlots();
             };
+            const loadForecastSlot=(i)=>{ const s=savedForecasts.value[i]; if(s && confirm("Load?")){ forecastSettings.value=s.data.settings; project.value=s.data.project; setForecastMode(s.data.mode); forecastOverrides.value=s.data.overrides||{}; runForecast(); }};
+            const clearForecastSlot=async(i)=>{ if(confirm("Clear?")){ await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); await fetchForecastSlots(); }};
 
-            // --- IMPULSE & TOUR ---
+            // --- PAYCHECK CALCULATOR ---
+            const loadIncomeIntoCalculator = (inc) => { calcInputs.value = { ...calcInputs.value, id: inc.id, name: inc.name, nextPayDate: inc.next_pay_date, payFrequency: inc.frequency, ...inc.details }; showCalcForm.value = true; calculateAndSave('preview'); };
+            const calculateAndSave = async (mode) => {
+                savingBase.value = true;
+                const { name, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding } = calcInputs.value;
+                const payPeriods = 24; const grossPay = (salary / payPeriods) + (Number(commission)||0); const benefitAmt = Number(medical) + Number(dental) + Number(fsa);
+                const ficaWages = Math.max(0, grossPay - benefitAmt); const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0);
+                const tradAmt = grossPay * (Number(trad401k) / 100); const rothAmt = grossPay * (Number(roth401k) / 100); const taxable = grossPay - tradAmt - benefitAmt; const annualTaxable = Math.max(0, (taxable * payPeriods));
+                let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods); if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods); if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding); fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod);
+                const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100); const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax; const finalPay = round(net);
+                calcResult.value = { gross: round(grossPay), netPay: finalPay };
+                
+                if (mode === 'default') {
+                    const payload = { user_id: session.value.user.id, name: name || 'New Income', amount: finalPay, frequency: payFrequency, next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding } };
+                    await _supabase.from('incomes').insert([payload]); await fetchIncomes(); showCalcForm.value = false; 
+                }
+                savingBase.value = false;
+            };
+            const deleteIncome = async (id) => { if(!confirm("Delete?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
+
+            // --- BUDGET ITEMS & MODALS ---
+            const handleSave = async () => { 
+                const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), frequency: newItem.value.frequency, is_active: true, is_core: newItem.value.is_core, is_variable: newItem.value.is_variable, category: newItem.value.category, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, replaces_id: newItem.value.replaces_id };
+                if (isEditing.value) await _supabase.from('budget_items').update(payload).eq('id', editingId.value);
+                else await _supabase.from('budget_items').insert([payload]);
+                fetchBudgetItems(); resetForm(); showAddForm.value = false;
+            };
+            const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item }; showAddForm.value = true; };
+            const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false }; showAddForm.value = false; };
+            const deleteBudgetItem = async (item) => { if(confirm('Delete ' + item.name + '?')) { await _supabase.from('budget_items').delete().eq('id', item.id); fetchBudgetItems(); } };
+
+            // --- DEBT ---
+            const editDebt = (d) => { newDebt.value = { ...d }; editingDebtId.value = d.id; showDebtForm.value = true; };
+            const addDebt = async () => { const payload = { user_id: session.value.user.id, name: newDebt.value.name, balance: Number(newDebt.value.balance), rate: Number(newDebt.value.rate), min_payment: Number(newDebt.value.min_payment) }; await _supabase.from('debts').insert([payload]); fetchDebts(); showDebtForm.value = false; };
+            const deleteDebt = async (d) => { await _supabase.from('debts').delete().eq('id', d.id); fetchDebts(); };
+
+            // --- IMPULSE, TOUR & MISC ---
             const checkImpulse = () => {
                 if (!impulseItem.value.cost) return;
                 showImpulseModal.value = false;
@@ -815,12 +970,6 @@
                 impulseResult.value = null;
                 renderDashboardChart();
             };
-            
-            const startDashboardTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'Net Pay minus Core Bills.' } }, { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'Retirement projection.' } }, { element: '#tour-debt-free', popover: { title: '3. Debt Free', description: 'Payoff date.' } }, { element: '#tour-variable-budgets', popover: { title: '4. Budgets', description: 'Track spending.' } }, { element: '#tour-cash-flow', popover: { title: '5. Cash Flow', description: '30-day view.' } } ] }).drive(); };
-            const startPaycheckTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-paycheck-trigger', popover: { title: 'Calc', description: 'Add new income.' } } ] }).drive(); };
-            const startBudgetTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-net-pay', popover: { title: 'Net Pay', description: 'Total Income' } } ] }).drive(); };
-            const startForecastTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-forecast-settings', popover: { title: 'Settings', description: 'Config.' } } ] }).drive(); };
-            const startDebtTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-add-debt', popover: { title: 'Add', description: 'Add debt.' } } ] }).drive(); };
 
             const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
             const sendQuery=async(text)=>{if(!text)return;chatMessages.value.push({role:'user',text});userQuery.value='';isThinking.value=true;nextTick(scrollChat);setTimeout(()=>{chatMessages.value.push({role:'assistant',text:"I analyzed your finances. Income: $"+activeMonthlyPay.value.toLocaleString()+". Ask for a Stress Test or Debt Strategy."});isThinking.value=false;nextTick(scrollChat)},1200)};
@@ -831,21 +980,12 @@
             const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
             const resetDemo = async () => { if(!confirm("⚠️ WARNING: DELETE ALL DATA?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); await _supabase.from('gift_cards').delete().eq('user_id',uid); window.location.reload(); };
 
-            // --- CHARTS & INIT ---
-            const renderCategoryChart = () => { 
-                const ctx = document.getElementById('categoryChart'); if (!ctx) return; 
-                if (categoryChartInstance) categoryChartInstance.destroy();
-                const totals = { Essentials: 0, Entertainment: 0, Other: 0 };
-                budgetItems.value.forEach(i => { totals[i.category || 'Other'] = (totals[i.category || 'Other'] || 0) + i.amount; });
-                categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(totals), datasets: [{ data: Object.values(totals), backgroundColor: ['#10B981', '#F59E0B', '#3B82F6'] }] }, options: { plugins: { legend: { display: false } } } });
-                const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = Object.keys(totals).map((l,i) => `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${['#10B981', '#F59E0B', '#3B82F6'][i]}"></span><span>${l}</span></div><span class="font-mono font-bold">$${Math.round(Object.values(totals)[i]).toLocaleString()}</span></div>`).join(''); }
-            };
-            const renderDashboardChart = () => {
-                const ctx = document.getElementById('dashboardChart'); if (!ctx) return;
-                if (dashboardChartInstance) dashboardChartInstance.destroy();
-                const data = Array.from({length: 30}, (_, i) => forecastSettings.value.currentBalance - (i * 50)); 
-                dashboardChartInstance = new Chart(ctx, { type: 'line', data: { labels: Array.from({length:30}, (_,i)=>i+1), datasets: [{ label: 'Balance', data, borderColor: '#3B82F6', tension: 0.4 }] }, options: { plugins: { legend: { display: false } }, scales: { x: { display: false } } } });
-            };
+            const startDashboardTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'Net Pay minus Core Bills.' } }, { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'Retirement projection.' } }, { element: '#tour-debt-free', popover: { title: '3. Debt Free', description: 'Payoff date.' } }, { element: '#tour-variable-budgets', popover: { title: '4. Budgets', description: 'Track spending.' } }, { element: '#tour-cash-flow', popover: { title: '5. Cash Flow', description: '30-day view.' } } ] }).drive(); };
+            const startPaycheckTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-paycheck-trigger', popover: { title: 'Calc', description: 'Add new income.' } } ] }).drive(); };
+            const startBudgetTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-net-pay', popover: { title: 'Net Pay', description: 'Total Income' } } ] }).drive(); };
+            const startForecastTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-forecast-settings', popover: { title: 'Settings', description: 'Config.' } } ] }).drive(); };
+            const startDebtTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-add-debt', popover: { title: 'Add', description: 'Add debt.' } } ] }).drive(); };
+
 
             watch(currentView, (v) => { if(v==='dashboard') nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); });
 
@@ -868,7 +1008,7 @@
                 showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint,
                 // Calc & Debt
                 calcInputs, calcResult, calculateAndSave, showCalcForm, loadIncomeIntoCalculator, deleteIncome, useTempPay, showCalcDetails, tempCalculatedPay, incomes,
-                debts, newDebt, extraDebtPayment, debtPlan, showDebtForm, addDebt, deleteDebt, editDebt,
+                debts, newDebt, extraDebtPayment, debtPlan, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId,
                 showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, resetChat,
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, showPaidBills, visibleBills, upcomingBills, deleteBill, toggleBillPaid, quickPay, getCalendarLink, isScenarioActive, showPlanner, standardItems, wishlistItems, currentScenarioMode, setScenarioMode, setDashboardMode, dashboardMode, exportData,
                 showExpenseModal, expenseData, logExpense, editingExpenseId, showLogModal, selectedBudgetLog, currentLogEntries, openLogModal, deleteLogEntry, editLogEntry,
