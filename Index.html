@@ -438,22 +438,20 @@
 
     // --- UTILITIES ---
     const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
-    
     const getMonthlyCost = (i) => {
         let a = Number(i.amount);
         if (i.frequency === 'Quarterly') return a / 3;
         if (i.frequency === 'Yearly') return a / 12;
         return i.frequency === 'One-Time' ? 0 : a;
     };
-
     const formatDate = (dateStr) => {
         if (!dateStr) return '';
         const [y, m, d] = dateStr.split('-');
         const date = new Date(y, m - 1, d);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
-
     const getDaysLeft = (dateStr) => {
+        if(!dateStr) return 0;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const [y, m, d] = dateStr.split('-');
@@ -461,7 +459,6 @@
         const diffTime = due - today;
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
-
     const calculateFederalTax = (annualInc, status = 'Single') => {
         const standardDeduction = { Single: 15000, Married: 30000, Head: 22500 };
         let taxable = Math.max(0, annualInc - (standardDeduction[status] || 15000));
@@ -478,7 +475,6 @@
         }
         return t;
     };
-    
     const getCalendarLink = (bill) => {
         const title = encodeURIComponent(`Pay ${bill.budget_items.name}`);
         const details = encodeURIComponent(`Amount: $${bill.budget_items.amount}`);
@@ -508,13 +504,12 @@
             const openOwners = ref({}); 
 
             // Modals & Forms
-            const showPlanner = ref(false); 
+            const showPlanner = ref(false); // Restored
             const showAddForm = ref(false), isEditing = ref(false), editingId = ref(null);
             const newItem = ref({ name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false });
             const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
             const showChartPercentages = ref(false);
-            const showImpulseModal = ref(false), impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] }), impulseResult = ref(null);
-
+            
             // Forecast State
             const forecastSettings = ref({ currentBalance: 5000, safetyMargin: 2000, months: 12, currentAge: 30, retirementAge: 65, retirementBalance: 0, expectedReturn: 7.0 });
             const forecastMode = ref('standard'), forecastData = ref([]), forecastResults = ref({ affordableMonth: null });
@@ -535,7 +530,8 @@
             const expenseData = ref({ budgetId: '', amount: '', description: '', date: new Date().toISOString().split('T')[0] });
             const showLogModal = ref(false), selectedBudgetLog = ref(null), currentLogEntries = ref([]);
 
-            // Advisor
+            // Advisor & Impulse
+            const showImpulseModal = ref(false), impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] }), impulseResult = ref(null);
             const showConsultant = ref(false), chatMessages = ref([]), userQuery = ref(''), isThinking = ref(false);
 
             // Onboarding
@@ -565,7 +561,6 @@
             const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + getMonthlyCost(i), 0)));
             const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
             const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
-            
             const safeToSpend = computed(() => { if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value); if (dashboardMode.value === 'dream') { let burn = 0; budgetItems.value.forEach(i => { if (i.is_wishlist) { burn += getMonthlyCost(i); } else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i); } }); return round(activeMonthlyPay.value - burn); } const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc,i) => acc + getMonthlyCost(i), 0); return round(activeMonthlyPay.value - standardBurn); });
             const dashboardBurn = computed(() => round(activeMonthlyPay.value - safeToSpend.value));
             const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0);
@@ -577,7 +572,7 @@
             // --- HELPER FUNCTIONS ---
             const toggleDarkMode = () => { isDarkMode.value = !isDarkMode.value; if(isDarkMode.value) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light'); };
             const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
-            const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; window.location.reload(); };
+            const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; const cleanUrl = window.location.origin + window.location.pathname; window.history.replaceState(null, '', cleanUrl); window.location.href = cleanUrl; };
             const resetChat = () => { chatMessages.value = []; };
             const printReport = () => { window.print(); };
 
@@ -628,7 +623,7 @@
             };
 
             const deleteGiftCard = async (id) => { 
-                if(!confirm("Are you sure you want to delete this gift card? This cannot be undone.")) return;
+                if(!confirm("Are you sure you want to delete this gift card?")) return;
                 loading.value = true;
                 const { error } = await _supabase.from('gift_cards').delete().eq('id', id);
                 if (error) { alert("Error: " + error.message); }
@@ -842,16 +837,13 @@
             const addExpense = (m) => { if (m.newExpenseName && m.newExpenseAmount) { const ov = getOverride(m.name); ov.extraExpenses.push({ name: m.newExpenseName, amount: Number(m.newExpenseAmount) }); m.newExpenseName = ''; m.newExpenseAmount = ''; m.newExpenseId = ''; runForecast(); } };
             const fillExpense = (m) => { const selected = budgetItems.value.find(i => i.id === m.newExpenseId); if (selected) { m.newExpenseName = selected.name; m.newExpenseAmount = selected.amount; } };
             const removeExpense = (m, index) => { const ov = getOverride(m.name); ov.extraExpenses.splice(index, 1); runForecast(); };
-            
-            const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
-
             const saveForecastSlot=async(i)=>{ const existing = savedForecasts.value[i]; let name = existing ? existing.name : ''; if(existing){ if(!confirm(`Update "${existing.name}"?`)) return; } else { name = prompt("Name this forecast:"); if(!name) return; } const payload = { user_id:session.value.user.id, slot_index:i, name:name, data:{settings:{...forecastSettings.value}, project:project.value, mode:forecastMode.value, overrides:forecastOverrides.value}}; const { error } = await _supabase.from('forecast_slots').upsert(payload, {onConflict:'user_id,slot_index'}); if(error) alert("Error saving: "+error.message); else await fetchForecastSlots(); };
             const loadForecastSlot=(i)=>{ const s=savedForecasts.value[i]; if(s && confirm("Load?")){ forecastSettings.value=s.data.settings; project.value=s.data.project; setForecastMode(s.data.mode); forecastOverrides.value=s.data.overrides||{}; runForecast(); }};
             const clearForecastSlot=async(i)=>{ if(confirm("Clear?")){ await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); await fetchForecastSlots(); }};
 
             // --- PAYCHECK CALCULATOR ---
             const loadIncomeIntoCalculator = (inc) => { calcInputs.value = { ...calcInputs.value, id: inc.id, name: inc.name, nextPayDate: inc.next_pay_date, payFrequency: inc.frequency, ...inc.details }; showCalcForm.value = true; calculateAndSave('preview'); };
-            const calculateAndSave = async (mode) => { savingBase.value = true; const { name, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding } = calcInputs.value; const payPeriods = 24; const grossPay = (salary / payPeriods) + (Number(commission)||0); const benefitAmt = Number(medical) + Number(dental) + Number(fsa); const ficaWages = Math.max(0, grossPay - benefitAmt); const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0); const tradAmt = grossPay * (Number(trad401k) / 100); const rothAmt = grossPay * (Number(roth401k) / 100); const taxable = grossPay - tradAmt - benefitAmt; const annualTaxable = Math.max(0, (taxable * payPeriods)); let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods); if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods); if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding); fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod); const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100); const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax; const finalPay = round(net); calcResult.value = { gross: round(grossPay), benefitAmt: round(benefitAmt), tradAmt: round(tradAmt), preTaxTotal: round(benefitAmt + tradAmt), taxes: round(fedTaxPerPeriod + stateTaxPerPeriod), fedTax: round(fedTaxPerPeriod), stateTax: round(stateTaxPerPeriod), fica: round(ssTax + medTax), postTaxTotal: round(Number(postTax) + rothAmt), netPay: finalPay }; if (mode === 'default') { const payload = { user_id: session.value.user.id, name: name || 'New Income', amount: finalPay, frequency: payFrequency, next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding } }; if (calcInputs.value.id) await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id); else await _supabase.from('incomes').insert([payload]); await fetchIncomes(); showCalcForm.value = false; alert("Income Saved!"); } else if (mode === 'temp') { let monthlyEq = 0; if (payFrequency === 'Monthly') monthlyEq = finalPay; else if (payFrequency === 'Bi-Weekly') monthlyEq = finalPay * 2.166; else if (payFrequency === 'Semi-Monthly') monthlyEq = finalPay * 2; tempCalculatedPay.value = round(monthlyEq); useTempPay.value = true; currentView.value = 'forecast'; alert("Session Pay Calculated ($" + finalPay + ")! Go to Forecast to apply it."); } savingBase.value = false; };
+            const calculateAndSave = async (mode) => { savingBase.value = true; const { name, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding } = calcInputs.value; const payPeriods = 24; const grossPay = (salary / payPeriods) + (Number(commission)||0); const benefitAmt = Number(medical) + Number(dental) + Number(fsa); const ficaWages = Math.max(0, grossPay - benefitAmt); const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0); const tradAmt = grossPay * (Number(trad401k) / 100); const rothAmt = grossPay * (Number(roth401k) / 100); const taxable = grossPay - tradAmt - benefitAmt; const annualTaxable = Math.max(0, (taxable * payPeriods)); let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods); if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods); if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding); fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod); const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100); const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax; const finalPay = round(net); calcResult.value = { gross: round(grossPay), benefitAmt: round(benefitAmt), tradAmt: round(tradAmt), preTaxTotal: round(benefitAmt + tradAmt), taxes: round(fedTaxPerPeriod + stateTaxPerPeriod), fedTax: round(fedTaxPerPeriod), stateTax: round(stateTaxPerPeriod), fica: round(ssTax + medTax), postTaxTotal: round(Number(postTax) + rothAmt), netPay: finalPay }; if (mode === 'default') { const payload = { user_id: session.value.user.id, name: name || 'New Income', amount: finalPay, frequency: payFrequency, next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding } }; await _supabase.from('incomes').insert([payload]); await fetchIncomes(); showCalcForm.value = false; alert("Income Saved!"); } else if (mode === 'temp') { let monthlyEq = 0; if (payFrequency === 'Monthly') monthlyEq = finalPay; else if (payFrequency === 'Bi-Weekly') monthlyEq = finalPay * 2.166; else if (payFrequency === 'Semi-Monthly') monthlyEq = finalPay * 2; tempCalculatedPay.value = round(monthlyEq); useTempPay.value = true; currentView.value = 'forecast'; alert("Session Pay Calculated ($" + finalPay + ")! Go to Forecast to apply it."); } savingBase.value = false; };
             const deleteIncome = async (id) => { if(!confirm("Delete?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
             const handleSave = async () => { const payload = { user_id: session.value.user.id, name: newItem.value.name, amount: Number(newItem.value.amount), frequency: newItem.value.frequency, is_active: true, is_core: newItem.value.is_core, is_variable: newItem.value.is_variable, category: newItem.value.category, is_autopay: newItem.value.is_autopay, is_wishlist: newItem.value.is_wishlist, replaces_id: newItem.value.replaces_id }; if (isEditing.value) await _supabase.from('budget_items').update(payload).eq('id', editingId.value); else await _supabase.from('budget_items').insert([payload]); fetchBudgetItems(); resetForm(); showAddForm.value = false; };
             const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item }; showAddForm.value = true; };
@@ -869,6 +861,7 @@
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
             const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating'); } else { renderDashboardChart(); } };
             const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
+            const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
             const resetDemo = async () => { if(!confirm("⚠️ WARNING: DELETE ALL DATA?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); await _supabase.from('gift_cards').delete().eq('user_id',uid); window.location.reload(); };
 
             // --- ADVISOR & TOURS ---
@@ -907,7 +900,7 @@
                 isListening, startVoiceEntry, toggleChartMode: () => showChartPercentages.value = !showChartPercentages.value,
                 categories, activeMonthlyPay, totalMonthlyRetirementContribution, totalMonthlyBurn, getMonthlyCost, getDaysLeft, formatDate,
                 showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint,
-                // Calc & Debt
+                // Calc & Debt & Ledger
                 calcInputs, calcResult, calculateAndSave, showCalcForm, loadIncomeIntoCalculator, deleteIncome, useTempPay, showCalcDetails, tempCalculatedPay, incomes,
                 debts, newDebt, extraDebtPayment, debtPlan, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId,
                 showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, resetChat,
