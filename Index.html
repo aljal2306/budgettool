@@ -506,8 +506,6 @@
             const newItem = ref({ name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false });
             const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
             const showChartPercentages = ref(false);
-            
-            // ** RESTORED MISSING IMPULSE STATE **
             const showImpulseModal = ref(false), impulseItem = ref({ name: '', cost: '', date: new Date().toISOString().split('T')[0] }), impulseResult = ref(null);
 
             // Forecast State
@@ -554,14 +552,10 @@
 
             const standardItems = computed(() => budgetItems.value.filter(i => !i.is_wishlist));
             const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist));
-            const variableBudgets = computed(() => budgetItems.value.filter(i => i.is_variable).map(item => { const currentMonthStr = new Date().toISOString().slice(0, 7); const spent = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).reduce((sum, b) => sum + (b.amount_paid || b.budget_items.amount), 0); return { ...item, spent: spent, remaining: item.amount - spent, progress: (spent / item.amount) * 100 }; }));
-            const visibleBills = computed(() => { let sorted = bills.value.filter(b => !b.budget_items.is_variable); if (!showPaidBills.value) sorted = sorted.filter(b => !b.is_paid); return sorted; });
-            const upcomingBills = computed(() => { const today = new Date().toISOString().split('T')[0]; const limit = new Date(); limit.setDate(limit.getDate() + 7); const limitStr = limit.toISOString().split('T')[0]; return bills.value.filter(b => !b.is_paid && !b.budget_items.is_variable && b.due_date <= limitStr).sort((a,b) => a.due_date > b.due_date ? 1 : -1); });
             const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc,i) => acc + getMonthlyCost(i), 0)));
             const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { let m = Number(inc.amount); if (inc.frequency === 'Bi-Weekly') m *= 2.166; else if (inc.frequency === 'Semi-Monthly') m *= 2; return total + m; }, 0));
             const totalMonthlyBurn = computed(() => round(budgetItems.value.filter(i => i.includedInScenario).reduce((acc, i) => acc + getMonthlyCost(i), 0)));
             const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
-            const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
             
             const safeToSpend = computed(() => { if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value); if (dashboardMode.value === 'dream') { let burn = 0; budgetItems.value.forEach(i => { if (i.is_wishlist) { burn += getMonthlyCost(i); } else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i); } }); return round(activeMonthlyPay.value - burn); } const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc,i) => acc + getMonthlyCost(i), 0); return round(activeMonthlyPay.value - standardBurn); });
             const totalMonthlyRetirementContribution = computed(() => incomes.value.reduce((sum, inc) => { const salary = Number(inc.details?.salary || 0); const rate = (Number(inc.details?.trad401k || 0) + Number(inc.details?.roth401k || 0) + Number(inc.details?.match401k || 0)) / 100; return sum + ((salary / 12) * rate); }, 0));
@@ -578,6 +572,7 @@
             const fetchBudgetItems = async () => { 
                 const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
                 if (data) { 
+                    // Explicitly cast to Number to prevent .toFixed crashes
                     budgetItems.value = data.map(i => ({...i, amount: Number(i.amount), includedInScenario: false})); 
                     setScenarioMode('survival'); 
                 } 
@@ -614,7 +609,6 @@
                 await fetchGiftCards(); openOwners.value[payload.owner] = true; resetGiftCardForm(); loading.value = false;
             };
 
-            // ** DELETION LOGIC **
             const deleteGiftCard = async (id) => { 
                 if(!confirm("Are you sure you want to delete this gift card?")) return;
                 loading.value = true;
@@ -784,7 +778,7 @@
                 r.start();
             };
 
-            // --- RESTORED: IMPULSE LOGIC ---
+            // --- IMPULSE & TOUR ---
             const checkImpulse = () => {
                 if (!impulseItem.value.cost) return;
                 showImpulseModal.value = false;
@@ -801,8 +795,13 @@
                 impulseResult.value = null;
                 renderDashboardChart();
             };
+            
+            const startDashboardTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'Net Pay minus Core Bills.' } }, { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'Retirement projection.' } }, { element: '#tour-debt-free', popover: { title: '3. Debt Free', description: 'Payoff date.' } }, { element: '#tour-variable-budgets', popover: { title: '4. Budgets', description: 'Track spending.' } }, { element: '#tour-cash-flow', popover: { title: '5. Cash Flow', description: '30-day view.' } } ] }).drive(); };
+            const startPaycheckTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-paycheck-trigger', popover: { title: 'Calc', description: 'Add new income.' } } ] }).drive(); };
+            const startBudgetTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-net-pay', popover: { title: 'Net Pay', description: 'Total Income' } } ] }).drive(); };
+            const startForecastTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-forecast-settings', popover: { title: 'Settings', description: 'Config.' } } ] }).drive(); };
+            const startDebtTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-add-debt', popover: { title: 'Add', description: 'Add debt.' } } ] }).drive(); };
 
-            // --- TOURS & MISC ---
             const openConsultant=()=>{showConsultant.value=true;nextTick(()=>scrollChat())};
             const sendQuery=async(text)=>{if(!text)return;chatMessages.value.push({role:'user',text});userQuery.value='';isThinking.value=true;nextTick(scrollChat);setTimeout(()=>{chatMessages.value.push({role:'assistant',text:"I analyzed your finances. Income: $"+activeMonthlyPay.value.toLocaleString()+". Ask for a Stress Test or Debt Strategy."});isThinking.value=false;nextTick(scrollChat)},1200)};
             const scrollChat=()=>{const el=document.getElementById('chat-container');if(el)el.scrollTop=el.scrollHeight};
@@ -811,12 +810,6 @@
             const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
             const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
             const resetDemo = async () => { if(!confirm("⚠️ WARNING: DELETE ALL DATA?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); await _supabase.from('gift_cards').delete().eq('user_id',uid); window.location.reload(); };
-
-            const startDashboardTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'Net Pay minus Core Bills.' } }, { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'Retirement projection.' } }, { element: '#tour-debt-free', popover: { title: '3. Debt Free', description: 'Payoff date.' } }, { element: '#tour-variable-budgets', popover: { title: '4. Budgets', description: 'Track spending.' } }, { element: '#tour-cash-flow', popover: { title: '5. Cash Flow', description: '30-day view.' } } ] }).drive(); };
-            const startPaycheckTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-paycheck-trigger', popover: { title: 'Calc', description: 'Add new income.' } } ] }).drive(); };
-            const startBudgetTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-net-pay', popover: { title: 'Net Pay', description: 'Total Income' } } ] }).drive(); };
-            const startForecastTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-forecast-settings', popover: { title: 'Settings', description: 'Config.' } } ] }).drive(); };
-            const startDebtTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-add-debt', popover: { title: 'Add', description: 'Add debt.' } } ] }).drive(); };
 
             // --- CHARTS & INIT ---
             const renderCategoryChart = () => { 
