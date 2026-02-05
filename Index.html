@@ -750,46 +750,7 @@
                 loading.value = false; 
             };
             const manageCard = async (card) => { selectedCard.value = card; const { data } = await _supabase.from('gift_card_logs').select('*').eq('gift_card_id', card.id).order('created_at', { ascending: false }); cardLogs.value = data || []; showCardModal.value = true; };
-            const logCardPurchase = async () => {
-                if (!logInput.value.amount) return;
-                const amt = Number(logInput.value.amount);
-                await _supabase.from('gift_card_logs').insert([{ gift_card_id: selectedCard.value.id, amount: amt, description: logInput.value.description }]);
-                const newBal = Number(selectedCard.value.balance) - amt;
-                await _supabase.from('gift_cards').update({ balance: newBal }).eq('id', selectedCard.value.id);
-                selectedCard.value.balance = newBal; const cardIndex = giftCards.value.findIndex(c => c.id === selectedCard.value.id); if (cardIndex !== -1) giftCards.value[cardIndex].balance = newBal;
-                logInput.value = { amount: '', description: '' }; await manageCard(selectedCard.value);
-            };
-            // 1. Add state for editing logs
-            const editingLogId = ref(null);
-
-            // 2. Function to delete a transaction
-            const deleteCardLog = async (log) => {
-                if(!confirm("Delete this transaction? The card balance will be restored.")) return;
-                
-                // Delete from DB
-                await _supabase.from('gift_card_logs').delete().eq('id', log.id);
-                
-                // Restore Balance
-                const restoredBalance = Number(selectedCard.value.balance) + Number(log.amount);
-                await _supabase.from('gift_cards').update({ balance: restoredBalance }).eq('id', selectedCard.value.id);
-                
-                // Update Local State
-                selectedCard.value.balance = restoredBalance;
-                const cardIndex = giftCards.value.findIndex(c => c.id === selectedCard.value.id);
-                if (cardIndex !== -1) giftCards.value[cardIndex].balance = restoredBalance;
-                
-                // Refresh Logs
-                manageCard(selectedCard.value);
-            };
-
-            // 3. Function to start editing
-            const editCardLog = (log) => {
-                logInput.value = { amount: log.amount, description: log.description };
-                editingLogId.value = log.id;
-            };
-
-            // 4. UPDATE your existing logCardPurchase function to handle edits
-            const logCardPurchase = async () => {
+             const logCardPurchase = async () => {
                 if (!logInput.value.amount) return;
                 const amt = Number(logInput.value.amount);
                 
@@ -822,6 +783,34 @@
                 
                 logInput.value = { amount: '', description: '' };
                 await manageCard(selectedCard.value);
+            };
+            // 1. Add state for editing logs
+            const editingLogId = ref(null);
+
+            // 2. Function to delete a transaction
+            const deleteCardLog = async (log) => {
+                if(!confirm("Delete this transaction? The card balance will be restored.")) return;
+                
+                // Delete from DB
+                await _supabase.from('gift_card_logs').delete().eq('id', log.id);
+                
+                // Restore Balance
+                const restoredBalance = Number(selectedCard.value.balance) + Number(log.amount);
+                await _supabase.from('gift_cards').update({ balance: restoredBalance }).eq('id', selectedCard.value.id);
+                
+                // Update Local State
+                selectedCard.value.balance = restoredBalance;
+                const cardIndex = giftCards.value.findIndex(c => c.id === selectedCard.value.id);
+                if (cardIndex !== -1) giftCards.value[cardIndex].balance = restoredBalance;
+                
+                // Refresh Logs
+                manageCard(selectedCard.value);
+            };
+
+            // 3. Function to start editing
+            const editCardLog = (log) => {
+                logInput.value = { amount: log.amount, description: log.description };
+                editingLogId.value = log.id;
             };
             const viewCardImage = (card) => { selectedCard.value = card; showImageModal.value = true; };
 
