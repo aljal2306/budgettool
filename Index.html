@@ -499,7 +499,7 @@
             const selectedCard = ref(null);
             const cardLogs = ref([]);
             const logInput = ref({ amount: '', description: '' });
-            const openOwners = ref({}); // Track open accordion folders
+            const openOwners = ref({}); 
 
             // Modals & Forms
             const showAddForm = ref(false), isEditing = ref(false), editingId = ref(null);
@@ -609,6 +609,7 @@
                 await fetchGiftCards(); openOwners.value[payload.owner] = true; resetGiftCardForm(); loading.value = false;
             };
 
+            // ** DELETION LOGIC **
             const deleteGiftCard = async (id) => { 
                 if(!confirm("Are you sure you want to delete this gift card?")) return;
                 loading.value = true;
@@ -648,6 +649,8 @@
             // --- DEBT ---
             const addDebt = async () => { const payload = { user_id: session.value.user.id, name: newDebt.value.name, balance: Number(newDebt.value.balance), rate: Number(newDebt.value.rate), min_payment: Number(newDebt.value.min_payment) }; await _supabase.from('debts').insert([payload]); fetchDebts(); showDebtForm.value = false; };
             const deleteDebt = async (d) => { await _supabase.from('debts').delete().eq('id', d.id); fetchDebts(); };
+            // ** FIXED: Added editDebt definition **
+            const editDebt = (d) => { newDebt.value = { ...d }; editingDebtId.value = d.id; showDebtForm.value = true; };
 
             // --- CALCULATOR ---
             const calculateAndSave = async (mode) => {
