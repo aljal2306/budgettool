@@ -444,8 +444,20 @@
                                             <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                                 <span>🔮</span> Budget Manager
                                             </h2>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400">Total: -${{ totalMonthlyBurn.toLocaleString() }}/mo</p>
+                                            <div class="flex items-center gap-3 mt-1 text-xs font-medium">
+                                                <span class="text-slate-500 dark:text-slate-400">
+                                                    Burn: <span class="text-red-500 font-bold">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}</span>
+                                                </span>
+                                                <span class="w-px h-3 bg-slate-300 dark:bg-slate-600"></span>
+                                                <span class="text-slate-500 dark:text-slate-400">
+                                                    Left: 
+                                                    <span class="font-bold transition-colors duration-300" :class="(activeMonthlyPay - totalMonthlyBurn) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
+                                                        ${{ (activeMonthlyPay - totalMonthlyBurn).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
+                                                    </span>
+                                                </span>
+                                            </div>
                                         </div>
+                                        
                                         <div class="flex items-center gap-3">
                                             <button v-if="!showAddForm" @click="showAddForm = true; isEditing = false; newItem = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false };" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-2 rounded-lg hover:bg-indigo-100 transition hidden sm:block">
                                                 + New Item
