@@ -72,13 +72,15 @@
                     <span>❖</span> <span class="hidden md:inline text-slate-800 dark:text-white">FinanceMaster</span>
                 </div>
                 
-                <div class="flex items-center gap-1 bg-gray-100 dark:bg-slate-700 p-1 rounded-lg">
-                    <button @click="currentView = 'dashboard'" :class="currentView==='dashboard' ? 'bg-white dark:bg-slate-600 text-blue-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'" class="px-3 md:px-4 py-1.5 rounded-md text-sm font-medium transition-all">Dashboard</button>
-                    <button @click="currentView = 'budget'" :class="currentView==='budget' ? 'bg-white dark:bg-slate-600 text-blue-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'" class="px-3 md:px-4 py-1.5 rounded-md text-sm font-medium transition-all">Budget</button>
-                    <button @click="currentView = 'forecast'" :class="currentView==='forecast' ? 'bg-white dark:bg-slate-600 text-blue-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'" class="px-3 md:px-4 py-1.5 rounded-md text-sm font-medium transition-all">Forecast</button>
+                <div class="flex items-center gap-1 bg-gray-100 dark:bg-slate-700 p-1 rounded-lg overflow-x-auto">
+                    <button @click="currentView = 'dashboard'" :class="currentView==='dashboard' ? 'bg-white dark:bg-slate-600 text-blue-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'" class="px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap">Dashboard</button>
+                    <button @click="currentView = 'calculator'" :class="currentView==='calculator' ? 'bg-white dark:bg-slate-600 text-blue-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'" class="px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap">Paycheck</button>
+                    <button @click="currentView = 'budget'" :class="currentView==='budget' ? 'bg-white dark:bg-slate-600 text-blue-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'" class="px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap">Budget</button>
+                    <button @click="currentView = 'forecast'" :class="currentView==='forecast' ? 'bg-white dark:bg-slate-600 text-blue-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'" class="px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap">Forecast</button>
+                    <button @click="currentView = 'debt'" :class="currentView==='debt' ? 'bg-white dark:bg-slate-600 text-blue-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'" class="px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap">Debt</button>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
                     <button @click="toggleDarkMode" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-lg">
                         {{ isDarkMode ? '☀️' : '🌙' }}
                     </button>
@@ -98,13 +100,13 @@
 
                     <div class="p-5 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Projected Balance</h3>
-                        <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">${{ projectedBalance.toLocaleString() }}</p>
+                        <p class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">${{ projectedBalance.toLocaleString() }}</p>
                         <p class="text-xs text-gray-400 mt-2">End of month estimate</p>
                     </div>
 
                     <div class="p-5 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Retirement Nest Egg</h3>
-                        <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">${{ Math.round(retirementProjection).toLocaleString() }}</p>
+                        <p class="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">${{ Math.round(retirementProjection).toLocaleString() }}</p>
                         <p class="text-xs text-gray-400 mt-2">Projected at age {{ forecastSettings.retirementAge }}</p>
                     </div>
                 </div>
@@ -189,10 +191,10 @@
                                             
                                             <div class="flex gap-1">
                                                 <button @click="manageCard(card)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition" title="Log Purchase / View History">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                                                    📝
                                                 </button>
                                                 <button @click="editGiftCard(card)" class="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded transition" title="Edit Details">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                                    ⚙️
                                                 </button>
                                             </div>
                                         </div>
@@ -205,6 +207,27 @@
                                 </div>
                             </transition>
                         </div>
+                    </div>
+                </div>
+            </main>
+
+            <main v-if="currentView === 'calculator'" class="p-4 container mx-auto max-w-5xl animate-fade-in">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div v-if="!showCalcForm" @click="showCalcForm = true" class="w-full py-8 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 cursor-pointer flex flex-col items-center justify-center gap-2 transition">
+                            <span class="text-4xl">➕</span><span>Calculate New Paycheck</span>
+                        </div>
+                        <div v-if="showCalcForm" class="space-y-4">
+                            <div class="flex justify-between border-b pb-2"><h3 class="font-bold uppercase text-xs text-slate-400">Inputs</h3><button @click="showCalcForm=false" class="text-red-400 text-xs font-bold">Cancel</button></div>
+                            <input v-model="calcInputs.name" placeholder="Income Name" class="w-full p-2 border rounded">
+                            <div class="grid grid-cols-2 gap-4"><input v-model.number="calcInputs.salary" type="number" placeholder="Annual Salary" class="p-2 border rounded"><select v-model="calcInputs.payFrequency" class="p-2 border rounded"><option value="Semi-Monthly">Semi-Monthly</option><option value="Bi-Weekly">Bi-Weekly</option><option value="Monthly">Monthly</option></select></div>
+                            <div class="grid grid-cols-3 gap-2"><input v-model.number="calcInputs.medical" type="number" placeholder="Medical $" class="p-2 border rounded"><input v-model.number="calcInputs.dental" type="number" placeholder="Dental $" class="p-2 border rounded"><input v-model.number="calcInputs.trad401k" type="number" placeholder="401k %" class="p-2 border rounded"></div>
+                            <button @click="calculateAndSave('default')" class="w-full bg-slate-900 text-white font-bold py-2 rounded hover:bg-slate-700">Calculate & Save</button>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div v-if="calcResult" class="bg-slate-900 text-white p-6 rounded-2xl shadow-lg"><h2 class="font-bold text-emerald-400 mb-4">Result</h2><div class="flex justify-between text-xl font-bold"><span>Net Pay:</span><span>${{ calcResult.netPay.toFixed(2) }}</span></div><p class="text-xs text-slate-400 mt-2">After taxes & deductions</p></div>
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"><h3 class="font-bold text-xs uppercase text-slate-500 mb-2">Active Incomes</h3><div v-for="inc in incomes" :key="inc.id" class="flex justify-between p-2 border-b dark:border-slate-700 last:border-0"><span>{{ inc.name }}</span><span class="font-mono font-bold">${{ inc.amount }}</span></div></div>
                     </div>
                 </div>
             </main>
@@ -233,7 +256,7 @@
                             </tr>
                             <tr v-for="item in budgetItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
                                 <td class="p-4 font-medium text-slate-800 dark:text-white">{{ item.name }}</td>
-                                <td class="p-4 font-mono font-bold text-slate-600 dark:text-gray-300">${{ item.amount.toFixed(2) }}</td>
+                                <td class="p-4 font-mono font-bold text-slate-600 dark:text-gray-300">${{ Number(item.amount).toFixed(2) }}</td>
                                 <td class="p-4 text-sm text-gray-500">
                                     <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">{{ item.frequency }}</span>
                                 </td>
@@ -250,6 +273,24 @@
             <main v-if="currentView === 'forecast'" class="p-4 container mx-auto animate-fade-in">
                 <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 h-96">
                     <canvas id="forecastChart"></canvas>
+                </div>
+            </main>
+
+            <main v-if="currentView === 'debt'" class="p-4 container mx-auto max-w-5xl animate-fade-in">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1 space-y-4">
+                        <button @click="showDebtForm = true" class="w-full bg-white dark:bg-slate-800 p-4 rounded-xl border-2 border-dashed border-slate-300 font-bold text-slate-500 hover:border-blue-500 hover:text-blue-500 transition">+ Add Liability</button>
+                        <div v-for="debt in debts" :key="debt.id" class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                            <div class="flex justify-between"><span class="font-bold">{{ debt.name }}</span><span class="font-mono font-bold">${{ Number(debt.balance).toLocaleString() }}</span></div>
+                            <div class="text-xs text-slate-500 mt-1">{{ debt.rate }}% APR • Min: ${{ debt.min_payment }}</div>
+                            <button @click="deleteDebt(debt)" class="text-xs text-red-400 mt-2 hover:underline">Remove</button>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 bg-slate-900 text-white p-6 rounded-2xl shadow-xl">
+                        <h2 class="text-2xl font-bold mb-4">Debt Snowball</h2>
+                        <div class="flex justify-between items-end mb-6"><div><div class="text-xs text-slate-400 uppercase">Debt Free By</div><div class="text-4xl font-bold text-emerald-400">{{ debtPlan.payoffDate }}</div></div><div><div class="text-xs text-slate-400 uppercase text-right">Total Interest</div><div class="text-xl font-bold text-red-400">${{ debtPlan.totalInterest.toLocaleString() }}</div></div></div>
+                        <div class="bg-slate-800 p-4 rounded-lg"><div class="flex justify-between text-sm mb-2 font-bold"><span>Extra Monthly Payment</span><span class="text-emerald-400">${{ extraDebtPayment }}</span></div><input type="range" v-model.number="extraDebtPayment" min="0" max="5000" step="50" class="w-full accent-emerald-500 cursor-pointer"></div>
+                    </div>
                 </div>
             </main>
 
@@ -388,6 +429,20 @@
                     <button @click="showImageModal = false" class="absolute -top-12 right-0 text-white text-4xl hover:text-gray-300 transition">&times;</button>
                 </div>
             </div>
+            
+            <div v-if="showDebtForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-sm">
+                    <h3 class="font-bold mb-4 dark:text-white">Add Liability</h3>
+                    <input v-model="newDebt.name" placeholder="Name" class="w-full p-2 border rounded mb-2 dark:bg-slate-700 dark:border-gray-600 dark:text-white">
+                    <input v-model="newDebt.balance" type="number" placeholder="Balance" class="w-full p-2 border rounded mb-2 dark:bg-slate-700 dark:border-gray-600 dark:text-white">
+                    <input v-model="newDebt.rate" type="number" placeholder="Interest Rate %" class="w-full p-2 border rounded mb-2 dark:bg-slate-700 dark:border-gray-600 dark:text-white">
+                    <input v-model="newDebt.min_payment" type="number" placeholder="Min Payment" class="w-full p-2 border rounded mb-4 dark:bg-slate-700 dark:border-gray-600 dark:text-white">
+                    <div class="flex gap-2">
+                        <button @click="addDebt" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold">Save</button>
+                        <button @click="showDebtForm=false" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 rounded font-bold">Cancel</button>
+                    </div>
+                </div>
+            </div>
 
             <button @click="startVoiceEntry" class="fixed bottom-6 right-6 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white p-4 rounded-full shadow-lg z-40 transition-transform hover:scale-105 group border-2 border-white dark:border-gray-800">
                 <span v-if="isListening" class="animate-pulse font-bold text-sm">🎙️ Listening...</span>
@@ -414,7 +469,7 @@
 
     const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // --- GLOBAL UTILITIES ---
+    // --- UTILITIES ---
     const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
     
     const getMonthlyCost = (i) => {
@@ -476,7 +531,7 @@
             const selectedCard = ref(null);
             const cardLogs = ref([]);
             const logInput = ref({ amount: '', description: '' });
-            const openOwners = ref({}); // Track which folders are open
+            const openOwners = ref({}); // Track open accordion folders
 
             // Modals & Forms
             const showAddForm = ref(false), isEditing = ref(false), editingId = ref(null);
@@ -492,15 +547,17 @@
             const dashboardMode = ref('standard'), currentScenarioMode = ref('survival');
             const lowPointData = ref({ amount: 0, date: '-' });
 
-            // Calc State
+            // Calc & Debt State
             const calcInputs = ref({ name: '', salary: 0, commission: 0, medical: 0, dental: 0, fsa: 0, postTax: 0, trad401k: 0, roth401k: 0, match401k: 0, nextPayDate: '', payFrequency: 'Semi-Monthly', filingStatus: 'Single', stateTaxRate: 0, dependents: 0, extraWithholding: 0 });
             const calcResult = ref(null);
+            const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' }), extraDebtPayment = ref(0), showDebtForm = ref(false), editingDebtId = ref(null);
+            const showCalcForm = ref(false);
 
             let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
 
             // --- COMPUTED PROPERTIES ---
 
-            // ** NEW: Group Gift Cards by Owner **
+            // ** Group Gift Cards by Owner **
             const groupedGiftCards = computed(() => {
                 const groups = {};
                 giftCards.value.forEach(card => {
@@ -521,96 +578,67 @@
             const safeToSpend = computed(() => { if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value); if (dashboardMode.value === 'dream') { let burn = 0; budgetItems.value.forEach(i => { if (i.is_wishlist) { burn += getMonthlyCost(i); } else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i); } }); return round(activeMonthlyPay.value - burn); } const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc,i) => acc + getMonthlyCost(i), 0); return round(activeMonthlyPay.value - standardBurn); });
             const totalMonthlyRetirementContribution = computed(() => incomes.value.reduce((sum, inc) => { const salary = Number(inc.details?.salary || 0); const rate = (Number(inc.details?.trad401k || 0) + Number(inc.details?.roth401k || 0) + Number(inc.details?.match401k || 0)) / 100; return sum + ((salary / 12) * rate); }, 0));
             const retirementProjection = computed(() => { const P = Number(forecastSettings.value.retirementBalance || 0); const PMT = totalMonthlyRetirementContribution.value; const r = (Number(forecastSettings.value.expectedReturn || 7) / 100); const n = 12; const t = Math.max(0, Number(forecastSettings.value.retirementAge) - Number(forecastSettings.value.currentAge)); if (t <= 0) return P; const fvLumpSum = P * Math.pow((1 + r/n), (n*t)); const fvContrib = PMT * ( (Math.pow((1 + r/n), (n*t)) - 1) / (r/n) ); return fvLumpSum + fvContrib; });
+            const debtPlan = computed(() => { if (debts.value.length === 0) return { payoffDate: 'N/A', totalInterest: 0, savedInterest: 0, timeline: [] }; const simulate = (extra) => { let simDebts = JSON.parse(JSON.stringify(debts.value)).map(d => ({ ...d, balance: Number(d.balance), rate: Number(d.rate), min: Number(d.min_payment), paid_off: false })); let totalInterest = 0, months = 0, timeline = [], active = true, permanentSnowball = extra; while (active && months < 480) { months++; let anyBalanceLeft = false, monthlySurplus = permanentSnowball; for (let d of simDebts) { if (d.paid_off) { monthlySurplus += d.min; continue; } anyBalanceLeft = true; let interest = d.balance * (d.rate / 100 / 12); totalInterest += interest; d.balance += interest; let payment = Math.min(d.balance, d.min); d.balance -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }); monthlySurplus += (d.min - payment); } } for (let d of simDebts) { if (d.paid_off) continue; if (monthlySurplus <= 0) break; let payment = Math.min(d.balance, monthlySurplus); d.balance -= payment; monthlySurplus -= payment; if (d.balance < 0.01) { d.balance = 0; d.paid_off = true; timeline.push({ date: `Month ${months}`, action: `PAID OFF: ${d.name}`, remaining: 0 }); } } if (!anyBalanceLeft) active = false; } return { months, totalInterest, timeline }; }; const base = simulate(0); const attack = simulate(extraDebtPayment.value); const now = new Date(); now.setMonth(now.getMonth() + attack.months); return { payoffDate: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), totalInterest: round(attack.totalInterest), savedInterest: round(base.totalInterest - attack.totalInterest), timeline: attack.timeline }; });
 
             // --- HELPER FUNCTIONS ---
             const toggleDarkMode = () => { isDarkMode.value = !isDarkMode.value; if(isDarkMode.value) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light'); };
             const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
             const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; window.location.reload(); };
 
-            // --- DATA FETCHING ---
-            const fetchBudgetItems = async () => { const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); if (data) { budgetItems.value = data.map(i => ({...i, includedInScenario: false})); setScenarioMode('survival'); } };
-            const fetchIncomes = async () => { const { data } = await _supabase.from('incomes').select('*').order('created_at', { ascending: true }); if (data) incomes.value = data; };
-            const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if (data) bills.value = data.sort((a,b)=>a.due_date>b.due_date?1:-1); };
+            // --- DATA FETCHING (Ensuring Numbers) ---
+            const fetchBudgetItems = async () => { 
+                const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
+                if (data) { 
+                    // CRITICAL: Cast 'amount' to Number to prevent table crashes
+                    budgetItems.value = data.map(i => ({...i, amount: Number(i.amount), includedInScenario: false})); 
+                    setScenarioMode('survival'); 
+                } 
+            };
+            const fetchIncomes = async () => { 
+                const { data } = await _supabase.from('incomes').select('*').order('created_at', { ascending: true }); 
+                if (data) incomes.value = data.map(i => ({...i, amount: Number(i.amount)})); 
+            };
+            const fetchBills = async () => { 
+                const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); 
+                if (data) bills.value = data.sort((a,b)=>a.due_date>b.due_date?1:-1); 
+            };
+            const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data; };
             const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { if (data.current_balance !== null) forecastSettings.value.currentBalance = data.current_balance; if (data.retirement_balance !== null) forecastSettings.value.retirementBalance = data.retirement_balance; if (data.current_age !== null) forecastSettings.value.currentAge = data.current_age; if (data.retirement_age !== null) forecastSettings.value.retirementAge = data.retirement_age; if (data.expected_return !== null) forecastSettings.value.expectedReturn = data.expected_return; } };
-            const fetchGiftCards = async () => { const { data } = await _supabase.from('gift_cards').select('*').order('created_at', { ascending: false }); if (data) giftCards.value = data; };
+            const fetchGiftCards = async () => { 
+                const { data } = await _supabase.from('gift_cards').select('*').order('created_at', { ascending: false }); 
+                if (data) giftCards.value = data.map(c => ({...c, balance: Number(c.balance)})); 
+            };
 
             const setScenarioMode = (mode) => { currentScenarioMode.value = mode; const freshItems = budgetItems.value.map(item => ({...item})); freshItems.forEach(item => { if (item.frequency === 'One-Time') { item.includedInScenario = false; return; } if (mode === 'survival') item.includedInScenario = !!item.is_core; else if (mode === 'standard') item.includedInScenario = !item.is_wishlist; else if (mode === 'dream') item.includedInScenario = true; }); budgetItems.value = freshItems; };
 
             // --- GIFT CARD LOGIC ---
             const toggleOwner = (owner) => { openOwners.value[owner] = !openOwners.value[owner]; };
-            
-            const prepareAddForOwner = (owner) => { 
-                giftCardInput.value = { name: '', owner: owner, balance: '', imageData: null }; 
-                editingCardId.value = null; 
-                showGiftCardForm.value = true; 
-            };
-
-            const processGiftCardImage = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => { giftCardInput.value.imageData = e.target.result; };
-                reader.readAsDataURL(file);
-            };
+            const prepareAddForOwner = (owner) => { giftCardInput.value = { name: '', owner: owner, balance: '', imageData: null }; editingCardId.value = null; showGiftCardForm.value = true; };
+            const processGiftCardImage = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { giftCardInput.value.imageData = e.target.result; }; reader.readAsDataURL(file); };
 
             const saveGiftCard = async () => {
                 if (!giftCardInput.value.name || giftCardInput.value.balance === '') return;
                 loading.value = true;
-                
-                const payload = {
-                    user_id: session.value.user.id,
-                    name: giftCardInput.value.name,
-                    owner: giftCardInput.value.owner || 'Unassigned',
-                    balance: Number(giftCardInput.value.balance),
-                    image_data: giftCardInput.value.imageData
-                };
-                
-                if (editingCardId.value) {
-                    await _supabase.from('gift_cards').update(payload).eq('id', editingCardId.value);
-                } else {
-                    const { error } = await _supabase.from('gift_cards').insert([payload]);
-                    if (error) alert("Error: " + error.message);
-                }
-
-                await fetchGiftCards();
-                openOwners.value[payload.owner] = true; // Auto-open the owner group
-                resetGiftCardForm();
-                loading.value = false;
+                const payload = { user_id: session.value.user.id, name: giftCardInput.value.name, owner: giftCardInput.value.owner || 'Unassigned', balance: Number(giftCardInput.value.balance), image_data: giftCardInput.value.imageData };
+                if (editingCardId.value) await _supabase.from('gift_cards').update(payload).eq('id', editingCardId.value);
+                else { const { error } = await _supabase.from('gift_cards').insert([payload]); if (error) alert("Error: " + error.message); }
+                await fetchGiftCards(); openOwners.value[payload.owner] = true; resetGiftCardForm(); loading.value = false;
             };
 
             const resetGiftCardForm = () => { giftCardInput.value = { name: '', owner: '', balance: '', imageData: null }; editingCardId.value = null; showGiftCardForm.value = false; };
             const editGiftCard = (card) => { giftCardInput.value = { name: card.name, owner: card.owner, balance: card.balance, imageData: card.image_data }; editingCardId.value = card.id; showGiftCardForm.value = true; };
             const deleteGiftCard = async (id) => { if(!confirm("Delete this card?")) return; await _supabase.from('gift_cards').delete().eq('id', id); fetchGiftCards(); showGiftCardForm.value = false; };
             
-            // History & Logging
-            const manageCard = async (card) => { 
-                selectedCard.value = card; 
-                const { data } = await _supabase.from('gift_card_logs').select('*').eq('gift_card_id', card.id).order('created_at', { ascending: false }); 
-                cardLogs.value = data || []; 
-                showCardModal.value = true; 
-            };
-            
+            const manageCard = async (card) => { selectedCard.value = card; const { data } = await _supabase.from('gift_card_logs').select('*').eq('gift_card_id', card.id).order('created_at', { ascending: false }); cardLogs.value = data || []; showCardModal.value = true; };
             const logCardPurchase = async () => {
                 if (!logInput.value.amount) return;
                 const amt = Number(logInput.value.amount);
-                
-                // 1. Log
                 await _supabase.from('gift_card_logs').insert([{ gift_card_id: selectedCard.value.id, amount: amt, description: logInput.value.description }]);
-                
-                // 2. Update Balance
                 const newBal = Number(selectedCard.value.balance) - amt;
                 await _supabase.from('gift_cards').update({ balance: newBal }).eq('id', selectedCard.value.id);
-                
-                // 3. UI Update
-                selectedCard.value.balance = newBal;
-                // Update the card in the main list instantly
-                const cardIndex = giftCards.value.findIndex(c => c.id === selectedCard.value.id);
-                if (cardIndex !== -1) giftCards.value[cardIndex].balance = newBal;
-
-                logInput.value = { amount: '', description: '' };
-                await manageCard(selectedCard.value);
+                selectedCard.value.balance = newBal; const cardIndex = giftCards.value.findIndex(c => c.id === selectedCard.value.id); if (cardIndex !== -1) giftCards.value[cardIndex].balance = newBal;
+                logInput.value = { amount: '', description: '' }; await manageCard(selectedCard.value);
             };
-
             const viewCardImage = (card) => { selectedCard.value = card; showImageModal.value = true; };
 
             // --- BUDGET ITEMS ---
@@ -624,6 +652,28 @@
             const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false }; showAddForm.value = false; };
             const deleteBudgetItem = async (item) => { if(confirm('Delete ' + item.name + '?')) { await _supabase.from('budget_items').delete().eq('id', item.id); fetchBudgetItems(); } };
 
+            // --- DEBT ---
+            const addDebt = async () => { const payload = { user_id: session.value.user.id, name: newDebt.value.name, balance: Number(newDebt.value.balance), rate: Number(newDebt.value.rate), min_payment: Number(newDebt.value.min_payment) }; await _supabase.from('debts').insert([payload]); fetchDebts(); showDebtForm.value = false; };
+            const deleteDebt = async (d) => { await _supabase.from('debts').delete().eq('id', d.id); fetchDebts(); };
+
+            // --- CALCULATOR ---
+            const calculateAndSave = async (mode) => {
+                savingBase.value = true;
+                const { name, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding } = calcInputs.value;
+                const payPeriods = 24; const grossPay = (salary / payPeriods) + (Number(commission)||0); const benefitAmt = Number(medical) + Number(dental) + Number(fsa);
+                const ficaWages = Math.max(0, grossPay - benefitAmt); const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0);
+                const tradAmt = grossPay * (Number(trad401k) / 100); const rothAmt = grossPay * (Number(roth401k) / 100); const taxable = grossPay - tradAmt - benefitAmt; const annualTaxable = Math.max(0, (taxable * payPeriods));
+                let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods); if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods); if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding); fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod);
+                const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100); const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax; const finalPay = round(net);
+                calcResult.value = { gross: round(grossPay), netPay: finalPay };
+                
+                if (mode === 'default') {
+                    const payload = { user_id: session.value.user.id, name: name || 'New Income', amount: finalPay, frequency: payFrequency, next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], details: { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding } };
+                    await _supabase.from('incomes').insert([payload]); await fetchIncomes(); showCalcForm.value = false; 
+                }
+                savingBase.value = false;
+            };
+
             // --- VOICE ENTRY ---
             const startVoiceEntry = () => {
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -631,30 +681,20 @@
                 const r = new SR(); r.lang = 'en-US';
                 r.onstart = () => isListening.value = true;
                 r.onend = () => isListening.value = false;
-                
-                recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript.toLowerCase();
-                    const amountMatch = transcript.match(/(\d+(\.\d{1,2})?)/);
-                    const amount = amountMatch ? amountMatch[0] : '';
-
-                    // 1. Check if it matches a Gift Card Name
-                    const foundCard = giftCards.value.find(c => transcript.includes(c.name.toLowerCase()));
-                    
-                    if (foundCard) {
-                        selectedCard.value = foundCard;
-                        logInput.value = { amount: amount, description: transcript.replace(foundCard.name.toLowerCase(), '').trim() };
-                        manageCard(foundCard);
-                    } else {
-                        // Just an alert for now if no match
-                        alert("Heard: " + transcript + ". No matching gift card found.");
-                    }
+                r.onresult = (e) => {
+                    const t = e.results[0][0].transcript.toLowerCase();
+                    const amtMatch = t.match(/(\d+(\.\d{1,2})?)/);
+                    const amt = amtMatch ? amtMatch[0] : '';
+                    const foundCard = giftCards.value.find(c => t.includes(c.name.toLowerCase()));
+                    if (foundCard) { selectedCard.value = foundCard; logInput.value = { amount: amt, description: t.replace(foundCard.name.toLowerCase(), '').trim() }; manageCard(foundCard); }
+                    else { alert("Heard: " + t + ". No matching gift card found."); }
                 };
                 r.start();
             };
 
             // --- CHARTS & INIT ---
             const renderCategoryChart = () => { 
-                const ctx = document.getElementById('categoryChart'); if (!ctx || !budgetItems.value.length) return; 
+                const ctx = document.getElementById('categoryChart'); if (!ctx) return; 
                 if (categoryChartInstance) categoryChartInstance.destroy();
                 const totals = { Essentials: 0, Entertainment: 0, Other: 0 };
                 budgetItems.value.forEach(i => { totals[i.category || 'Other'] = (totals[i.category || 'Other'] || 0) + i.amount; });
@@ -672,7 +712,7 @@
             onMounted(() => {
                 _supabase.auth.getSession().then(({ data }) => { 
                     session.value = data.session; 
-                    if (session.value) { fetchSettings(); fetchIncomes(); fetchBudgetItems(); fetchBills(); fetchGiftCards(); } 
+                    if (session.value) { fetchSettings(); fetchIncomes(); fetchBudgetItems(); fetchBills(); fetchDebts(); fetchGiftCards(); } 
                 });
                 _supabase.auth.onAuthStateChange((_, s) => session.value = s);
             });
@@ -685,8 +725,10 @@
                 showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage,
                 isListening, startVoiceEntry, toggleChartMode: () => showChartPercentages.value = !showChartPercentages.value,
                 categories, activeMonthlyPay, totalMonthlyRetirementContribution, totalMonthlyBurn, getMonthlyCost, getDaysLeft, formatDate,
-                // Add showImpulseModal to return so dashboard button works
-                showImpulseModal, impulseItem, checkImpulse: () => alert("Impulse Check Logic Here")
+                showImpulseModal, impulseItem, checkImpulse: () => alert("Impulse Check Logic Here"),
+                // Calc & Debt
+                calcInputs, calcResult, calculateAndSave, showCalcForm,
+                debts, newDebt, extraDebtPayment, debtPlan, showDebtForm, addDebt, deleteDebt
             };
         }
     }).mount('#app');
