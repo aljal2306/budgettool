@@ -417,7 +417,7 @@
 
                     <transition name="fade">
                         <div v-if="showExpenseModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-                            <div class="bg-white rounded-2xl shadow-2xl w-[95%] max-w-sm p-6 transform transition-all scale-100">
+                            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-4 sm:p-6 transform transition-all scale-100">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="font-bold text-lg text-slate-800">💸 {{ editingExpenseId ? 'Edit Expense' : 'Log Expense' }}</h3>
                                     <button @click="showExpenseModal=false" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
@@ -425,7 +425,7 @@
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Category</label>
-                                        <select v-model="expenseData.budgetId" class="w-full p-3 border rounded-xl bg-slate-50 text-sm">
+                                        <select v-model="expenseData.budgetId" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
                                             <option value="" disabled>Select a Budget...</option>
                                             <option v-for="item in variableBudgets" :key="item.id" :value="item.id">
                                                 {{ item.name }} ({{ item.remaining < 0 ? 'Over' : 'Left' }}: ${{ Math.round(item.remaining) }})
@@ -435,9 +435,10 @@
                                     <input v-model="expenseData.description" type="text" placeholder="Description (e.g. HEB, Shell)" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
                                     
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <input v-model="expenseData.amount" type="number" placeholder="Amount ($)" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
-                                        <input v-model="expenseData.date" type="date" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
+                                        <input v-model="expenseData.amount" type="number" placeholder="Amount ($)" class="w-full min-w-0 p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
+                                        <input v-model="expenseData.date" type="date" class="w-full min-w-0 p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
                                     </div>
+                                    
                                     <button @click="logExpense" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-700 transition shadow-lg">{{ editingExpenseId ? 'Update Expense' : 'Save Expense' }}</button>
                                 </div>
                             </div>
