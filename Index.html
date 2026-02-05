@@ -624,8 +624,23 @@
 
             const resetGiftCardForm = () => { giftCardInput.value = { name: '', owner: '', balance: '', imageData: null }; editingCardId.value = null; showGiftCardForm.value = false; };
             const editGiftCard = (card) => { giftCardInput.value = { name: card.name, owner: card.owner, balance: card.balance, imageData: card.image_data }; editingCardId.value = card.id; showGiftCardForm.value = true; };
-            const deleteGiftCard = async (id) => { if(!confirm("Delete this card?")) return; await _supabase.from('gift_cards').delete().eq('id', id); fetchGiftCards(); showGiftCardForm.value = false; };
-            
+            const deleteGiftCard = async (id) => { 
+                if(!confirm("Are you sure you want to delete this gift card? This action cannot be undone.")) return;
+                
+                loading.value = true;
+                
+                const { error } = await _supabase.from('gift_cards').delete().eq('id', id);
+                
+                if (error) { 
+                    alert("Error deleting card: " + error.message); 
+                } else {
+                    await fetchGiftCards(); 
+                    showGiftCardForm.value = false; 
+                    editingCardId.value = null; // Clear the editing ID
+                }
+                
+                loading.value = false; 
+            };
             const manageCard = async (card) => { selectedCard.value = card; const { data } = await _supabase.from('gift_card_logs').select('*').eq('gift_card_id', card.id).order('created_at', { ascending: false }); cardLogs.value = data || []; showCardModal.value = true; };
             const logCardPurchase = async () => {
                 if (!logInput.value.amount) return;
