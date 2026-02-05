@@ -332,11 +332,117 @@
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                                 <div id="tour-paycheck-trigger"><button v-if="!showCalcForm" @click="showCalcForm = true" class="w-full py-8 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition flex flex-col items-center justify-center gap-2 group"><span class="text-4xl group-hover:scale-110 transition duration-300">➕</span><span>Calculate Paycheck / Add Income</span></button></div>
-                                <div v-if="showCalcForm" class="space-y-4 animate-fade-in">
-                                    <div class="flex justify-between items-center mb-2 pb-2 border-b dark:border-slate-700"><h3 class="text-xs font-bold text-slate-400 uppercase">New Calculation</h3><button @click="showCalcForm = false" class="text-xs text-red-400 hover:text-red-600 font-bold bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded">Cancel</button></div>
-                                    <input v-model="calcInputs.name" placeholder="Income Name" class="w-full p-2 border rounded">
-                                    <div class="grid grid-cols-2 gap-4"><input v-model.number="calcInputs.salary" type="number" placeholder="Annual Salary" class="p-2 border rounded"><select v-model="calcInputs.payFrequency" class="p-2 border rounded"><option value="Semi-Monthly">Semi-Monthly</option><option value="Bi-Weekly">Bi-Weekly</option><option value="Monthly">Monthly</option></select></div>
-                                    <button @click="calculateAndSave('default')" class="w-full bg-slate-900 text-white font-bold py-2 rounded hover:bg-slate-700">Calculate & Save</button>
+                                <div v-if="showCalcForm" class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 animate-fade-in space-y-4">
+                                    
+                                    <div class="flex justify-between items-center border-b dark:border-slate-700 pb-2">
+                                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Paycheck Details</h3>
+                                        <button @click="showCalcForm = false" class="text-xs text-red-400 hover:text-red-600 font-bold px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-slate-800">Cancel</button>
+                                    </div>
+
+                                    <div class="space-y-3">
+                                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">General Info</label>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <input v-model="calcInputs.name" type="text" placeholder="Income Name (e.g. Job 1)" class="p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            <input v-model="calcInputs.nextPayDate" type="date" class="p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="relative">
+                                                <span class="absolute left-2 top-2 text-slate-400 text-xs">$</span>
+                                                <input v-model.number="calcInputs.salary" type="number" placeholder="Annual Salary" class="w-full pl-6 p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                            <select v-model="calcInputs.payFrequency" class="p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                                <option value="Semi-Monthly">Semi-Monthly (15th/30th)</option>
+                                                <option value="Bi-Weekly">Bi-Weekly (Every 2wks)</option>
+                                                <option value="Monthly">Monthly</option>
+                                            </select>
+                                        </div>
+                                        <div class="relative">
+                                            <span class="absolute left-2 top-2 text-slate-400 text-xs">$</span>
+                                            <input v-model.number="calcInputs.commission" type="number" placeholder="Commission / Bonus (Per Pay Period)" class="w-full pl-6 p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                        </div>
+                                    </div>
+
+                                    <hr class="dark:border-slate-700">
+
+                                    <div class="space-y-3">
+                                        <label class="block text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">Pre-Tax Deductions (Per Paycheck)</label>
+                                        <div class="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">Medical ($)</label>
+                                                <input v-model.number="calcInputs.medical" type="number" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">Dental ($)</label>
+                                                <input v-model.number="calcInputs.dental" type="number" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">FSA/HSA ($)</label>
+                                                <input v-model.number="calcInputs.fsa" type="number" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">Trad 401k (%)</label>
+                                                <input v-model.number="calcInputs.trad401k" type="number" placeholder="%" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">Employer Match (%)</label>
+                                                <input v-model.number="calcInputs.match401k" type="number" placeholder="%" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="dark:border-slate-700">
+
+                                    <div class="space-y-3">
+                                        <label class="block text-xs font-bold text-orange-600 dark:text-orange-400 uppercase">Taxes & Status</label>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <select v-model="calcInputs.filingStatus" class="p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                                <option value="Single">Single</option>
+                                                <option value="Married">Married Filing Jointly</option>
+                                                <option value="Head">Head of Household</option>
+                                            </select>
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">State Tax Rate (%)</label>
+                                                <input v-model.number="calcInputs.stateTaxRate" type="number" step="0.1" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">Dependents ($ Credit)</label>
+                                                <input v-model.number="calcInputs.dependents" type="number" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">Extra Withholding ($)</label>
+                                                <input v-model.number="calcInputs.extraWithholding" type="number" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="dark:border-slate-700">
+
+                                    <div class="space-y-3">
+                                        <label class="block text-xs font-bold text-purple-600 dark:text-purple-400 uppercase">Post-Tax Deductions</label>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">Roth 401k (%)</label>
+                                                <input v-model.number="calcInputs.roth401k" type="number" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] text-slate-400">Other Post-Tax ($)</label>
+                                                <input v-model.number="calcInputs.postTax" type="number" class="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-3 pt-2">
+                                        <button @click="calculateAndSave('default')" class="flex-1 bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90">
+                                            Save to Profile
+                                        </button>
+                                        <button @click="calculateAndSave('temp')" class="flex-1 bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 font-bold py-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/30">
+                                            Run as Simulation
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="space-y-4">
