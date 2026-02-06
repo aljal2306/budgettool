@@ -687,116 +687,123 @@
                     </div>
                         </transition>
                     </div>
-                    <div v-if="currentView==='forecast'" class="animate-fade-in">
-                        <div class="w-full flex justify-end mb-4 print:hidden"><button @click="startForecastTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Tour This Tab</button></div>
-                        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                            <div class="lg:col-span-1 space-y-4 print:hidden">
-                                <div id="tour-goal-project">
-                                    <div @click="showScenarioModal = true" class="bg-gradient-to-br from-cyan-800 to-blue-900 text-white p-6 rounded-2xl shadow-lg cursor-pointer relative overflow-hidden group hover:scale-[1.01] transition-transform duration-200">
-                                        <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl group-hover:scale-110 transition-transform duration-500">🔮</div>
-                                        
-                                        <div class="relative z-10 flex justify-between items-start">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10">
-                                                    🔭
-                                                </div>
-                                                <div>
-                                                    <h3 class="font-bold text-lg tracking-tight">Future Scenarios</h3>
-                                                    <p class="text-cyan-200 text-xs font-medium">{{ filledScenarioCount }} / 3 Slots Used</p>
-                                                </div>
-                                            </div>
-                                            <button class="bg-cyan-500 hover:bg-cyan-400 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-lg shadow-cyan-500/20 transition">
-                                                Manage
-                                            </button>
-                                        </div>
+                    <div v-if="currentView === 'forecast'" class="space-y-6 pb-24 animate-fade-in">
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    <div @click="showRetirementModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-purple-400 transition relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-purple-500/10 rounded-bl-full -mr-2 -mt-2 transition group-hover:bg-purple-500/20"></div>
+                        <div class="flex justify-between items-start relative z-10">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Nest Egg</h3>
+                                <div class="text-2xl font-bold text-slate-900 dark:text-white">${{ Math.round(retirementProjection).toLocaleString() }}</div>
+                                <div class="text-[10px] text-purple-500 font-bold mt-1">
+                                    Projected at Age {{ forecastSettings.retirementAge }}
+                                </div>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                🥚
+                            </div>
+                        </div>
+                    </div>
 
-                                        <div class="mt-6 relative z-10">
-                                            <p class="text-cyan-300 text-xs uppercase tracking-widest font-bold mb-1">Active Target</p>
-                                            <div class="text-2xl font-black tracking-tight text-white truncate">
-                                                {{ project ? project.name : 'No Goal Set' }}
-                                            </div>
-                                            <div v-if="project" class="text-xs text-cyan-100 opacity-80 mt-1">
-                                                Cost: ${{ project.cost.toLocaleString() }}
-                                            </div>
-                                        </div>
+                    <div @click="showScenarioModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-blue-400 transition relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-blue-500/10 rounded-bl-full -mr-2 -mt-2 transition group-hover:bg-blue-500/20"></div>
+                        <div class="flex justify-between items-start relative z-10">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Active Scenario</h3>
+                                <div class="text-xl font-bold text-slate-900 dark:text-white capitalize">
+                                    {{ forecastMode === 'survival' ? 'Survival Mode' : (forecastMode === 'dream' ? 'Dream Mode' : 'Standard Plan') }}
+                                </div>
+                                <div class="text-[10px] text-blue-500 font-bold mt-1">
+                                    {{ filledScenarioCount }} Saved Scenarios
+                                </div>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                🚀
+                            </div>
+                        </div>
+                    </div>
+
+                    <div @click="showForecastSettings = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-green-400 transition relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-green-500/10 rounded-bl-full -mr-2 -mt-2 transition group-hover:bg-green-500/20"></div>
+                        <div class="flex justify-between items-start relative z-10">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Cash Flow Engine</h3>
+                                <div class="text-2xl font-bold text-slate-900 dark:text-white">${{ forecastSettings.currentBalance.toLocaleString() }}</div>
+                                <div class="text-[10px] text-green-600 dark:text-green-400 font-bold mt-1">
+                                    Starting Balance
+                                </div>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                                💳
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="tour-forecast-chart" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 h-64">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+                
+                <div id="tour-monthly-details" class="space-y-3">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Monthly Breakdown</h3>
+                    
+                    <div v-for="(month, index) in forecastData" :key="index" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                        <div @click="month.isOpen = !month.isOpen" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                            <div class="flex items-center gap-3">
+                                <div class="w-2 h-8 rounded-full" :class="month.endBalance >= forecastSettings.safetyMargin ? 'bg-green-500' : 'bg-red-500'"></div>
+                                <div>
+                                    <div class="font-bold text-slate-700 dark:text-white">{{ month.name }}</div>
+                                    <div class="text-xs text-slate-400">
+                                        End: <span :class="month.endBalance >= forecastSettings.safetyMargin ? 'text-green-600 dark:text-green-400' : 'text-red-500 font-bold'">${{ month.endBalance.toLocaleString() }}</span>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="text-slate-400 text-xs">
+                                {{ month.isOpen ? 'Close' : 'Details' }}
+                            </div>
+                        </div>
 
-                                <transition name="fade">
-                                    <div v-if="showScenarioModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                                        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700 max-h-[90vh]">
-                                            
-                                            <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center">
-                                                <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                                    <span>🔮</span> Scenario Manager
-                                                </h2>
-                                                <button @click="showScenarioModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">
-                                                    &times;
-                                                </button>
-                                            </div>
+                        <div v-if="month.isOpen" class="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-100 dark:border-slate-700 text-sm space-y-3 animate-slide-down">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-500 dark:text-slate-400">Income (Net)</span>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" v-model="month.income" @change="updateMonthIncome(month)" class="w-24 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-right text-slate-700 dark:text-white outline-none focus:border-blue-500">
+                                    <button v-if="useTempPay" @click="month.income = tempCalculatedPay; updateMonthIncome(month)" class="text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200">Use Calc</button>
+                                </div>
+                            </div>
 
-                                            <div class="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
-                                                
-                                                <div>
-                                                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Saved Forecasts</h3>
-                                                    <div class="space-y-3">
-                                                        <div v-for="i in 3" :key="i" class="flex items-center justify-between p-3 bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm transition hover:border-blue-300">
-                                                            <div class="flex items-center gap-3 overflow-hidden">
-                                                                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-slate-500 bg-slate-100 dark:bg-slate-600 dark:text-slate-300 text-xs">
-                                                                    {{ i }}
-                                                                </div>
-                                                                <div class="min-w-0">
-                                                                    <div v-if="savedForecasts[i-1]" class="font-bold text-sm text-slate-800 dark:text-white truncate">
-                                                                        {{ savedForecasts[i-1].name }}
-                                                                    </div>
-                                                                    <div v-else class="text-xs text-slate-400 italic">Empty Slot</div>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <div class="flex gap-1">
-                                                                <template v-if="savedForecasts[i-1]">
-                                                                    <button @click="loadForecastSlot(i-1); showScenarioModal=false; showForecastDetails = true" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold" title="Load">📂</button>
-                                                                    <button @click="saveForecastSlot(i-1)" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xs font-bold" title="Overwrite">💾</button>
-                                                                    <button @click="clearForecastSlot(i-1)" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg text-xs font-bold" title="Delete">🗑️</button>
-                                                                </template>
-                                                                <button v-else @click="saveForecastSlot(i-1)" class="px-3 py-2 bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-200 rounded-lg text-xs font-bold">
-                                                                    + Save Current
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-500 dark:text-slate-400">Expenses</span>
+                                <span class="text-red-500 font-mono">-${{ month.burn.toLocaleString() }}</span>
+                            </div>
 
-                                                <div class="pt-6 border-t dark:border-slate-700">
-                                                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Financial Target</h3>
-                                                    
-                                                    <div v-if="project" class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 flex justify-between items-center">
-                                                        <div>
-                                                            <div class="font-bold text-blue-900 dark:text-blue-300">{{ project.name }}</div>
-                                                            <div class="text-lg font-black text-blue-700 dark:text-blue-400">${{ project.cost.toLocaleString() }}</div>
-                                                            <div class="mt-1 text-xs font-bold" :class="forecastResults.affordableMonth ? 'text-emerald-600' : 'text-red-500'">
-                                                                {{ forecastResults.affordableMonth ? '✅ Affordable: ' + forecastResults.affordableMonth : '❌ Not affordable yet' }}
-                                                            </div>
-                                                        </div>
-                                                        <button @click="project = null; runForecast()" class="text-xs bg-white text-red-500 border border-red-100 px-3 py-2 rounded-lg font-bold hover:bg-red-50">
-                                                            Remove
-                                                        </button>
-                                                    </div>
-
-                                                    <div v-else class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
-                                                        <div class="space-y-3">
-                                                            <input v-model="newProject.name" placeholder="Goal Name (e.g. Tesla)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
-                                                            <div class="flex gap-2">
-                                                                <input v-model="newProject.cost" type="number" placeholder="Cost ($)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
-                                                                <button @click="saveProject" class="bg-slate-900 dark:bg-blue-600 text-white px-4 rounded-lg font-bold text-sm whitespace-nowrap">Set Goal</button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                            </div>
-                                        </div>
+                            <div v-if="month.extraExpenses.length > 0" class="space-y-1 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                <div v-for="(ex, i) in month.extraExpenses" :key="i" class="flex justify-between text-xs">
+                                    <span class="text-slate-500">{{ ex.name }}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-red-500">-${{ ex.amount }}</span>
+                                        <button @click="removeExpense(month, i)" class="text-red-400 hover:text-red-600">×</button>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-3 flex gap-2">
+                                <select v-model="month.newExpenseId" @change="fillExpense(month)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-xs text-slate-700 dark:text-white">
+                                    <option value="" disabled selected>Add One-Off...</option>
+                                    <option v-for="item in budgetItems" :key="item.id" :value="item.id">{{ item.name }}</option>
+                                </select>
+                                <input type="text" v-model="month.newExpenseName" placeholder="Name" class="w-1/4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-xs text-slate-700 dark:text-white">
+                                <input type="number" v-model="month.newExpenseAmount" placeholder="$" class="w-16 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-xs text-slate-700 dark:text-white">
+                                <button @click="addExpense(month)" class="bg-blue-600 text-white px-3 rounded text-xs hover:bg-blue-500">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
                                 </transition>
 
                                <div id="tour-forecast-settings" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
