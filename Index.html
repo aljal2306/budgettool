@@ -788,60 +788,76 @@
                     </div>
                 </div>
                 
-                <div id="tour-monthly-details" class="space-y-3">
-                    <div class="flex justify-between items-end px-1">
-                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Monthly Breakdown</h3>
-                        <button @click="showForecastDetails = !showForecastDetails" class="text-xs text-blue-500 font-bold hover:underline">
-                            {{ showForecastDetails ? 'Collapse All' : 'Expand All' }}
-                        </button>
+                <div id="tour-monthly-details" class="space-y-4">
+                    
+                    <div @click="showForecastDetails = !showForecastDetails" class="flex items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-indigo-400 transition group select-none">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition">
+                                🗓️
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-700 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Monthly Breakdown</h3>
+                                <div class="text-[10px] text-slate-400">
+                                    {{ showForecastDetails ? 'Tap to close list' : 'Tap to view ' + forecastData.length + ' months' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-slate-400 transform transition duration-300" :class="showForecastDetails ? 'rotate-180' : ''">
+                            ▼
+                        </div>
                     </div>
                     
-                    <div v-for="(month, index) in forecastData" :key="index" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                        <div @click="month.isOpen = !month.isOpen" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
-                            <div class="flex items-center gap-3">
-                                <div class="w-1.5 h-8 rounded-full" :class="month.endBalance >= forecastSettings.safetyMargin ? 'bg-emerald-500' : 'bg-red-500'"></div>
-                                <div>
-                                    <div class="font-bold text-slate-700 dark:text-white text-sm">{{ month.name }}</div>
-                                    <div class="text-xs text-slate-400 flex gap-2">
-                                        <span>End: <span :class="month.endBalance >= forecastSettings.safetyMargin ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-red-500 font-bold'">${{ month.endBalance.toLocaleString(undefined, {maximumFractionDigits:0}) }}</span></span>
+                    <div v-if="showForecastDetails" class="space-y-3 animate-slide-down">
+                        <div v-for="(month, index) in forecastData" :key="index" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                            
+                            <div @click="month.isOpen = !month.isOpen" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-1.5 h-8 rounded-full" :class="month.endBalance >= forecastSettings.safetyMargin ? 'bg-emerald-500' : 'bg-red-500'"></div>
+                                    <div>
+                                        <div class="font-bold text-slate-700 dark:text-white text-sm">{{ month.name }}</div>
+                                        <div class="text-xs text-slate-400 flex gap-2">
+                                            <span>End: <span :class="month.endBalance >= forecastSettings.safetyMargin ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-red-500 font-bold'">${{ month.endBalance.toLocaleString(undefined, {maximumFractionDigits:0}) }}</span></span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="text-slate-400 text-xs transform transition duration-200" :class="month.isOpen ? 'rotate-180' : ''">
+                                    ▼
+                                </div>
                             </div>
-                            <div class="text-slate-400 text-xs transform transition duration-200" :class="month.isOpen ? 'rotate-180' : ''">▼</div>
-                        </div>
 
-                        <div v-if="month.isOpen" class="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-100 dark:border-slate-700 text-sm space-y-4 animate-slide-down">
-                            <div class="space-y-1">
-                                <div class="flex justify-between text-xs text-slate-500 uppercase font-bold">
-                                    <span>Income</span>
-                                    <span v-if="useTempPay" class="text-blue-500 cursor-pointer" @click="month.income = tempCalculatedPay; updateMonthIncome(month)">Use Calculator Pay ⚡</span>
+                            <div v-if="month.isOpen" class="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-100 dark:border-slate-700 text-sm space-y-4 animate-slide-down">
+                                <div class="space-y-1">
+                                    <div class="flex justify-between text-xs text-slate-500 uppercase font-bold">
+                                        <span>Income</span>
+                                        <span v-if="useTempPay" class="text-blue-500 cursor-pointer" @click="month.income = tempCalculatedPay; updateMonthIncome(month)">Use Calculator Pay ⚡</span>
+                                    </div>
+                                    <input type="number" v-model="month.income" @change="updateMonthIncome(month)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition">
                                 </div>
-                                <input type="number" v-model="month.income" @change="updateMonthIncome(month)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition">
-                            </div>
-                            <div class="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                                <span class="text-slate-500 dark:text-slate-400 font-medium">Monthly Burn</span>
-                                <span class="text-red-500 font-mono font-bold">-${{ month.burn.toLocaleString() }}</span>
-                            </div>
-                            <div v-if="month.extraExpenses.length > 0" class="space-y-2">
-                                <div class="text-xs text-slate-500 uppercase font-bold">One-Offs</div>
-                                <div v-for="(ex, i) in month.extraExpenses" :key="i" class="flex justify-between items-center bg-white dark:bg-slate-800 p-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                                    <span class="text-slate-600 dark:text-slate-300">{{ ex.name }}</span>
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-red-500 font-mono">-${{ ex.amount }}</span>
-                                        <button @click="removeExpense(month, i)" class="text-red-300 hover:text-red-500 font-bold">×</button>
+                                <div class="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <span class="text-slate-500 dark:text-slate-400 font-medium">Monthly Burn</span>
+                                    <span class="text-red-500 font-mono font-bold">-${{ month.burn.toLocaleString() }}</span>
+                                </div>
+                                <div v-if="month.extraExpenses.length > 0" class="space-y-2">
+                                    <div class="text-xs text-slate-500 uppercase font-bold">One-Offs</div>
+                                    <div v-for="(ex, i) in month.extraExpenses" :key="i" class="flex justify-between items-center bg-white dark:bg-slate-800 p-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                        <span class="text-slate-600 dark:text-slate-300">{{ ex.name }}</span>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-red-500 font-mono">-${{ ex.amount }}</span>
+                                            <button @click="removeExpense(month, i)" class="text-red-300 hover:text-red-500 font-bold">×</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
-                                <div class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Add One-Time Expense</div>
-                                <div class="flex gap-2">
-                                    <select v-model="month.newExpenseId" @change="fillExpense(month)" class="w-1/3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs text-slate-700 dark:text-white outline-none">
-                                        <option value="" disabled selected>Select...</option>
-                                        <option v-for="item in budgetItems" :key="item.id" :value="item.id">{{ item.name }}</option>
-                                    </select>
-                                    <input type="text" v-model="month.newExpenseName" placeholder="Name" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs text-slate-700 dark:text-white outline-none">
-                                    <input type="number" v-model="month.newExpenseAmount" placeholder="$" class="w-20 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs text-slate-700 dark:text-white outline-none">
-                                    <button @click="addExpense(month)" class="bg-slate-900 dark:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:opacity-90">+</button>
+                                <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
+                                    <div class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Add One-Time Expense</div>
+                                    <div class="flex gap-2">
+                                        <select v-model="month.newExpenseId" @change="fillExpense(month)" class="w-1/3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs text-slate-700 dark:text-white outline-none">
+                                            <option value="" disabled selected>Select...</option>
+                                            <option v-for="item in budgetItems" :key="item.id" :value="item.id">{{ item.name }}</option>
+                                        </select>
+                                        <input type="text" v-model="month.newExpenseName" placeholder="Name" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs text-slate-700 dark:text-white outline-none">
+                                        <input type="number" v-model="month.newExpenseAmount" placeholder="$" class="w-20 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs text-slate-700 dark:text-white outline-none">
+                                        <button @click="addExpense(month)" class="bg-slate-900 dark:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:opacity-90">+</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
