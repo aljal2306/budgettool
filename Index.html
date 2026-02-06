@@ -203,20 +203,30 @@
 
          <div class="col-span-1 md:col-span-2 lg:col-span-4 mb-8">
                             <div @click="showWalletModal = true" class="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 rounded-2xl shadow-lg cursor-pointer relative overflow-hidden group hover:scale-[1.01] transition-transform duration-200">
-                              <div id="tour-gift-wallet" class="bg-white dark:bg-slate-800 ...">
-    </div>  
-                              <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl group-hover:scale-110 transition-transform duration-500">🎁</div>
-                                
-                                <div class="relative z-10 flex justify-between items-start">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10">
-                                            💳
-                                        </div>
-                                        <div>
-                                            <h3 class="font-bold text-lg tracking-tight">Gift Card Wallet</h3>
-                                            <p class="text-slate-400 text-xs font-medium">{{ giftCards.length }} Cards Stored</p>
-                                        </div>
-                                    </div>
+                              <div id="tour-gift-wallet" @click="showGiftCardModal = true" class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-pink-400 transition relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-pink-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-pink-500/20"></div>
+                
+                <div class="relative z-10 flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/30 text-pink-500 flex items-center justify-center text-sm">
+                                🎁
+                            </div>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Gift Cards</span>
+                        </div>
+                        <div class="text-2xl font-black text-slate-800 dark:text-white">
+                            ${{ giftCardTotal.toLocaleString() }}
+                        </div>
+                        <div class="text-xs text-pink-500 font-bold mt-1">
+                            {{ giftCards.length }} Active Cards
+                        </div>
+                    </div>
+                    
+                    <div class="text-slate-300 group-hover:text-pink-500 transition transform group-hover:translate-x-1">
+                        →
+                    </div>
+                </div>
+            </div>
                                     
                                     <button @click.stop="showGiftCardForm = true; giftCardInput.owner = ''" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center gap-1">
                                         <span class="text-lg leading-none">+</span> Add Card
