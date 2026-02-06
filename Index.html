@@ -1967,7 +1967,6 @@
                     // Note: We do NOT touch forecastSettings (Balance/Retirement).
                     // We use whatever is currently live in the app.
                     runForecast();
-                }
             };
             const clearForecastSlot=async(i)=>{ if(confirm("Clear?")){ await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); await fetchForecastSlots(); }};
 
