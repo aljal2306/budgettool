@@ -1915,7 +1915,46 @@
             // --- BUDGET ITEMS & MODALS ---
             const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
             const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
-            const handleSave = async () => { if (isEditing.value) await updateItem(); else await addItem(); showAddForm.value = false; };
+            const handleSave = async () => {
+                if (!newItem.value.name || !newItem.value.amount) return;
+                
+                // Calculate next due date based on day
+                let nextDate = new Date();
+                if (!newItem.value.isFlexible && newItem.value.due_day) {
+                    if (nextDate.getDate() > newItem.value.due_day) {
+                        nextDate.setMonth(nextDate.getMonth() + 1);
+                    }
+                    nextDate.setDate(newItem.value.due_day);
+                }
+
+                const payload = {
+                    user_id: user.value.id,
+                    name: newItem.value.name,
+                    amount: newItem.value.amount,
+                    frequency: newItem.value.frequency,
+                    category: newItem.value.category,
+                    is_core: newItem.value.is_core,
+                    is_variable: newItem.value.is_variable,
+                    is_wishlist: newItem.value.is_wishlist,
+                    due_day: newItem.value.due_day,
+                    next_due_date: nextDate.toISOString(),
+                    is_flexible: newItem.value.isFlexible,
+                    replaces_id: newItem.value.replaces_id,
+                    assigned_to: newItem.value.assigned_to // <--- THIS IS NEW
+                };
+
+                if (isEditing.value && newItem.value.id) {
+                    const { error } = await supabase.from('budget_items').update(payload).eq('id', newItem.value.id);
+                    if (error) console.error('Error updating:', error);
+                } else {
+                    const { error } = await supabase.from('budget_items').insert([payload]);
+                    if (error) console.error('Error adding:', error);
+                }
+                
+                showAddForm.value = false;
+                fetchBudgetItems();
+                runForecast(); // Update forecast immediately
+            };
             const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
             const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
             const deleteBudgetItem = async (item) => { 
