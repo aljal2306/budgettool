@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -232,18 +232,18 @@
 
                         <transition name="fade">
                             <div v-if="showWalletModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                                <div class="bg-white dark:bg-slate-800 w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
+                                <div class="bg-white dark:bg-slate-800 w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
                                     
                                     <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center flex-shrink-0">
                                         <div>
                                             <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                                <span>💳</span> Gift Card Wallet
+                                                <span>💳</span> My Wallet
                                             </h2>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400">Total Value: ${{ totalWalletValue.toFixed(2) }}</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400">Total: ${{ totalGiftCardBalance.toLocaleString() }}</p>
                                         </div>
-                                        <div class="flex items-center gap-3">
-                                            <button v-if="!showCardForm" @click="showCardForm = true; isEditingCard = false; newCard = { name: '', balance: '', code: '', pin: '', color: 'bg-slate-800', assigned_to: null };" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-2 rounded-lg hover:bg-indigo-100 transition hidden sm:block">
-                                                + New Card
+                                        <div class="flex gap-3">
+                                            <button @click="showGiftCardForm = true; giftCardInput.owner = ''" class="text-xs bg-emerald-50 text-emerald-600 font-bold px-3 py-2 rounded-lg hover:bg-emerald-100 transition hidden sm:block">
+                                                + Add New Card
                                             </button>
                                             <button @click="showWalletModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">
                                                 &times;
@@ -251,100 +251,73 @@
                                         </div>
                                     </div>
 
-                                    <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
-                                        
-                                        <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-100/50 dark:bg-slate-900/50">
-                                            <div v-if="walletCards.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
-                                                <div class="text-6xl opacity-20">💳</div>
-                                                <p>No gift cards yet.</p>
-                                                <button @click="showCardForm = true; isEditingCard = false; newCard = { name: '', balance: '', code: '', pin: '', color: 'bg-slate-800', assigned_to: null };" class="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-indigo-500 transition">
-                                                    Add Your First Card
-                                                </button>
-                                            </div>
+                                    <button @click="showGiftCardForm = true; giftCardInput.owner = ''" class="absolute bottom-6 right-6 bg-emerald-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-2xl font-bold z-50 sm:hidden">
+                                        +
+                                    </button>
 
-                                            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                                                <div v-for="card in walletCards" :key="card.id" class="group relative aspect-[1.586] rounded-2xl shadow-xl overflow-hidden transition-transform hover:scale-[1.02] cursor-pointer text-white flex flex-col justify-between p-5" :class="card.color || 'bg-slate-800'" @click="startEditingCard(card)">
-                                                    
-                                                    <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                                                    
-                                                    <div class="relative z-10 flex justify-between items-start">
-                                                        <span class="font-bold text-lg tracking-wider opacity-90">{{ card.name }}</span>
-                                                        <span class="text-2xl opacity-50">💳</span>
-                                                    </div>
+                                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                                        <div v-if="giftCards.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
+                                            <div class="text-4xl mb-2">📭</div>
+                                            <p>Your wallet is empty.</p>
+                                        </div>
 
-                                                    <div v-if="card.assigned_to" class="absolute top-16 right-5 bg-black/20 backdrop-blur-md text-[10px] px-2 py-1 rounded-full font-bold border border-white/10">
-                                                        👤 {{ card.assigned_to }}
-                                                    </div>
-
-                                                    <div class="relative z-10">
-                                                        <div class="text-xs opacity-75 font-mono mb-1 tracking-widest">{{ card.code || '**** **** ****' }}</div>
-                                                        <div class="flex justify-between items-end">
-                                                            <span class="text-3xl font-bold tracking-tight">${{ card.balance.toFixed(2) }}</span>
-                                                            <button @click.stop="deleteCard(card)" class="text-white/30 hover:text-white transition text-xs font-bold p-1">Delete</button>
+                                        <div v-else class="space-y-3">
+                                            <div v-for="(cards, owner) in groupedGiftCards" :key="owner" class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-800">
+                                                
+                                                <div @click="toggleOwner(owner)" class="p-4 bg-slate-50 dark:bg-slate-700/50 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition select-none group sticky top-0 z-10">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-6 h-6 flex items-center justify-center text-slate-400 transition-transform duration-200" :class="openOwners[owner] ? 'rotate-90' : ''">▶</div>
+                                                        <div>
+                                                            <h4 class="font-bold text-sm text-slate-800 dark:text-white">{{ owner }}</h4>
+                                                            <p class="text-[10px] text-slate-500 font-medium">{{ cards.length }} Cards</p>
                                                         </div>
                                                     </div>
+                                                    <div class="font-mono font-bold text-sm text-emerald-600 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-3 py-1 rounded-lg shadow-sm">
+                                                        ${{ cards.reduce((sum, c) => sum + Number(c.balance), 0).toFixed(2) }}
+                                                    </div>
                                                 </div>
+
+                                                <transition name="accordion">
+                                                    <div v-if="openOwners[owner]" class="border-t border-slate-200 dark:border-slate-700">
+                                                        <div v-for="card in cards" :key="card.id" class="p-3 flex items-center justify-between border-b dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+                                                            
+                                                            <div class="flex items-center gap-3 flex-1 min-w-0 mr-2">
+                                                                <div @click="viewCardImage(card)" class="w-10 h-10 flex-shrink-0 rounded-lg bg-slate-100 dark:bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer shadow-sm border border-slate-200 dark:border-slate-500 hover:opacity-80 transition relative">
+                                                                    <img v-if="card.image_data" :src="card.image_data" class="w-full h-full object-cover">
+                                                                    <span v-else class="text-[10px] text-slate-400">📷</span>
+                                                                </div>
+                                                                <div class="truncate">
+                                                                    <div class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ card.name }}</div>
+                                                                    <div class="text-[10px] text-slate-400">Upd: {{ formatDate(card.created_at.split('T')[0]) }}</div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="flex items-center gap-3 flex-shrink-0">
+                                                                <div class="font-mono font-bold text-slate-700 dark:text-white text-sm bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
+                                                                    ${{ Number(card.balance).toFixed(2) }}
+                                                                </div>
+                                                                <div class="flex gap-1">
+                                                                    <button @click="manageCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Log Transaction">
+                                                                        📝
+                                                                    </button>
+                                                                    <button @click="editGiftCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-orange-600 bg-white border border-slate-200 hover:border-orange-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Edit Details">
+                                                                        ⚙️
+                                                                    </button>
+                                                                    <button @click="deleteGiftCard(card.id)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 bg-white border border-slate-200 hover:border-red-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Delete Card">
+                                                                        🗑️
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="p-2 text-center bg-slate-50 dark:bg-slate-900/30 border-t dark:border-slate-700">
+                                                            <button @click="prepareAddForOwner(owner)" class="text-xs font-bold text-slate-400 hover:text-blue-500 py-2 px-4 rounded transition flex items-center justify-center gap-1 mx-auto hover:bg-white dark:hover:bg-slate-700 shadow-sm border border-transparent hover:border-slate-200">
+                                                                <span>+</span> Add another for {{ owner }}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </transition>
                                             </div>
                                         </div>
-
-                                        <div v-if="showCardForm" class="md:w-80 bg-slate-50 dark:bg-slate-900/50 border-t md:border-t-0 md:border-l dark:border-slate-700 p-6 overflow-y-auto flex-shrink-0 transition-all">
-                                            <h4 class="text-sm font-bold text-slate-800 dark:text-white mb-4">{{ isEditingCard ? 'Edit Card' : 'Add New Card' }}</h4>
-                                            
-                                            <div class="space-y-4">
-                                                <div>
-                                                    <label class="block text-xs font-bold text-slate-500 mb-1">Store Name</label>
-                                                    <input v-model="newCard.name" type="text" class="w-full p-3 border rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="e.g. Amazon">
-                                                </div>
-
-                                                <div>
-                                                    <label class="block text-xs font-bold text-slate-500 mb-1">Current Balance</label>
-                                                    <div class="relative">
-                                                        <span class="absolute left-3 top-3 text-slate-400">$</span>
-                                                        <input v-model="newCard.balance" type="number" step="0.01" class="w-full pl-6 p-3 border rounded-xl font-mono text-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="0.00">
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <label class="block text-xs font-bold text-slate-500 mb-1">Assign to Kid (Optional)</label>
-                                                    <select v-model="newCard.assigned_to" class="w-full p-3 border rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                                                        <option :value="null">-- Family / General --</option>
-                                                        <option v-for="kid in kidProfiles" :value="kid">👤 {{ kid }}</option>
-                                                    </select>
-                                                </div>
-
-                                                <div class="grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <label class="block text-xs font-bold text-slate-500 mb-1">Card Code</label>
-                                                        <input v-model="newCard.code" type="text" class="w-full p-3 border rounded-xl font-mono text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="XXXX-XXXX">
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-xs font-bold text-slate-500 mb-1">PIN</label>
-                                                        <input v-model="newCard.pin" type="text" class="w-full p-3 border rounded-xl font-mono text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="1234">
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <label class="block text-xs font-bold text-slate-500 mb-2">Card Color</label>
-                                                    <div class="flex flex-wrap gap-2">
-                                                        <button v-for="color in ['bg-slate-800', 'bg-blue-600', 'bg-emerald-600', 'bg-purple-600', 'bg-rose-600', 'bg-orange-500']" 
-                                                            @click="newCard.color = color" 
-                                                            class="w-8 h-8 rounded-full shadow-sm transition-transform hover:scale-110 border-2"
-                                                            :class="[color, newCard.color === color ? 'border-white ring-2 ring-slate-300' : 'border-transparent']">
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div class="pt-2 flex gap-2">
-                                                    <button @click="saveCard" class="flex-1 bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-bold py-3 rounded-xl shadow-lg hover:scale-[1.02] transition">
-                                                        {{ isEditingCard ? 'Update' : 'Save Card' }}
-                                                    </button>
-                                                    <button @click="showCardForm = false" class="px-4 py-3 border border-slate-200 dark:border-slate-600 text-slate-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800">
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
                                     </div>
                                 </div>
                             </div>
@@ -415,7 +388,7 @@
                             </header>
                         </div>
 
-                        <div id="tour-manage-budget" class="mb-8">
+                       <div id="tour-manage-budget" class="mb-8">
                             <div class="bg-gradient-to-br from-violet-800 to-fuchsia-900 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden group hover:scale-[1.01] transition-transform duration-200">
                                 <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl group-hover:scale-110 transition-transform duration-500">🔮</div>
                                 
@@ -482,7 +455,7 @@
                                         </div>
                                         
                                         <div class="flex items-center gap-2">
-                                            <button v-if="!showAddForm" @click="showAddForm = true; isEditing = false; newItem = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false, assigned_to: null };" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-2 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1 border border-indigo-100 shadow-sm">
+                                            <button v-if="!showAddForm" @click="showAddForm = true; isEditing = false; newItem = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false };" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-2 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1 border border-indigo-100 shadow-sm">
                                                 <span class="text-lg leading-none">+</span> New Item
                                             </button>
                                             <button @click="showPlannerModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">
@@ -529,7 +502,6 @@
                                                             <div class="text-xs text-slate-500 dark:text-slate-400 font-mono flex items-center gap-2 mt-0.5">
                                                                 <span>${{ item.amount.toFixed(2) }}</span>
                                                                 <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-1.5 rounded-full">{{ item.frequency }}</span>
-                                                                <span v-if="item.assigned_to" class="text-[9px] bg-indigo-100 text-indigo-700 px-1.5 rounded-full">👤 {{ item.assigned_to }}</span>
                                                             </div>
                                                         </div>
 
@@ -559,10 +531,7 @@
                                                                     <button @click.stop="deleteBudgetItem(item)" class="text-[10px] bg-white border px-1.5 py-0.5 rounded text-slate-400 hover:text-red-500">Del</button>
                                                                 </div>
                                                             </div>
-                                                            <div class="text-xs text-purple-700 dark:text-purple-400 font-mono flex items-center gap-2 mt-0.5">
-                                                                <span>${{ item.amount.toFixed(2) }}</span>
-                                                                <span v-if="item.assigned_to" class="text-[9px] bg-indigo-100 text-indigo-700 px-1.5 rounded-full">👤 {{ item.assigned_to }}</span>
-                                                            </div>
+                                                            <div class="text-xs text-purple-700 dark:text-purple-400 font-mono">${{ item.amount.toFixed(2) }}</div>
                                                         </div>
 
                                                         <div class="w-10 h-6 rounded-full relative transition-colors duration-200" :class="item.includedInScenario ? 'bg-purple-500' : 'bg-slate-200 dark:bg-slate-600'">
@@ -601,14 +570,6 @@
                                                     </select>
                                                     <select v-model="newItem.category" class="w-full p-2.5 border rounded-lg text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none">
                                                         <option v-for="cat in categories" :value="cat">{{ cat }}</option>
-                                                    </select>
-                                                </div>
-
-                                                <div class="mt-2">
-                                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Assign To (Optional)</label>
-                                                    <select v-model="newItem.assigned_to" class="w-full p-2.5 border rounded-lg text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none">
-                                                        <option :value="null">-- Family (Shared) --</option>
-                                                        <option v-for="kid in kidProfiles" :value="kid">👤 {{ kid }}</option>
                                                     </select>
                                                 </div>
 
@@ -1309,7 +1270,7 @@
     ```
 <script>
     const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
-    const { createClient } = window.supabase;
+    const { createClient } = supabase;
 
     // ⚠️ PASTE YOUR SUPABASE KEYS HERE ⚠️
     const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
@@ -1370,7 +1331,6 @@
     createApp({
         setup() {
             // --- STATE VARIABLES ---
-            const user = ref(null);
             const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
             const budgetItems = ref([]), bills = ref([]), debts = ref([]), incomes = ref([]);
@@ -1440,9 +1400,6 @@
             const showConsultant = ref(false), chatMessages = ref([]), userQuery = ref(''), isThinking = ref(false);
 
             let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
-
-            // --- FAMILY PROFILES ---
-            const kidProfiles = ref(['Ava', 'Isaac', 'Jaxon', 'Marigold']); // Replace with your actual names
 
             // --- COMPUTED ---
             
@@ -1922,83 +1879,8 @@
             // --- BUDGET ITEMS & MODALS ---
             const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
             const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
-           const handleSave = async () => {
-                // Check if user exists now
-                if (!user.value) {
-                    alert("System Error: User variable is still missing. Please refresh the page.");
-                    return;
-                }
-
-                if (!newItem.value.name || !newItem.value.amount) {
-                    alert("Please enter a name and amount.");
-                    return;
-                }
-
-                // Date Calculation
-                let nextDate = new Date();
-                if (!newItem.value.isFlexible && newItem.value.due_day) {
-                    if (nextDate.getDate() > newItem.value.due_day) {
-                        nextDate.setMonth(nextDate.getMonth() + 1);
-                    }
-                    nextDate.setDate(newItem.value.due_day);
-                }
-
-                // Prepare Data
-                const payload = {
-                    user_id: user.value.id, // <--- Now this works!
-                    name: newItem.value.name,
-                    amount: newItem.value.amount,
-                    frequency: newItem.value.frequency,
-                    category: newItem.value.category,
-                    is_core: newItem.value.is_core || false,
-                    is_variable: newItem.value.is_variable || false,
-                    is_wishlist: newItem.value.is_wishlist || false,
-                    due_day: newItem.value.due_day,
-                    next_due_date: nextDate.toISOString(),
-                    is_flexible: newItem.value.isFlexible || false,
-                    replaces_id: newItem.value.replaces_id || null,
-                    assigned_to: newItem.value.assigned_to || null 
-                };
-
-                try {
-                    let error;
-                    
-                    if (isEditing.value && newItem.value.id) {
-                        const result = await supabase.from('budget_items').update(payload).eq('id', newItem.value.id);
-                        error = result.error;
-                    } else {
-                        const result = await supabase.from('budget_items').insert([payload]);
-                        error = result.error;
-                    }
-
-                    if (error) throw error;
-                    
-                    showAddForm.value = false;
-                    fetchBudgetItems();
-                    runForecast(); 
-
-                } catch (err) {
-                    console.error("Save failed:", err);
-                    alert("Database Error: " + err.message);
-                }
-            };
-            const startEditing = (item) => {
-                // We manually spread the item to ensure assigned_to is caught
-                newItem.value = { 
-                    ...item,
-                    // Ensure these are set even if undefined in DB
-                    isFlexible: item.is_flexible || false,
-                    assigned_to: item.assigned_to || null 
-                };
-                
-                // Date logic
-                if (item.next_due_date) {
-                    const d = new Date(item.next_due_date);
-                    newItem.value.due_day = d.getDate();
-                }
-                
-                isEditing.value = true;
-            };
+            const handleSave = async () => { if (isEditing.value) await updateItem(); else await addItem(); showAddForm.value = false; };
+            const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
             const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
             const deleteBudgetItem = async (item) => { 
                 if (!confirm('Delete ' + item.name + '? This will also remove all its history/logs.')) return; 
@@ -2062,28 +1944,11 @@
 
             watch(currentView, async (newView) => { await nextTick(); if (newView === 'dashboard') { if(bills.value.length > 0 || budgetItems.value.length > 0) { renderCategoryChart(); renderDashboardChart(); } } else if (newView === 'forecast') { fetchForecastSlots(); runForecast(); } });
 
-           onMounted(async () => {
-                // 1. Get Session & User
-                const { data } = await supabase.auth.getSession();
-                if (data.session) {
-                    session.value = data.session;
-                    user.value = data.session.user; // Set the global user variable
-                }
-
-                // 2. Auth Listener
-                supabase.auth.onAuthStateChange((_, _session) => {
-                    session.value = _session;
-                    user.value = _session ? _session.user : null;
-                });
-
-                // 3. Load Data if logged in
-                if (user.value) {
-                    fetchBudgetItems();
-                    fetchBillItems();
-                    fetchGiftCards();
-                    // fetchDebtItems(); // Uncomment if you have this function
-                }
+            onMounted(() => {
+                _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchSettings(); fetchIncomes(); fetchBudgetItems().then(() => { fetchBills().then(() => { nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); }); }); fetchDebts().then(() => { const el = document.getElementById('debt-list-container'); if(el) { new Sortable(el, { handle: '.sortable-handle', animation: 150, onEnd: async (evt) => { const item = debts.value.splice(evt.oldIndex, 1)[0]; debts.value.splice(evt.newIndex, 0, item); const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index, user_id: session.value.user.id, name: d.name, balance: d.balance, rate: d.rate, min_payment: d.min_payment })); await _supabase.from('debts').upsert(updates); } }); } }); fetchForecastSlots(); fetchGiftCards(); } });
+                _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
             });
+
             return { 
                 session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, 
                 showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, 
@@ -2099,7 +1964,7 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails, kidProfiles, user,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails,
                 // --- GIFT CARD EXPORTS ---
                 giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner, editCardLog, deleteCardLog, editingLogId, showWalletModal, totalGiftCardBalance, showBillModal, totalBillDue, countBillDue, showScenarioModal, filledScenarioCount,
             };
