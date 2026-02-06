@@ -717,18 +717,37 @@
 
                     <div @click="showScenarioModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-blue-400 transition relative overflow-hidden order-2">
                         <div class="absolute right-0 top-0 w-20 h-20 bg-blue-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-blue-500/20"></div>
+
                         <div class="flex justify-between items-start relative z-10">
-                            <div>
-                                <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Active Scenario</h3>
-                                <div class="text-xl font-bold text-slate-900 dark:text-white capitalize truncate">
-                                    {{ forecastMode === 'survival' ? 'Survival Mode' : (forecastMode === 'dream' ? 'Dream Mode' : 'Standard Plan') }}
+                            <div class="flex-1">
+                                <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                    {{ currentScenarioName ? 'Current Scenario' : 'Active Scenario' }}
+                                </h3>
+                                
+                                <div class="text-xl font-bold text-slate-900 dark:text-white capitalize truncate pr-2">
+                                    {{ currentScenarioName || (forecastMode === 'survival' ? 'Survival Mode' : (forecastMode === 'dream' ? 'Dream Mode' : 'Standard Plan')) }}
                                 </div>
+                                
                                 <div class="text-[10px] text-blue-500 font-bold mt-1">
-                                    {{ filledScenarioCount }} Saved / {{ project ? 'Goal Set' : 'No Goal' }}
+                                    <span v-if="currentScenarioName" class="capitalize">
+                                        {{ forecastMode }} Mode
+                                    </span>
+                                    <span v-else>
+                                        {{ filledScenarioCount }} Saved / {{ project ? 'Goal Set' : 'No Goal' }}
+                                    </span>
                                 </div>
                             </div>
-                            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner">
-                                🔮
+
+                            <div class="flex flex-col items-end gap-2">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner">
+                                    🔮
+                                </div>
+                                <button 
+                                    @click.stop="quickSaveScenario" 
+                                    class="text-[10px] bg-slate-100 dark:bg-slate-700 hover:bg-blue-100 dark:hover:bg-blue-900 text-slate-600 dark:text-slate-300 hover:text-blue-600 px-3 py-1.5 rounded-lg font-bold transition border border-slate-200 dark:border-slate-600"
+                                >
+                                    {{ currentLoadedSlotIndex !== null ? 'Update' : 'Save' }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1342,6 +1361,8 @@
             const savedForecasts = ref([null, null, null]), forecastOverrides = ref({});
             const showRetirementModal = ref(false);
             const showForecastDetails = ref(false);
+            const currentScenarioName = ref(null);
+            const currentLoadedSlotIndex = ref(null);
 
             // Debt
             const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' }), extraDebtPayment = ref(0), showDebtForm = ref(false), editingDebtId = ref(null);
@@ -1805,20 +1826,18 @@
                 const existing = savedForecasts.value[i];
                 let name = existing ? existing.name : '';
                 
+                // If we are "Quick Saving" an active slot, skip the name prompt
                 if (existing) { 
-                    if (!confirm(`Update "${existing.name}"?`)) return; 
+                    if (!confirm(`Update "${existing.name}" with current settings?`)) return; 
                 } else { 
                     name = prompt("Name this forecast (e.g., 'Buying a Boat', 'Survival Mode'):"); 
                     if (!name) return; 
                 }
 
-                // 🟢 NEW: Only save Scenario Data. EXCLUDE Global Facts.
                 const scenarioData = {
-                    project: project.value,         // The Goal
-                    mode: forecastMode.value,       // Survival/Standard/Dream
-                    overrides: forecastOverrides.value, // One-off changes
-                    // We intentionally DO NOT save currentBalance or retirement settings here.
-                    // Those should remain global.
+                    project: project.value,
+                    mode: forecastMode.value,
+                    overrides: forecastOverrides.value,
                 };
 
                 const payload = { 
@@ -1829,15 +1848,27 @@
                 };
 
                 const { error } = await _supabase.from('forecast_slots').upsert(payload, {onConflict:'user_id,slot_index'});
-                if (error) alert("Error saving: " + error.message); 
-                else await fetchForecastSlots();
+                if (error) {
+                    alert("Error saving: " + error.message); 
+                } else {
+                    await fetchForecastSlots();
+                    // Update our tracker so the UI knows we are on this slot
+                    currentLoadedSlotIndex.value = i;
+                    currentScenarioName.value = name;
+                }
             };
-           const loadForecastSlot = (i) => {
+
+            const loadForecastSlot = (i) => {
                 const s = savedForecasts.value[i];
                 if (s && confirm(`Load scenario "${s.name}"?`)) {
                     project.value = s.data.project;
                     setForecastMode(s.data.mode);
                     forecastOverrides.value = s.data.overrides || {};
+                    
+                    // Update our tracker
+                    currentLoadedSlotIndex.value = i;
+                    currentScenarioName.value = s.name;
+                    
                     runForecast();
                 }
             };
@@ -1846,6 +1877,15 @@
                 if(confirm("Clear this saved slot?")){ 
                     await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); 
                     await fetchForecastSlots(); 
+                }
+            };
+           const quickSaveScenario = () => {
+                if (currentLoadedSlotIndex.value !== null) {
+                    // Update the currently loaded slot
+                    saveForecastSlot(currentLoadedSlotIndex.value);
+                } else {
+                    // No slot loaded? Open the modal to pick one.
+                    showScenarioModal.value = true;
                 }
             };
 
@@ -2122,7 +2162,10 @@
 
                 // Utils
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, showCalcDetails, showCalcForm, saveSettings, 
-                currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue
+                currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
+                return {
+                // ... other variables ...
+                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario,     
             };
         }
     }).mount('#app');
