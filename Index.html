@@ -415,7 +415,7 @@
                             </header>
                         </div>
 
-                       <div id="tour-manage-budget" class="mb-8">
+                        <div id="tour-manage-budget" class="mb-8">
                             <div class="bg-gradient-to-br from-violet-800 to-fuchsia-900 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden group hover:scale-[1.01] transition-transform duration-200">
                                 <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl group-hover:scale-110 transition-transform duration-500">🔮</div>
                                 
@@ -482,7 +482,7 @@
                                         </div>
                                         
                                         <div class="flex items-center gap-2">
-                                            <button v-if="!showAddForm" @click="showAddForm = true; isEditing = false; newItem = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false };" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-2 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1 border border-indigo-100 shadow-sm">
+                                            <button v-if="!showAddForm" @click="showAddForm = true; isEditing = false; newItem = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false, assigned_to: null };" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-2 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1 border border-indigo-100 shadow-sm">
                                                 <span class="text-lg leading-none">+</span> New Item
                                             </button>
                                             <button @click="showPlannerModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">
@@ -529,6 +529,7 @@
                                                             <div class="text-xs text-slate-500 dark:text-slate-400 font-mono flex items-center gap-2 mt-0.5">
                                                                 <span>${{ item.amount.toFixed(2) }}</span>
                                                                 <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-1.5 rounded-full">{{ item.frequency }}</span>
+                                                                <span v-if="item.assigned_to" class="text-[9px] bg-indigo-100 text-indigo-700 px-1.5 rounded-full">👤 {{ item.assigned_to }}</span>
                                                             </div>
                                                         </div>
 
@@ -558,7 +559,10 @@
                                                                     <button @click.stop="deleteBudgetItem(item)" class="text-[10px] bg-white border px-1.5 py-0.5 rounded text-slate-400 hover:text-red-500">Del</button>
                                                                 </div>
                                                             </div>
-                                                            <div class="text-xs text-purple-700 dark:text-purple-400 font-mono">${{ item.amount.toFixed(2) }}</div>
+                                                            <div class="text-xs text-purple-700 dark:text-purple-400 font-mono flex items-center gap-2 mt-0.5">
+                                                                <span>${{ item.amount.toFixed(2) }}</span>
+                                                                <span v-if="item.assigned_to" class="text-[9px] bg-indigo-100 text-indigo-700 px-1.5 rounded-full">👤 {{ item.assigned_to }}</span>
+                                                            </div>
                                                         </div>
 
                                                         <div class="w-10 h-6 rounded-full relative transition-colors duration-200" :class="item.includedInScenario ? 'bg-purple-500' : 'bg-slate-200 dark:bg-slate-600'">
@@ -599,6 +603,7 @@
                                                         <option v-for="cat in categories" :value="cat">{{ cat }}</option>
                                                     </select>
                                                 </div>
+
                                                 <div class="mt-2">
                                                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Assign To (Optional)</label>
                                                     <select v-model="newItem.assigned_to" class="w-full p-2.5 border rounded-lg text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none">
@@ -606,6 +611,7 @@
                                                         <option v-for="kid in kidProfiles" :value="kid">👤 {{ kid }}</option>
                                                     </select>
                                                 </div>
+
                                                 <div class="space-y-2 pt-2">
                                                     <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-indigo-300 transition">
                                                         <input type="checkbox" v-model="newItem.isFlexible" class="text-indigo-600 rounded focus:ring-indigo-500">
@@ -1955,7 +1961,23 @@
                 fetchBudgetItems();
                 runForecast(); // Update forecast immediately
             };
-            const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
+            const startEditing = (item) => {
+                // We manually spread the item to ensure assigned_to is caught
+                newItem.value = { 
+                    ...item,
+                    // Ensure these are set even if undefined in DB
+                    isFlexible: item.is_flexible || false,
+                    assigned_to: item.assigned_to || null 
+                };
+                
+                // Date logic
+                if (item.next_due_date) {
+                    const d = new Date(item.next_due_date);
+                    newItem.value.due_day = d.getDate();
+                }
+                
+                isEditing.value = true;
+            };
             const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
             const deleteBudgetItem = async (item) => { 
                 if (!confirm('Delete ' + item.name + '? This will also remove all its history/logs.')) return; 
