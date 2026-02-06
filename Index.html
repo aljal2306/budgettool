@@ -232,18 +232,18 @@
 
                         <transition name="fade">
                             <div v-if="showWalletModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                                <div class="bg-white dark:bg-slate-800 w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
+                                <div class="bg-white dark:bg-slate-800 w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
                                     
                                     <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center flex-shrink-0">
                                         <div>
                                             <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                                <span>💳</span> My Wallet
+                                                <span>💳</span> Gift Card Wallet
                                             </h2>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400">Total: ${{ totalGiftCardBalance.toLocaleString() }}</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400">Total Value: ${{ totalWalletValue.toFixed(2) }}</p>
                                         </div>
-                                        <div class="flex gap-3">
-                                            <button @click="showGiftCardForm = true; giftCardInput.owner = ''" class="text-xs bg-emerald-50 text-emerald-600 font-bold px-3 py-2 rounded-lg hover:bg-emerald-100 transition hidden sm:block">
-                                                + Add New Card
+                                        <div class="flex items-center gap-3">
+                                            <button v-if="!showCardForm" @click="showCardForm = true; isEditingCard = false; newCard = { name: '', balance: '', code: '', pin: '', color: 'bg-slate-800', assigned_to: null };" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-2 rounded-lg hover:bg-indigo-100 transition hidden sm:block">
+                                                + New Card
                                             </button>
                                             <button @click="showWalletModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">
                                                 &times;
@@ -251,73 +251,100 @@
                                         </div>
                                     </div>
 
-                                    <button @click="showGiftCardForm = true; giftCardInput.owner = ''" class="absolute bottom-6 right-6 bg-emerald-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-2xl font-bold z-50 sm:hidden">
-                                        +
-                                    </button>
+                                    <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
+                                        
+                                        <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-100/50 dark:bg-slate-900/50">
+                                            <div v-if="walletCards.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
+                                                <div class="text-6xl opacity-20">💳</div>
+                                                <p>No gift cards yet.</p>
+                                                <button @click="showCardForm = true; isEditingCard = false; newCard = { name: '', balance: '', code: '', pin: '', color: 'bg-slate-800', assigned_to: null };" class="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-indigo-500 transition">
+                                                    Add Your First Card
+                                                </button>
+                                            </div>
 
-                                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                                        <div v-if="giftCards.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
-                                            <div class="text-4xl mb-2">📭</div>
-                                            <p>Your wallet is empty.</p>
-                                        </div>
+                                            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                                                <div v-for="card in walletCards" :key="card.id" class="group relative aspect-[1.586] rounded-2xl shadow-xl overflow-hidden transition-transform hover:scale-[1.02] cursor-pointer text-white flex flex-col justify-between p-5" :class="card.color || 'bg-slate-800'" @click="startEditingCard(card)">
+                                                    
+                                                    <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                                                    
+                                                    <div class="relative z-10 flex justify-between items-start">
+                                                        <span class="font-bold text-lg tracking-wider opacity-90">{{ card.name }}</span>
+                                                        <span class="text-2xl opacity-50">💳</span>
+                                                    </div>
 
-                                        <div v-else class="space-y-3">
-                                            <div v-for="(cards, owner) in groupedGiftCards" :key="owner" class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-800">
-                                                
-                                                <div @click="toggleOwner(owner)" class="p-4 bg-slate-50 dark:bg-slate-700/50 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition select-none group sticky top-0 z-10">
-                                                    <div class="flex items-center gap-3">
-                                                        <div class="w-6 h-6 flex items-center justify-center text-slate-400 transition-transform duration-200" :class="openOwners[owner] ? 'rotate-90' : ''">▶</div>
-                                                        <div>
-                                                            <h4 class="font-bold text-sm text-slate-800 dark:text-white">{{ owner }}</h4>
-                                                            <p class="text-[10px] text-slate-500 font-medium">{{ cards.length }} Cards</p>
+                                                    <div v-if="card.assigned_to" class="absolute top-16 right-5 bg-black/20 backdrop-blur-md text-[10px] px-2 py-1 rounded-full font-bold border border-white/10">
+                                                        👤 {{ card.assigned_to }}
+                                                    </div>
+
+                                                    <div class="relative z-10">
+                                                        <div class="text-xs opacity-75 font-mono mb-1 tracking-widest">{{ card.code || '**** **** ****' }}</div>
+                                                        <div class="flex justify-between items-end">
+                                                            <span class="text-3xl font-bold tracking-tight">${{ card.balance.toFixed(2) }}</span>
+                                                            <button @click.stop="deleteCard(card)" class="text-white/30 hover:text-white transition text-xs font-bold p-1">Delete</button>
                                                         </div>
                                                     </div>
-                                                    <div class="font-mono font-bold text-sm text-emerald-600 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-3 py-1 rounded-lg shadow-sm">
-                                                        ${{ cards.reduce((sum, c) => sum + Number(c.balance), 0).toFixed(2) }}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div v-if="showCardForm" class="md:w-80 bg-slate-50 dark:bg-slate-900/50 border-t md:border-t-0 md:border-l dark:border-slate-700 p-6 overflow-y-auto flex-shrink-0 transition-all">
+                                            <h4 class="text-sm font-bold text-slate-800 dark:text-white mb-4">{{ isEditingCard ? 'Edit Card' : 'Add New Card' }}</h4>
+                                            
+                                            <div class="space-y-4">
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-500 mb-1">Store Name</label>
+                                                    <input v-model="newCard.name" type="text" class="w-full p-3 border rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="e.g. Amazon">
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-500 mb-1">Current Balance</label>
+                                                    <div class="relative">
+                                                        <span class="absolute left-3 top-3 text-slate-400">$</span>
+                                                        <input v-model="newCard.balance" type="number" step="0.01" class="w-full pl-6 p-3 border rounded-xl font-mono text-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="0.00">
                                                     </div>
                                                 </div>
 
-                                                <transition name="accordion">
-                                                    <div v-if="openOwners[owner]" class="border-t border-slate-200 dark:border-slate-700">
-                                                        <div v-for="card in cards" :key="card.id" class="p-3 flex items-center justify-between border-b dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
-                                                            
-                                                            <div class="flex items-center gap-3 flex-1 min-w-0 mr-2">
-                                                                <div @click="viewCardImage(card)" class="w-10 h-10 flex-shrink-0 rounded-lg bg-slate-100 dark:bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer shadow-sm border border-slate-200 dark:border-slate-500 hover:opacity-80 transition relative">
-                                                                    <img v-if="card.image_data" :src="card.image_data" class="w-full h-full object-cover">
-                                                                    <span v-else class="text-[10px] text-slate-400">📷</span>
-                                                                </div>
-                                                                <div class="truncate">
-                                                                    <div class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ card.name }}</div>
-                                                                    <div class="text-[10px] text-slate-400">Upd: {{ formatDate(card.created_at.split('T')[0]) }}</div>
-                                                                </div>
-                                                            </div>
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-500 mb-1">Assign to Kid (Optional)</label>
+                                                    <select v-model="newCard.assigned_to" class="w-full p-3 border rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                                                        <option :value="null">-- Family / General --</option>
+                                                        <option v-for="kid in kidProfiles" :value="kid">👤 {{ kid }}</option>
+                                                    </select>
+                                                </div>
 
-                                                            <div class="flex items-center gap-3 flex-shrink-0">
-                                                                <div class="font-mono font-bold text-slate-700 dark:text-white text-sm bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
-                                                                    ${{ Number(card.balance).toFixed(2) }}
-                                                                </div>
-                                                                <div class="flex gap-1">
-                                                                    <button @click="manageCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Log Transaction">
-                                                                        📝
-                                                                    </button>
-                                                                    <button @click="editGiftCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-orange-600 bg-white border border-slate-200 hover:border-orange-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Edit Details">
-                                                                        ⚙️
-                                                                    </button>
-                                                                    <button @click="deleteGiftCard(card.id)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 bg-white border border-slate-200 hover:border-red-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Delete Card">
-                                                                        🗑️
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="p-2 text-center bg-slate-50 dark:bg-slate-900/30 border-t dark:border-slate-700">
-                                                            <button @click="prepareAddForOwner(owner)" class="text-xs font-bold text-slate-400 hover:text-blue-500 py-2 px-4 rounded transition flex items-center justify-center gap-1 mx-auto hover:bg-white dark:hover:bg-slate-700 shadow-sm border border-transparent hover:border-slate-200">
-                                                                <span>+</span> Add another for {{ owner }}
-                                                            </button>
-                                                        </div>
+                                                <div class="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-slate-500 mb-1">Card Code</label>
+                                                        <input v-model="newCard.code" type="text" class="w-full p-3 border rounded-xl font-mono text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="XXXX-XXXX">
                                                     </div>
-                                                </transition>
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-slate-500 mb-1">PIN</label>
+                                                        <input v-model="newCard.pin" type="text" class="w-full p-3 border rounded-xl font-mono text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="1234">
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-500 mb-2">Card Color</label>
+                                                    <div class="flex flex-wrap gap-2">
+                                                        <button v-for="color in ['bg-slate-800', 'bg-blue-600', 'bg-emerald-600', 'bg-purple-600', 'bg-rose-600', 'bg-orange-500']" 
+                                                            @click="newCard.color = color" 
+                                                            class="w-8 h-8 rounded-full shadow-sm transition-transform hover:scale-110 border-2"
+                                                            :class="[color, newCard.color === color ? 'border-white ring-2 ring-slate-300' : 'border-transparent']">
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div class="pt-2 flex gap-2">
+                                                    <button @click="saveCard" class="flex-1 bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-bold py-3 rounded-xl shadow-lg hover:scale-[1.02] transition">
+                                                        {{ isEditingCard ? 'Update' : 'Save Card' }}
+                                                    </button>
+                                                    <button @click="showCardForm = false" class="px-4 py-3 border border-slate-200 dark:border-slate-600 text-slate-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800">
+                                                        Cancel
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
                             </div>
@@ -572,7 +599,13 @@
                                                         <option v-for="cat in categories" :value="cat">{{ cat }}</option>
                                                     </select>
                                                 </div>
-
+                                                <div class="mt-2">
+                                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Assign To (Optional)</label>
+                                                    <select v-model="newItem.assigned_to" class="w-full p-2.5 border rounded-lg text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none">
+                                                        <option :value="null">-- Family (Shared) --</option>
+                                                        <option v-for="kid in kidProfiles" :value="kid">👤 {{ kid }}</option>
+                                                    </select>
+                                                </div>
                                                 <div class="space-y-2 pt-2">
                                                     <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-indigo-300 transition">
                                                         <input type="checkbox" v-model="newItem.isFlexible" class="text-indigo-600 rounded focus:ring-indigo-500">
@@ -1401,6 +1434,9 @@
 
             let chartInstance = null, dashboardChartInstance = null, categoryChartInstance = null;
 
+            // --- FAMILY PROFILES ---
+            const kidProfiles = ref(['Liam', 'Olivia']); // Replace with your actual names
+
             // --- COMPUTED ---
             
             // ** Group Gift Cards by Owner **
@@ -1964,7 +2000,7 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails, kidProfiles,
                 // --- GIFT CARD EXPORTS ---
                 giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner, editCardLog, deleteCardLog, editingLogId, showWalletModal, totalGiftCardBalance, showBillModal, totalBillDue, countBillDue, showScenarioModal, filledScenarioCount,
             };
