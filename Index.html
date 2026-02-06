@@ -816,82 +816,101 @@
 
                                     <transition name="accordion">
                                        <div v-if="showForecastSettings" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-500/50 dark:bg-black/80 backdrop-blur-sm transition-opacity" @click.self="showForecastSettings = false">
-            <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-slide-up">
+            <div class="bg-slate-50 dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-slide-up">
                 
-                <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                    <div>
-                        <h3 class="font-bold text-slate-900 dark:text-white text-xl">Forecast Settings</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Adjust your cash flow engine</p>
+                <div class="px-6 py-5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 dark:text-white text-lg">Forecast Engine</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Configure your financial reality</p>
+                        </div>
                     </div>
                     <button @click="showForecastSettings = false" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition">✕</button>
                 </div>
 
-                <div class="p-6 space-y-6">
+                <div class="p-6 space-y-4">
                     
-                    <div class="bg-blue-50 dark:bg-blue-900/10 rounded-2xl p-5 border border-blue-100 dark:border-blue-900/30">
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Current Bank Balance</label>
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 group transition hover:border-green-400 dark:hover:border-green-500">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Current Bank Balance</h4>
+                                    <div class="text-[10px] text-slate-400">Real-time starting point</div>
+                                </div>
+                            </div>
                             
-                            <button v-if="!isEditingBalance" @click="isEditingBalance = true" class="text-xs font-bold text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center gap-1">
-                                <span>EDIT</span>
+                            <button v-if="!isEditingBalance" @click="isEditingBalance = true" class="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-green-50 dark:hover:bg-green-900/30 text-slate-600 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-400 px-3 py-1.5 rounded-lg font-bold transition">
+                                Edit
                             </button>
-                            <button v-else @click="saveBalanceInline" class="text-xs font-bold text-green-600 dark:text-green-400 hover:text-green-700 transition flex items-center gap-1">
-                                <span>SAVE</span>
+                            <button v-else @click="saveBalanceInline" class="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1.5 rounded-lg font-bold transition">
+                                Save
                             </button>
                         </div>
 
-                        <div v-if="!isEditingBalance" @click="isEditingBalance = true" class="cursor-pointer group">
-                            <div class="flex items-baseline gap-1">
-                                <span class="text-2xl text-slate-400 dark:text-slate-500">$</span>
-                                <span class="text-4xl font-bold text-slate-900 dark:text-white group-hover:opacity-80 transition">
-                                    {{ forecastSettings.currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}
-                                </span>
-                            </div>
-                            <div class="text-[10px] text-slate-400 mt-2">
-                                Updates automatically as you pay bills
+                        <div v-if="!isEditingBalance" @click="isEditingBalance = true" class="cursor-pointer">
+                            <div class="text-3xl font-bold text-slate-900 dark:text-white truncate tracking-tight">
+                                ${{ forecastSettings.currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}
                             </div>
                         </div>
-
+                        
                         <div v-else>
                             <input 
                                 type="number" 
                                 step="0.01" 
                                 v-model="forecastSettings.currentBalance" 
                                 @keyup.enter="saveBalanceInline"
-                                class="w-full bg-white dark:bg-slate-900 border-2 border-blue-500 rounded-xl px-4 py-3 text-2xl font-bold text-slate-900 dark:text-white outline-none shadow-sm"
+                                class="w-full bg-slate-50 dark:bg-slate-900 border-2 border-green-500 rounded-xl px-3 py-2 text-2xl font-bold text-slate-900 dark:text-white outline-none"
                                 autofocus
                             >
-                            <div class="text-[10px] text-slate-500 mt-2 flex justify-between">
-                                <span>Press Enter to save</span>
-                            </div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Safety Margin</label>
-                            <div class="relative group">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition">$</span>
-                                <input type="number" v-model="forecastSettings.safetyMargin" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-7 pr-3 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition">
+                        
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs">
+                                    🛡️
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Safety Margin</span>
+                            </div>
+                            <div class="relative">
+                                <span class="absolute left-0 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                                <input type="number" v-model="forecastSettings.safetyMargin" class="w-full bg-transparent border-b border-slate-200 dark:border-slate-600 py-1 pl-4 text-lg font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500 transition">
                             </div>
                         </div>
 
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Look Ahead</label>
-                            <div class="relative group">
-                                <input type="number" v-model="forecastSettings.months" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-3 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition">
-                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">Months</span>
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs">
+                                    📅
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Look Ahead</span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" v-model="forecastSettings.months" class="w-full bg-transparent border-b border-slate-200 dark:border-slate-600 py-1 pr-8 text-lg font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500 transition">
+                                <span class="absolute right-0 top-1/2 -translate-y-1/2 text-xs text-slate-400">Mos</span>
                             </div>
                         </div>
                     </div>
 
                 </div>
 
-                <div class="p-6 pt-0 flex gap-3">
-                    <button @click="showForecastSettings = false" class="flex-1 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <div class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                    <button @click="showForecastSettings = false" class="px-5 py-2.5 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm">
                         Cancel
                     </button>
-                    <button @click="saveAllForecastSettings" class="flex-1 py-3 rounded-xl font-bold text-white bg-slate-900 dark:bg-blue-600 hover:opacity-90 transition shadow-lg shadow-slate-900/20 dark:shadow-blue-900/20">
+                    <button @click="saveAllForecastSettings" class="px-6 py-2.5 rounded-xl font-bold text-white bg-slate-900 dark:bg-blue-600 hover:opacity-90 transition shadow-lg shadow-slate-900/10 text-sm">
                         Save Changes
                     </button>
                 </div>
