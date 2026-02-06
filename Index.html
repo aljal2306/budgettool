@@ -846,7 +846,105 @@
                                         </div>
                                     </transition>
                                 </div>
-                                <div id="tour-retirement-forecast" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><h3 class="font-bold text-sm text-indigo-600 dark:text-indigo-400 uppercase mb-3 flex items-center gap-2"><span>👴</span> Retirement Nest Egg</h3><div class="space-y-2 mb-4"><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Balance</label><input v-model="forecastSettings.retirementBalance" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div><div><label class="block text-[10px] text-slate-400">Rate of Return %</label><input v-model="forecastSettings.expectedReturn" @change="saveRetirementSettings" type="number" step="0.1" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Age</label><input v-model="forecastSettings.currentAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div><div><label class="block text-[10px] text-slate-400">Retire Age</label><input v-model="forecastSettings.retirementAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div></div><div class="text-[10px] text-slate-400 mt-2">Monthly Contribution: <span class="font-bold text-slate-700 dark:text-white">${{ totalMonthlyRetirementContribution.toLocaleString() }}</span></div></div><div class="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800 text-center"><div class="text-xs text-indigo-400 uppercase tracking-widest mb-1">Projected at Age {{ forecastSettings.retirementAge }}</div><div class="text-2xl font-black text-indigo-700 dark:text-indigo-300">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div></div></div>
+                                <div id="tour-retirement-forecast">
+                                    <div @click="showRetirementModal = true" class="bg-gradient-to-br from-indigo-900 to-purple-900 text-white p-6 rounded-2xl shadow-lg cursor-pointer relative overflow-hidden group hover:scale-[1.01] transition-transform duration-200">
+                                        <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl group-hover:scale-110 transition-transform duration-500">👴</div>
+                                        
+                                        <div class="relative z-10 flex justify-between items-start">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10">
+                                                    🥚
+                                                </div>
+                                                <div>
+                                                    <h3 class="font-bold text-lg tracking-tight">Nest Egg</h3>
+                                                    <p class="text-indigo-200 text-xs font-medium">
+                                                        Saving ${{ totalMonthlyRetirementContribution.toLocaleString() }}/mo
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button class="bg-indigo-500 hover:bg-indigo-400 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-lg shadow-indigo-500/20 transition">
+                                                Plan
+                                            </button>
+                                        </div>
+
+                                        <div class="mt-6 relative z-10">
+                                            <p class="text-indigo-300 text-xs uppercase tracking-widest font-bold mb-1">
+                                                Projected @ Age {{ forecastSettings.retirementAge }}
+                                            </p>
+                                            <div class="text-2xl font-black tracking-tight text-white truncate">
+                                                ${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <transition name="fade">
+                                    <div v-if="showRetirementModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                                        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
+                                            
+                                            <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center">
+                                                <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                                    <span>👴</span> Retirement Strategy
+                                                </h2>
+                                                <button @click="showRetirementModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">
+                                                    &times;
+                                                </button>
+                                            </div>
+
+                                            <div class="p-6 space-y-6">
+                                                
+                                                <div class="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800">
+                                                    <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Projected Nest Egg</p>
+                                                    <div class="text-3xl font-black text-indigo-700 dark:text-indigo-300">
+                                                        ${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}
+                                                    </div>
+                                                    <p class="text-[10px] text-indigo-400 mt-2">
+                                                        Based on <span class="font-bold border-b border-indigo-300">${{ totalMonthlyRetirementContribution.toLocaleString() }}/mo</span> contribution
+                                                    </p>
+                                                </div>
+
+                                                <div class="space-y-4">
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Current Saved Balance</label>
+                                                        <div class="relative">
+                                                            <span class="absolute left-3 top-2.5 text-slate-400 text-sm">$</span>
+                                                            <input v-model="forecastSettings.retirementBalance" @change="saveRetirementSettings" type="number" class="w-full pl-6 p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Return Rate (%)</label>
+                                                            <input v-model="forecastSettings.expectedReturn" @change="saveRetirementSettings" type="number" step="0.1" class="w-full p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none text-center font-bold">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Monthly Saved</label>
+                                                            <div class="w-full p-2.5 border rounded-xl text-sm bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-center font-bold cursor-not-allowed" title="Edit in Budget Tab">
+                                                                ${{ totalMonthlyRetirementContribution.toLocaleString() }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Current Age</label>
+                                                            <input v-model="forecastSettings.currentAge" @change="saveRetirementSettings" type="number" class="w-full p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none text-center font-bold">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Retire Age</label>
+                                                            <input v-model="forecastSettings.retirementAge" @change="saveRetirementSettings" type="number" class="w-full p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none text-center font-bold">
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <button @click="showRetirementModal = false" class="w-full bg-slate-900 dark:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition">
+                                                    Update Projection
+                                                </button>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </transition>
                             </div>
                             <div class="lg:col-span-3 print:col-span-4 space-y-6">
                                 <div id="tour-forecast-chart" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 print:border-0 print:shadow-none"><div class="flex justify-between items-center mb-2 print:hidden"><h3 class="font-bold">{{ project ? project.name + ' Projection' : 'Financial Projection' }}</h3><div class="flex gap-1 bg-slate-100 dark:bg-slate-700 p-0.5 rounded-lg"><button @click="setForecastMode('survival'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='survival'?'bg-white dark:bg-slate-600 shadow text-orange-600 dark:text-orange-400':'text-slate-500 hover:text-slate-800'">🛡️ Survival</button><button @click="setForecastMode('standard'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='standard'?'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-400':'text-slate-500 hover:text-slate-800'">⚖️ Standard</button><button @click="setForecastMode('dream'); runForecast()" class="px-2 py-1 text-[10px] rounded font-bold transition" :class="forecastMode==='dream'?'bg-white dark:bg-slate-600 shadow text-purple-600 dark:text-purple-400':'text-slate-500 hover:text-slate-800'">🚀 Dream</button></div><button @click="printReport" class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded hover:bg-slate-200">🖨️ Print Report</button></div><canvas id="forecastChart" style="max-height: 300px; width: 100%;"></canvas></div>
@@ -1219,6 +1317,7 @@
             const project = ref(null), showProjectModal = ref(false), newProject = ref({ name: '', cost: '' });
             const lowPointData = ref({ amount: 0, date: '-' });
             const savedForecasts = ref([null, null, null]), forecastOverrides = ref({});
+            const showRetirementModal = ref(false);
 
             // Debt
             const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' }), extraDebtPayment = ref(0), showDebtForm = ref(false), editingDebtId = ref(null);
@@ -1792,7 +1891,7 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal,
                 // --- GIFT CARD EXPORTS ---
                 giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner, editCardLog, deleteCardLog, editingLogId, showWalletModal, totalGiftCardBalance, showBillModal, totalBillDue, countBillDue, showScenarioModal, filledScenarioCount,
             };
