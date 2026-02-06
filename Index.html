@@ -1391,6 +1391,12 @@
             const savedForecasts = ref([null, null, null]), forecastOverrides = ref({});
             const showRetirementModal = ref(false);
             const showForecastDetails = ref(false);
+         // --- FORECAST SETTINGS (Required for Bank Balance) ---
+            const forecastSettings = ref({
+                currentBalance: 0,
+                lowBalanceThreshold: 100,
+                lookAheadMonths: 6
+            });
 
             // Debt
             const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' }), extraDebtPayment = ref(0), showDebtForm = ref(false), editingDebtId = ref(null);
@@ -2003,7 +2009,7 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails, forecastSettings,
                 // --- GIFT CARD EXPORTS ---
                 giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner, editCardLog, deleteCardLog, editingLogId, showWalletModal, totalGiftCardBalance, showBillModal, totalBillDue, countBillDue, showScenarioModal, filledScenarioCount,
             };
