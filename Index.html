@@ -1957,18 +1957,19 @@
            const loadForecastSlot = (i) => {
                 const s = savedForecasts.value[i];
                 if (s && confirm(`Load scenario "${s.name}"?`)) {
-                    
-                    // 1. Load Scenario-Specifics
                     project.value = s.data.project;
                     setForecastMode(s.data.mode);
                     forecastOverrides.value = s.data.overrides || {};
-
-                    // 2. Refresh Chart
-                    // Note: We do NOT touch forecastSettings (Balance/Retirement).
-                    // We use whatever is currently live in the app.
                     runForecast();
+                }
             };
-            const clearForecastSlot=async(i)=>{ if(confirm("Clear?")){ await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); await fetchForecastSlots(); }};
+
+            const clearForecastSlot = async (i) => { 
+                if(confirm("Clear this saved slot?")){ 
+                    await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); 
+                    await fetchForecastSlots(); 
+                }
+            };
 
             // --- PAYCHECK CALCULATOR ---
             const loadIncomeIntoCalculator = (inc) => { calcInputs.value = { ...calcInputs.value, id: inc.id, name: inc.name, nextPayDate: inc.next_pay_date, payFrequency: inc.frequency, ...inc.details }; showCalcForm.value = true; calculateAndSave('preview'); };
