@@ -697,7 +697,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     
-                    <div @click="showRetirementModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-purple-400 transition relative overflow-hidden order-1">
+                    <div id="tour-retirement-forecast" @click="showRetirementModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-purple-400 transition relative overflow-hidden order-1">
                         <div class="absolute right-0 top-0 w-20 h-20 bg-purple-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-purple-500/20"></div>
                         <div class="flex justify-between items-start relative z-10">
                             <div>
@@ -715,44 +715,33 @@
                         </div>
                     </div>
 
-                    <div @click="showScenarioModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-blue-400 transition relative overflow-hidden order-2">
+                    <div id="tour-goal-project" @click="showScenarioModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-blue-400 transition relative overflow-hidden order-2">
                         <div class="absolute right-0 top-0 w-20 h-20 bg-blue-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-blue-500/20"></div>
-
                         <div class="flex justify-between items-start relative z-10">
                             <div class="flex-1">
                                 <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                                     {{ currentScenarioName ? 'Current Scenario' : 'Active Scenario' }}
                                 </h3>
-                                
                                 <div class="text-xl font-bold text-slate-900 dark:text-white capitalize truncate pr-2">
                                     {{ currentScenarioName || (forecastMode === 'survival' ? 'Survival Mode' : (forecastMode === 'dream' ? 'Dream Mode' : 'Standard Plan')) }}
                                 </div>
-                                
                                 <div class="text-[10px] text-blue-500 font-bold mt-1">
-                                    <span v-if="currentScenarioName" class="capitalize">
-                                        {{ forecastMode }} Mode
-                                    </span>
-                                    <span v-else>
-                                        {{ filledScenarioCount }} Saved / {{ project ? 'Goal Set' : 'No Goal' }}
-                                    </span>
+                                    <span v-if="currentScenarioName" class="capitalize">{{ forecastMode }} Mode</span>
+                                    <span v-else>{{ filledScenarioCount }} Saved / {{ project ? 'Goal Set' : 'No Goal' }}</span>
                                 </div>
                             </div>
-
                             <div class="flex flex-col items-end gap-2">
                                 <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner">
                                     🔮
                                 </div>
-                                <button 
-                                    @click.stop="quickSaveScenario" 
-                                    class="text-[10px] bg-slate-100 dark:bg-slate-700 hover:bg-blue-100 dark:hover:bg-blue-900 text-slate-600 dark:text-slate-300 hover:text-blue-600 px-3 py-1.5 rounded-lg font-bold transition border border-slate-200 dark:border-slate-600"
-                                >
+                                <button @click.stop="quickSaveScenario" class="text-[10px] bg-slate-100 dark:bg-slate-700 hover:bg-blue-100 dark:hover:bg-blue-900 text-slate-600 dark:text-slate-300 hover:text-blue-600 px-3 py-1.5 rounded-lg font-bold transition border border-slate-200 dark:border-slate-600">
                                     {{ currentLoadedSlotIndex !== null ? 'Update' : 'Save' }}
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <div @click="showForecastSettings = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-green-400 transition relative overflow-hidden order-3">
+                    <div id="tour-forecast-settings" @click="showForecastSettings = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-green-400 transition relative overflow-hidden order-3">
                         <div class="absolute right-0 top-0 w-20 h-20 bg-green-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-green-500/20"></div>
                         <div class="flex justify-between items-start relative z-10">
                             <div>
@@ -789,7 +778,6 @@
                 </div>
                 
                 <div id="tour-monthly-details" class="space-y-4">
-                    
                     <div @click="showForecastDetails = !showForecastDetails" class="flex items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-indigo-400 transition group select-none">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition">
@@ -867,53 +855,9 @@
                 <transition name="fade">
                 <div v-if="showForecastSettings" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity" @click.self="showForecastSettings = false">
                     <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl flex flex-col max-h-[90vh] animate-slide-up border border-slate-200 dark:border-slate-800">
-                        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-2xl shadow-inner">💳</div>
-                                <div>
-                                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Forecast Engine</h3>
-                                    <div class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Cash Flow & Safety Parameters</div>
-                                </div>
-                            </div>
-                            <button @click="showForecastSettings = false" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center">✕</button>
-                        </div>
-                        <div class="p-6 space-y-6 overflow-y-auto custom-scrollbar">
-                            <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 relative overflow-hidden">
-                                <div class="absolute -right-6 -top-6 w-24 h-24 bg-green-500/10 rounded-full blur-2xl"></div>
-                                <div class="flex justify-between items-center mb-2 relative z-10">
-                                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Current Balance</span>
-                                    <button v-if="!isEditingBalance" @click="isEditingBalance = true" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">EDIT</button>
-                                    <button v-else @click="saveBalanceInline" class="text-xs font-bold text-green-600 dark:text-green-400 hover:underline">SAVE</button>
-                                </div>
-                                <div v-if="!isEditingBalance" @click="isEditingBalance = true" class="relative z-10 cursor-pointer">
-                                    <div class="flex items-baseline gap-1">
-                                        <span class="text-lg text-slate-400 font-medium">$</span>
-                                        <span class="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">{{ forecastSettings.currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span>
-                                    </div>
-                                </div>
-                                <div v-else class="relative z-10">
-                                    <input type="number" step="0.01" v-model="forecastSettings.currentBalance" @keyup.enter="saveBalanceInline" class="w-full bg-white dark:bg-slate-900 border-2 border-green-500 rounded-xl px-4 py-2 text-2xl font-bold text-slate-900 dark:text-white outline-none shadow-sm" autofocus>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="space-y-2">
-                                    <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Safety Margin</label>
-                                    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-1">
-                                        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span><input type="number" v-model="forecastSettings.safetyMargin" class="w-full bg-transparent border-none py-2 pl-7 pr-2 text-slate-900 dark:text-white font-bold outline-none rounded-lg"></div>
-                                    </div>
-                                </div>
-                                <div class="space-y-2">
-                                    <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Look Ahead</label>
-                                    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-1">
-                                        <div class="relative"><input type="number" v-model="forecastSettings.months" class="w-full bg-transparent border-none py-2 pl-3 pr-8 text-slate-900 dark:text-white font-bold outline-none rounded-lg text-center"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">Mo</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-b-3xl flex justify-end gap-3">
-                            <button @click="showForecastSettings = false" class="px-5 py-2.5 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition">Cancel</button>
-                            <button @click="saveAllForecastSettings" class="px-6 py-2.5 rounded-xl font-bold text-white bg-slate-900 dark:bg-blue-600 hover:opacity-90 transition shadow-lg">Save Changes</button>
-                        </div>
+                        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start"><div class="flex items-center gap-4"><div class="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-2xl shadow-inner">💳</div><div><h3 class="text-xl font-bold text-slate-900 dark:text-white">Forecast Engine</h3><div class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Cash Flow & Safety Parameters</div></div></div><button @click="showForecastSettings = false" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center">✕</button></div>
+                        <div class="p-6 space-y-6 overflow-y-auto custom-scrollbar"><div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 relative overflow-hidden"><div class="absolute -right-6 -top-6 w-24 h-24 bg-green-500/10 rounded-full blur-2xl"></div><div class="flex justify-between items-center mb-2 relative z-10"><span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Current Balance</span><button v-if="!isEditingBalance" @click="isEditingBalance = true" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">EDIT</button><button v-else @click="saveBalanceInline" class="text-xs font-bold text-green-600 dark:text-green-400 hover:underline">SAVE</button></div><div v-if="!isEditingBalance" @click="isEditingBalance = true" class="relative z-10 cursor-pointer"><div class="flex items-baseline gap-1"><span class="text-lg text-slate-400 font-medium">$</span><span class="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">{{ forecastSettings.currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div></div><div v-else class="relative z-10"><input type="number" step="0.01" v-model="forecastSettings.currentBalance" @keyup.enter="saveBalanceInline" class="w-full bg-white dark:bg-slate-900 border-2 border-green-500 rounded-xl px-4 py-2 text-2xl font-bold text-slate-900 dark:text-white outline-none shadow-sm" autofocus></div></div><div class="grid grid-cols-2 gap-4"><div class="space-y-2"><label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Safety Margin</label><div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-1"><div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span><input type="number" v-model="forecastSettings.safetyMargin" class="w-full bg-transparent border-none py-2 pl-7 pr-2 text-slate-900 dark:text-white font-bold outline-none rounded-lg"></div></div></div><div class="space-y-2"><label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Look Ahead</label><div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-1"><div class="relative"><input type="number" v-model="forecastSettings.months" class="w-full bg-transparent border-none py-2 pl-3 pr-8 text-slate-900 dark:text-white font-bold outline-none rounded-lg text-center"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">Mo</span></div></div></div></div></div>
+                        <div class="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-b-3xl flex justify-end gap-3"><button @click="showForecastSettings = false" class="px-5 py-2.5 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition">Cancel</button><button @click="saveAllForecastSettings" class="px-6 py-2.5 rounded-xl font-bold text-white bg-slate-900 dark:bg-blue-600 hover:opacity-90 transition shadow-lg">Save Changes</button></div>
                     </div>
                 </div>
                 </transition>
@@ -921,54 +865,8 @@
                 <transition name="fade">
                     <div v-if="showScenarioModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showScenarioModal = false">
                         <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700 max-h-[90vh]">
-                            <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center">
-                                <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><span>🔮</span> Scenario Manager</h2>
-                                <button @click="showScenarioModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">&times;</button>
-                            </div>
-                            <div class="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
-                                <div>
-                                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Saved Forecasts</h3>
-                                    <div class="space-y-3">
-                                        <div v-for="i in 3" :key="i" class="flex items-center justify-between p-3 bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm">
-                                            <div class="flex items-center gap-3 overflow-hidden">
-                                                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-slate-500 bg-slate-100 dark:bg-slate-600 dark:text-slate-300 text-xs">{{ i }}</div>
-                                                <div class="min-w-0">
-                                                    <div v-if="savedForecasts[i-1]" class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ savedForecasts[i-1].name }}</div>
-                                                    <div v-else class="text-xs text-slate-400 italic">Empty Slot</div>
-                                                </div>
-                                            </div>
-                                            <div class="flex gap-1">
-                                                <template v-if="savedForecasts[i-1]">
-                                                    <button @click="loadForecastSlot(i-1); showScenarioModal=false; showForecastDetails = true" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold">📂</button>
-                                                    <button @click="saveForecastSlot(i-1)" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xs font-bold">💾</button>
-                                                    <button @click="clearForecastSlot(i-1)" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg text-xs font-bold">🗑️</button>
-                                                </template>
-                                                <button v-else @click="saveForecastSlot(i-1)" class="px-3 py-2 bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-200 rounded-lg text-xs font-bold">+ Save Current</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="pt-6 border-t dark:border-slate-700">
-                                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Financial Target</h3>
-                                    <div v-if="project" class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 flex justify-between items-center">
-                                        <div>
-                                            <div class="font-bold text-blue-900 dark:text-blue-300">{{ project.name }}</div>
-                                            <div class="text-lg font-black text-blue-700 dark:text-blue-400">${{ project.cost.toLocaleString() }}</div>
-                                            <div class="mt-1 text-xs font-bold" :class="forecastResults.affordableMonth ? 'text-emerald-600' : 'text-red-500'">{{ forecastResults.affordableMonth ? '✅ Affordable: ' + forecastResults.affordableMonth : '❌ Not affordable yet' }}</div>
-                                        </div>
-                                        <button @click="project = null; runForecast()" class="text-xs bg-white text-red-500 border border-red-100 px-3 py-2 rounded-lg font-bold hover:bg-red-50">Remove</button>
-                                    </div>
-                                    <div v-else class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
-                                        <div class="space-y-3">
-                                            <input v-model="newProject.name" placeholder="Goal Name (e.g. Tesla)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
-                                            <div class="flex gap-2">
-                                                <input v-model="newProject.cost" type="number" placeholder="Cost ($)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
-                                                <button @click="saveProject" class="bg-slate-900 dark:bg-blue-600 text-white px-4 rounded-lg font-bold text-sm whitespace-nowrap">Set Goal</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center"><h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><span>🔮</span> Scenario Manager</h2><button @click="showScenarioModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">&times;</button></div>
+                            <div class="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar"><div><h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Saved Forecasts</h3><div class="space-y-3"><div v-for="i in 3" :key="i" class="flex items-center justify-between p-3 bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm"><div class="flex items-center gap-3 overflow-hidden"><div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-slate-500 bg-slate-100 dark:bg-slate-600 dark:text-slate-300 text-xs">{{ i }}</div><div class="min-w-0"><div v-if="savedForecasts[i-1]" class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ savedForecasts[i-1].name }}</div><div v-else class="text-xs text-slate-400 italic">Empty Slot</div></div></div><div class="flex gap-1"><template v-if="savedForecasts[i-1]"><button @click="loadForecastSlot(i-1); showScenarioModal=false; showForecastDetails = true" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold">📂</button><button @click="saveForecastSlot(i-1)" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xs font-bold">💾</button><button @click="clearForecastSlot(i-1)" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg text-xs font-bold">🗑️</button></template><button v-else @click="saveForecastSlot(i-1)" class="px-3 py-2 bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-200 rounded-lg text-xs font-bold">+ Save Current</button></div></div></div></div><div class="pt-6 border-t dark:border-slate-700"><h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Financial Target</h3><div v-if="project" class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 flex justify-between items-center"><div><div class="font-bold text-blue-900 dark:text-blue-300">{{ project.name }}</div><div class="text-lg font-black text-blue-700 dark:text-blue-400">${{ project.cost.toLocaleString() }}</div><div class="mt-1 text-xs font-bold" :class="forecastResults.affordableMonth ? 'text-emerald-600' : 'text-red-500'">{{ forecastResults.affordableMonth ? '✅ Affordable: ' + forecastResults.affordableMonth : '❌ Not affordable yet' }}</div></div><button @click="project = null; runForecast()" class="text-xs bg-white text-red-500 border border-red-100 px-3 py-2 rounded-lg font-bold hover:bg-red-50">Remove</button></div><div v-else class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600"><div class="space-y-3"><input v-model="newProject.name" placeholder="Goal Name (e.g. Tesla)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white"><div class="flex gap-2"><input v-model="newProject.cost" type="number" placeholder="Cost ($)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white"><button @click="saveProject" class="bg-slate-900 dark:bg-blue-600 text-white px-4 rounded-lg font-bold text-sm whitespace-nowrap">Set Goal</button></div></div></div></div></div>
                         </div>
                     </div>
                 </transition>
@@ -976,34 +874,8 @@
                 <transition name="fade">
                     <div v-if="showRetirementModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showRetirementModal = false">
                         <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
-                            <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center">
-                                <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><span>👴</span> Retirement Strategy</h2>
-                                <button @click="showRetirementModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">&times;</button>
-                            </div>
-                            <div class="p-6 space-y-6">
-                                <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border border-purple-100 dark:border-purple-800">
-                                    <p class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-1">Projected Nest Egg</p>
-                                    <div class="text-3xl font-black text-purple-700 dark:text-purple-300">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div>
-                                    <p class="text-[10px] text-purple-400 mt-2">Based on <span class="font-bold border-b border-purple-300">${{ totalMonthlyRetirementContribution.toLocaleString() }}/mo</span> contribution</p>
-                                </div>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Current Saved Balance</label>
-                                        <div class="relative"><span class="absolute left-3 top-2.5 text-slate-400 text-sm">$</span><input v-model="forecastSettings.retirementBalance" @change="saveRetirementSettings" type="number" class="w-full pl-6 p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none font-bold"></div>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Return Rate (%)</label>
-                                            <input v-model="forecastSettings.expectedReturn" @change="saveRetirementSettings" type="number" step="0.1" class="w-full p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none text-center font-bold">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Retire Age</label>
-                                            <input v-model="forecastSettings.retirementAge" @change="saveRetirementSettings" type="number" class="w-full p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none text-center font-bold">
-                                        </div>
-                                    </div>
-                                    <button @click="showRetirementModal = false" class="w-full bg-slate-900 dark:bg-purple-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition">Update Projection</button>
-                                </div>
-                            </div>
+                            <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center"><h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><span>👴</span> Retirement Strategy</h2><button @click="showRetirementModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">&times;</button></div>
+                            <div class="p-6 space-y-6"><div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border border-purple-100 dark:border-purple-800"><p class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-1">Projected Nest Egg</p><div class="text-3xl font-black text-purple-700 dark:text-purple-300">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div><p class="text-[10px] text-purple-400 mt-2">Based on <span class="font-bold border-b border-purple-300">${{ totalMonthlyRetirementContribution.toLocaleString() }}/mo</span> contribution</p></div><div class="space-y-4"><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Current Saved Balance</label><div class="relative"><span class="absolute left-3 top-2.5 text-slate-400 text-sm">$</span><input v-model="forecastSettings.retirementBalance" @change="saveRetirementSettings" type="number" class="w-full pl-6 p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none font-bold"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Return Rate (%)</label><input v-model="forecastSettings.expectedReturn" @change="saveRetirementSettings" type="number" step="0.1" class="w-full p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none text-center font-bold"></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Retire Age</label><input v-model="forecastSettings.retirementAge" @change="saveRetirementSettings" type="number" class="w-full p-2.5 border rounded-xl text-sm bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none text-center font-bold"></div></div><button @click="showRetirementModal = false" class="w-full bg-slate-900 dark:bg-purple-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition">Update Projection</button></div></div>
                         </div>
                     </div>
                 </transition>
@@ -2125,7 +1997,50 @@
             const startDashboardTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-safe-spend', popover: { title: '1. Safe to Spend', description: 'This is your "Guilt-Free" money. It is calculated by taking your Net Pay and subtracting your Core Bills.' } }, { element: '#tour-nest-egg', popover: { title: '2. Nest Egg', description: 'A live projection of your retirement savings based on your current 401k contributions and age.' } }, { element: '#tour-debt-free', popover: { title: '3. Debt Free Date', description: 'When you will be debt free based on your "Attack Plan" (set in the Debt tab).' } }, { element: '#tour-variable-budgets', popover: { title: '4. Variable Budgets', description: 'Track fluctuating expenses here (Groceries, Gas). You must manually log expenses for these.' } }, { element: '#tour-due-soon', popover: { title: '5. Due Soon', description: 'Fixed bills due in the next 7 days. Click the checkbox to mark them as paid.' } }, { element: '#tour-cash-flow', popover: { title: '6. 30-Day Forecast', description: 'Your projected bank balance for the next month. Use "Can I Afford It?" to test large purchases.' } }, { element: '#tour-breakdown', popover: { title: '7. Spending Breakdown', description: 'See where your money goes. Toggle between % and $ to see the impact of each category.' } } ] }).drive(); };
             const startPaycheckTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-paycheck-trigger', popover: { title: 'New Calculation', description: 'Click here to add a new income source or calculate a one-off paycheck.' } }, { element: '#tour-paycheck-save', popover: { title: 'Save or Simulate', description: 'Save the income permanently to your profile, or use "Session Mode" to test different salary scenarios without saving or to determine your pay for months that include commission and apply it to the financial forecast.' } }, { element: '#tour-paycheck-result', popover: { title: 'The Breakdown', description: 'See exactly where your money goes: Taxes, 401k, Benefits, and your final Net Pay.' } }, { element: '#tour-active-incomes', popover: { title: 'Active Incomes', description: 'All your saved income sources live here. Click one to edit or recalculate it.' } } ] }).drive(); };
             const startBudgetTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-net-pay', popover: { title: '1. Net Monthly Pay', description: 'Your financial fuel. This is the total monthly income from all your "Active" income sources in the Paycheck tab.' } }, { element: '#tour-scenario-burn', popover: { title: '2. Scenario Commitments', description: 'Your burn rate. This sums up all bills currently active in this scenario (Survival, Standard, or Dream).' } }, { element: '#tour-projected-end', popover: { title: '3. Projected End Balance', description: 'The bottom line. Income minus Commitments. Green means you are saving; red means you are overspending.' } }, { element: '#tour-manage-budget', popover: { title: '4. The Control Center', description: 'Click here to add bills. **Pro Tip:** For fluctuating costs like Groceries or Gas, check the **Variable Budget** box. This sets up a dedicated tracker on the Dashboard so you can log receipts and stay within your limit.' } }, { element: '#tour-ledger', popover: { title: '5. Current Bills Ledger', description: 'This list is auto-generated from your budget items. Use this to track actual payments due this month.' } } ] }).drive(); };
-            const startForecastTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-forecast-settings', popover: { title: '1. Control the Future', description: 'Set your current balance, safety margin, and how far ahead you want to look.' } }, { element: '#tour-retirement-forecast', popover: { title: '2. The Long Game', description: 'See how your nest egg grows based on your contributions and expected return.' } }, { element: '#tour-goal-project', popover: { title: '3. Dream Big', description: 'Add a specific financial target (like a house or car) to see exactly when you can afford it.' } }, { element: '#tour-forecast-chart', popover: { title: '4. Visual Timeline', description: 'Watch your balance grow (or shrink) over time. The "Star" indicates when you hit your goal.' } }, { element: '#tour-monthly-details', popover: { title: '5. Monthly Deep Dive', description: 'Expand any month to see exactly what income came in and what bills went out. Easily apply calculated paychecks with commission to the appropriate month. You can even add one-time expenses here.' } } ] }).drive(); };
+            const startForecastTour = () => {
+                const driver = window.driver.js.driver;
+                const driverObj = driver({
+                    showProgress: true,
+                    steps: [
+                        { 
+                            element: '#tour-retirement-forecast', 
+                            popover: { 
+                                title: '1. Nest Egg & Retirement', 
+                                description: 'Start here. See your projected wealth at retirement based on your current 401k contributions and expected returns.' 
+                            } 
+                        },
+                        { 
+                            element: '#tour-goal-project', 
+                            popover: { 
+                                title: '2. Future Scenarios', 
+                                description: 'Load saved plans (like "Survival Mode" or "Buying a Boat") or set a specific financial goal to see when you can afford it.' 
+                            } 
+                        },
+                        { 
+                            element: '#tour-forecast-settings', 
+                            popover: { 
+                                title: '3. Cash Flow Engine', 
+                                description: 'This is your "Starting Line." Update your current bank balance here to instantly refresh the forecast. You can also adjust your safety margin.' 
+                            } 
+                        },
+                        { 
+                            element: '#tour-forecast-chart', 
+                            popover: { 
+                                title: '4. Visual Timeline', 
+                                description: 'This chart projects your bank balance into the future. Green dots mean you are safe; Red means you dip below your safety margin.' 
+                            } 
+                        },
+                        { 
+                            element: '#tour-monthly-details', 
+                            popover: { 
+                                title: '5. Monthly Deep Dive', 
+                                description: 'Expand this section to see the exact math for every single month. You can add one-time expenses (like a vacation) to specific months here.' 
+                            } 
+                        }
+                    ]
+                });
+                driverObj.drive();
+            };
             const startDebtTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-add-debt', popover: { title: '1. Add Debt', description: 'Start here by listing all your debts (Credit Cards, Loans, etc.). Be accurate with the interest rate!' } }, { element: '#tour-debt-list', popover: { title: '2. Prioritize', description: 'Drag and drop these cards to change the payoff order. We recommend the "Avalanche" method (Highest Interest Rate First) to save money.' } }, { element: '#tour-debt-attack', popover: { title: '3. Attack Plan', description: 'This is the magic. Use the slider to see how adding just a little extra money each month drastically cuts your payoff time.' } }, { element: '#tour-payoff-timeline', popover: { title: '4. Freedom Date', description: 'Your timeline to being debt-free. Watch the months disappear as you increase your monthly attack!' } } ] }).drive(); };
             const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
 
