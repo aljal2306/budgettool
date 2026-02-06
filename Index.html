@@ -2201,50 +2201,49 @@
                 _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
             });
 
-           return { 
-                // --- AUTH & SYSTEM ---
+          // --- RETURN VARIABLES ---
+            return { 
                 session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, 
                 isDarkMode, toggleDarkMode, startVoiceEntry, isListening,
 
-                // --- ONBOARDING ---
+                // Onboarding
                 showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, 
                 
-                // --- PAYCHECK & INCOME ---
+                // Paycheck
                 calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, 
 
-                // --- BUDGET & ITEMS ---
+                // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, 
 
-                // --- LEDGER & LOGS ---
+                // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
                 showExpenseModal, expenseData, logExpense, editingExpenseId, 
                 showLogModal, openLogModal, currentLogEntries, selectedBudgetLog, deleteLogEntry, editLogEntry, 
                 
-                // --- FORECAST & SETTINGS ---
+                // Forecast & Settings (Updated)
                 forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, 
                 showForecastSettings, showRetirementModal, showForecastDetails,
-                isEditingBalance, saveBalanceInline, // <--- NEW VARIABLES HERE
-                saveAllForecastSettings, // <--- NEW SAVE FUNCTION
+                isEditingBalance, saveBalanceInline, saveAllForecastSettings,
 
-                // --- SCENARIOS (Updated) ---
+                // Scenarios
                 saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
                 showScenarioModal, filledScenarioCount, isScenarioActive, addExpense, fillExpense,
 
-                // --- DEBT ---
+                // Debt
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
 
-                // --- ADVISOR & TOURS ---
+                // Advisor
                 showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, 
                 showConsultant, openConsultant, chatMessages, userQuery, sendQuery, isThinking, renderMarkdown, resetChat, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, 
 
-                // --- GIFT CARDS ---
+                // Gift Cards
                 giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner, editCardLog, deleteCardLog, editingLogId, showWalletModal, totalGiftCardBalance, 
 
-                // --- UTILS ---
+                // Utils
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, showCalcDetails, showCalcForm, saveSettings, 
-                currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
+                currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue
             };
         }
     }).mount('#app');
