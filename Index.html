@@ -233,7 +233,8 @@
                         <transition name="fade">
                             <div v-if="showWalletModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                                 <div class="bg-white dark:bg-slate-800 w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
-                                    
+                                    <div id="tour-gift-wallet" class="bg-white dark:bg-slate-800 ...">
+    </div>
                                     <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center flex-shrink-0">
                                         <div>
                                             <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
@@ -2043,7 +2044,44 @@
             };
             const startDebtTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-add-debt', popover: { title: '1. Add Debt', description: 'Start here by listing all your debts (Credit Cards, Loans, etc.). Be accurate with the interest rate!' } }, { element: '#tour-debt-list', popover: { title: '2. Prioritize', description: 'Drag and drop these cards to change the payoff order. We recommend the "Avalanche" method (Highest Interest Rate First) to save money.' } }, { element: '#tour-debt-attack', popover: { title: '3. Attack Plan', description: 'This is the magic. Use the slider to see how adding just a little extra money each month drastically cuts your payoff time.' } }, { element: '#tour-payoff-timeline', popover: { title: '4. Freedom Date', description: 'Your timeline to being debt-free. Watch the months disappear as you increase your monthly attack!' } } ] }).drive(); };
             const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
-
+            const startTour = () => {
+                const driver = window.driver.js.driver;
+                const driverObj = driver({
+                    showProgress: true,
+                    steps: [
+                        { 
+                            element: '#tour-balance', 
+                            popover: { 
+                                title: 'Total Balance', 
+                                description: 'This is your real-time bottom line, calculated from your active cash and checking accounts.' 
+                            } 
+                        },
+                        { 
+                            element: '#tour-burn', 
+                            popover: { 
+                                title: 'Monthly Burn', 
+                                description: 'This shows how much money you spend on fixed bills and average living expenses every month.' 
+                            } 
+                        },
+                        // 🟢 NEW STEP: Gift Card Wallet
+                        { 
+                            element: '#tour-gift-wallet', 
+                            popover: { 
+                                title: 'Gift Card Wallet', 
+                                description: 'Track Amazon, Visa, or store balances here. Money here is "extra" and separate from your cash cash.' 
+                            } 
+                        },
+                        { 
+                            element: '#tour-ledger', 
+                            popover: { 
+                                title: 'Recent Activity', 
+                                description: 'A quick snapshot of your latest transactions and upcoming bills due soon.' 
+                            } 
+                        }
+                    ]
+                });
+                driverObj.drive();
+            };
             const resetDemo = async () => { if(!confirm("⚠️ WARNING: DELETE ALL DATA?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); window.location.reload(); };
             const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
             const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
