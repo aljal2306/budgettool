@@ -815,35 +815,99 @@
                                     </div>
 
                                     <transition name="accordion">
-                                        <div v-if="showForecastSettings" class="bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 p-4 space-y-3">
-                                            
-                                            <div>
-                                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Current Balance</label>
-                                                <div class="relative">
-                                                    <span class="absolute left-3 top-2 text-slate-400 text-xs">$</span>
-                                                    <input v-model="forecastSettings.currentBalance" @change="saveSettings" type="number" step="0.01" class="w-full pl-6 p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
-                                                </div>
-                                            </div>
+                                       <div v-if="showForecastSettings" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity" @click.self="showForecastSettings = false">
+            <div class="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[85vh] animate-slide-up">
+                
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                            ⚙️
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-lg">Forecast Engine</h3>
+                            <div class="text-xs text-slate-400">Configure your financial reality</div>
+                        </div>
+                    </div>
+                    <button @click="showForecastSettings = false" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition">✕</button>
+                </div>
 
-                                            <div>
-                                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Safety Margin</label>
-                                                <div class="relative">
-                                                    <span class="absolute left-3 top-2 text-slate-400 text-xs">$</span>
-                                                    <input v-model="forecastSettings.safetyMargin" @change="saveSettings" type="number" step="0.01" class="w-full pl-6 p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
-                                                </div>
-                                            </div>
+                <div class="p-6 overflow-y-auto space-y-8 custom-scrollbar">
+                    
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                            <span>📉</span> Short Term Cash Flow
+                        </h4>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <label class="block text-xs text-slate-400 mb-1">Current Bank Balance</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                    <input type="number" step="0.01" v-model="forecastSettings.currentBalance" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-8 pr-4 text-white font-mono text-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                                <p class="text-[10px] text-slate-500 mt-1">Updates automatically when you pay bills.</p>
+                            </div>
 
-                                            <div>
-                                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Forecast Range</label>
-                                                <select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
-                                                    <option v-for="n in 24" :value="n">{{ n }} Months</option>
-                                                </select>
-                                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Safety Margin</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                    <input type="number" v-model="forecastSettings.safetyMargin" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-8 pr-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                            </div>
 
-                                            <button @click="runForecast(); showForecastSettings = false; showForecastDetails = true" class="w-full bg-slate-900 dark:bg-blue-600 text-white font-bold py-2 rounded-lg text-xs shadow-md hover:opacity-90 transition mt-2">
-                                                Apply & Refresh
-                                            </button>
-                                        </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Look Ahead (Months)</label>
+                                <input type="number" v-model="forecastSettings.months" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="h-px bg-slate-800"></div>
+
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+                            <span>🥚</span> Nest Egg Projection
+                        </h4>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <label class="block text-xs text-slate-400 mb-1">Current Retirement Balance</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                    <input type="number" step="100" v-model="forecastSettings.retirementBalance" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-8 pr-4 text-white font-mono text-lg focus:ring-2 focus:ring-purple-500 outline-none">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Current Age</label>
+                                <input type="number" v-model="forecastSettings.currentAge" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-purple-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Retire Age</label>
+                                <input type="number" v-model="forecastSettings.retirementAge" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-purple-500 outline-none">
+                            </div>
+
+                            <div class="col-span-2">
+                                <label class="block text-xs text-slate-400 mb-1">Expected Annual Return (%)</label>
+                                <div class="relative">
+                                    <input type="number" step="0.1" v-model="forecastSettings.expectedReturn" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-purple-500 outline-none">
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</span>
+                                </div>
+                                <p class="text-[10px] text-slate-500 mt-1">Conservative: 5-6%. Aggressive: 8-10%.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-slate-700 bg-slate-800/50 flex justify-end gap-3">
+                    <button @click="showForecastSettings = false" class="px-4 py-2 text-slate-400 hover:text-white transition">Cancel</button>
+                    <button @click="saveAllForecastSettings" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg shadow-blue-900/20 transition flex items-center gap-2">
+                        <span>Save Configuration</span>
+                    </button>
+                </div>
+            </div>
+        </div>
                                     </transition>
                                 </div>
                                 <div id="tour-retirement-forecast">
@@ -1267,7 +1331,7 @@
                     </transition>
 
     </div>
-    ```
+    
 <script>
     const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
     const { createClient } = supabase;
@@ -2045,6 +2109,34 @@
                 await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id);
                 await saveSettings();
                 renderDashboardChart();
+            };
+            const saveAllForecastSettings = async () => {
+                loading.value = true;
+                
+                // 1. Prepare Payload
+                const updates = {
+                    user_id: session.value.user.id,
+                    current_balance: Number(forecastSettings.value.currentBalance),
+                    safety_margin: Number(forecastSettings.value.safetyMargin),
+                    current_age: Number(forecastSettings.value.currentAge),
+                    retirement_age: Number(forecastSettings.value.retirementAge),
+                    retirement_balance: Number(forecastSettings.value.retirementBalance),
+                    expected_return: Number(forecastSettings.value.expectedReturn)
+                };
+
+                // 2. Send to Supabase
+                const { error } = await _supabase.from('user_settings').upsert(updates);
+
+                loading.value = false;
+
+                if (error) {
+                    alert("Error saving settings: " + error.message);
+                } else {
+                    // 3. Success
+                    showForecastSettings.value = false; // Close Modal
+                    runForecast(); // Refresh the charts
+                    renderDashboardChart();
+                }
             };
 
             // --- DEBT ---
