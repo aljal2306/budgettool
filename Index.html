@@ -1912,7 +1912,46 @@
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-            const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating'); } else { renderDashboardChart(); } };
+           const toggleBillPaid = async (bill) => {
+                // 1. Calculate the math
+                const amount = bill.budget_items.amount;
+                
+                // 2. Adjust Balance Logic
+                if (bill.is_paid) {
+                    // Scenario: You just checked the box (Paid it)
+                    // Action: DEDUCT money from bank
+                    forecastSettings.value.currentBalance -= amount;
+                    
+                    // Optional: Create a visual "Expense Log" if we had one.
+                    // For now, we just update the balance.
+                } else {
+                    // Scenario: You unchecked the box (Oops, didn't pay it yet)
+                    // Action: REFUND money to bank
+                    forecastSettings.value.currentBalance += amount;
+                }
+
+                // 3. Save the Bill Status to DB
+                try {
+                    const { error } = await supabase
+                        .from('bill_items')
+                        .update({ is_paid: bill.is_paid })
+                        .eq('id', bill.id);
+
+                    if (error) throw error;
+                    
+                    // 4. Save the New Balance to LocalStorage (or DB if we had a settings table)
+                    saveSettings(); 
+                    
+                } catch (err) {
+                    console.error('Error updating bill:', err);
+                    // Revert balance if DB save failed
+                    if (bill.is_paid) forecastSettings.value.currentBalance += amount;
+                    else forecastSettings.value.currentBalance -= amount;
+                    
+                    bill.is_paid = !bill.is_paid; // Revert checkbox
+                    alert("Could not save payment. Please try again.");
+                }
+            };
             const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
 
             // --- DEBT ---
