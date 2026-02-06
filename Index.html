@@ -799,7 +799,53 @@
                                     </div>
                                 </transition>
 
-                                <div id="tour-forecast-settings" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Forecast Settings</h3><label class="block text-xs mb-1">Bank Balance Now</label><input v-model="forecastSettings.currentBalance" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"><label class="block text-xs mb-1">Safety Margin</label><input v-model="forecastSettings.safetyMargin" @change="saveSettings" type="number" step="0.01" class="w-full p-2 border rounded-lg mb-2 bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"><label class="block text-xs mb-1">Months to Forecast</label><select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option v-for="n in 24" :value="n">{{ n }} Months</option></select><button @click="runForecast" class="w-full mt-3 bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800">Refresh Forecast</button></div>
+                               <div id="tour-forecast-settings" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    
+                                    <div @click="showForecastSettings = !showForecastSettings" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition select-none">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg">⚙️</div>
+                                            <div>
+                                                <h3 class="font-bold text-sm text-slate-700 dark:text-white">Forecast Settings</h3>
+                                                <p class="text-[10px] text-slate-400 font-mono mt-0.5">
+                                                    Start: ${{ forecastSettings.currentBalance.toLocaleString() }} &bull; {{ forecastSettings.months }} Mo
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="text-slate-400 transform transition-transform duration-300" :class="showForecastSettings ? 'rotate-180' : ''">▼</div>
+                                    </div>
+
+                                    <transition name="accordion">
+                                        <div v-if="showForecastSettings" class="bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 p-4 space-y-3">
+                                            
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Current Balance</label>
+                                                <div class="relative">
+                                                    <span class="absolute left-3 top-2 text-slate-400 text-xs">$</span>
+                                                    <input v-model="forecastSettings.currentBalance" @change="saveSettings" type="number" step="0.01" class="w-full pl-6 p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Safety Margin</label>
+                                                <div class="relative">
+                                                    <span class="absolute left-3 top-2 text-slate-400 text-xs">$</span>
+                                                    <input v-model="forecastSettings.safetyMargin" @change="saveSettings" type="number" step="0.01" class="w-full pl-6 p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Forecast Range</label>
+                                                <select v-model="forecastSettings.months" class="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                                    <option v-for="n in 24" :value="n">{{ n }} Months</option>
+                                                </select>
+                                            </div>
+
+                                            <button @click="runForecast(); showForecastSettings = false" class="w-full bg-slate-900 dark:bg-blue-600 text-white font-bold py-2 rounded-lg text-xs shadow-md hover:opacity-90 transition mt-2">
+                                                Apply & Refresh
+                                            </button>
+                                        </div>
+                                    </transition>
+                                </div>
                                 <div id="tour-retirement-forecast" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><h3 class="font-bold text-sm text-indigo-600 dark:text-indigo-400 uppercase mb-3 flex items-center gap-2"><span>👴</span> Retirement Nest Egg</h3><div class="space-y-2 mb-4"><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Balance</label><input v-model="forecastSettings.retirementBalance" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div><div><label class="block text-[10px] text-slate-400">Rate of Return %</label><input v-model="forecastSettings.expectedReturn" @change="saveRetirementSettings" type="number" step="0.1" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-400">Current Age</label><input v-model="forecastSettings.currentAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div><div><label class="block text-[10px] text-slate-400">Retire Age</label><input v-model="forecastSettings.retirementAge" @change="saveRetirementSettings" type="number" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div></div><div class="text-[10px] text-slate-400 mt-2">Monthly Contribution: <span class="font-bold text-slate-700 dark:text-white">${{ totalMonthlyRetirementContribution.toLocaleString() }}</span></div></div><div class="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800 text-center"><div class="text-xs text-indigo-400 uppercase tracking-widest mb-1">Projected at Age {{ forecastSettings.retirementAge }}</div><div class="text-2xl font-black text-indigo-700 dark:text-indigo-300">${{ retirementProjection.toLocaleString(undefined, {maximumFractionDigits:0}) }}</div></div></div>
                             </div>
                             <div class="lg:col-span-3 print:col-span-4 space-y-6">
@@ -1120,6 +1166,7 @@
             const budgetItems = ref([]), bills = ref([]), debts = ref([]), incomes = ref([]);
             const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
             const isListening = ref(false); 
+            const showForecastSettings = ref(false); // Collapsed by default
 
             // --- GIFT CARD STATE ---
             const giftCards = ref([]);
@@ -1745,7 +1792,7 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings,
                 // --- GIFT CARD EXPORTS ---
                 giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner, editCardLog, deleteCardLog, editingLogId, showWalletModal, totalGiftCardBalance, showBillModal, totalBillDue, countBillDue, showScenarioModal, filledScenarioCount,
             };
