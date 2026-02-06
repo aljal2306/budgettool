@@ -1370,16 +1370,13 @@
     createApp({
         setup() {
             // --- STATE VARIABLES ---
+            const user = ref(null);
             const session = ref(null), authEmail = ref(''), loading = ref(false), authMessage = ref(''), currentView = ref('dashboard');
             const useTempPay = ref(false), tempCalculatedPay = ref(0);
             const budgetItems = ref([]), bills = ref([]), debts = ref([]), incomes = ref([]);
             const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
             const isListening = ref(false); 
             const showForecastSettings = ref(false); // Collapsed by default
-
-            // --- AUTHENTICATION VARIABLES ---
-            const user = ref(null); // <--- This was missing!
-            const session = ref(null);
 
             // --- GIFT CARD STATE ---
             const giftCards = ref([]);
