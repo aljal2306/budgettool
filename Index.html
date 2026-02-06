@@ -1912,8 +1912,42 @@
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-            const toggleBillPaid = async (bill) => { const { error } = await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id); if(error) { bill.is_paid = !bill.is_paid; alert('Error updating'); } else { renderDashboardChart(); } };
-            const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
+           const toggleBillPaid = async (bill) => {
+                const amount = Number(bill.budget_items.amount);
+                
+                // 1. Math: Update the hidden balance variable
+                if (bill.is_paid) {
+                    // It was Checked (Paid), now Unchecking -> Refund the money
+                    forecastSettings.value.currentBalance += amount;
+                } else {
+                    // It was Unchecked, now Checking -> Subtract the money
+                    forecastSettings.value.currentBalance -= amount;
+                }
+                
+                // 2. Flip the checkbox visual
+                bill.is_paid = !bill.is_paid;
+
+                // 3. Save everything to Database
+                await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id);
+                await saveSettings(); // Saves the new balance to the cloud
+                
+                renderDashboardChart();
+            };
+            const quickPay = async (bill) => {
+                const amount = Number(bill.budget_items.amount);
+                
+                if (bill.is_paid) {
+                    forecastSettings.value.currentBalance += amount; // Refund
+                    bill.is_paid = false;
+                } else {
+                    forecastSettings.value.currentBalance -= amount; // Deduct
+                    bill.is_paid = true;
+                }
+
+                await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id);
+                await saveSettings();
+                renderDashboardChart();
+            };
 
             // --- DEBT ---
             const editDebt = (d) => { newDebt.value = { ...d }; editingDebtId.value = d.id; showDebtForm.value = true; };
