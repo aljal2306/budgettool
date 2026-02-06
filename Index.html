@@ -1459,12 +1459,23 @@
             const setScenarioMode = (mode) => { currentScenarioMode.value = mode; const freshItems = budgetItems.value.map(item => ({...item})); freshItems.forEach(item => { if (item.frequency === 'One-Time') { item.includedInScenario = false; return; } if (mode === 'survival') item.includedInScenario = !!item.is_core; else if (mode === 'standard') item.includedInScenario = !item.is_wishlist; else if (mode === 'dream') item.includedInScenario = true; }); if (mode === 'dream') { const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario); activeWishlist.forEach(w => { if (w.replaces_id) { const target = freshItems.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false; } }); } budgetItems.value = freshItems; };
             
             // --- DATA FETCHING (with fixes) ---
-            const fetchBudgetItems = async () => { 
-                const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
-                if (data) { 
-                    budgetItems.value = data.map(i => ({...i, amount: Number(i.amount), includedInScenario: false})); 
-                    setScenarioMode('survival'); 
-                } 
+            const fetchBillItems = async () => {
+                if (!user.value) return;
+                
+                // We grab the bill AND the parent budget item info (name, amount)
+                const { data, error } = await supabase
+                    .from('bill_items')
+                    .select('*, budget_items(*)')
+                    .eq('user_id', user.value.id)
+                    .order('due_date', { ascending: true });
+
+                if (error) {
+                    console.error('Error fetching bills:', error);
+                } else {
+                    // Filter out any "Ghost Bills" that lost their parent budget item
+                    billItems.value = data.filter(bill => bill.budget_items !== null);
+                }
+            };
             };
             const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { if (data.current_balance !== null) forecastSettings.value.currentBalance = data.current_balance; if (data.safety_margin !== null) forecastSettings.value.safetyMargin = data.safety_margin; if (data.retirement_balance !== null) forecastSettings.value.retirementBalance = data.retirement_balance; if (data.current_age !== null) forecastSettings.value.currentAge = data.current_age; if (data.retirement_age !== null) forecastSettings.value.retirementAge = data.retirement_age; if (data.expected_return !== null) forecastSettings.value.expectedReturn = data.expected_return; } };
             const fetchIncomes = async () => { const { data } = await _supabase.from('incomes').select('*').order('created_at', { ascending: true }); if (data) incomes.value = data.map(i => ({...i, amount: Number(i.amount)})); };
@@ -1916,44 +1927,41 @@
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-           const toggleBillPaid = async (bill) => {
-                // 1. Calculate the math
-                const amount = bill.budget_items.amount;
-                
-                // 2. Adjust Balance Logic
-                if (bill.is_paid) {
-                    // Scenario: You just checked the box (Paid it)
-                    // Action: DEDUCT money from bank
-                    forecastSettings.value.currentBalance -= amount;
-                    
-                    // Optional: Create a visual "Expense Log" if we had one.
-                    // For now, we just update the balance.
-                } else {
-                    // Scenario: You unchecked the box (Oops, didn't pay it yet)
-                    // Action: REFUND money to bank
-                    forecastSettings.value.currentBalance += amount;
-                }
-
-                // 3. Save the Bill Status to DB
+          const toggleBillPaid = async (bill) => {
                 try {
+                    // 1. Safety Checks
+                    if (!bill.budget_items) throw new Error("This bill is missing budget data.");
+                    if (!forecastSettings.value) throw new Error("Settings not loaded.");
+
+                    // 2. Force Math to be Numbers (Fixes the crash)
+                    const amount = parseFloat(bill.budget_items.amount) || 0;
+                    let currentBank = parseFloat(forecastSettings.value.currentBalance) || 0;
+
+                    // 3. Do the Math
+                    if (bill.is_paid) {
+                        // You just checked it -> Pay the bill
+                        currentBank -= amount;
+                    } else {
+                        // You just unchecked it -> Refund the money
+                        currentBank += amount;
+                    }
+
+                    // 4. Save the new Balance locally
+                    forecastSettings.value.currentBalance = currentBank;
+
+                    // 5. Save the Bill Status to Database
                     const { error } = await supabase
                         .from('bill_items')
                         .update({ is_paid: bill.is_paid })
                         .eq('id', bill.id);
 
                     if (error) throw error;
-                    
-                    // 4. Save the New Balance to LocalStorage (or DB if we had a settings table)
-                    saveSettings(); 
-                    
+
                 } catch (err) {
-                    console.error('Error updating bill:', err);
-                    // Revert balance if DB save failed
-                    if (bill.is_paid) forecastSettings.value.currentBalance += amount;
-                    else forecastSettings.value.currentBalance -= amount;
-                    
-                    bill.is_paid = !bill.is_paid; // Revert checkbox
-                    alert("Could not save payment. Please try again.");
+                    console.error("Payment Error:", err);
+                    // Revert the checkmark if it failed
+                    bill.is_paid = !bill.is_paid; 
+                    alert("Could not update payment: " + err.message);
                 }
             };
             const quickPay = async (bill) => { const newStatus = !bill.is_paid; const { error } = await _supabase.from('ledger').update({ is_paid: newStatus }).eq('id', bill.id); if (error) { alert("Error paying."); } else { bill.is_paid = newStatus; renderDashboardChart(); } };
