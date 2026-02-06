@@ -1384,19 +1384,17 @@
             const showLogModal = ref(false), selectedBudgetLog = ref(null), currentLogEntries = ref([]);
 
             // Forecast
-            const forecastSettings = ref({ currentBalance: 5000, safetyMargin: 2000, months: 12, currentAge: 30, retirementAge: 65, retirementBalance: 0, expectedReturn: 7.0 });
+           const forecastSettings = ref({
+    currentBalance: 5000, // <--- ADD THIS LINE HERE
+    lowBalanceThreshold: 100,
+    lookAheadMonths: 6,
+});
             const forecastMode = ref('standard'), forecastData = ref([]), forecastResults = ref({ affordableMonth: null });
             const project = ref(null), showProjectModal = ref(false), newProject = ref({ name: '', cost: '' });
             const lowPointData = ref({ amount: 0, date: '-' });
             const savedForecasts = ref([null, null, null]), forecastOverrides = ref({});
             const showRetirementModal = ref(false);
             const showForecastDetails = ref(false);
-         // --- FORECAST SETTINGS (Required for Bank Balance) ---
-            const forecastSettings = ref({
-                currentBalance: 0,
-                lowBalanceThreshold: 100,
-                lookAheadMonths: 6
-            });
 
             // Debt
             const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' }), extraDebtPayment = ref(0), showDebtForm = ref(false), editingDebtId = ref(null);
