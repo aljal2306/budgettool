@@ -1377,6 +1377,10 @@
             const isListening = ref(false); 
             const showForecastSettings = ref(false); // Collapsed by default
 
+            // --- AUTHENTICATION VARIABLES ---
+            const user = ref(null); // <--- This was missing!
+            const session = ref(null);
+
             // --- GIFT CARD STATE ---
             const giftCards = ref([]);
             const showGiftCardForm = ref(false);
@@ -2089,7 +2093,7 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails, kidProfiles,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails, kidProfiles, user,
                 // --- GIFT CARD EXPORTS ---
                 giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner, editCardLog, deleteCardLog, editingLogId, showWalletModal, totalGiftCardBalance, showBillModal, totalBillDue, countBillDue, showScenarioModal, filledScenarioCount,
             };
