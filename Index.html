@@ -1964,23 +1964,37 @@
            const toggleBillPaid = async (bill) => {
                 const amount = Number(bill.budget_items.amount);
                 
-                // 1. Math: Update the hidden balance variable
-                if (bill.is_paid) {
-                    // It was Checked (Paid), now Unchecking -> Refund the money
-                    forecastSettings.value.currentBalance += amount;
-                } else {
-                    // It was Unchecked, now Checking -> Subtract the money
-                    forecastSettings.value.currentBalance -= amount;
-                }
-                
-                // 2. Flip the checkbox visual
-                bill.is_paid = !bill.is_paid;
+                // v-model has ALREADY updated bill.is_paid to the new status.
+                // We just need to react to it.
 
-                // 3. Save everything to Database
-                await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id);
-                await saveSettings(); // Saves the new balance to the cloud
-                
-                renderDashboardChart();
+                if (bill.is_paid) {
+                    // Scenario: User just CHECKED the box (Status is now TRUE)
+                    // Action: Pay the bill -> Deduct money
+                    forecastSettings.value.currentBalance -= amount;
+                } else {
+                    // Scenario: User just UNCHECKED the box (Status is now FALSE)
+                    // Action: Refund the bill -> Add money back
+                    forecastSettings.value.currentBalance += amount;
+                }
+
+                // 2. Save to Database
+                const { error } = await _supabase
+                    .from('ledger')
+                    .update({ is_paid: bill.is_paid })
+                    .eq('id', bill.id);
+
+                if (error) {
+                    alert("Error updating bill: " + error.message);
+                    
+                    // REVERT LOGIC: If DB save fails, undo everything
+                    bill.is_paid = !bill.is_paid; // Flip box back
+                    if (bill.is_paid) forecastSettings.value.currentBalance -= amount;
+                    else forecastSettings.value.currentBalance += amount;
+                } else {
+                    // Success! Save the new balance to the cloud.
+                    await saveSettings();
+                    renderDashboardChart();
+                }
             };
             const quickPay = async (bill) => {
                 const amount = Number(bill.budget_items.amount);
