@@ -1531,9 +1531,10 @@
                 isEditingBalance.value = false;
                 await saveSettings(); // Save to global settings
                 runForecast();
+            }; // <--- THIS WAS MISSING
                 
             // --- DATA FETCHING (with fixes) ---
-            const fetchBudgetItems = async () => { 
+            const fetchBudgetItems = async () => {
                 const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
                 if (data) { 
                     budgetItems.value = data.map(i => ({...i, amount: Number(i.amount), includedInScenario: false})); 
