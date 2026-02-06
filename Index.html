@@ -1922,9 +1922,13 @@
             const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
             const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
             const handleSave = async () => {
-                if (!newItem.value.name || !newItem.value.amount) return;
+                // 1. Validate
+                if (!newItem.value.name || !newItem.value.amount) {
+                    alert("Please enter a name and amount.");
+                    return;
+                }
                 
-                // Calculate next due date based on day
+                // 2. Calculate Dates
                 let nextDate = new Date();
                 if (!newItem.value.isFlexible && newItem.value.due_day) {
                     if (nextDate.getDate() > newItem.value.due_day) {
@@ -1933,33 +1937,52 @@
                     nextDate.setDate(newItem.value.due_day);
                 }
 
+                // 3. Prepare Data
+                // We default assigned_to to null if it's undefined
                 const payload = {
                     user_id: user.value.id,
                     name: newItem.value.name,
                     amount: newItem.value.amount,
                     frequency: newItem.value.frequency,
                     category: newItem.value.category,
-                    is_core: newItem.value.is_core,
-                    is_variable: newItem.value.is_variable,
-                    is_wishlist: newItem.value.is_wishlist,
+                    is_core: newItem.value.is_core || false,
+                    is_variable: newItem.value.is_variable || false,
+                    is_wishlist: newItem.value.is_wishlist || false,
                     due_day: newItem.value.due_day,
                     next_due_date: nextDate.toISOString(),
-                    is_flexible: newItem.value.isFlexible,
-                    replaces_id: newItem.value.replaces_id,
-                    assigned_to: newItem.value.assigned_to // <--- THIS IS NEW
+                    is_flexible: newItem.value.isFlexible || false,
+                    replaces_id: newItem.value.replaces_id || null,
+                    assigned_to: newItem.value.assigned_to || null 
                 };
 
-                if (isEditing.value && newItem.value.id) {
-                    const { error } = await supabase.from('budget_items').update(payload).eq('id', newItem.value.id);
-                    if (error) console.error('Error updating:', error);
-                } else {
-                    const { error } = await supabase.from('budget_items').insert([payload]);
-                    if (error) console.error('Error adding:', error);
+                try {
+                    let error;
+                    
+                    if (isEditing.value && newItem.value.id) {
+                        // UPDATE Existing
+                        const result = await supabase.from('budget_items').update(payload).eq('id', newItem.value.id);
+                        error = result.error;
+                    } else {
+                        // INSERT New
+                        const result = await supabase.from('budget_items').insert([payload]);
+                        error = result.error;
+                    }
+
+                    // 4. Check for Database Errors
+                    if (error) {
+                        throw error; // Jump to catch block
+                    }
+                    
+                    // 5. Success!
+                    showAddForm.value = false;
+                    fetchBudgetItems();
+                    runForecast(); 
+
+                } catch (err) {
+                    // 6. Show the exact error
+                    console.error("Save failed:", err);
+                    alert("Database Error: " + err.message + "\n\n(Did you run the SQL command to add the 'assigned_to' column?)");
                 }
-                
-                showAddForm.value = false;
-                fetchBudgetItems();
-                runForecast(); // Update forecast immediately
             };
             const startEditing = (item) => {
                 // We manually spread the item to ensure assigned_to is caught
