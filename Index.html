@@ -1922,13 +1922,21 @@
             const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
             const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
             const handleSave = async () => {
-                // 1. Validate
+                // 1. Get the current user directly from Supabase
+                const { data: { user } } = await supabase.auth.getUser();
+                
+                if (!user) {
+                    alert("Security Error: You do not appear to be logged in.");
+                    return;
+                }
+
+                // 2. Validate Inputs
                 if (!newItem.value.name || !newItem.value.amount) {
                     alert("Please enter a name and amount.");
                     return;
                 }
                 
-                // 2. Calculate Dates
+                // 3. Calculate Dates
                 let nextDate = new Date();
                 if (!newItem.value.isFlexible && newItem.value.due_day) {
                     if (nextDate.getDate() > newItem.value.due_day) {
@@ -1937,10 +1945,9 @@
                     nextDate.setDate(newItem.value.due_day);
                 }
 
-                // 3. Prepare Data
-                // We default assigned_to to null if it's undefined
+                // 4. Prepare Data
                 const payload = {
-                    user_id: user.value.id,
+                    user_id: user.id, // <--- Fixed: Uses the direct user object
                     name: newItem.value.name,
                     amount: newItem.value.amount,
                     frequency: newItem.value.frequency,
@@ -1968,20 +1975,16 @@
                         error = result.error;
                     }
 
-                    // 4. Check for Database Errors
-                    if (error) {
-                        throw error; // Jump to catch block
-                    }
+                    if (error) throw error;
                     
-                    // 5. Success!
+                    // 5. Success
                     showAddForm.value = false;
                     fetchBudgetItems();
                     runForecast(); 
 
                 } catch (err) {
-                    // 6. Show the exact error
                     console.error("Save failed:", err);
-                    alert("Database Error: " + err.message + "\n\n(Did you run the SQL command to add the 'assigned_to' column?)");
+                    alert("Database Error: " + err.message);
                 }
             };
             const startEditing = (item) => {
