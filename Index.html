@@ -1826,7 +1826,6 @@
                 const existing = savedForecasts.value[i];
                 let name = existing ? existing.name : '';
                 
-                // If we are "Quick Saving" an active slot, skip the name prompt
                 if (existing) { 
                     if (!confirm(`Update "${existing.name}" with current settings?`)) return; 
                 } else { 
@@ -1838,6 +1837,8 @@
                     project: project.value,
                     mode: forecastMode.value,
                     overrides: forecastOverrides.value,
+                    // 🟢 ADDED: Save the "Look Ahead" months as part of the scenario
+                    months: Number(forecastSettings.value.months) 
                 };
 
                 const payload = { 
@@ -1852,7 +1853,7 @@
                     alert("Error saving: " + error.message); 
                 } else {
                     await fetchForecastSlots();
-                    // Update our tracker so the UI knows we are on this slot
+                    // Update Active Scenario Trackers
                     currentLoadedSlotIndex.value = i;
                     currentScenarioName.value = name;
                 }
@@ -1865,14 +1866,18 @@
                     setForecastMode(s.data.mode);
                     forecastOverrides.value = s.data.overrides || {};
                     
-                    // Update our tracker
+                    // 🟢 ADDED: Restore the "Look Ahead" months
+                    if (s.data.months) {
+                        forecastSettings.value.months = Number(s.data.months);
+                    }
+
+                    // Update Active Scenario Trackers
                     currentLoadedSlotIndex.value = i;
                     currentScenarioName.value = s.name;
                     
                     runForecast();
                 }
             };
-
             const clearForecastSlot = async (i) => { 
                 if(confirm("Clear this saved slot?")){ 
                     await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); 
