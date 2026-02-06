@@ -1854,7 +1854,28 @@
                 const { error } = await _supabase.from('forecast_slots').upsert(payload, {onConflict:'user_id,slot_index'});
                 if(error) alert("Error saving: "+error.message); else await fetchForecastSlots();
             };
-            const loadForecastSlot=(i)=>{ const s=savedForecasts.value[i]; if(s && confirm("Load?")){ forecastSettings.value=s.data.settings; project.value=s.data.project; setForecastMode(s.data.mode); forecastOverrides.value=s.data.overrides||{}; runForecast(); }};
+            const loadForecastSlot = (i) => {
+                const s = savedForecasts.value[i];
+                if (s && confirm("Load this scenario?")) {
+                    // 1. Capture your REAL-TIME balance before loading
+                    const realTimeBalance = forecastSettings.value.currentBalance;
+
+                    // 2. Load the saved settings...
+                    // BUT immediately overwrite the 'saved' balance with your 'real' balance
+                    forecastSettings.value = {
+                        ...s.data.settings,
+                        currentBalance: realTimeBalance 
+                    };
+
+                    // 3. Load the rest of the scenario (Project, Mode, Overrides)
+                    project.value = s.data.project;
+                    setForecastMode(s.data.mode);
+                    forecastOverrides.value = s.data.overrides || {};
+
+                    // 4. Refresh the chart
+                    runForecast();
+                }
+            };
             const clearForecastSlot=async(i)=>{ if(confirm("Clear?")){ await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); await fetchForecastSlots(); }};
 
             // --- PAYCHECK CALCULATOR ---
