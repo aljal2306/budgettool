@@ -818,92 +818,101 @@
                                        <div v-if="showForecastSettings" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity" @click.self="showForecastSettings = false">
             <div class="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[85vh] animate-slide-up">
                 
-                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                            ⚙️
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-white text-lg">Forecast Engine</h3>
-                            <div class="text-xs text-slate-400">Configure your financial reality</div>
-                        </div>
+                <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+                    <div>
+                        <h3 class="font-bold text-white text-xl">Forecast Configuration</h3>
+                        <div class="text-xs text-slate-400 mt-1">Manage global settings & retirement data</div>
                     </div>
                     <button @click="showForecastSettings = false" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition">✕</button>
                 </div>
 
                 <div class="p-6 overflow-y-auto space-y-8 custom-scrollbar">
                     
-                    <div class="space-y-4">
-                        <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                            <span>📉</span> Short Term Cash Flow
-                        </h4>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="col-span-2">
-                                <label class="block text-xs text-slate-400 mb-1">Current Bank Balance</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                    <input type="number" step="0.01" v-model="forecastSettings.currentBalance" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-8 pr-4 text-white font-mono text-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                                </div>
-                                <p class="text-[10px] text-slate-500 mt-1">Updates automatically when you pay bills.</p>
-                            </div>
+                    <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold text-blue-400 uppercase tracking-wider">Current Bank Balance</label>
+                            
+                            <button v-if="!isEditingBalance" @click="isEditingBalance = true" class="text-xs flex items-center gap-1 text-slate-400 hover:text-white transition">
+                                <span>✎ Edit Balance</span>
+                            </button>
+                            <button v-else @click="saveBalanceInline" class="text-xs flex items-center gap-1 text-green-400 hover:text-green-300 transition font-bold">
+                                <span>✓ Save</span>
+                            </button>
+                        </div>
 
-                            <div>
-                                <label class="block text-xs text-slate-400 mb-1">Safety Margin</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                    <input type="number" v-model="forecastSettings.safetyMargin" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-8 pr-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
-                                </div>
-                            </div>
+                        <div v-if="!isEditingBalance" class="flex items-baseline gap-1" @click="isEditingBalance = true">
+                            <span class="text-2xl text-slate-500">$</span>
+                            <span class="text-4xl font-bold text-white">{{ forecastSettings.currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span>
+                        </div>
 
-                            <div>
-                                <label class="block text-xs text-slate-400 mb-1">Look Ahead (Months)</label>
-                                <input type="number" v-model="forecastSettings.months" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <div v-else>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    v-model="forecastSettings.currentBalance" 
+                                    @keyup.enter="saveBalanceInline"
+                                    class="w-full bg-slate-900 border border-blue-500 rounded-lg py-3 pl-8 pr-4 text-white font-mono text-2xl outline-none focus:ring-4 focus:ring-blue-500/20 transition"
+                                    autofocus
+                                >
+                            </div>
+                            <div class="text-[10px] text-slate-500 mt-2 flex justify-between">
+                                <span>Press Enter to save</span>
+                                <span>Used as starting point for forecast</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="h-px bg-slate-800"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-800/30 p-3 rounded-lg border border-slate-700/50">
+                            <label class="block text-xs text-slate-500 mb-1">Safety Margin ($)</label>
+                            <input type="number" v-model="forecastSettings.safetyMargin" class="w-full bg-transparent text-white font-bold outline-none border-b border-slate-700 focus:border-blue-500 py-1 transition">
+                        </div>
+                        <div class="bg-slate-800/30 p-3 rounded-lg border border-slate-700/50">
+                            <label class="block text-xs text-slate-500 mb-1">Look Ahead (Months)</label>
+                            <input type="number" v-model="forecastSettings.months" class="w-full bg-transparent text-white font-bold outline-none border-b border-slate-700 focus:border-blue-500 py-1 transition">
+                        </div>
+                    </div>
 
-                    <div class="space-y-4">
-                        <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
-                            <span>🥚</span> Nest Egg Projection
-                        </h4>
+                    <div class="space-y-3 pt-4 border-t border-slate-700">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-1.5 rounded bg-purple-500/20 text-purple-400">🥚</div>
+                            <h4 class="font-bold text-white">Retirement Nest Egg</h4>
+                        </div>
                         
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="col-span-2">
-                                <label class="block text-xs text-slate-400 mb-1">Current Retirement Balance</label>
+                        <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50 space-y-4">
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">Current 401k/IRA Balance</label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                    <input type="number" step="100" v-model="forecastSettings.retirementBalance" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-8 pr-4 text-white font-mono text-lg focus:ring-2 focus:ring-purple-500 outline-none">
+                                    <input type="number" step="100" v-model="forecastSettings.retirementBalance" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 pl-8 text-white focus:border-purple-500 outline-none transition">
                                 </div>
                             </div>
-
-                            <div>
-                                <label class="block text-xs text-slate-400 mb-1">Current Age</label>
-                                <input type="number" v-model="forecastSettings.currentAge" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-purple-500 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-slate-400 mb-1">Retire Age</label>
-                                <input type="number" v-model="forecastSettings.retirementAge" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-purple-500 outline-none">
-                            </div>
-
-                            <div class="col-span-2">
-                                <label class="block text-xs text-slate-400 mb-1">Expected Annual Return (%)</label>
-                                <div class="relative">
-                                    <input type="number" step="0.1" v-model="forecastSettings.expectedReturn" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-purple-500 outline-none">
-                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</span>
+                            
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 mb-1">Current Age</label>
+                                    <input type="number" v-model="forecastSettings.currentAge" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-white focus:border-purple-500 outline-none text-center">
                                 </div>
-                                <p class="text-[10px] text-slate-500 mt-1">Conservative: 5-6%. Aggressive: 8-10%.</p>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 mb-1">Retire Age</label>
+                                    <input type="number" v-model="forecastSettings.retirementAge" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-white focus:border-purple-500 outline-none text-center">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 mb-1">Return %</label>
+                                    <input type="number" step="0.1" v-model="forecastSettings.expectedReturn" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-white focus:border-purple-500 outline-none text-center">
+                                </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
                 <div class="p-4 border-t border-slate-700 bg-slate-800/50 flex justify-end gap-3">
-                    <button @click="showForecastSettings = false" class="px-4 py-2 text-slate-400 hover:text-white transition">Cancel</button>
-                    <button @click="saveAllForecastSettings" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg shadow-blue-900/20 transition flex items-center gap-2">
-                        <span>Save Configuration</span>
+                    <button @click="showForecastSettings = false" class="px-4 py-2 text-slate-400 hover:text-white transition text-sm">Close</button>
+                    <button @click="saveAllForecastSettings" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg shadow-blue-900/20 transition flex items-center gap-2 text-sm">
+                        <span>Save Changes</span>
                     </button>
                 </div>
             </div>
@@ -1401,6 +1410,7 @@
             const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
             const isListening = ref(false); 
             const showForecastSettings = ref(false); // Collapsed by default
+            const isEditingBalance = ref(false);
 
             // --- GIFT CARD STATE ---
             const giftCards = ref([]);
@@ -1517,7 +1527,11 @@
 
             const setForecastMode = (mode) => { forecastMode.value = mode; };
             const setScenarioMode = (mode) => { currentScenarioMode.value = mode; const freshItems = budgetItems.value.map(item => ({...item})); freshItems.forEach(item => { if (item.frequency === 'One-Time') { item.includedInScenario = false; return; } if (mode === 'survival') item.includedInScenario = !!item.is_core; else if (mode === 'standard') item.includedInScenario = !item.is_wishlist; else if (mode === 'dream') item.includedInScenario = true; }); if (mode === 'dream') { const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario); activeWishlist.forEach(w => { if (w.replaces_id) { const target = freshItems.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false; } }); } budgetItems.value = freshItems; };
-            
+            const saveBalanceInline = async () => {
+                isEditingBalance.value = false;
+                await saveSettings(); // Save to global settings
+                runForecast();
+                
             // --- DATA FETCHING (with fixes) ---
             const fetchBudgetItems = async () => { 
                 const { data } = await _supabase.from('budget_items').select('*').eq('is_active', true).order('amount', { ascending: false }); 
@@ -1909,34 +1923,49 @@
             const fillExpense = (m) => { const selected = budgetItems.value.find(i => i.id === m.newExpenseId); if (selected) { m.newExpenseName = selected.name; m.newExpenseAmount = selected.amount; } };
             const removeExpense = (m, index) => { const ov = getOverride(m.name); ov.extraExpenses.splice(index, 1); runForecast(); };
             
-            const saveForecastSlot=async(i)=>{ 
+            const saveForecastSlot = async (i) => { 
                 const existing = savedForecasts.value[i];
                 let name = existing ? existing.name : '';
-                if(existing){ if(!confirm(`Update "${existing.name}"?`)) return; } 
-                else { name = prompt("Name this forecast:"); if(!name) return; }
-                const payload = { user_id:session.value.user.id, slot_index:i, name:name, data:{settings:{...forecastSettings.value}, project:project.value, mode:forecastMode.value, overrides:forecastOverrides.value}};
+                
+                if (existing) { 
+                    if (!confirm(`Update "${existing.name}"?`)) return; 
+                } else { 
+                    name = prompt("Name this forecast (e.g., 'Buying a Boat', 'Survival Mode'):"); 
+                    if (!name) return; 
+                }
+
+                // 🟢 NEW: Only save Scenario Data. EXCLUDE Global Facts.
+                const scenarioData = {
+                    project: project.value,         // The Goal
+                    mode: forecastMode.value,       // Survival/Standard/Dream
+                    overrides: forecastOverrides.value, // One-off changes
+                    // We intentionally DO NOT save currentBalance or retirement settings here.
+                    // Those should remain global.
+                };
+
+                const payload = { 
+                    user_id: session.value.user.id, 
+                    slot_index: i, 
+                    name: name, 
+                    data: scenarioData 
+                };
+
                 const { error } = await _supabase.from('forecast_slots').upsert(payload, {onConflict:'user_id,slot_index'});
-                if(error) alert("Error saving: "+error.message); else await fetchForecastSlots();
+                if (error) alert("Error saving: " + error.message); 
+                else await fetchForecastSlots();
             };
-            const loadForecastSlot = (i) => {
+           const loadForecastSlot = (i) => {
                 const s = savedForecasts.value[i];
-                if (s && confirm("Load this scenario?")) {
-                    // 1. Capture your REAL-TIME balance before loading
-                    const realTimeBalance = forecastSettings.value.currentBalance;
-
-                    // 2. Load the saved settings...
-                    // BUT immediately overwrite the 'saved' balance with your 'real' balance
-                    forecastSettings.value = {
-                        ...s.data.settings,
-                        currentBalance: realTimeBalance 
-                    };
-
-                    // 3. Load the rest of the scenario (Project, Mode, Overrides)
+                if (s && confirm(`Load scenario "${s.name}"?`)) {
+                    
+                    // 1. Load Scenario-Specifics
                     project.value = s.data.project;
                     setForecastMode(s.data.mode);
                     forecastOverrides.value = s.data.overrides || {};
 
-                    // 4. Refresh the chart
+                    // 2. Refresh Chart
+                    // Note: We do NOT touch forecastSettings (Balance/Retirement).
+                    // We use whatever is currently live in the app.
                     runForecast();
                 }
             };
@@ -2188,7 +2217,7 @@
                 debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
                 formatDate, getDaysLeft, getCalendarLink, getMonthlyCost, round, coreExpenses, totalMonthlyBurn, projectedBalance, isScenarioActive, showCalcDetails, showCalcForm, saveSettings, 
                 startDashboardTour, startPaycheckTour, startBudgetTour, startForecastTour, startDebtTour, currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, addExpense, fillExpense, printReport, saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,showPlannerModal, showForecastSettings, showRetirementModal, showForecastDetails, isEditingBalance, saveBalanceInline,
                 // --- GIFT CARD EXPORTS ---
                 giftCards, groupedGiftCards, openOwners, toggleOwner, showGiftCardForm, giftCardInput, saveGiftCard, editGiftCard, deleteGiftCard, processGiftCardImage, showCardModal, showImageModal, selectedCard, cardLogs, logInput, manageCard, logCardPurchase, viewCardImage, resetGiftCardForm, prepareAddForOwner, editCardLog, deleteCardLog, editingLogId, showWalletModal, totalGiftCardBalance, showBillModal, totalBillDue, countBillDue, showScenarioModal, filledScenarioCount,
             };
