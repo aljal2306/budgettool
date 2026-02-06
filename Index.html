@@ -1922,21 +1922,25 @@
             const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
             const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
             const handleSave = async () => {
-                // 1. Get the current user directly from Supabase
-                const { data: { user } } = await supabase.auth.getUser();
+                // 1. SECURELY GET USER
+                // We ask Supabase for the current session directly.
+                // This bypasses the "user is not defined" error.
+                const { data: { session } } = await supabase.auth.getSession();
                 
-                if (!user) {
-                    alert("Security Error: You do not appear to be logged in.");
+                if (!session || !session.user) {
+                    alert("Error: You are not logged in. Please refresh the page.");
                     return;
                 }
+                
+                const currentUserId = session.user.id; // We use this variable now
 
-                // 2. Validate Inputs
+                // 2. VALIDATE
                 if (!newItem.value.name || !newItem.value.amount) {
                     alert("Please enter a name and amount.");
                     return;
                 }
                 
-                // 3. Calculate Dates
+                // 3. CALCULATE DATES
                 let nextDate = new Date();
                 if (!newItem.value.isFlexible && newItem.value.due_day) {
                     if (nextDate.getDate() > newItem.value.due_day) {
@@ -1945,9 +1949,9 @@
                     nextDate.setDate(newItem.value.due_day);
                 }
 
-                // 4. Prepare Data
+                // 4. PREPARE PAYLOAD
                 const payload = {
-                    user_id: user.id, // <--- Fixed: Uses the direct user object
+                    user_id: currentUserId, // <--- USING FRESH ID
                     name: newItem.value.name,
                     amount: newItem.value.amount,
                     frequency: newItem.value.frequency,
@@ -1966,18 +1970,16 @@
                     let error;
                     
                     if (isEditing.value && newItem.value.id) {
-                        // UPDATE Existing
                         const result = await supabase.from('budget_items').update(payload).eq('id', newItem.value.id);
                         error = result.error;
                     } else {
-                        // INSERT New
                         const result = await supabase.from('budget_items').insert([payload]);
                         error = result.error;
                     }
 
                     if (error) throw error;
                     
-                    // 5. Success
+                    // Success
                     showAddForm.value = false;
                     fetchBudgetItems();
                     runForecast(); 
