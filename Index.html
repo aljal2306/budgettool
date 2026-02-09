@@ -471,10 +471,11 @@
                         </div>
 
                        <div id="tour-manage-budget" class="mb-8">
-                            <div class="bg-gradient-to-br from-violet-800 to-fuchsia-900 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden group hover:scale-[1.01] transition-transform duration-200">
-                                <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl group-hover:scale-110 transition-transform duration-500">🔮</div>
+                            <div class="bg-gradient-to-br from-violet-800 to-fuchsia-900 text-white p-6 rounded-2xl shadow-lg relative overflow-visible group hover:scale-[1.01] transition-transform duration-200">
+                                <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl transition-transform duration-500">🔮</div>
                                 
                                 <div class="relative z-10">
+                                    
                                     <div class="flex justify-between items-start mb-6">
                                         <div class="flex items-center gap-3">
                                             <div @click="showPlannerModal = true" class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10 cursor-pointer hover:bg-white/20 transition">
@@ -489,16 +490,51 @@
                                         </div>
                                     </div>
 
-                                    <div class="bg-black/20 p-1 rounded-xl flex gap-1 mb-4 backdrop-blur-sm border border-white/10">
-                                        <button @click="setScenarioMode('survival')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'survival' ? 'bg-white text-orange-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">
-                                            🛡️ Survival
-                                        </button>
-                                        <button @click="setScenarioMode('standard')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'standard' ? 'bg-white text-blue-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">
-                                            ⚖️ Standard
-                                        </button>
-                                        <button @click="setScenarioMode('dream')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'dream' ? 'bg-white text-purple-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">
-                                            🚀 Dream
-                                        </button>
+                                    <div class="relative mb-4">
+                                        <div class="bg-black/20 p-1 rounded-xl flex gap-1 backdrop-blur-sm border border-white/10 pr-8">
+                                            
+                                            <button @click="setScenarioMode('survival')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'survival' ? 'bg-white text-orange-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">
+                                                🛡️ Survival
+                                            </button>
+                                            <button @click="setScenarioMode('standard')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'standard' ? 'bg-white text-blue-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">
+                                                ⚖️ Standard
+                                            </button>
+                                            <button @click="setScenarioMode('dream')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'dream' ? 'bg-white text-purple-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">
+                                                🚀 Dream
+                                            </button>
+
+                                            <button @click.stop="showModeHelp = !showModeHelp" class="absolute right-2 top-1/2 -translate-y-1/2 text-fuchsia-200 hover:text-white transition opacity-70 hover:opacity-100">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <transition name="fade">
+                                            <div v-if="showModeHelp" class="absolute top-12 left-0 right-0 z-50 p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl text-left animate-slide-up" @click="showModeHelp = false">
+                                                <div class="flex justify-between items-start mb-2">
+                                                    <h4 class="text-xs font-bold text-white uppercase tracking-wider">Mode Definitions</h4>
+                                                    <button class="text-slate-400 hover:text-white">&times;</button>
+                                                </div>
+                                                <div class="space-y-3 text-xs text-slate-300">
+                                                    <div class="flex gap-2">
+                                                        <div class="mt-0.5">🛡️</div>
+                                                        <div><span class="text-orange-400 font-bold">Survival:</span> Only items marked "Core" (Rent, Utilities) + Variable Budgets (Groceries). No extras.</div>
+                                                    </div>
+                                                    <div class="flex gap-2">
+                                                        <div class="mt-0.5">⚖️</div>
+                                                        <div><span class="text-blue-400 font-bold">Standard:</span> Your realistic baseline. Includes all bills and variable budgets.</div>
+                                                    </div>
+                                                    <div class="flex gap-2">
+                                                        <div class="mt-0.5">🚀</div>
+                                                        <div><span class="text-purple-400 font-bold">Dream:</span> Standard + items marked "Wishlist". Use this to see if you can afford that new car.</div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-3 pt-2 border-t border-slate-700 text-[10px] text-slate-500 text-center">
+                                                    Tap anywhere to close
+                                                </div>
+                                            </div>
+                                        </transition>
                                     </div>
 
                                     <div @click="showPlannerModal = true" class="cursor-pointer">
@@ -1316,6 +1352,7 @@
             const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
             const showChartPercentages = ref(false);
             const showPlannerModal = ref(false); // Controls the new Budget Modal
+            const showModeHelp = ref(false); // <--- Add this line
 
             // Ledger & Logging
             const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
@@ -2188,7 +2225,7 @@
 
                 // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
-                dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, 
+                dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp,
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
