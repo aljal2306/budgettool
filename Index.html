@@ -1570,7 +1570,34 @@
             };
             const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { if (data.current_balance !== null) forecastSettings.value.currentBalance = data.current_balance; if (data.safety_margin !== null) forecastSettings.value.safetyMargin = data.safety_margin; if (data.retirement_balance !== null) forecastSettings.value.retirementBalance = data.retirement_balance; if (data.current_age !== null) forecastSettings.value.currentAge = data.current_age; if (data.retirement_age !== null) forecastSettings.value.retirementAge = data.retirement_age; if (data.expected_return !== null) forecastSettings.value.expectedReturn = data.expected_return; } };
             const fetchIncomes = async () => { const { data } = await _supabase.from('incomes').select('*').order('created_at', { ascending: true }); if (data) incomes.value = data.map(i => ({...i, amount: Number(i.amount)})); };
-            const fetchBills = async () => { const { data } = await _supabase.from('ledger').select('*, budget_items(*)'); if (data) bills.value = data.sort((a,b)=>a.due_date>b.due_date?1:-1); };
+            const fetchBills = async () => {
+                if (!session.value) return;
+
+                // 🟢 LOOK AT 'bill_items' (The Actuals), NOT 'bills'
+                let { data, error } = await _supabase
+                    .from('bill_items')
+                    .select(`
+                        id,
+                        due_date,
+                        is_paid,
+                        budget_items (
+                            id,
+                            name,
+                            amount,
+                            category,
+                            is_core,
+                            debt_id
+                        )
+                    `)
+                    .order('due_date', { ascending: true });
+
+                if (error) {
+                    console.error('Error fetching bills:', error);
+                } else {
+                    // Filter out any broken links and save to our list
+                    bills.value = data.filter(b => b.budget_items);
+                }
+            };
             const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data; };
             const fetchForecastSlots = async () => { const { data } = await _supabase.from('forecast_slots').select('*').order('slot_index'); if (data) { const loaded = [null, null, null]; data.forEach(slot => { if(slot.slot_index >= 0 && slot.slot_index < 3) loaded[slot.slot_index] = slot; }); savedForecasts.value = loaded; } };
             const fetchGiftCards = async () => { 
@@ -2114,7 +2141,35 @@
 
             // --- LEDGER & LOGGING ---
             const openGenerateModal=async(offset=0)=>{generateMonthOffset.value=offset;const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+offset);const startOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth(),1).toISOString();const endOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0).toISOString();const{data:t}=await _supabase.from('budget_items').select('*').eq('is_active',true).eq('is_wishlist',false).eq('user_id',session.value.user.id);const{data:e}=await _supabase.from('ledger').select('budget_item_id').gte('due_date',startOfMonth).lte('due_date',endOfMonth);const existingIds=new Set(e.map(b=>b.budget_item_id));potentialBills.value=t.filter(x=>!existingIds.has(x.id)).map(x=>({...x,selected:x.frequency==='Monthly'}));showGenModal.value=true};
-            const confirmGenerate=async()=>{const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+generateMonthOffset.value);const toCreate=potentialBills.value.filter(i=>i.selected).map(t=>({user_id:session.value.user.id,budget_item_id:t.id,amount_paid:0,due_date:new Date(targetDate.getFullYear(),targetDate.getMonth(),t.due_day||1).toISOString(),is_paid:false}));if(toCreate.length>0){await _supabase.from('ledger').insert(toCreate);await fetchBills()}showGenModal.value=false};
+           const confirmGenerate = async () => {
+                try {
+                    const selectedItems = potentialBills.value.filter(i => i.selected);
+                    if (selectedItems.length === 0) return;
+
+                    // Prepare the payload
+                    const newBills = selectedItems.map(item => ({
+                        user_id: session.value.user.id,
+                        budget_item_id: item.id, // Links back to the "Menu" item
+                        due_date: generateDueDate(item.due_day, generateMonthOffset.value),
+                        is_paid: false
+                    }));
+
+                    // 🟢 INSERT INTO 'bill_items'
+                    const { error } = await _supabase
+                        .from('bill_items')
+                        .insert(newBills);
+
+                    if (error) throw error;
+
+                    showGenModal.value = false;
+                    fetchBills(); // Refresh the screen
+                    renderDashboardChart();
+
+                } catch (e) {
+                    console.error('Error generating bills:', e);
+                    alert('Error creating bills. Check console.');
+                }
+            };
           const logExpense = async () => {
                 // 1. Validation
                 if(!expenseData.value.budgetId || !expenseData.value.amount) {
@@ -2196,26 +2251,23 @@
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-           const toggleBillPaid = async (bill) => {
+          const toggleBillPaid = async (bill) => {
                 try {
-                    // 1. Update the Bill Status in DB
+                    // 🟢 UPDATE 'bill_items'
                     const { error } = await _supabase
-                        .from('bills')
+                        .from('bill_items') 
                         .update({ is_paid: bill.is_paid })
                         .eq('id', bill.id);
 
                     if (error) throw error;
 
-                    // 2. Refresh Bank Balance / Dashboard Immediately
-                    // We do this EARLY so even if Debt logic fails, your Bank Balance is correct.
+                    // Refresh immediately so UI feels fast
                     await fetchBills();
                     if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
-                    // 3. SMART DEBT UPDATE (Safe Mode)
-                    // Check if we have the necessary data
+                    // --- SMART DEBT LOGIC ---
                     if (bill.budget_items && bill.budget_items.debt_id) {
-                        
-                        // Safety: Ensure debts are loaded
+                        // Ensure debts are loaded
                         if (debts.value.length === 0) await fetchDebts();
 
                         const linkedDebt = debts.value.find(d => d.id === bill.budget_items.debt_id);
@@ -2225,38 +2277,29 @@
                             const currentBalance = Number(linkedDebt.balance);
                             const apr = Number(linkedDebt.rate) || 0;
                             
-                            // Math
+                            // Interest Math
                             const monthlyInterest = (currentBalance * (apr / 100)) / 12;
                             const principalPayment = Math.max(0, paymentAmount - monthlyInterest);
 
                             if (bill.is_paid) {
-                                // Paid: Reduce Balance
                                 linkedDebt.balance = currentBalance - principalPayment;
-                                
-                                alert(`Payment Logged!\n\nPaid: $${paymentAmount.toFixed(2)}\nEst. Interest: -$${monthlyInterest.toFixed(2)}\nPrincipal Down: -$${principalPayment.toFixed(2)}\n\nNew Debt Balance: $${linkedDebt.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
+                                alert(`Payment Logged!\n\nPaid: $${paymentAmount.toFixed(2)}\nEst. Interest: -$${monthlyInterest.toFixed(2)}\nPrincipal Down: -$${principalPayment.toFixed(2)}\n\nNew Balance: $${linkedDebt.balance.toLocaleString()}`);
                             } else {
-                                // Undo: Add Balance Back
                                 linkedDebt.balance = currentBalance + principalPayment;
                             }
 
-                            // Update Debt in DB
-                            const { error: debtError } = await _supabase
+                            // Update Debt Balance in DB
+                            await _supabase
                                 .from('debts')
                                 .update({ balance: linkedDebt.balance })
                                 .eq('id', linkedDebt.id);
-
-                            if (debtError) console.error("Debt update failed:", debtError);
                                 
-                            // Safety: Only call this if it exists
-                            if (typeof calculateDebtPlan === 'function') {
-                                calculateDebtPlan();
-                            }
+                            if (typeof calculateDebtPlan === 'function') calculateDebtPlan();
                         }
                     }
 
                 } catch (e) {
                     console.error('Error in toggleBillPaid:', e);
-                    // Show the actual error message so we know what broke
                     alert('Error: ' + (e.message || e));
                 }
             };
