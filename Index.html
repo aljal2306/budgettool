@@ -1570,17 +1570,18 @@
             };
             const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { if (data.current_balance !== null) forecastSettings.value.currentBalance = data.current_balance; if (data.safety_margin !== null) forecastSettings.value.safetyMargin = data.safety_margin; if (data.retirement_balance !== null) forecastSettings.value.retirementBalance = data.retirement_balance; if (data.current_age !== null) forecastSettings.value.currentAge = data.current_age; if (data.retirement_age !== null) forecastSettings.value.retirementAge = data.retirement_age; if (data.expected_return !== null) forecastSettings.value.expectedReturn = data.expected_return; } };
             const fetchIncomes = async () => { const { data } = await _supabase.from('incomes').select('*').order('created_at', { ascending: true }); if (data) incomes.value = data.map(i => ({...i, amount: Number(i.amount)})); };
-            const fetchBills = async () => {
+           const fetchBills = async () => {
                 if (!session.value) return;
 
-                // 🟢 SELECT 'amount_paid' FROM 'ledger'
+                // 🟢 SELECT 'transaction_name' from 'ledger'
                 let { data, error } = await _supabase
                     .from('ledger')
                     .select(`
                         id,
                         due_date,
                         is_paid,
-                        amount_paid, 
+                        amount_paid,
+                        transaction_name, 
                         budget_item_id,
                         budget_items (
                             id,
@@ -1596,21 +1597,29 @@
                 if (error) {
                     console.error('Error fetching ledger:', error);
                 } else {
-                    // Map the data so the UI always finds an amount
+                    // Map the data to ensure every bill has a Name and Amount
                     bills.value = data.map(item => {
-                        // If the parent is deleted, create a ghost parent
+                        // 1. Get the Parent Template (or create a ghost one if deleted)
                         const parent = item.budget_items || {
-                            name: '(Deleted Item)',
+                            name: 'Deleted Category',
                             category: 'Uncategorized',
                             amount: 0,
                             is_core: false,
                             debt_id: null
                         };
 
+                        // 2. Determine the Final Name to Display
+                        // Priority: Ledger Name -> Template Name -> "Unknown"
+                        const displayName = item.transaction_name || parent.name || 'Unknown Transaction';
+
                         return {
                             ...item,
-                            budget_items: parent,
-                            // 🟢 CRITICAL FIX: Use amount_paid if it exists, otherwise use the plan amount
+                            // We patch the 'budget_items' object so the UI (HTML) doesn't break
+                            budget_items: {
+                                ...parent,
+                                name: displayName // Force the UI to use the specific name
+                            },
+                            // We also verify the amount
                             amount: item.amount_paid || parent.amount
                         };
                     });
@@ -2169,8 +2178,11 @@
                         user_id: session.value.user.id,
                         budget_item_id: item.id,
                         due_date: generateDueDate(item.due_day, generateMonthOffset.value),
-                        // 🟢 SAVE TO 'amount_paid'
-                        amount_paid: item.amount, 
+                        
+                        // 🟢 SAVE DATA TO HISTORY COLUMNS
+                        transaction_name: item.name, // Save the name specifically!
+                        amount_paid: item.amount,    // Save the amount specifically!
+                        
                         is_paid: false
                     }));
 
