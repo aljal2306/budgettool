@@ -1573,29 +1573,47 @@
             const fetchBills = async () => {
                 if (!session.value) return;
 
-                // 🟢 LOOK AT 'bill_items' (The Actuals), NOT 'bills'
+                // 🟢 SELECT 'amount_paid' FROM 'ledger'
                 let { data, error } = await _supabase
-                    .from('bill_items')
+                    .from('ledger')
                     .select(`
                         id,
                         due_date,
                         is_paid,
+                        amount_paid, 
+                        budget_item_id,
                         budget_items (
                             id,
                             name,
-                            amount,
                             category,
                             is_core,
-                            debt_id
+                            debt_id,
+                            amount
                         )
                     `)
                     .order('due_date', { ascending: true });
 
                 if (error) {
-                    console.error('Error fetching bills:', error);
+                    console.error('Error fetching ledger:', error);
                 } else {
-                    // Filter out any broken links and save to our list
-                    bills.value = data.filter(b => b.budget_items);
+                    // Map the data so the UI always finds an amount
+                    bills.value = data.map(item => {
+                        // If the parent is deleted, create a ghost parent
+                        const parent = item.budget_items || {
+                            name: '(Deleted Item)',
+                            category: 'Uncategorized',
+                            amount: 0,
+                            is_core: false,
+                            debt_id: null
+                        };
+
+                        return {
+                            ...item,
+                            budget_items: parent,
+                            // 🟢 CRITICAL FIX: Use amount_paid if it exists, otherwise use the plan amount
+                            amount: item.amount_paid || parent.amount
+                        };
+                    });
                 }
             };
             const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data; };
@@ -2141,32 +2159,33 @@
 
             // --- LEDGER & LOGGING ---
             const openGenerateModal=async(offset=0)=>{generateMonthOffset.value=offset;const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+offset);const startOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth(),1).toISOString();const endOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0).toISOString();const{data:t}=await _supabase.from('budget_items').select('*').eq('is_active',true).eq('is_wishlist',false).eq('user_id',session.value.user.id);const{data:e}=await _supabase.from('ledger').select('budget_item_id').gte('due_date',startOfMonth).lte('due_date',endOfMonth);const existingIds=new Set(e.map(b=>b.budget_item_id));potentialBills.value=t.filter(x=>!existingIds.has(x.id)).map(x=>({...x,selected:x.frequency==='Monthly'}));showGenModal.value=true};
-           const confirmGenerate = async () => {
+         const confirmGenerate = async () => {
                 try {
                     const selectedItems = potentialBills.value.filter(i => i.selected);
                     if (selectedItems.length === 0) return;
 
-                    // Prepare the payload
-                    const newBills = selectedItems.map(item => ({
+                    // Prepare payload for 'ledger'
+                    const newEntries = selectedItems.map(item => ({
                         user_id: session.value.user.id,
-                        budget_item_id: item.id, // Links back to the "Menu" item
+                        budget_item_id: item.id,
                         due_date: generateDueDate(item.due_day, generateMonthOffset.value),
+                        // 🟢 SAVE TO 'amount_paid'
+                        amount_paid: item.amount, 
                         is_paid: false
                     }));
 
-                    // 🟢 INSERT INTO 'bill_items'
                     const { error } = await _supabase
-                        .from('bill_items')
-                        .insert(newBills);
+                        .from('ledger')
+                        .insert(newEntries);
 
                     if (error) throw error;
 
                     showGenModal.value = false;
-                    fetchBills(); // Refresh the screen
+                    fetchBills(); 
                     renderDashboardChart();
 
                 } catch (e) {
-                    console.error('Error generating bills:', e);
+                    console.error('Error generating ledger entries:', e);
                     alert('Error creating bills. Check console.');
                 }
             };
@@ -2251,44 +2270,54 @@
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-          const toggleBillPaid = async (bill) => {
+         const toggleBillPaid = async (bill) => {
                 try {
-                    // 🟢 UPDATE 'bill_items'
+                    const wasPaid = bill.is_paid; 
+                    
+                    // 1. UPDATE 'ledger'
                     const { error } = await _supabase
-                        .from('bill_items') 
-                        .update({ is_paid: bill.is_paid })
+                        .from('ledger')
+                        .update({ is_paid: wasPaid })
                         .eq('id', bill.id);
 
                     if (error) throw error;
 
-                    // Refresh immediately so UI feels fast
-                    await fetchBills();
-                    if (typeof renderDashboardChart === 'function') renderDashboardChart();
+                    // 2. GET THE RIGHT AMOUNT (Use the one we mapped in fetchBills)
+                    const amount = Number(bill.amount); 
 
-                    // --- SMART DEBT LOGIC ---
+                    // 3. UPDATE BANK BALANCE
+                    if (forecastSettings.value) {
+                        let newBankBalance = Number(forecastSettings.value.currentBalance);
+                        // If Paid: Subtract. If Undo: Add.
+                        if (wasPaid) newBankBalance -= amount;
+                        else newBankBalance += amount;
+
+                        forecastSettings.value.currentBalance = newBankBalance;
+                        
+                        await _supabase
+                            .from('forecast_settings')
+                            .update({ currentBalance: newBankBalance })
+                            .eq('user_id', session.value.user.id);
+                    }
+
+                    // 4. UPDATE DEBT BALANCE
                     if (bill.budget_items && bill.budget_items.debt_id) {
-                        // Ensure debts are loaded
                         if (debts.value.length === 0) await fetchDebts();
-
                         const linkedDebt = debts.value.find(d => d.id === bill.budget_items.debt_id);
                         
                         if (linkedDebt) {
-                            const paymentAmount = Number(bill.budget_items.amount);
-                            const currentBalance = Number(linkedDebt.balance);
+                            const currentDebt = Number(linkedDebt.balance);
                             const apr = Number(linkedDebt.rate) || 0;
-                            
-                            // Interest Math
-                            const monthlyInterest = (currentBalance * (apr / 100)) / 12;
-                            const principalPayment = Math.max(0, paymentAmount - monthlyInterest);
+                            const monthlyInterest = (currentDebt * (apr / 100)) / 12;
+                            const principal = Math.max(0, amount - monthlyInterest);
 
-                            if (bill.is_paid) {
-                                linkedDebt.balance = currentBalance - principalPayment;
-                                alert(`Payment Logged!\n\nPaid: $${paymentAmount.toFixed(2)}\nEst. Interest: -$${monthlyInterest.toFixed(2)}\nPrincipal Down: -$${principalPayment.toFixed(2)}\n\nNew Balance: $${linkedDebt.balance.toLocaleString()}`);
+                            if (wasPaid) {
+                                linkedDebt.balance = currentDebt - principal;
+                                alert(`Payment Logged!\n\n💸 Bank: -$${amount.toFixed(2)}\n💳 Principal: -$${principal.toFixed(2)}\n📉 Interest: $${monthlyInterest.toFixed(2)}`);
                             } else {
-                                linkedDebt.balance = currentBalance + principalPayment;
+                                linkedDebt.balance = currentDebt + principal;
                             }
 
-                            // Update Debt Balance in DB
                             await _supabase
                                 .from('debts')
                                 .update({ balance: linkedDebt.balance })
@@ -2297,6 +2326,10 @@
                             if (typeof calculateDebtPlan === 'function') calculateDebtPlan();
                         }
                     }
+
+                    // 5. REFRESH
+                    await fetchBills();
+                    if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
                 } catch (e) {
                     console.error('Error in toggleBillPaid:', e);
