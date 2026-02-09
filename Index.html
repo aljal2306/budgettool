@@ -2196,62 +2196,7 @@
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-           const handleSave = async () => {
-                try {
-                    // 1. Build the data object (including the new Debt Link)
-                    const itemPayload = {
-                        user_id: session.value.user.id,
-                        name: newItem.value.name,
-                        amount: newItem.value.amount,
-                        // If "Flexible" is checked, send null for due_day
-                        due_day: newItem.value.isFlexible ? null : newItem.value.due_day,
-                        is_core: newItem.value.is_core,
-                        is_variable: newItem.value.is_variable,
-                        is_wishlist: newItem.value.is_wishlist,
-                        replaces_id: newItem.value.replaces_id || null,
-                        frequency: newItem.value.frequency,
-                        category: newItem.value.category,
-                        
-                        // 🟢 THIS IS THE KEY NEW FIELD
-                        debt_id: newItem.value.debt_id || null 
-                    };
-
-                    // 2. Send to Database
-                    if (isEditing.value) {
-                        // UPDATE Logic
-                        const { error } = await _supabase
-                            .from('budget_items')
-                            .update(itemPayload)
-                            .eq('id', newItem.value.id);
-                        
-                        if (error) throw error;
-                    } else {
-                        // INSERT Logic
-                        const { error } = await _supabase
-                            .from('budget_items')
-                            .insert([itemPayload]);
-                            
-                        if (error) throw error;
-                    }
-
-                    // 3. Cleanup & Refresh
-                    await fetchBudgetItems(); // Refresh the list
-                    showAddForm.value = false; // Close the side panel
-                    
-                    // Optional: Clear the form for next time
-                    if (!isEditing.value) {
-                        newItem.value = { 
-                            name: '', amount: '', frequency: 'Monthly', 
-                            is_core: false, is_variable: false, is_wishlist: false, 
-                            debt_id: null 
-                        };
-                    }
-
-                } catch (e) {
-                    console.error('Error saving item:', e);
-                    alert('Error saving budget item. Check console.');
-                }
-            };
+           
            const quickPay = async (bill) => {
                 // 1. Force the status to Paid
                 bill.is_paid = true;
