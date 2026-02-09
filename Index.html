@@ -2196,7 +2196,70 @@
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-           
+           const toggleBillPaid = async (bill) => {
+                try {
+                    // 1. Update the Bill Status in DB (Mark as Paid/Unpaid)
+                    const { error } = await _supabase
+                        .from('bills')
+                        .update({ is_paid: bill.is_paid })
+                        .eq('id', bill.id);
+
+                    if (error) throw error;
+
+                    // 2. SMART DEBT UPDATE (Check for Interest & Reduce Principal)
+                    // We check: Does this bill exist? AND does it have a 'debt_id' attached?
+                    if (bill.budget_items && bill.budget_items.debt_id) {
+                        
+                        // Find the specific debt card (Visa, MasterCard, etc.) in our local list
+                        const linkedDebt = debts.value.find(d => d.id === bill.budget_items.debt_id);
+                        
+                        if (linkedDebt) {
+                            const paymentAmount = Number(bill.budget_items.amount);
+                            const currentBalance = Number(linkedDebt.balance);
+                            const apr = Number(linkedDebt.rate) || 0; // e.g. 24.99%
+                            
+                            // ESTIMATE INTEREST: (Balance * APR) / 12 months
+                            // We divide APR by 100 to get the decimal (0.2499)
+                            const monthlyInterest = (currentBalance * (apr / 100)) / 12;
+                            
+                            // CALCULATE PRINCIPAL: Payment - Interest
+                            // If interest is higher than payment, principal is 0 (negative amortization)
+                            const principalPayment = Math.max(0, paymentAmount - monthlyInterest);
+
+                            if (bill.is_paid) {
+                                // CASE A: User CHECKED the box (Paid)
+                                // Reduce the debt by the Principal amount only
+                                linkedDebt.balance = currentBalance - principalPayment;
+                                
+                                // 🔔 ALERT: Show the user the breakdown so they learn!
+                                alert(`Payment Logged!\n\nPaid: $${paymentAmount.toFixed(2)}\nEst. Interest: -$${monthlyInterest.toFixed(2)}\nPrincipal Down: -$${principalPayment.toFixed(2)}\n\nNew Balance: $${linkedDebt.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
+                                
+                            } else {
+                                // CASE B: User UNCHECKED the box (Undo)
+                                // Add the Principal back to the debt
+                                linkedDebt.balance = currentBalance + principalPayment;
+                            }
+
+                            // Update the Debt Balance in Supabase
+                            await _supabase
+                                .from('debts')
+                                .update({ balance: linkedDebt.balance })
+                                .eq('id', linkedDebt.id);
+                                
+                            // Recalculate the "Debt Free Date" projection
+                            calculateDebtPlan();
+                        }
+                    }
+
+                    // 3. Refresh Dashboard Data (Graphs, Totals, etc.)
+                    fetchBills();
+                    renderDashboardChart();
+
+                } catch (e) {
+                    console.error('Error toggling bill:', e);
+                    alert('Error updating bill.');
+                }
+            };
            const quickPay = async (bill) => {
                 // 1. Force the status to Paid
                 bill.is_paid = true;
