@@ -763,6 +763,15 @@
                                                         <option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option>
                                                     </select>
                                                 </div>
+                                                <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800 mt-2">
+                                    <label class="block text-[10px] font-bold text-red-400 uppercase mb-1">Pays off a Liability?</label>
+                                    <select v-model="newItem.debt_id" class="w-full p-2 border border-red-200 rounded text-xs dark:bg-slate-800 dark:text-white dark:border-slate-600 outline-none">
+                                        <option :value="null">-- No, just a regular bill --</option>
+                                        <option v-for="debt in debts" :key="debt.id" :value="debt.id">
+                                            {{ debt.name }} (Bal: ${{ debt.balance.toLocaleString() }})
+                                        </option>
+                                    </select>
+                                    </div>
 
                                                 <button @click="handleSave" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition mt-2">
                                                     {{ isEditing ? 'Update Item' : 'Save Item' }}
@@ -2036,7 +2045,62 @@
             // --- BUDGET ITEMS & MODALS ---
             const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
             const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
-            const handleSave = async () => { if (isEditing.value) await updateItem(); else await addItem(); showAddForm.value = false; };
+            const handleSave = async () => {
+                try {
+                    // 1. Build the data object (including the new Debt Link)
+                    const itemPayload = {
+                        user_id: session.value.user.id,
+                        name: newItem.value.name,
+                        amount: newItem.value.amount,
+                        // If "Flexible" is checked, send null for due_day
+                        due_day: newItem.value.isFlexible ? null : newItem.value.due_day,
+                        is_core: newItem.value.is_core,
+                        is_variable: newItem.value.is_variable,
+                        is_wishlist: newItem.value.is_wishlist,
+                        replaces_id: newItem.value.replaces_id || null,
+                        frequency: newItem.value.frequency,
+                        category: newItem.value.category,
+                        
+                        // 🟢 THIS IS THE KEY NEW FIELD
+                        debt_id: newItem.value.debt_id || null 
+                    };
+
+                    // 2. Send to Database
+                    if (isEditing.value) {
+                        // UPDATE Logic
+                        const { error } = await _supabase
+                            .from('budget_items')
+                            .update(itemPayload)
+                            .eq('id', newItem.value.id);
+                        
+                        if (error) throw error;
+                    } else {
+                        // INSERT Logic
+                        const { error } = await _supabase
+                            .from('budget_items')
+                            .insert([itemPayload]);
+                            
+                        if (error) throw error;
+                    }
+
+                    // 3. Cleanup & Refresh
+                    await fetchBudgetItems(); // Refresh the list
+                    showAddForm.value = false; // Close the side panel
+                    
+                    // Optional: Clear the form for next time
+                    if (!isEditing.value) {
+                        newItem.value = { 
+                            name: '', amount: '', frequency: 'Monthly', 
+                            is_core: false, is_variable: false, is_wishlist: false, 
+                            debt_id: null 
+                        };
+                    }
+
+                } catch (e) {
+                    console.error('Error saving item:', e);
+                    alert('Error saving budget item. Check console.');
+                }
+            };
             const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
             const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
             const deleteBudgetItem = async (item) => { 
@@ -2132,55 +2196,69 @@
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-           const toggleBillPaid = async (bill) => {
-                const amount = Number(bill.budget_items.amount);
-                
-                // v-model has ALREADY updated bill.is_paid to the new status.
-                // We just need to react to it.
+           const handleSave = async () => {
+                try {
+                    // 1. Build the data object (including the new Debt Link)
+                    const itemPayload = {
+                        user_id: session.value.user.id,
+                        name: newItem.value.name,
+                        amount: newItem.value.amount,
+                        // If "Flexible" is checked, send null for due_day
+                        due_day: newItem.value.isFlexible ? null : newItem.value.due_day,
+                        is_core: newItem.value.is_core,
+                        is_variable: newItem.value.is_variable,
+                        is_wishlist: newItem.value.is_wishlist,
+                        replaces_id: newItem.value.replaces_id || null,
+                        frequency: newItem.value.frequency,
+                        category: newItem.value.category,
+                        
+                        // 🟢 THIS IS THE KEY NEW FIELD
+                        debt_id: newItem.value.debt_id || null 
+                    };
 
-                if (bill.is_paid) {
-                    // Scenario: User just CHECKED the box (Status is now TRUE)
-                    // Action: Pay the bill -> Deduct money
-                    forecastSettings.value.currentBalance -= amount;
-                } else {
-                    // Scenario: User just UNCHECKED the box (Status is now FALSE)
-                    // Action: Refund the bill -> Add money back
-                    forecastSettings.value.currentBalance += amount;
-                }
+                    // 2. Send to Database
+                    if (isEditing.value) {
+                        // UPDATE Logic
+                        const { error } = await _supabase
+                            .from('budget_items')
+                            .update(itemPayload)
+                            .eq('id', newItem.value.id);
+                        
+                        if (error) throw error;
+                    } else {
+                        // INSERT Logic
+                        const { error } = await _supabase
+                            .from('budget_items')
+                            .insert([itemPayload]);
+                            
+                        if (error) throw error;
+                    }
 
-                // 2. Save to Database
-                const { error } = await _supabase
-                    .from('ledger')
-                    .update({ is_paid: bill.is_paid })
-                    .eq('id', bill.id);
-
-                if (error) {
-                    alert("Error updating bill: " + error.message);
+                    // 3. Cleanup & Refresh
+                    await fetchBudgetItems(); // Refresh the list
+                    showAddForm.value = false; // Close the side panel
                     
-                    // REVERT LOGIC: If DB save fails, undo everything
-                    bill.is_paid = !bill.is_paid; // Flip box back
-                    if (bill.is_paid) forecastSettings.value.currentBalance -= amount;
-                    else forecastSettings.value.currentBalance += amount;
-                } else {
-                    // Success! Save the new balance to the cloud.
-                    await saveSettings();
-                    renderDashboardChart();
+                    // Optional: Clear the form for next time
+                    if (!isEditing.value) {
+                        newItem.value = { 
+                            name: '', amount: '', frequency: 'Monthly', 
+                            is_core: false, is_variable: false, is_wishlist: false, 
+                            debt_id: null 
+                        };
+                    }
+
+                } catch (e) {
+                    console.error('Error saving item:', e);
+                    alert('Error saving budget item. Check console.');
                 }
             };
-            const quickPay = async (bill) => {
-                const amount = Number(bill.budget_items.amount);
+           const quickPay = async (bill) => {
+                // 1. Force the status to Paid
+                bill.is_paid = true;
                 
-                if (bill.is_paid) {
-                    forecastSettings.value.currentBalance += amount; // Refund
-                    bill.is_paid = false;
-                } else {
-                    forecastSettings.value.currentBalance -= amount; // Deduct
-                    bill.is_paid = true;
-                }
-
-                await _supabase.from('ledger').update({ is_paid: bill.is_paid }).eq('id', bill.id);
-                await saveSettings();
-                renderDashboardChart();
+                // 2. Pass it to the main function to handle the heavy lifting
+                // (Saving to DB, Reducing Debt, Calculating Interest)
+                await toggleBillPaid(bill);
             };
             const saveAllForecastSettings = async () => {
                 loading.value = true;
