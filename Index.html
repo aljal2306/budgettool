@@ -223,12 +223,12 @@
                             </div>
                             <div id="tour-due-soon" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden order-2">
                         <div class="flex justify-between items-center mb-4 relative z-10">
-                            <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Due Soon</h3>
+                            <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Due Soon (7 Days)</h3>
                             <button @click="currentView='budget'" class="text-xs text-indigo-500 font-bold hover:underline">See All</button>
                         </div>
 
                         <div class="space-y-3 relative z-10">
-                            <div v-for="bill in nextDueBills" :key="bill.id" 
+                            <div v-for="bill in upcomingBills" :key="bill.id" 
                                  class="flex items-center justify-between p-3 rounded-xl border transition group relative overflow-hidden"
                                  :class="isToday(bill.due_date) ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800 shadow-sm' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 hover:border-indigo-200'">
                                 
@@ -240,8 +240,8 @@
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-lg flex flex-col items-center justify-center text-[10px] font-bold leading-tight shadow-sm border transition"
                                          :class="isToday(bill.due_date) ? 'bg-red-500 text-white border-red-600' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600'">
-                                        <span class="opacity-80">{{ new Date(bill.due_date).toLocaleDateString('en-US', {month:'short'}).toUpperCase() }}</span>
-                                        <span class="text-sm">{{ new Date(bill.due_date).getDate() }}</span>
+                                        <span class="opacity-80">{{ new Date(bill.due_date + 'T12:00:00').toLocaleDateString('en-US', {month:'short'}).toUpperCase() }}</span>
+                                        <span class="text-sm">{{ new Date(bill.due_date + 'T12:00:00').getDate() }}</span>
                                     </div>
                                     
                                     <div>
@@ -269,8 +269,8 @@
                                 </div>
                             </div>
                             
-                            <div v-if="nextDueBills.length === 0" class="text-center py-6 text-slate-400 text-xs">
-                                No upcoming bills found.
+                            <div v-if="upcomingBills.length === 0" class="text-center py-6 text-slate-400 text-xs">
+                                No bills due in the next 7 days.
                             </div>
                         </div>
                     </div>
@@ -1550,7 +1550,33 @@
             const wishlistItems = computed(() => budgetItems.value.filter(i => i.is_wishlist));
             const variableBudgets = computed(() => budgetItems.value.filter(i => i.is_variable).map(item => { const currentMonthStr = new Date().toISOString().slice(0, 7); const spent = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).reduce((sum, b) => sum + (b.amount_paid || b.budget_items.amount), 0); return { ...item, spent: spent, remaining: item.amount - spent, progress: (spent / item.amount) * 100 }; }));
             const visibleBills = computed(() => { let sorted = bills.value.filter(b => !b.budget_items.is_variable); if (!showPaidBills.value) sorted = sorted.filter(b => !b.is_paid); return sorted; });
-            const upcomingBills = computed(() => { const today = new Date().toISOString().split('T')[0]; const limit = new Date(); limit.setDate(limit.getDate() + 7); const limitStr = limit.toISOString().split('T')[0]; return bills.value.filter(b => !b.is_paid && !b.budget_items.is_variable && b.due_date <= limitStr).sort((a,b) => a.due_date > b.due_date ? 1 : -1); });
+            // Upcoming Bills (Due Today + Next 7 Days)
+            const upcomingBills = computed(() => {
+                // Safety check
+                if (!bills.value) return [];
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Start of today
+
+                const limit = new Date();
+                limit.setDate(today.getDate() + 7); // 7 days from now
+
+                return bills.value
+                    .filter(b => {
+                        // 1. Must be Unpaid
+                        if (b.is_paid) return false;
+                        
+                        // 2. Must NOT be Variable (e.g. ignore Groceries)
+                        // Note: We check specifically if 'is_variable' is explicitly true
+                        if (b.budget_items?.is_variable) return false;
+
+                        // 3. Date Check
+                        // We convert the string "2026-02-09" into a real Date object to compare safely
+                        const billDate = new Date(b.due_date + 'T12:00:00'); // Add time to avoid timezone shift
+                        return billDate >= today && billDate <= limit;
+                    })
+                    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date)); // Oldest first
+            });
             const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc,i) => acc + getMonthlyCost(i), 0)));
             const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { let m = Number(inc.amount); if (inc.frequency === 'Bi-Weekly') m *= 2.166; else if (inc.frequency === 'Semi-Monthly') m *= 2; return total + m; }, 0));
             const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
