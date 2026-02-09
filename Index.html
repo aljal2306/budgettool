@@ -2198,7 +2198,7 @@
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
            const toggleBillPaid = async (bill) => {
                 try {
-                    // 1. Update the Bill Status in DB (Mark as Paid/Unpaid)
+                    // 1. Update the Bill Status in DB
                     const { error } = await _supabase
                         .from('bills')
                         .update({ is_paid: bill.is_paid })
@@ -2206,58 +2206,58 @@
 
                     if (error) throw error;
 
-                    // 2. SMART DEBT UPDATE (Check for Interest & Reduce Principal)
-                    // We check: Does this bill exist? AND does it have a 'debt_id' attached?
+                    // 2. Refresh Bank Balance / Dashboard Immediately
+                    // We do this EARLY so even if Debt logic fails, your Bank Balance is correct.
+                    await fetchBills();
+                    if (typeof renderDashboardChart === 'function') renderDashboardChart();
+
+                    // 3. SMART DEBT UPDATE (Safe Mode)
+                    // Check if we have the necessary data
                     if (bill.budget_items && bill.budget_items.debt_id) {
                         
-                        // Find the specific debt card (Visa, MasterCard, etc.) in our local list
+                        // Safety: Ensure debts are loaded
+                        if (debts.value.length === 0) await fetchDebts();
+
                         const linkedDebt = debts.value.find(d => d.id === bill.budget_items.debt_id);
                         
                         if (linkedDebt) {
                             const paymentAmount = Number(bill.budget_items.amount);
                             const currentBalance = Number(linkedDebt.balance);
-                            const apr = Number(linkedDebt.rate) || 0; // e.g. 24.99%
+                            const apr = Number(linkedDebt.rate) || 0;
                             
-                            // ESTIMATE INTEREST: (Balance * APR) / 12 months
-                            // We divide APR by 100 to get the decimal (0.2499)
+                            // Math
                             const monthlyInterest = (currentBalance * (apr / 100)) / 12;
-                            
-                            // CALCULATE PRINCIPAL: Payment - Interest
-                            // If interest is higher than payment, principal is 0 (negative amortization)
                             const principalPayment = Math.max(0, paymentAmount - monthlyInterest);
 
                             if (bill.is_paid) {
-                                // CASE A: User CHECKED the box (Paid)
-                                // Reduce the debt by the Principal amount only
+                                // Paid: Reduce Balance
                                 linkedDebt.balance = currentBalance - principalPayment;
                                 
-                                // 🔔 ALERT: Show the user the breakdown so they learn!
-                                alert(`Payment Logged!\n\nPaid: $${paymentAmount.toFixed(2)}\nEst. Interest: -$${monthlyInterest.toFixed(2)}\nPrincipal Down: -$${principalPayment.toFixed(2)}\n\nNew Balance: $${linkedDebt.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
-                                
+                                alert(`Payment Logged!\n\nPaid: $${paymentAmount.toFixed(2)}\nEst. Interest: -$${monthlyInterest.toFixed(2)}\nPrincipal Down: -$${principalPayment.toFixed(2)}\n\nNew Debt Balance: $${linkedDebt.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
                             } else {
-                                // CASE B: User UNCHECKED the box (Undo)
-                                // Add the Principal back to the debt
+                                // Undo: Add Balance Back
                                 linkedDebt.balance = currentBalance + principalPayment;
                             }
 
-                            // Update the Debt Balance in Supabase
-                            await _supabase
+                            // Update Debt in DB
+                            const { error: debtError } = await _supabase
                                 .from('debts')
                                 .update({ balance: linkedDebt.balance })
                                 .eq('id', linkedDebt.id);
+
+                            if (debtError) console.error("Debt update failed:", debtError);
                                 
-                            // Recalculate the "Debt Free Date" projection
-                            calculateDebtPlan();
+                            // Safety: Only call this if it exists
+                            if (typeof calculateDebtPlan === 'function') {
+                                calculateDebtPlan();
+                            }
                         }
                     }
 
-                    // 3. Refresh Dashboard Data (Graphs, Totals, etc.)
-                    fetchBills();
-                    renderDashboardChart();
-
                 } catch (e) {
-                    console.error('Error toggling bill:', e);
-                    alert('Error updating bill.');
+                    console.error('Error in toggleBillPaid:', e);
+                    // Show the actual error message so we know what broke
+                    alert('Error: ' + (e.message || e));
                 }
             };
            const quickPay = async (bill) => {
