@@ -104,6 +104,7 @@
                                 
                                 <button @click="currentView='budget'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap relative" :class="currentView==='budget'?'bg-slate-900 dark:bg-emerald-600 text-white shadow':'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'">
                                     <span>💸</span> Budget
+                                    
                                     <span v-if="needsNextMonthBills" class="absolute top-1 right-1 flex h-2.5 w-2.5">
                                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                         <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white dark:border-slate-800"></span>
@@ -137,7 +138,6 @@
                                 Sign Out
                             </button>
                         </div>
-
                     <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
                         <div class="w-full flex justify-end mb-4">
                             <button @click="startDashboardTour" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition shadow-lg hover:shadow-xl hover:scale-105 transform"><span>📍</span> Take a Tour</button>
