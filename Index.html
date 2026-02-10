@@ -2387,9 +2387,10 @@
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
          const toggleBillPaid = async (bill) => {
                 try {
-                    const wasPaid = bill.is_paid; 
+                    // 1. Toggle Local State
+                    const wasPaid = bill.is_paid; // This is the NEW state (true if we just checked it)
                     
-                    // 1. UPDATE 'ledger'
+                    // Update 'ledger'
                     const { error } = await _supabase
                         .from('ledger')
                         .update({ is_paid: wasPaid })
@@ -2397,10 +2398,9 @@
 
                     if (error) throw error;
 
-                    // 2. GET THE RIGHT AMOUNT (Use the one we mapped in fetchBills)
-                    const amount = Number(bill.amount); 
-
-                    // 3. UPDATE BANK BALANCE
+                    // 2. Update Bank Balance (Cash Flow)
+                    const amount = Number(bill.amount_paid || bill.amount || 0);
+                    
                     if (forecastSettings.value) {
                         let newBankBalance = Number(forecastSettings.value.currentBalance);
                         // If Paid: Subtract. If Undo: Add.
@@ -2415,7 +2415,7 @@
                             .eq('user_id', session.value.user.id);
                     }
 
-                    // 4. UPDATE DEBT BALANCE
+                    // 3. UPDATE DEBT BALANCE (The Fix!)
                     if (bill.budget_items && bill.budget_items.debt_id) {
                         if (debts.value.length === 0) await fetchDebts();
                         const linkedDebt = debts.value.find(d => d.id === bill.budget_items.debt_id);
@@ -2423,16 +2423,51 @@
                         if (linkedDebt) {
                             const currentDebt = Number(linkedDebt.balance);
                             const apr = Number(linkedDebt.rate) || 0;
-                            const monthlyInterest = (currentDebt * (apr / 100)) / 12;
-                            const principal = Math.max(0, amount - monthlyInterest);
+                            const monthlyRate = (apr / 100) / 12; // e.g., 0.01
+
+                            let newDebtBalance = currentDebt;
+                            let principalChange = 0;
+                            let interestChange = 0;
 
                             if (wasPaid) {
-                                linkedDebt.balance = currentDebt - principal;
-                                alert(`Payment Logged!\n\n💸 Bank: -$${amount.toFixed(2)}\n💳 Principal: -$${principal.toFixed(2)}\n📉 Interest: $${monthlyInterest.toFixed(2)}`);
+                                // ------------------------------------------------
+                                // CASE A: MARKING AS PAID (Standard Math)
+                                // ------------------------------------------------
+                                // 1. Calculate Interest on CURRENT high balance
+                                const interest = currentDebt * monthlyRate;
+                                // 2. Calculate Principal
+                                const principal = Math.max(0, amount - interest);
+                                
+                                // 3. Reduce Debt
+                                newDebtBalance = currentDebt - principal;
+                                
+                                // For the Alert
+                                principalChange = principal;
+                                interestChange = interest;
+
+                                alert(`Payment Logged!\n\n💸 Bank: -$${amount.toFixed(2)}\n💳 Principal: -$${principal.toFixed(2)}\n📉 Interest: $${interest.toFixed(2)}\n\nNew Debt: $${newDebtBalance.toLocaleString()}`);
+
                             } else {
-                                linkedDebt.balance = currentDebt + principal;
+                                // ------------------------------------------------
+                                // CASE B: UNDOING PAYMENT (Reverse Math)
+                                // ------------------------------------------------
+                                // We need to find the "Original Balance" BEFORE the payment.
+                                // Formula: Original = (Current + Payment) / (1 + MonthlyRate)
+                                
+                                const originalBalance = (currentDebt + amount) / (1 + monthlyRate);
+                                
+                                newDebtBalance = originalBalance;
+                                
+                                // For the Alert (Just to show what we added back)
+                                principalChange = newDebtBalance - currentDebt;
+                                
+                                console.log("Restored Balance to:", newDebtBalance);
                             }
 
+                            // Update the Local Object
+                            linkedDebt.balance = newDebtBalance;
+
+                            // Update Supabase
                             await _supabase
                                 .from('debts')
                                 .update({ balance: linkedDebt.balance })
@@ -2442,7 +2477,7 @@
                         }
                     }
 
-                    // 5. REFRESH
+                    // 4. Refresh Dashboard
                     await fetchBills();
                     if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
