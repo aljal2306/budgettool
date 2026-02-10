@@ -1538,14 +1538,21 @@
             const showBillModal = ref(false);
             // Calculate total unpaid fixed bills for the summary card
             const totalBillDue = computed(() => {
+                // SAFETY GUARD: If data isn't loaded, return 0
                 if (!bills.value) return 0;
+
+                // Your Logic: Unpaid + Not Variable + Sum
                 return bills.value
-                    // 1. Logic: Unpaid AND Not Variable (Safe check with ?.)
                     .filter(b => !b.is_paid && !b.budget_items?.is_variable)
-                    // 2. Sum: Use the Ledger Amount first, fall back to Template
-                    .reduce((sum, b) => sum + (Number(b.amount || b.amount_paid) || Number(b.budget_items?.amount) || 0), 0);
+                    .reduce((sum, b) => sum + (Number(b.amount || b.amount_paid || b.budget_items?.amount) || 0), 0);
             });
-            const countBillDue = computed(() => bills.value.filter(b => !b.is_paid && !b.budget_items.is_variable).length);
+            const countBillDue = computed(() => {
+                // SAFETY GUARD: If data isn't loaded, return 0
+                if (!bills.value) return 0;
+                
+                // Your Logic: Unpaid + Not Variable
+                return bills.value.filter(b => !b.is_paid && !b.budget_items?.is_variable).length;
+            });
 
             // Onboarding & Calc
             const showOnboarding = ref(false), onboardingStep = ref(1), onboardingData = ref({ balance: '', safety: '', salary: '', frequency: 'Semi-Monthly', medical: '', dental: '', trad401k: '', filingStatus: 'Single', stateTaxRate: '', billName: '', billAmount: '', billDay: 1, isCore: true, isVariable: false, incomeName: '', category: 'Mortgage/Rent', wishName: '', wishAmount: '', goalName: '', goalCost: '' });
