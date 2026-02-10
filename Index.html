@@ -1726,16 +1726,6 @@
                 runForecast();
             }; // <--- THIS WAS MISSING
 
-            // 1. Check if date is TODAY
-            const isToday = (dateString) => {
-                if (!dateString) return false;
-                const today = new Date();
-                const d = new Date(dateString + 'T12:00:00');
-                return d.getDate() === today.getDate() &&
-                       d.getMonth() === today.getMonth() &&
-                       d.getFullYear() === today.getFullYear();
-            };
-
             // 2. Check if date is URGENT (Today OR Past)
             const isUrgent = (dateString) => {
                 if (!dateString) return false;
@@ -2753,7 +2743,7 @@
                 // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory, countBillDue,
-                totalBillDue, isToday, isUrgent, billsUrgent,
+                totalBillDue, isUrgent, billsUrgent,
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
