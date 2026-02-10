@@ -1719,17 +1719,12 @@
                 runForecast();
             }; // <--- THIS WAS MISSING
 
-            // Helper: Count how many bills are unpaid
-            const countBillDue = computed(() => {
-                if (!bills.value) return 0;
-                return bills.value.filter(b => !b.is_paid).length;
-            });
-
-            // Helper: Calculate total $ amount of unpaid bills
+           // Helper: Calculate total $ of fixed bills (matching your count)
             const totalBillDue = computed(() => {
                 if (!bills.value) return 0;
                 return bills.value
-                    .filter(b => !b.is_paid)
+                    // Filter out variable items here too!
+                    .filter(b => !b.is_paid && !b.budget_items?.is_variable)
                     .reduce((sum, b) => sum + (Number(b.amount || b.amount_paid) || 0), 0);
             });
             // 1. Check if date is TODAY
