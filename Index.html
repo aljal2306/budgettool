@@ -2248,32 +2248,40 @@
                     const selectedItems = potentialBills.value.filter(i => i.selected);
                     if (selectedItems.length === 0) return;
 
-                    // Prepare payload for 'ledger'
+                    // Prepare the data payload
                     const newEntries = selectedItems.map(item => ({
                         user_id: session.value.user.id,
                         budget_item_id: item.id,
                         due_date: generateDueDate(item.due_day, generateMonthOffset.value),
                         
-                        // 🟢 SAVE DATA TO HISTORY COLUMNS
-                        transaction_name: item.name, // Save the name specifically!
-                        amount_paid: item.amount,    // Save the amount specifically!
-                        
+                        // IMPORTANT: We are saving to the columns that match your 'ledger' table
+                        transaction_name: item.name, 
+                        amount_paid: item.amount,    
                         is_paid: false
                     }));
 
-                    const { error } = await _supabase
-                        .from('ledger')
-                        .insert(newEntries);
+                    // 🟢 SEND TO 'ledger' (Not 'bill_items'!)
+                    const { data, error } = await _supabase
+                        .from('ledger') 
+                        .insert(newEntries)
+                        .select(); 
 
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Database Error:', error);
+                        // Show the exact error message from the database
+                        alert(`Error: ${error.message}`); 
+                        return;
+                    }
 
+                    // Success!
                     showGenModal.value = false;
-                    fetchBills(); 
+                    fetchBills(); // Refresh the list
                     renderDashboardChart();
+                    alert("Success! Generated " + newEntries.length + " bills.");
 
                 } catch (e) {
-                    console.error('Error generating ledger entries:', e);
-                    alert('Error creating bills. Check console.');
+                    console.error('Script Error:', e);
+                    alert('Script Error: ' + e.message);
                 }
             };
           const logExpense = async () => {
