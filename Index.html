@@ -876,53 +876,95 @@
                             </div>
                         </div>
                         <transition name="fade">
-                            <div v-if="showBillModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                                <div class="bg-white dark:bg-slate-800 w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
-                                    <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center flex-shrink-0">
+                            <div v-if="showBillModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showBillModal = false">
+            <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">Transactions</h2>
+                        <button @click="showBillModal = false" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:bg-red-500 hover:text-white transition font-bold">&times;</button>
+                    </div>
+
+                    <div class="flex p-1 bg-slate-200 dark:bg-slate-700 rounded-lg">
+                        <button @click="viewPaidHistory = false" class="flex-1 py-1.5 text-xs font-bold rounded-md transition" 
+                                :class="!viewPaidHistory ? 'bg-white dark:bg-slate-600 shadow text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'">
+                            Due Now ({{ bills.filter(b => !b.is_paid).length }})
+                        </button>
+                        <button @click="viewPaidHistory = true" class="flex-1 py-1.5 text-xs font-bold rounded-md transition" 
+                                :class="viewPaidHistory ? 'bg-white dark:bg-slate-600 shadow text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'">
+                            History (Last 3 Mo)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-y-auto flex-1 p-4">
+                    
+                    <div v-if="!viewPaidHistory" class="space-y-3">
+                        <div v-if="bills.filter(b => !b.is_paid).length === 0" class="text-center py-12 opacity-50">
+                            <div class="text-4xl mb-3">🎉</div>
+                            <p class="text-sm font-bold">All caught up!</p>
+                        </div>
+
+                        <div v-for="bill in bills.filter(b => !b.is_paid)" :key="bill.id" 
+                             class="flex items-center justify-between p-4 rounded-xl border transition bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300">
+                            <div class="flex items-center gap-4">
+                                <button @click="toggleBillPaid(bill)" class="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-center text-transparent hover:text-emerald-500">✓</button>
+                                <div>
+                                    <div class="font-bold text-slate-700 dark:text-slate-200 text-sm">{{ bill.budget_items?.name || bill.transaction_name }}</div>
+                                    <div class="text-xs text-slate-400 font-medium">Due: {{ new Date(bill.due_date + 'T12:00:00').toLocaleDateString() }}</div>
+                                </div>
+                            </div>
+                            <div class="font-bold text-slate-900 dark:text-white">
+                                ${{ (bill.amount || 0).toLocaleString() }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="space-y-6">
+                        <div v-if="Object.keys(groupedPaidHistory).length === 0" class="text-center py-10 text-slate-400 text-xs">
+                            No paid history found in the last 3 months.
+                        </div>
+
+                        <div v-for="(group, monthName) in groupedPaidHistory" :key="monthName">
+                            
+                            <div class="flex items-center justify-between px-2 mb-2 sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm py-2 z-10">
+                                <h3 class="text-xs font-black uppercase tracking-wider text-slate-400">{{ monthName }}</h3>
+                                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                    Total: ${{ group.total.toLocaleString(undefined, {minimumFractionDigits: 2}) }}
+                                </span>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
+                                <div v-for="bill in group.items" :key="bill.id" class="flex items-center justify-between p-3 hover:bg-white dark:hover:bg-slate-800 transition">
+                                    <div class="flex items-center gap-3 opacity-75 hover:opacity-100">
+                                        <button @click="toggleBillPaid(bill)" class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] hover:bg-red-500 transition" title="Mark Unpaid">✓</button>
+                                        
                                         <div>
-                                            <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><span>📅</span> Bill Organizer</h2>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400">Manage your monthly payments</p>
-                                        </div>
-                                        <div class="flex items-center gap-3">
-                                            <button @click="showPaidBills = !showPaidBills" class="text-xs font-bold px-3 py-2 rounded-lg border transition" :class="showPaidBills ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'">{{ showPaidBills ? 'Hide Paid' : 'Show Paid' }}</button>
-                                            <button @click="showBillModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">&times;</button>
-                                        </div>
-                                    </div>
-                                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50">
-                                        <div v-if="visibleBills.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400"><div class="text-4xl mb-2">🎉</div><p>No bills found.</p></div>
-                                        <div v-else class="space-y-3">
-                                            <div v-for="bill in visibleBills" :key="bill.id" class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:border-indigo-300 dark:hover:border-indigo-700 group" :class="{'opacity-60 grayscale': bill.is_paid}">
-                                                <div class="flex items-start gap-4">
-                                                    <div class="flex flex-col items-center justify-center w-14 h-14 rounded-xl border border-slate-100 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 flex-shrink-0">
-                                                        <span class="text-xs font-bold text-slate-400 uppercase">{{ new Date(bill.due_date).toLocaleString('default', { month: 'short' }) }}</span>
-                                                        <span class="text-xl font-black text-slate-800 dark:text-white leading-none">{{ new Date(bill.due_date).getDate() }}</span>
-                                                    </div>
-                                                    <div>
-                                                        <div class="font-bold text-slate-800 dark:text-white text-base">{{ bill.budget_items.name }}</div>
-                                                        <div class="text-xs text-slate-500 flex items-center gap-2 mt-0.5"><span class="uppercase tracking-wider">{{ bill.budget_items.category }}</span><span v-if="bill.budget_items.is_core" class="bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-[9px] font-bold">CORE</span></div>
-                                                        <div class="mt-2"><span v-if="bill.is_paid" class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">PAID</span><span v-else-if="getDaysLeft(bill.due_date) < 0" class="text-[10px] font-bold bg-red-100 text-red-700 px-2 py-1 rounded-full">OVERDUE</span><span v-else-if="getDaysLeft(bill.due_date) === 0" class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded-full">DUE TODAY</span><span v-else class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-full">Due in {{ getDaysLeft(bill.due_date) }} days</span></div>
-                                                    </div>
-                                                </div>
-                                                <div class="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-700">
-                                                    <div class="font-mono font-bold text-lg text-slate-800 dark:text-white">${{ bill.budget_items.amount.toFixed(2) }}</div>
-                                                    <div class="flex items-center gap-2">
-                                                        <button @click="deleteBill(bill)" class="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-300 hover:text-red-500 hover:border-red-200 transition" title="Delete Bill">🗑️</button>
-                                                        <label class="cursor-pointer flex items-center gap-2 select-none"><input type="checkbox" v-model="bill.is_paid" @change="toggleBillPaid(bill)" class="hidden peer"><div class="w-9 h-9 rounded-lg border-2 border-slate-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-500 text-white flex items-center justify-center transition"><span class="opacity-0 peer-checked:opacity-100 font-bold">✓</span></div></label>
-                                                    </div>
-                                                </div>
+                                            <div class="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                                {{ bill.budget_items?.name || bill.transaction_name }}
+                                            </div>
+                                            <div class="text-[9px] text-slate-400">
+                                                {{ new Date(bill.due_date + 'T12:00:00').getDate() }}th
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                        ${{ (bill.amount_paid || bill.amount).toLocaleString(undefined, {minimumFractionDigits: 2}) }}
+                                    </div>
                                 </div>
                             </div>
-                        </transition>
-
-                        <div class="mt-12 mb-8 text-center border-t border-slate-200 dark:border-slate-700 pt-8 opacity-50 hover:opacity-100 transition flex justify-center gap-4">
-                            <button v-if="budgetItems.length === 0" @click="startWizard" class="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-6 py-3 rounded-lg font-bold hover:bg-emerald-100 hover:scale-105 transition transform shadow-sm">🚀 Start Setup Wizard</button>
-                            <button v-else @click="startWizard" class="text-xs bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-lg font-bold hover:bg-slate-100 transition">↺ Restart Wizard</button>
-                            <button @click="resetDemo" class="text-xs bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-800 px-4 py-3 rounded-lg font-bold hover:bg-red-100 transition">⚠️ Reset Account</button>
                         </div>
                     </div>
+
+                </div>
+
+                <div class="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-center">
+                    <button @click="openGenerateModal(0)" class="text-xs font-bold text-indigo-500 hover:text-indigo-700">
+                        + Generate Next Month
+                    </button>
+                </div>
+            </div>
+        </div>
                         </transition>
                     </div>
                    <div v-if="currentView === 'forecast'" class="space-y-6 pb-24 animate-fade-in">
@@ -1505,7 +1547,8 @@
             const showChartPercentages = ref(false);
             const showPlannerModal = ref(false); // Controls the new Budget Modal
             const showModeHelp = ref(false); // <--- Add this line
-
+            const viewPaidHistory = ref(false);
+          
             // Ledger & Logging
             const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
             const showExpenseModal = ref(false), editingExpenseId = ref(null);
@@ -1607,6 +1650,40 @@
                 // If we have fewer than 3 bills for next month, assume they haven't planned it yet.
                 // (Using 3 instead of 0 prevents false negatives if they just added one random thing).
                 return billsForNextMonth.length < 3;
+            });
+
+            // Group Paid Bills by Month (Last 3 Months Only)
+            const groupedPaidHistory = computed(() => {
+                if (!bills.value) return {};
+
+                // 1. Set the Limit (3 Months Ago)
+                const cutoffDate = new Date();
+                cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+                cutoffDate.setDate(1); // Start of that month
+
+                // 2. Filter: Paid Bills + Recent Dates
+                const history = bills.value
+                    .filter(b => b.is_paid)
+                    .filter(b => new Date(b.due_date) >= cutoffDate)
+                    .sort((a, b) => new Date(b.due_date) - new Date(a.due_date)); // Newest first
+
+                // 3. Group them
+                const groups = {};
+                history.forEach(bill => {
+                    // Create Key: "February 2026"
+                    // We add "T12:00:00" to ensure timezone doesn't shift the date back
+                    const d = new Date(bill.due_date + 'T12:00:00');
+                    const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+                    if (!groups[monthKey]) {
+                        groups[monthKey] = { total: 0, items: [] };
+                    }
+                    
+                    groups[monthKey].items.push(bill);
+                    groups[monthKey].total += Number(bill.amount_paid || bill.amount || 0);
+                });
+
+                return groups;
             });
 
             // --- 3. HELPER FUNCTIONS ---
@@ -2388,9 +2465,8 @@
          const toggleBillPaid = async (bill) => {
                 try {
                     // 1. Toggle Local State
-                    const wasPaid = bill.is_paid; // This is the NEW state (true if we just checked it)
+                    const wasPaid = bill.is_paid; 
                     
-                    // Update 'ledger'
                     const { error } = await _supabase
                         .from('ledger')
                         .update({ is_paid: wasPaid })
@@ -2398,14 +2474,16 @@
 
                     if (error) throw error;
 
-                    // 2. Update Bank Balance (Cash Flow)
+                    // 2. Update Bank Balance
                     const amount = Number(bill.amount_paid || bill.amount || 0);
                     
                     if (forecastSettings.value) {
                         let newBankBalance = Number(forecastSettings.value.currentBalance);
-                        // If Paid: Subtract. If Undo: Add.
                         if (wasPaid) newBankBalance -= amount;
                         else newBankBalance += amount;
+
+                        // 🟢 FIX 1: Round Bank Balance
+                        newBankBalance = Math.round(newBankBalance * 100) / 100;
 
                         forecastSettings.value.currentBalance = newBankBalance;
                         
@@ -2415,7 +2493,7 @@
                             .eq('user_id', session.value.user.id);
                     }
 
-                    // 3. UPDATE DEBT BALANCE (The Fix!)
+                    // 3. Update Debt Balance
                     if (bill.budget_items && bill.budget_items.debt_id) {
                         if (debts.value.length === 0) await fetchDebts();
                         const linkedDebt = debts.value.find(d => d.id === bill.budget_items.debt_id);
@@ -2423,51 +2501,26 @@
                         if (linkedDebt) {
                             const currentDebt = Number(linkedDebt.balance);
                             const apr = Number(linkedDebt.rate) || 0;
-                            const monthlyRate = (apr / 100) / 12; // e.g., 0.01
-
+                            const monthlyInterest = (currentDebt * (apr / 100)) / 12; // Simple interest approx
+                            
                             let newDebtBalance = currentDebt;
-                            let principalChange = 0;
-                            let interestChange = 0;
 
                             if (wasPaid) {
-                                // ------------------------------------------------
-                                // CASE A: MARKING AS PAID (Standard Math)
-                                // ------------------------------------------------
-                                // 1. Calculate Interest on CURRENT high balance
-                                const interest = currentDebt * monthlyRate;
-                                // 2. Calculate Principal
-                                const principal = Math.max(0, amount - interest);
-                                
-                                // 3. Reduce Debt
+                                // Paying: Reduce Principal
+                                const principal = Math.max(0, amount - monthlyInterest);
                                 newDebtBalance = currentDebt - principal;
-                                
-                                // For the Alert
-                                principalChange = principal;
-                                interestChange = interest;
-
-                                alert(`Payment Logged!\n\n💸 Bank: -$${amount.toFixed(2)}\n💳 Principal: -$${principal.toFixed(2)}\n📉 Interest: $${interest.toFixed(2)}\n\nNew Debt: $${newDebtBalance.toLocaleString()}`);
-
                             } else {
-                                // ------------------------------------------------
-                                // CASE B: UNDOING PAYMENT (Reverse Math)
-                                // ------------------------------------------------
-                                // We need to find the "Original Balance" BEFORE the payment.
-                                // Formula: Original = (Current + Payment) / (1 + MonthlyRate)
-                                
-                                const originalBalance = (currentDebt + amount) / (1 + monthlyRate);
-                                
-                                newDebtBalance = originalBalance;
-                                
-                                // For the Alert (Just to show what we added back)
-                                principalChange = newDebtBalance - currentDebt;
-                                
-                                console.log("Restored Balance to:", newDebtBalance);
+                                // Undoing: Add Principal Back
+                                // (We use the simple reverse here to keep it clean)
+                                const principal = Math.max(0, amount - monthlyInterest);
+                                newDebtBalance = currentDebt + principal;
                             }
 
-                            // Update the Local Object
+                            // 🟢 FIX 2: Round Debt Balance to 2 Decimals
+                            newDebtBalance = Math.round(newDebtBalance * 100) / 100;
+
                             linkedDebt.balance = newDebtBalance;
 
-                            // Update Supabase
                             await _supabase
                                 .from('debts')
                                 .update({ balance: linkedDebt.balance })
@@ -2477,7 +2530,7 @@
                         }
                     }
 
-                    // 4. Refresh Dashboard
+                    // 4. Refresh
                     await fetchBills();
                     if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
@@ -2659,7 +2712,7 @@
 
                 // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
-                dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday,
+                dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory,
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
