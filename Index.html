@@ -2243,7 +2243,27 @@
 
             // --- LEDGER & LOGGING ---
             const openGenerateModal=async(offset=0)=>{generateMonthOffset.value=offset;const targetDate=new Date();targetDate.setMonth(targetDate.getMonth()+offset);const startOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth(),1).toISOString();const endOfMonth=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0).toISOString();const{data:t}=await _supabase.from('budget_items').select('*').eq('is_active',true).eq('is_wishlist',false).eq('user_id',session.value.user.id);const{data:e}=await _supabase.from('ledger').select('budget_item_id').gte('due_date',startOfMonth).lte('due_date',endOfMonth);const existingIds=new Set(e.map(b=>b.budget_item_id));potentialBills.value=t.filter(x=>!existingIds.has(x.id)).map(x=>({...x,selected:x.frequency==='Monthly'}));showGenModal.value=true};
-         const confirmGenerate = async () => {
+           // Helper: Calculate Due Date (YYYY-MM-DD)
+            // Usage: generateDueDate(5, 1) -> Returns date for the 5th of Next Month
+            const generateDueDate = (day, offset = 0) => {
+                const now = new Date();
+                // Create a date object for the target month
+                // (current month + offset)
+                const targetDate = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+                
+                // If the bill has a specific day (e.g. "15"), use it. 
+                // If it's "Flexible" (null), default to the 1st.
+                const dayNum = day ? parseInt(day) : 1;
+                targetDate.setDate(dayNum);
+
+                // Format as YYYY-MM-DD for the database
+                const yyyy = targetDate.getFullYear();
+                const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(targetDate.getDate()).padStart(2, '0');
+                
+                return `${yyyy}-${mm}-${dd}`;
+            };
+          const confirmGenerate = async () => {
                 try {
                     const selectedItems = potentialBills.value.filter(i => i.selected);
                     if (selectedItems.length === 0) return;
