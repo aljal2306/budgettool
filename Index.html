@@ -2485,16 +2485,15 @@
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
          const toggleBillPaid = async (bill) => {
-                // 1. CAPTURE OLD STATE (In case we need to undo)
-                const oldStatus = bill.is_paid;
-                const newStatus = !oldStatus;
+                // 1. CAPTURE & FLIP STATUS
+                const oldStatus = bill.is_paid; // False
+                const newStatus = !oldStatus;   // True
 
-                // 2. OPTIMISTIC UPDATE (Update UI Immediately)
-                // We change the local data right now. 
-                // Vue detects this and hides the bill instantly.
+                // 2. OPTIMISTIC UPDATE (Instant UI Change)
+                // We update the screen immediately so it feels snappy.
                 bill.is_paid = newStatus;
                 
-                // Visually set the amount so the History tab looks right immediately
+                // Handle the amount for the History tab
                 if (newStatus) {
                     bill.amount_paid = bill.amount; 
                 } else {
@@ -2515,29 +2514,24 @@
 
                     if (error) throw error;
 
-                    // 🟢 SUCCESS: We do NOTHING here. 
-                    // The UI is already correct because of Step 2.
-                    // We DO NOT call fetchBills() to avoid the "Ghost" flicker.
-
-                    // Update charts if they exist
+                    // 🟢 SUCCESS: Do nothing. The UI is already correct.
+                    // If you have charts, update them:
                     if (typeof renderDashboardChart === 'function') {
                         renderDashboardChart();
                     }
 
                 } catch (e) {
                     console.error('Error updating bill:', e);
-                    
-                    // 🔴 FAILURE: Undo the change if the server failed
+                    // 🔴 FAILURE: Revert the change if the internet fails
                     bill.is_paid = oldStatus; 
                     alert("Connection failed. Bill reverted.");
                 }
             };
-           const quickPay = async (bill) => {
-                // 1. Force the status to Paid
-                bill.is_paid = true;
+          const quickPay = async (bill) => {
+                // 🔴 DELETED: bill.is_paid = true; 
+                // We must NOT change the status here. Let toggleBillPaid calculate it.
                 
-                // 2. Pass it to the main function to handle the heavy lifting
-                // (Saving to DB, Reducing Debt, Calculating Interest)
+                // Just pass it along to the main function
                 await toggleBillPaid(bill);
             };
             const isToday = (dateString) => {
