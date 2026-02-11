@@ -2485,18 +2485,26 @@
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
          const toggleBillPaid = async (bill) => {
+                // 1. CAPTURE OLD STATE (In case we need to undo)
+                const oldStatus = bill.is_paid;
+                const newStatus = !oldStatus;
+
+                // 2. OPTIMISTIC UPDATE (Update UI Immediately)
+                // We change the local data right now. 
+                // Vue detects this and hides the bill instantly.
+                bill.is_paid = newStatus;
+                
+                // Visually set the amount so the History tab looks right immediately
+                if (newStatus) {
+                    bill.amount_paid = bill.amount; 
+                } else {
+                    bill.amount_paid = null;
+                }
+
                 try {
-                    // 1. Calculate the NEW Status (Flip the current status)
-                    const newStatus = !bill.is_paid; 
-                    
-                    // 2. Logic: 
-                    // If Paying -> Save the Amount.
-                    // If Unpaying -> Set Amount to NULL.
+                    // 3. SEND TO DATABASE (Background)
                     const amountToSave = newStatus ? (bill.amount || 0) : null;
 
-                    // 3. Update Database (Ledger Only)
-                    // We DO NOT touch the 'forecast_settings' balance here. 
-                    // Let the Dashboard calculation handle the projection.
                     const { error } = await _supabase
                         .from('ledger')
                         .update({ 
@@ -2507,18 +2515,21 @@
 
                     if (error) throw error;
 
-                    // 4. Reload Data 
-                    // This updates the lists and re-runs the dashboard math automatically.
-                    await fetchBills();
-                    
-                    // If you have a chart, update it too
+                    // 🟢 SUCCESS: We do NOTHING here. 
+                    // The UI is already correct because of Step 2.
+                    // We DO NOT call fetchBills() to avoid the "Ghost" flicker.
+
+                    // Update charts if they exist
                     if (typeof renderDashboardChart === 'function') {
                         renderDashboardChart();
                     }
 
                 } catch (e) {
-                    console.error('Error in toggleBillPaid:', e);
-                    alert('Error updating bill');
+                    console.error('Error updating bill:', e);
+                    
+                    // 🔴 FAILURE: Undo the change if the server failed
+                    bill.is_paid = oldStatus; 
+                    alert("Connection failed. Bill reverted.");
                 }
             };
            const quickPay = async (bill) => {
