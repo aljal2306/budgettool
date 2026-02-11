@@ -1769,10 +1769,10 @@
             };
             const fetchSettings = async () => { const { data } = await _supabase.from('user_settings').select('*').eq('user_id', session.value.user.id).single(); if (data) { if (data.current_balance !== null) forecastSettings.value.currentBalance = data.current_balance; if (data.safety_margin !== null) forecastSettings.value.safetyMargin = data.safety_margin; if (data.retirement_balance !== null) forecastSettings.value.retirementBalance = data.retirement_balance; if (data.current_age !== null) forecastSettings.value.currentAge = data.current_age; if (data.retirement_age !== null) forecastSettings.value.retirementAge = data.retirement_age; if (data.expected_return !== null) forecastSettings.value.expectedReturn = data.expected_return; } };
             const fetchIncomes = async () => { const { data } = await _supabase.from('incomes').select('*').order('created_at', { ascending: true }); if (data) incomes.value = data.map(i => ({...i, amount: Number(i.amount)})); };
-           const fetchBills = async () => {
+            const fetchBills = async () => {
                 if (!session.value) return;
 
-                // 🟢 Updated to fetch 'is_variable'
+                // 🟢 FETCH: Including 'is_variable'
                 let { data, error } = await _supabase
                     .from('ledger')
                     .select(`
@@ -1797,26 +1797,9 @@
                 if (error) {
                     console.error('Error fetching ledger:', error);
                 } else {
-                    // Save the data
+                    // 🟢 ASSIGN DIRECTLY
+                    // (The logic below this line was deleted because it's no longer needed)
                     bills.value = data;
-                }
-            };
-
-                        // 2. Determine the Final Name to Display
-                        // Priority: Ledger Name -> Template Name -> "Unknown"
-                        const displayName = item.transaction_name || parent.name || 'Unknown Transaction';
-
-                        return {
-                            ...item,
-                            // We patch the 'budget_items' object so the UI (HTML) doesn't break
-                            budget_items: {
-                                ...parent,
-                                name: displayName // Force the UI to use the specific name
-                            },
-                            // We also verify the amount
-                            amount: item.amount_paid || parent.amount
-                        };
-                    });
                 }
             };
             const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data; };
