@@ -1612,31 +1612,16 @@
             const variableBudgets = computed(() => budgetItems.value.filter(i => i.is_variable).map(item => { const currentMonthStr = new Date().toISOString().slice(0, 7); const spent = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).reduce((sum, b) => sum + (b.amount_paid || b.budget_items.amount), 0); return { ...item, spent: spent, remaining: item.amount - spent, progress: (spent / item.amount) * 100 }; }));
             const visibleBills = computed(() => { let sorted = bills.value.filter(b => !b.budget_items.is_variable); if (!showPaidBills.value) sorted = sorted.filter(b => !b.is_paid); return sorted; });
             // Upcoming Bills (Due Today + Next 7 Days)
-            const upcomingBills = computed(() => {
-                // Safety check
+           const upcomingBills = computed(() => {
                 if (!bills.value) return [];
-
-                const today = new Date();
-                today.setHours(0, 0, 0, 0); // Start of today
-
-                const limit = new Date();
-                limit.setDate(today.getDate() + 7); // 7 days from now
-
+                
+                // 1. Get ALL unpaid bills (Don't filter by date yet)
                 return bills.value
-                    .filter(b => {
-                        // 1. Must be Unpaid
-                        if (b.is_paid) return false;
-                        
-                        // 2. Must NOT be Variable (e.g. ignore Groceries)
-                        // Note: We check specifically if 'is_variable' is explicitly true
-                        if (b.budget_items?.is_variable) return false;
-
-                        // 3. Date Check
-                        // We convert the string "2026-02-09" into a real Date object to compare safely
-                        const billDate = new Date(b.due_date + 'T12:00:00'); // Add time to avoid timezone shift
-                        return billDate >= today && billDate <= limit;
-                    })
-                    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date)); // Oldest first
+                    .filter(b => !b.is_paid) 
+                    // 2. Sort: Overdue items (oldest dates) go to the TOP
+                    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+                    // 3. Limit to the top 4 (so it fits in the card)
+                    .slice(0, 4); 
             });
             const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc,i) => acc + getMonthlyCost(i), 0)));
             const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { let m = Number(inc.amount); if (inc.frequency === 'Bi-Weekly') m *= 2.166; else if (inc.frequency === 'Semi-Monthly') m *= 2; return total + m; }, 0));
