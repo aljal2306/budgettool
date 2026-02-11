@@ -107,14 +107,19 @@
                         <div class="flex items-center gap-4 w-full md:w-auto">
                             <div class="flex bg-white dark:bg-slate-800 p-1.5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto w-full md:w-auto no-scrollbar">
                                 
-                                <button @click="currentView='dashboard'" ... >
-                                    <span>🏠</span> Home
-                                    
-                                    <div v-if="billsUrgent.length > 0" class="absolute top-1 right-1 flex h-2.5 w-2.5">
-                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white dark:border-slate-800"></span>
-                                    </div>
-                                </button></button>
+                                <<button @click="currentView = 'dashboard'"
+                        class="flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 group relative"
+                        :class="currentView === 'dashboard' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'">
+                    
+                    <span class="text-2xl transition-transform group-hover:scale-110">🏠</span>
+                    
+                    <span class="text-[10px] font-bold">Home</span>
+
+                    <div v-if="billsUrgent.length > 0" class="absolute top-2 right-2 flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white dark:border-slate-900"></span>
+                    </div>
+                </button>
                                 
                                 <button @click="currentView='calculator'" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='calculator'?'bg-slate-900 dark:bg-emerald-600 text-white shadow':'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'">
                                     <span>🧮</span> Paycheck
