@@ -2485,23 +2485,46 @@
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
          const toggleBillPaid = async (bill) => {
-                // 1. CAPTURE & FLIP STATUS
-                const oldStatus = bill.is_paid; // False
-                const newStatus = !oldStatus;   // True
-
-                // 2. OPTIMISTIC UPDATE (Instant UI Change)
-                // We update the screen immediately so it feels snappy.
-                bill.is_paid = newStatus;
+                // 1. CAPTURE OLD STATE
+                const oldStatus = bill.is_paid;
+                const newStatus = !oldStatus;
                 
-                // Handle the amount for the History tab
-                if (newStatus) {
-                    bill.amount_paid = bill.amount; 
-                } else {
-                    bill.amount_paid = null;
+                // 2. OPTIMISTIC UPDATE (Instant Checkmark)
+                bill.is_paid = newStatus;
+
+                // 3. CHECKBOOK MATH (Update Bank Balance)
+                // We only do this if we have a valid balance settings object
+                if (forecastSettings.value) {
+                    const amount = Number(bill.amount || 0);
+                    let currentBalance = Number(forecastSettings.value.currentBalance || 0);
+
+                    if (newStatus) {
+                        // If Marking PAID: Subtract money
+                        currentBalance -= amount;
+                    } else {
+                        // If Marking UNPAID: Add money back
+                        currentBalance += amount;
+                    }
+
+                    // Round to 2 decimals (fixes $100.0000001 bugs)
+                    currentBalance = Math.round(currentBalance * 100) / 100;
+
+                    // Update Local State (So the screen updates instantly)
+                    forecastSettings.value.currentBalance = currentBalance;
+                    if (savingBase) savingBase.value = currentBalance;
+
+                    // SAVE BALANCE TO DB (Background)
+                    _supabase
+                        .from('forecast_settings')
+                        .update({ currentBalance: currentBalance })
+                        .eq('user_id', session.value.user.id)
+                        .then(({ error }) => {
+                            if (error) console.error("Failed to save balance:", error);
+                        });
                 }
 
+                // 4. UPDATE LEDGER STATUS (Background)
                 try {
-                    // 3. SEND TO DATABASE (Background)
                     const amountToSave = newStatus ? (bill.amount || 0) : null;
 
                     const { error } = await _supabase
@@ -2514,15 +2537,11 @@
 
                     if (error) throw error;
 
-                    // 🟢 SUCCESS: Do nothing. The UI is already correct.
-                    // If you have charts, update them:
-                    if (typeof renderDashboardChart === 'function') {
-                        renderDashboardChart();
-                    }
+                    // Success! No reload needed because we updated UI in step 2 & 3.
 
                 } catch (e) {
                     console.error('Error updating bill:', e);
-                    // 🔴 FAILURE: Revert the change if the internet fails
+                    // Revert visual changes if internet fails
                     bill.is_paid = oldStatus; 
                     alert("Connection failed. Bill reverted.");
                 }
