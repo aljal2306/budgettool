@@ -1304,36 +1304,82 @@
                         </div>
                     </transition>
 
-                    <transition name="fade">
-                        <div v-if="showConsultant" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[600px] flex flex-col overflow-hidden">
-                                <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                                    <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-lg">🤖</div><div><h3 class="font-bold text-slate-800">Financial Consultant</h3><div class="text-[10px] text-slate-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Online</div></div></div>
-                                    <div class="flex items-center gap-3">
-                                        <button @click="resetChat" class="text-xs bg-white border border-slate-200 text-slate-500 px-2 py-1 rounded hover:bg-slate-100 hover:text-indigo-600 transition shadow-sm font-bold flex items-center gap-1" title="Clear Chat">
-                                            <span>↺</span> Reset
-                                        </button>
-                                        <button @click="showConsultant = false" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-                                    </div>
-                                </div>
-                                <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" id="chat-container">
-                                    <div v-if="chatMessages.length === 0" class="text-center py-8"><div class="text-4xl mb-2">👋</div><p class="text-slate-500 text-sm">I have analyzed your finances.<br>How can I help you today?</p></div>
-                                    <div v-for="(msg, i) in chatMessages" :key="i" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"><div class="chat-bubble shadow-sm" :class="msg.role === 'user' ? 'chat-user' : 'chat-ai'"><div v-html="renderMarkdown(msg.text)"></div></div></div>
-                                    <div v-if="isThinking" class="flex justify-start"><div class="chat-bubble chat-ai flex gap-1 items-center h-10"><div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div><div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div><div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div></div></div>
-                                </div>
-                                <div v-if="chatMessages.length === 0" class="p-4 border-t bg-white grid grid-cols-2 gap-2">
-                                    <button @click="sendQuery('Review my budget strictly. Identify non-essential spending and suggest a 15% cut strategy.')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">✂️ Ruthless Review</button>
-                                    <button @click="sendQuery('Analyze my debt situation. What is the most efficient payoff method and how much interest is it costing me daily?')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">🔥 Debt Strategy</button>
-                                    <button @click="sendQuery('If I lost my main income today, how long could I survive on my current savings based on my survival budget?')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">🛡️ Stress Test</button>
-                                    <button @click="sendQuery('How would increasing my retirement contribution by 1% affect my nest egg?')" class="text-xs text-left p-2 border rounded hover:bg-slate-50 hover:border-indigo-300 transition">🥚 1% Boost Impact</button>
-                                </div>
-                                <div class="p-3 border-t bg-white flex gap-2">
-                                    <input v-model="userQuery" @keyup.enter="sendQuery(userQuery)" type="text" placeholder="Ask anything..." class="flex-1 p-2 border rounded-lg text-sm outline-none focus:border-indigo-500">
-                                    <button @click="sendQuery(userQuery)" :disabled="!userQuery" class="bg-indigo-600 text-white px-4 rounded-lg font-bold disabled:opacity-50 hover:bg-indigo-700 transition">Send</button>
-                                </div>
+                   <transition name="fade">
+        <div v-if="showConsultant" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md h-[600px] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700">
+                
+                <div class="p-4 border-b bg-slate-50 dark:bg-slate-800 dark:border-slate-700 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-lg">🤖</div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-white">Financial Consultant</h3>
+                            <div class="text-[10px] text-slate-400 flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Online
                             </div>
                         </div>
-                    </transition>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button @click="resetChat" class="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300 px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-600 hover:text-indigo-600 transition shadow-sm font-bold flex items-center gap-1" title="Clear Chat">
+                            <span>↺</span> Reset
+                        </button>
+                        <button @click="showConsultant = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xl">&times;</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/50" id="chat-container">
+                    
+                    <div v-if="chatMessages.length === 0" class="text-center py-8">
+                        <div class="text-4xl mb-2">👋</div>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm">I have analyzed your finances.<br>How can I help you today?</p>
+                    </div>
+
+                    <div v-for="(msg, i) in chatMessages" :key="i" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+                        <div class="chat-bubble shadow-sm max-w-[85%] p-3 rounded-2xl text-sm" 
+                             :class="msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none'">
+                            <div v-html="renderMarkdown(msg.text)"></div>
+                        </div>
+                    </div>
+
+                    <div v-if="isThinking" class="flex justify-start">
+                        <div class="chat-bubble bg-white dark:bg-slate-800 border dark:border-slate-700 flex gap-1 items-center h-10 px-4 rounded-2xl rounded-tl-none">
+                            <div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div>
+                            <div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div>
+                            <div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="chatMessages.length === 0" class="p-4 border-t bg-white dark:bg-slate-900 dark:border-t-slate-700 grid grid-cols-2 gap-2">
+                    <button @click="sendQuery('Review my budget strictly. Identify non-essential spending and suggest a 15% cut strategy.')" 
+                            class="text-xs text-left p-2 border rounded hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500 transition text-slate-600 dark:text-slate-300 dark:border-slate-700">
+                        ✂️ Ruthless Review
+                    </button>
+                    <button @click="sendQuery('Analyze my debt situation. What is the most efficient payoff method and how much interest is it costing me daily?')" 
+                            class="text-xs text-left p-2 border rounded hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500 transition text-slate-600 dark:text-slate-300 dark:border-slate-700">
+                        🔥 Debt Strategy
+                    </button>
+                    <button @click="sendQuery('If I lost my main income today, how long could I survive on my current savings based on my survival budget?')" 
+                            class="text-xs text-left p-2 border rounded hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500 transition text-slate-600 dark:text-slate-300 dark:border-slate-700">
+                        🛡️ Stress Test
+                    </button>
+                    <button @click="sendQuery('How would increasing my retirement contribution by 1% affect my nest egg?')" 
+                            class="text-xs text-left p-2 border rounded hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500 transition text-slate-600 dark:text-slate-300 dark:border-slate-700">
+                        🥚 1% Boost Impact
+                    </button>
+                </div>
+
+                <div class="p-3 border-t bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-700 flex gap-2">
+                    <input v-model="userQuery" @keyup.enter="sendQuery(userQuery)" type="text" placeholder="Ask anything..." 
+                           class="flex-1 p-2 border rounded-lg text-sm outline-none focus:border-indigo-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white dark:placeholder-slate-500 transition-colors">
+                    
+                    <button @click="sendQuery(userQuery)" :disabled="!userQuery" class="bg-indigo-600 text-white px-4 rounded-lg font-bold disabled:opacity-50 hover:bg-indigo-700 transition">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </transition>
 
                     <transition name="fade">
                         <div v-if="showGenModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
