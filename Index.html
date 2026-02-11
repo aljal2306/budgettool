@@ -2501,79 +2501,39 @@
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
          const toggleBillPaid = async (bill) => {
                 try {
-                    // 1. Toggle Local State
-                    const wasPaid = bill.is_paid; 
+                    // 1. Calculate the NEW Status (Flip the current status)
+                    const newStatus = !bill.is_paid; 
                     
+                    // 2. Logic: 
+                    // If Paying -> Save the Amount.
+                    // If Unpaying -> Set Amount to NULL.
+                    const amountToSave = newStatus ? (bill.amount || 0) : null;
+
+                    // 3. Update Database (Ledger Only)
+                    // We DO NOT touch the 'forecast_settings' balance here. 
+                    // Let the Dashboard calculation handle the projection.
                     const { error } = await _supabase
                         .from('ledger')
-                        .update({ is_paid: wasPaid })
+                        .update({ 
+                            is_paid: newStatus,
+                            amount_paid: amountToSave
+                        })
                         .eq('id', bill.id);
 
                     if (error) throw error;
 
-                    // 2. Update Bank Balance
-                    const amount = Number(bill.amount_paid || bill.amount || 0);
-                    
-                    if (forecastSettings.value) {
-                        let newBankBalance = Number(forecastSettings.value.currentBalance);
-                        if (wasPaid) newBankBalance -= amount;
-                        else newBankBalance += amount;
-
-                        // 🟢 FIX 1: Round Bank Balance
-                        newBankBalance = Math.round(newBankBalance * 100) / 100;
-
-                        forecastSettings.value.currentBalance = newBankBalance;
-                        
-                        await _supabase
-                            .from('forecast_settings')
-                            .update({ currentBalance: newBankBalance })
-                            .eq('user_id', session.value.user.id);
-                    }
-
-                    // 3. Update Debt Balance
-                    if (bill.budget_items && bill.budget_items.debt_id) {
-                        if (debts.value.length === 0) await fetchDebts();
-                        const linkedDebt = debts.value.find(d => d.id === bill.budget_items.debt_id);
-                        
-                        if (linkedDebt) {
-                            const currentDebt = Number(linkedDebt.balance);
-                            const apr = Number(linkedDebt.rate) || 0;
-                            const monthlyInterest = (currentDebt * (apr / 100)) / 12; // Simple interest approx
-                            
-                            let newDebtBalance = currentDebt;
-
-                            if (wasPaid) {
-                                // Paying: Reduce Principal
-                                const principal = Math.max(0, amount - monthlyInterest);
-                                newDebtBalance = currentDebt - principal;
-                            } else {
-                                // Undoing: Add Principal Back
-                                // (We use the simple reverse here to keep it clean)
-                                const principal = Math.max(0, amount - monthlyInterest);
-                                newDebtBalance = currentDebt + principal;
-                            }
-
-                            // 🟢 FIX 2: Round Debt Balance to 2 Decimals
-                            newDebtBalance = Math.round(newDebtBalance * 100) / 100;
-
-                            linkedDebt.balance = newDebtBalance;
-
-                            await _supabase
-                                .from('debts')
-                                .update({ balance: linkedDebt.balance })
-                                .eq('id', linkedDebt.id);
-                                
-                            if (typeof calculateDebtPlan === 'function') calculateDebtPlan();
-                        }
-                    }
-
-                    // 4. Refresh
+                    // 4. Reload Data 
+                    // This updates the lists and re-runs the dashboard math automatically.
                     await fetchBills();
-                    if (typeof renderDashboardChart === 'function') renderDashboardChart();
+                    
+                    // If you have a chart, update it too
+                    if (typeof renderDashboardChart === 'function') {
+                        renderDashboardChart();
+                    }
 
                 } catch (e) {
                     console.error('Error in toggleBillPaid:', e);
-                    alert('Error: ' + (e.message || e));
+                    alert('Error updating bill');
                 }
             };
            const quickPay = async (bill) => {
