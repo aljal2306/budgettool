@@ -2545,9 +2545,9 @@
                 // 3. CHECKBOOK MATH (Update Bank Balance)
                 if (forecastSettings.value) {
                     const amount = Number(bill.amount || 0);
-                    // Use a fallback of 0 if balance is missing
                     let currentBalance = Number(forecastSettings.value.currentBalance || 0);
 
+                    // Calculate the new balance
                     if (newStatus) {
                         currentBalance -= amount; // Subtract if paying
                     } else {
@@ -2559,23 +2559,19 @@
 
                     // A. Update Local State (So the screen updates instantly)
                     forecastSettings.value.currentBalance = currentBalance;
-                    
-                    // Also update the sidebar variable if it exists
                     if (typeof savingBase !== 'undefined') savingBase.value = currentBalance;
 
                     // B. SAVE BALANCE TO DB (Background)
-                    // 🟢 FIX: Changed 'currentBalance' to 'current_balance' to match DB column
-                    _supabase
-                        .from('forecast_settings')
-                        .update({ current_balance: currentBalance }) 
-                        .eq('user_id', session.value.user.id)
-                        .then(({ error }) => {
-                            if (error) {
-                                console.error("Failed to save balance:", error);
-                                // If it fails, revert the local number so the user knows
-                                alert("Failed to save new balance to database.");
-                            }
-                        });
+                    // 🟢 FIX: Corrected table to 'user_settings' to match your fetch function
+                    const { error } = await _supabase
+                        .from('user_settings') 
+                        .update({ current_balance: currentBalance }) // Snake_case column
+                        .eq('user_id', session.value.user.id);
+
+                    if (error) {
+                        console.error("Failed to save balance:", error);
+                        alert("Failed to save bank balance.");
+                    }
                 }
 
                 // 4. UPDATE LEDGER STATUS (Background)
