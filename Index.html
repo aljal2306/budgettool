@@ -2534,7 +2534,7 @@
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-         const toggleBillPaid = async (bill) => {
+        const toggleBillPaid = async (bill) => {
                 // 1. CAPTURE OLD STATE
                 const oldStatus = bill.is_paid;
                 const newStatus = !oldStatus;
@@ -2543,33 +2543,38 @@
                 bill.is_paid = newStatus;
 
                 // 3. CHECKBOOK MATH (Update Bank Balance)
-                // We only do this if we have a valid balance settings object
                 if (forecastSettings.value) {
                     const amount = Number(bill.amount || 0);
+                    // Use a fallback of 0 if balance is missing
                     let currentBalance = Number(forecastSettings.value.currentBalance || 0);
 
                     if (newStatus) {
-                        // If Marking PAID: Subtract money
-                        currentBalance -= amount;
+                        currentBalance -= amount; // Subtract if paying
                     } else {
-                        // If Marking UNPAID: Add money back
-                        currentBalance += amount;
+                        currentBalance += amount; // Add back if unpaying
                     }
 
-                    // Round to 2 decimals (fixes $100.0000001 bugs)
+                    // Round to 2 decimals
                     currentBalance = Math.round(currentBalance * 100) / 100;
 
-                    // Update Local State (So the screen updates instantly)
+                    // A. Update Local State (So the screen updates instantly)
                     forecastSettings.value.currentBalance = currentBalance;
-                    if (savingBase) savingBase.value = currentBalance;
+                    
+                    // Also update the sidebar variable if it exists
+                    if (typeof savingBase !== 'undefined') savingBase.value = currentBalance;
 
-                    // SAVE BALANCE TO DB (Background)
+                    // B. SAVE BALANCE TO DB (Background)
+                    // 🟢 FIX: Changed 'currentBalance' to 'current_balance' to match DB column
                     _supabase
                         .from('forecast_settings')
-                        .update({ currentBalance: currentBalance })
+                        .update({ current_balance: currentBalance }) 
                         .eq('user_id', session.value.user.id)
                         .then(({ error }) => {
-                            if (error) console.error("Failed to save balance:", error);
+                            if (error) {
+                                console.error("Failed to save balance:", error);
+                                // If it fails, revert the local number so the user knows
+                                alert("Failed to save new balance to database.");
+                            }
                         });
                 }
 
@@ -2587,11 +2592,8 @@
 
                     if (error) throw error;
 
-                    // Success! No reload needed because we updated UI in step 2 & 3.
-
                 } catch (e) {
                     console.error('Error updating bill:', e);
-                    // Revert visual changes if internet fails
                     bill.is_paid = oldStatus; 
                     alert("Connection failed. Bill reverted.");
                 }
