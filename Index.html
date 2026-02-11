@@ -1677,26 +1677,32 @@
                 return billsForNextMonth.length < 3;
             });
 
-          // Group Paid Bills by Month (Last 3 Months Only, FIXED Bills Only)
+         // Group Paid Bills by Month (Last 3 Months Only, FIXED Bills Only)
             const groupedPaidHistory = computed(() => {
                 if (!bills.value) return {};
 
                 // 1. Set the Limit (3 Months Ago)
                 const cutoffDate = new Date();
                 cutoffDate.setMonth(cutoffDate.getMonth() - 3);
-                cutoffDate.setDate(1); // Start of that month
+                cutoffDate.setDate(1); 
 
-                // 2. Filter: Paid + Recent + NOT Variable
+                // 2. Filter the list
                 const history = bills.value
                     .filter(b => b.is_paid) // Must be paid
-                    .filter(b => !b.budget_items?.is_variable) // 🟢 FIX: Exclude Variable Expenses (Groceries, etc.)
+                    .filter(b => {
+                        // STRICT CHECK:
+                        // If it has a budget item, and that item is variable, REMOVE IT.
+                        if (b.budget_items && b.budget_items.is_variable === true) {
+                            return false; 
+                        }
+                        return true; // Keep everything else (Fixed bills + Unlinked items)
+                    })
                     .filter(b => new Date(b.due_date) >= cutoffDate) // Must be recent
                     .sort((a, b) => new Date(b.due_date) - new Date(a.due_date)); // Newest first
 
                 // 3. Group them
                 const groups = {};
                 history.forEach(bill => {
-                    // Create Key: "February 2026"
                     const d = new Date(bill.due_date + 'T12:00:00');
                     const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
@@ -1766,7 +1772,7 @@
            const fetchBills = async () => {
                 if (!session.value) return;
 
-                // 🟢 SELECT 'transaction_name' from 'ledger'
+                // 🟢 Updated to fetch 'is_variable'
                 let { data, error } = await _supabase
                     .from('ledger')
                     .select(`
@@ -1781,6 +1787,7 @@
                             name,
                             category,
                             is_core,
+                            is_variable, 
                             debt_id,
                             amount
                         )
@@ -1790,16 +1797,10 @@
                 if (error) {
                     console.error('Error fetching ledger:', error);
                 } else {
-                    // Map the data to ensure every bill has a Name and Amount
-                    bills.value = data.map(item => {
-                        // 1. Get the Parent Template (or create a ghost one if deleted)
-                        const parent = item.budget_items || {
-                            name: 'Deleted Category',
-                            category: 'Uncategorized',
-                            amount: 0,
-                            is_core: false,
-                            debt_id: null
-                        };
+                    // Save the data
+                    bills.value = data;
+                }
+            };
 
                         // 2. Determine the Final Name to Display
                         // Priority: Ledger Name -> Template Name -> "Unknown"
