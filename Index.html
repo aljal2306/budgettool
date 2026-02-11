@@ -1677,7 +1677,7 @@
                 return billsForNextMonth.length < 3;
             });
 
-            // Group Paid Bills by Month (Last 3 Months Only)
+          // Group Paid Bills by Month (Last 3 Months Only, FIXED Bills Only)
             const groupedPaidHistory = computed(() => {
                 if (!bills.value) return {};
 
@@ -1686,17 +1686,17 @@
                 cutoffDate.setMonth(cutoffDate.getMonth() - 3);
                 cutoffDate.setDate(1); // Start of that month
 
-                // 2. Filter: Paid Bills + Recent Dates
+                // 2. Filter: Paid + Recent + NOT Variable
                 const history = bills.value
-                    .filter(b => b.is_paid)
-                    .filter(b => new Date(b.due_date) >= cutoffDate)
+                    .filter(b => b.is_paid) // Must be paid
+                    .filter(b => !b.budget_items?.is_variable) // 🟢 FIX: Exclude Variable Expenses (Groceries, etc.)
+                    .filter(b => new Date(b.due_date) >= cutoffDate) // Must be recent
                     .sort((a, b) => new Date(b.due_date) - new Date(a.due_date)); // Newest first
 
                 // 3. Group them
                 const groups = {};
                 history.forEach(bill => {
                     // Create Key: "February 2026"
-                    // We add "T12:00:00" to ensure timezone doesn't shift the date back
                     const d = new Date(bill.due_date + 'T12:00:00');
                     const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
