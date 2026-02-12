@@ -255,18 +255,27 @@
                     </div>
                     
                     <div>
-                        <div class="font-bold text-slate-700 dark:text-slate-200 text-sm flex flex-wrap items-center gap-2">
-                            {{ bill.budget_items?.name || bill.transaction_name }}
-                            
-                            <span v-if="bill.budget_items?.is_autopay" class="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-200 dark:border-amber-800 flex items-center gap-1">
-                                ⚡ Auto
-                            </span>
+                        <div class="flex-1 min-w-0 pr-2"> <div class="flex items-center gap-2">
+                <div class="font-bold text-slate-700 dark:text-slate-200 text-sm truncate">
+                    {{ bill.budget_items?.name || bill.transaction_name }}
+                </div>
+                
+                <span v-if="bill.budget_items?.is_autopay" class="flex-shrink-0 text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-200 dark:border-amber-800 flex items-center gap-1">
+                    ⚡ Auto
+                </span>
+            </div>
 
-                            <span v-if="isUrgent(bill.due_date)" class="text-[9px] px-1.5 py-0.5 rounded font-black tracking-widest uppercase border"
-                                  :class="isToday(bill.due_date) ? 'bg-red-100 text-red-600 border-red-200' : 'bg-orange-100 text-orange-700 border-orange-200'">
-                                {{ isToday(bill.due_date) ? 'TODAY!' : 'OVERDUE' }}
-                            </span>
-                        </div>
+            <div class="flex items-center gap-2 mt-0.5">
+                <div class="text-[10px] text-slate-400 font-medium truncate">
+                    {{ bill.budget_items?.category || 'Uncategorized' }}
+                </div>
+
+                <span v-if="isUrgent(bill.due_date)" class="flex-shrink-0 text-[9px] px-1.5 py-0 rounded font-black tracking-widest uppercase border"
+                      :class="isToday(bill.due_date) ? 'bg-red-100 text-red-600 border-red-200' : 'bg-orange-100 text-orange-700 border-orange-200'">
+                    {{ isToday(bill.due_date) ? 'TODAY!' : 'OVERDUE' }}
+                </span>
+            </div>
+        </div>
                         <div class="text-[10px] text-slate-400 font-medium">
                             {{ bill.budget_items?.category || 'Uncategorized' }}
                         </div>
