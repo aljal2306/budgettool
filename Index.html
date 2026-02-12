@@ -1964,16 +1964,20 @@
             const visibleBills = computed(() => { let sorted = bills.value.filter(b => !b.budget_items.is_variable); if (!showPaidBills.value) sorted = sorted.filter(b => !b.is_paid); return sorted; });
             // Upcoming Bills (Due Today + Next 7 Days)
            const upcomingBills = computed(() => {
-                if (!bills.value) return [];
-                
-                // 1. Get ALL unpaid bills (Don't filter by date yet)
-                return bills.value
-                    .filter(b => !b.is_paid) 
-                    // 2. Sort: Overdue items (oldest dates) go to the TOP
-                    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
-                    // 3. Limit to the top 4 (so it fits in the card)
-                    .slice(0, 4); 
-            });
+    return bills.value
+        .filter(bill => {
+            const isUnpaid = !bill.is_paid;
+            const isNotIncome = bill.type !== 'income'; // 🟢 ADD THIS
+            
+            // Your existing date logic (e.g., next 7 days)
+            const dueDate = new Date(bill.due_date + 'T12:00:00');
+            const today = new Date();
+            const sevenDaysFromNow = new Date();
+            sevenDaysFromNow.setDate(today.getDate() + 7);
+
+            return isUnpaid && isNotIncome && dueDate <= sevenDaysFromNow;
+        });
+});
             const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc,i) => acc + getMonthlyCost(i), 0)));
             const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { let m = Number(inc.amount); if (inc.frequency === 'Bi-Weekly') m *= 2.166; else if (inc.frequency === 'Semi-Monthly') m *= 2; return total + m; }, 0));
             const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
