@@ -820,10 +820,27 @@
                                     <input type="checkbox" v-model="newItem.is_core" class="text-yellow-500 rounded focus:ring-yellow-500">
                                     <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Core / Essential Item</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-amber-300 transition">
-                                    <input type="checkbox" v-model="newItem.is_autopay" class="text-amber-500 rounded focus:ring-amber-500">
-                                    <span class="text-xs font-medium text-slate-700 dark:text-slate-300">⚡ Auto Pay</span>
+                                <div class="col-span-2">
+                                <div class="flex items-center gap-2">
+                                <label class="flex-1 flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-amber-300 transition" :class="newItem.is_autopay ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : ''">
+                                  <input type="checkbox" v-model="newItem.is_autopay" class="text-amber-500 rounded focus:ring-amber-500 w-4 h-4">
+                                  <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                 ⚡ Auto Pay
+                                  </span>
                                 </label>
+
+                               <button @click="showAutoPayHelp = !showAutoPayHelp" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-indigo-100 hover:text-indigo-500 transition">
+                                  <span class="font-bold font-serif italic">i</span>
+                               </button>
+                               </div>
+
+                               <div v-if="showAutoPayHelp" class="mt-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-200 text-xs rounded-lg border border-indigo-100 dark:border-indigo-800 animate-slide-down">
+                              <p class="font-bold mb-1">How Auto Pay Works:</p>
+                              <p class="leading-relaxed opacity-90">
+                              If enabled, this bill will be <strong>automatically marked as paid</strong> on its due date every month. The amount will be instantly deducted from your current balance to keep your cash flow accurate.
+                              </p>
+                           </div>
+                         </div>
                                 <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-blue-300 transition">
                                     <input type="checkbox" v-model="newItem.is_variable" class="text-blue-500 rounded focus:ring-blue-500">
                                     <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Variable (Grocery/Gas)</span>
@@ -1724,6 +1741,7 @@
             const showAutoPayReport = ref(false);
             const autoPayBills = ref([]); // Stores the actual bill objects
             const reversingBillId = ref(null); // Which bill is currently being modified?
+            const showAutoPayHelp = ref(false);
 
             // --- GIFT CARD STATE ---
             const giftCards = ref([]);
@@ -3093,7 +3111,7 @@
                 currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
 
                 // ... other variables ...
-                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal,      
+                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp,     
             };
         }
     }).mount('#app');
