@@ -2124,10 +2124,10 @@
                         id,
                         due_date,
                         is_paid,
-                        paid_date,
+                        paid_date,         
                         amount_paid,
                         transaction_name, 
-                        type,
+                        type,              
                         budget_item_id,
                         budget_items (
                             id,
@@ -2139,26 +2139,28 @@
                             amount, 
                             is_autopay
                         )
-                    `)
+                    `) // 🟢 Note: I added 'type' and 'paid_date' above.
                     .order('due_date', { ascending: true });
 
                 if (error) {
                     console.error('Error fetching ledger:', error);
                 } else {
-                    // Map the data to a usable format
                     bills.value = data.map(bill => {
                         const template = bill.budget_items || {};
 
-                        // Logic: If Income, use amount_paid. If Bill, prefer amount_paid, else template.
+                        // 🟢 LOGIC: Calculate the correct amount
+                        // If it is Income, we ONLY check amount_paid.
+                        // If it is a Bill, we check amount_paid first, then the template.
                         let finalAmount = 0;
+
                         if (bill.type === 'income') {
-                             finalAmount = bill.amount_paid || 0;
+                            finalAmount = bill.amount_paid || 0;
                         } else {
-                             finalAmount = bill.amount_paid || template.amount || 0;
+                            finalAmount = bill.amount_paid || template.amount || 0;
                         }
 
                         const finalName = bill.transaction_name || template.name || 'Unknown Bill';
-                      
+
                         return {
                             ...bill,
                             amount: finalAmount,
