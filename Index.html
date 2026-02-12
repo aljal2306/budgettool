@@ -2126,6 +2126,7 @@
                         is_paid,
                         amount_paid,
                         transaction_name, 
+                        type,  // 🟢 CRITICAL FIX: You must select 'type' here!
                         budget_item_id,
                         budget_items (
                             id,
@@ -2134,33 +2135,35 @@
                             is_core,
                             is_variable, 
                             debt_id,
-                            amount, is_autopay)
+                            amount, 
+                            is_autopay
+                        )
                     `)
                     .order('due_date', { ascending: true });
 
                 if (error) {
                     console.error('Error fetching ledger:', error);
                 } else {
-                    // 🟢 MAPPING RESTORED: This calculates the correct amount
                     bills.value = data.map(bill => {
-                        // 1. Get the Budget Template (or empty object if missing)
                         const template = bill.budget_items || {};
 
-                        // 2. Determine the Amount
-                        // If paid, use amount_paid. 
-                        // If NOT paid, use the Template amount.
-                        const finalAmount = bill.amount_paid || template.amount || 0;
+                        // 🟢 LOGIC UPDATE:
+                        // If it's a Deposit (type='income'), it ONLY uses amount_paid.
+                        // If it's a Bill, it tries amount_paid first, then the template amount.
+                        let finalAmount = 0;
+                        
+                        if (bill.type === 'income') {
+                             finalAmount = bill.amount_paid || 0;
+                        } else {
+                             finalAmount = bill.amount_paid || template.amount || 0;
+                        }
 
-                        // 3. Determine the Name
                         const finalName = bill.transaction_name || template.name || 'Unknown Bill';
 
                         return {
                             ...bill,
-                            // Ensure the HTML can find these easily:
                             amount: finalAmount,
                             transaction_name: finalName,
-                            
-                            // Keep the template accessible for the 'is_variable' filter
                             budget_items: template 
                         };
                     });
@@ -2857,64 +2860,56 @@
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
         const toggleBillPaid = async (bill) => {
-                // 1. CAPTURE OLD STATE
-                const oldStatus = bill.is_paid;
-                const newStatus = !oldStatus;
+                // Determine if we are marking it AS PAID or AS UNPAID
+                const isNowPaid = !bill.is_paid;
                 
-                // 2. OPTIMISTIC UPDATE (Instant Checkmark)
-                bill.is_paid = newStatus;
+                // Get the money amount (Handle both columns just in case)
+                const amount = bill.amount_paid || bill.amount || 0;
 
-                // 3. CHECKBOOK MATH (Update Bank Balance)
-                if (forecastSettings.value) {
-                    const amount = Number(bill.amount || 0);
-                    let currentBalance = Number(forecastSettings.value.currentBalance || 0);
+                // 🟢 MATH LOGIC:
+                // If it's a DEPOSIT (Income):
+                //   - Unpaying (Deleting) it means REMOVING money from balance.
+                // If it's a BILL (Expense):
+                //   - Unpaying it means ADDING money back to balance (Refund).
+                let adjustment = 0;
 
-                    // Calculate the new balance
-                    if (newStatus) {
-                        currentBalance -= amount; // Subtract if paying
-                    } else {
-                        currentBalance += amount; // Add back if unpaying
-                    }
-
-                    // Round to 2 decimals
-                    currentBalance = Math.round(currentBalance * 100) / 100;
-
-                    // A. Update Local State (So the screen updates instantly)
-                    forecastSettings.value.currentBalance = currentBalance;
-                    if (typeof savingBase !== 'undefined') savingBase.value = currentBalance;
-
-                    // B. SAVE BALANCE TO DB (Background)
-                    // 🟢 FIX: Corrected table to 'user_settings' to match your fetch function
-                    const { error } = await _supabase
-                        .from('user_settings') 
-                        .update({ current_balance: currentBalance }) // Snake_case column
-                        .eq('user_id', session.value.user.id);
-
-                    if (error) {
-                        console.error("Failed to save balance:", error);
-                        alert("Failed to save bank balance.");
-                    }
+                if (bill.type === 'income') {
+                    // It's a deposit. If we are unpaying/removing it, SUBTRACT.
+                    adjustment = isNowPaid ? amount : -amount; 
+                } else {
+                    // It's a bill. If we are unpaying it, ADD it back.
+                    adjustment = isNowPaid ? -amount : amount;
                 }
 
-                // 4. UPDATE LEDGER STATUS (Background)
-                try {
-                    const amountToSave = newStatus ? (bill.amount || 0) : null;
+                const newBalance = (forecastSettings.value.currentBalance || 0) + adjustment;
 
-                    const { error } = await _supabase
-                        .from('ledger')
-                        .update({ 
-                            is_paid: newStatus,
-                            amount_paid: amountToSave
-                        })
-                        .eq('id', bill.id);
+                // 1. Update Database Status
+                const { error } = await _supabase
+                    .from('ledger')
+                    .update({ 
+                        is_paid: isNowPaid,
+                        paid_date: isNowPaid ? new Date().toISOString() : null
+                    })
+                    .eq('id', bill.id);
 
-                    if (error) throw error;
-
-                } catch (e) {
-                    console.error('Error updating bill:', e);
-                    bill.is_paid = oldStatus; 
-                    alert("Connection failed. Bill reverted.");
+                if (error) {
+                    alert("Error updating bill.");
+                    return;
                 }
+
+                // 2. Update Balance
+                await _supabase
+                    .from('user_settings')
+                    .update({ current_balance: newBalance })
+                    .eq('user_id', session.value.user.id);
+
+                // 3. Update Local Data (So the screen changes instantly)
+                bill.is_paid = isNowPaid;
+                bill.paid_date = isNowPaid ? new Date().toISOString() : null;
+                forecastSettings.value.currentBalance = newBalance;
+                
+                // If we just marked it unpaid, refresh the list to move it back to "Due Soon"
+                if (!isNowPaid) await fetchBills();
             };
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
