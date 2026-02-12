@@ -2932,31 +2932,51 @@
             const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
             // 🟢 NEW: Auto-Pay Processing System
             const processAutoPay = async () => {
-                if (!bills.value || bills.value.length === 0) return;
+                console.log("⚡ Auto-Pay Engine: Starting Check...");
 
+                if (!bills.value || bills.value.length === 0) {
+                    console.log("⚠️ Auto-Pay: No bills found to check.");
+                    return;
+                }
+
+                // 🟢 FIX: Set 'Today' to the very END of the day (11:59 PM)
+                // This ensures bills due today (which are usually set to Noon) are captured.
                 const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                today.setHours(23, 59, 59, 999);
 
                 const processed = [];
 
-                // 1. Find & Pay Bills
                 for (const bill of bills.value) {
-                    // Criteria: Not Paid + AutoPay Enabled + Due Today or Past
-                    if (!bill.is_paid && bill.budget_items?.is_autopay) {
-                        const dueDate = new Date(bill.due_date + 'T12:00:00');
+                    // Check if: 
+                    // 1. Not Paid
+                    // 2. Has budget item data
+                    // 3. Is marked Auto Pay
+                    if (!bill.is_paid && bill.budget_items && bill.budget_items.is_autopay) {
                         
-                        if (dueDate <= today) {
+                        // Create Date Object for the bill
+                        const billDate = new Date(bill.due_date + 'T12:00:00');
+                        
+                        console.log(`🔎 Checking: ${bill.budget_items.name} (Due: ${bill.due_date})`);
+
+                        if (billDate <= today) {
+                            console.log("✅ MATCH! Processing Payment...");
+                            
                             // Pay it!
                             await toggleBillPaid(bill);
                             processed.push(bill);
+                        } else {
+                            console.log("⏳ Skipped: Due date is in the future.");
                         }
                     }
                 }
 
-                // 2. If we did anything, show the Report Modal
+                // If we did anything, show the Report Modal
                 if (processed.length > 0) {
                     autoPayBills.value = processed;
                     showAutoPayReport.value = true;
+                    console.log(`🚀 Auto-Pay Complete. Processed ${processed.length} bills.`);
+                } else {
+                    console.log("💤 Auto-Pay: Nothing to pay right now.");
                 }
             };
             const handleReversal = async (bill, action) => {
