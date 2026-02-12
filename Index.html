@@ -2124,9 +2124,10 @@
                         id,
                         due_date,
                         is_paid,
+                        paid_date,
                         amount_paid,
                         transaction_name, 
-                        type,  // 🟢 CRITICAL FIX: You must select 'type' here!
+                        type,
                         budget_item_id,
                         budget_items (
                             id,
@@ -2144,14 +2145,12 @@
                 if (error) {
                     console.error('Error fetching ledger:', error);
                 } else {
+                    // Map the data to a usable format
                     bills.value = data.map(bill => {
                         const template = bill.budget_items || {};
 
-                        // 🟢 LOGIC UPDATE:
-                        // If it's a Deposit (type='income'), it ONLY uses amount_paid.
-                        // If it's a Bill, it tries amount_paid first, then the template amount.
+                        // Logic: If Income, use amount_paid. If Bill, prefer amount_paid, else template.
                         let finalAmount = 0;
-                        
                         if (bill.type === 'income') {
                              finalAmount = bill.amount_paid || 0;
                         } else {
