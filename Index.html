@@ -2980,12 +2980,31 @@
                 }
             };
             const handleReversal = async (bill, action) => {
-                // 1. ALWAYS REVERSE THE TRANSACTION (Refund Money)
+                // 1. REFUND THE MONEY (Update Balance & Mark Unpaid)
+                // We await this to ensure the balance is corrected first.
                 await toggleBillPaid(bill); 
 
-                // 2. HANDLE SPECIFIC ACTIONS
-                if (action === 'disable_auto') {
-                    // Option B: Turn off Auto Pay for the future
+                // 2. HANDLE THE SPECIFIC ACTION
+                if (action === 'onetime') {
+                    // 🟢 OPTION A: ONE-TIME EXCEPTION (Skip this month)
+                    // We DELETE the bill instance so the Auto-Pay engine doesn't find it again.
+                    // We do NOT touch the budget_item, so next month works fine.
+                    const { error } = await _supabase
+                        .from('ledger')
+                        .delete()
+                        .eq('id', bill.id);
+
+                    if (error) {
+                        alert("Error removing bill: " + error.message);
+                    } else {
+                        // Remove from local view immediately
+                        bills.value = bills.value.filter(b => b.id !== bill.id);
+                    }
+                } 
+                else if (action === 'disable_auto') {
+                    // 🟡 OPTION B: DISABLE AUTO-PAY (Pay Manually)
+                    // We keep the bill in the list (so you can pay it manually),
+                    // but we turn off the 'is_autopay' switch on the Master Item.
                     const { error } = await _supabase
                         .from('budget_items')
                         .update({ is_autopay: false })
@@ -2993,59 +3012,53 @@
 
                     if (error) alert("Failed to update budget template.");
                     else {
-                        // Update local state so badge disappears immediately
+                        // Update local state so the lightning bolt disappears
                         if (bill.budget_items) bill.budget_items.is_autopay = false;
                     }
                 } 
                 else if (action === 'delete') {
-                    // Option C: Delete BOTH the Bill AND the Budget Item
+                    // 🔴 OPTION C: DELETE EVERYTHING (Nuke it)
                     
-                    // Step A: Delete the specific bill (Ledger)
+                    // Step 1: Delete the Bill (Ledger)
                     const { error: ledgerError } = await _supabase
                         .from('ledger')
                         .delete()
                         .eq('id', bill.id);
 
-                    if (ledgerError) {
-                        alert("Failed to delete bill.");
-                        return;
-                    }
-
-                    // Step B: Delete the Parent Budget Item (Template)
-                    if (bill.budget_item_id) {
-                        const { error: parentError } = await _supabase
-                            .from('budget_items')
-                            .delete()
-                            .eq('id', bill.budget_item_id);
-
-                        if (parentError) {
-                            // ⚠️ Safety Net: If we can't delete the parent (because it has 
-                            // history from previous months), we just turn off Auto-Pay instead.
-                            console.warn("Could not delete parent item (likely has history). Disabling AutoPay instead.");
-                            
-                            await _supabase
+                    if (!ledgerError) {
+                        // Step 2: Try to Delete the Master Item (Budget Item)
+                        // If this fails (due to history), we fallback to disabling auto-pay.
+                        if (bill.budget_item_id) {
+                            const { error: parentError } = await _supabase
                                 .from('budget_items')
-                                .update({ is_autopay: false })
+                                .delete()
                                 .eq('id', bill.budget_item_id);
-                            
-                            alert("This specific bill was deleted.\n\nThe Budget Item itself was kept (to preserve your past history), but Auto-Pay has been disabled.");
-                        } else {
-                            // Success: Remove from local budget list so it disappears from the UI
-                            if (budgetItems.value) {
-                                budgetItems.value = budgetItems.value.filter(i => i.id !== bill.budget_item_id);
+
+                            if (parentError) {
+                                console.warn("Could not delete parent item (has history). Disabling AutoPay instead.");
+                                await _supabase
+                                    .from('budget_items')
+                                    .update({ is_autopay: false })
+                                    .eq('id', bill.budget_item_id);
+                                alert("The bill was deleted, but we kept the Budget Item to preserve your past history. Auto-Pay has been disabled.");
+                            } else {
+                                // Remove from budget items list if successful
+                                if (budgetItems.value) {
+                                    budgetItems.value = budgetItems.value.filter(i => i.id !== bill.budget_item_id);
+                                }
                             }
                         }
+                        // Remove from bills list
+                        bills.value = bills.value.filter(b => b.id !== bill.id);
                     }
-
-                    // Remove from main bills list
-                    bills.value = bills.value.filter(b => b.id !== bill.id);
                 }
-                
-                // 3. REMOVE FROM REPORT LIST
+
+                // 3. UI CLEANUP
+                // Remove the bill from the "Report Modal" list
                 autoPayBills.value = autoPayBills.value.filter(b => b.id !== bill.id);
                 reversingBillId.value = null; // Reset selection
 
-                // If list is empty, close modal
+                // If no more bills are in the report, close the modal
                 if (autoPayBills.value.length === 0) {
                     showAutoPayReport.value = false;
                 }
