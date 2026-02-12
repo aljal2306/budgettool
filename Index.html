@@ -2118,13 +2118,14 @@
             const fetchBills = async () => {
                 if (!session.value) return;
 
+                // 🟢 UPDATED QUERY: Asking for specific columns
                 let { data, error } = await _supabase
                     .from('ledger')
                     .select(`
                         id,
                         due_date,
                         is_paid,
-                        paid_date,         
+                        paid_date,
                         amount_paid,
                         transaction_name, 
                         type,              
@@ -2139,36 +2140,38 @@
                             amount, 
                             is_autopay
                         )
-                    `) // 🟢 Note: I added 'type' and 'paid_date' above.
+                    `)
                     .order('due_date', { ascending: true });
 
+                // 🔴 DEBUG BLOCK: This reveals the hidden "Object" error
                 if (error) {
-                    console.error('Error fetching ledger:', error);
-                } else {
-                    bills.value = data.map(bill => {
-                        const template = bill.budget_items || {};
-
-                        // 🟢 LOGIC: Calculate the correct amount
-                        // If it is Income, we ONLY check amount_paid.
-                        // If it is a Bill, we check amount_paid first, then the template.
-                        let finalAmount = 0;
-
-                        if (bill.type === 'income') {
-                            finalAmount = bill.amount_paid || 0;
-                        } else {
-                            finalAmount = bill.amount_paid || template.amount || 0;
-                        }
-
-                        const finalName = bill.transaction_name || template.name || 'Unknown Bill';
-
-                        return {
-                            ...bill,
-                            amount: finalAmount,
-                            transaction_name: finalName,
-                            budget_items: template 
-                        };
-                    });
+                    console.error("🔥 SUPABASE ERROR DETAILS:", error);
+                    console.error("👉 Error Message:", error.message);
+                    console.error("👉 Error Hint:", error.hint);
+                    console.error("👉 Error Details:", error.details);
+                    return; 
                 }
+
+                // If success...
+                bills.value = data.map(bill => {
+                    const template = bill.budget_items || {};
+
+                    let finalAmount = 0;
+                    if (bill.type === 'income') {
+                        finalAmount = bill.amount_paid || 0;
+                    } else {
+                        finalAmount = bill.amount_paid || template.amount || 0;
+                    }
+
+                    const finalName = bill.transaction_name || template.name || 'Unknown Bill';
+
+                    return {
+                        ...bill,
+                        amount: finalAmount,
+                        transaction_name: finalName,
+                        budget_items: template 
+                    };
+                });
             };
             const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data; };
             const fetchForecastSlots = async () => { const { data } = await _supabase.from('forecast_slots').select('*').order('slot_index'); if (data) { const loaded = [null, null, null]; data.forEach(slot => { if(slot.slot_index >= 0 && slot.slot_index < 3) loaded[slot.slot_index] = slot; }); savedForecasts.value = loaded; } };
