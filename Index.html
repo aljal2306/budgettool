@@ -1476,20 +1476,38 @@
                     <p class="text-sm font-bold">All caught up!</p>
                 </div>
 
-                <div v-if="bills" v-for="bill in bills.filter(b => !b.is_paid)" :key="bill.id" 
-                        class="flex items-center justify-between p-4 rounded-xl border transition bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300">
-                    <div class="flex items-center gap-4">
-                        <button @click="toggleBillPaid(bill)" class="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-center text-transparent hover:text-emerald-500">✓</button>
-                        <div>
-                            <div class="font-bold text-slate-700 dark:text-slate-200 text-sm">{{ bill.budget_items?.name || bill.transaction_name }}</div>
-                            <div class="text-xs text-slate-400 font-medium">Due: {{ new Date(bill.due_date + 'T12:00:00').toLocaleDateString() }}</div>
-                        </div>
+                <div v-if="bills">
+    <div v-for="bill in bills.filter(b => !b.is_paid)" :key="bill.id" 
+         class="flex items-center justify-between p-4 rounded-xl border transition bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300 group">
+        
+        <div class="flex items-center gap-4 w-full min-w-0">
+            <button @click="toggleBillPaid(bill)" class="w-6 h-6 flex-shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-center text-transparent hover:text-emerald-500">
+                <span v-if="bill.budget_items?.is_autopay" class="text-[10px] text-slate-300 group-hover:text-emerald-500">⚡</span>
+                <span v-else>✓</span>
+            </button>
+            
+            <div class="flex-1 min-w-0 pr-2">
+                <div class="flex items-start gap-2">
+                    <div class="font-bold text-slate-700 dark:text-slate-200 text-sm leading-tight break-words">
+                        {{ bill.budget_items?.name || bill.transaction_name }}
                     </div>
-                    <div class="font-bold text-slate-900 dark:text-white">
-                        ${{ (bill.amount || 0).toLocaleString() }}
-                    </div>
+                    
+                    <span v-if="bill.budget_items?.is_autopay" class="flex-shrink-0 mt-0.5 text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-200 dark:border-amber-800 flex items-center gap-1 whitespace-nowrap">
+                        ⚡ Auto
+                    </span>
+                </div>
+
+                <div class="text-xs text-slate-400 font-medium mt-0.5">
+                    Due: {{ new Date(bill.due_date + 'T12:00:00').toLocaleDateString() }}
                 </div>
             </div>
+        </div>
+
+        <div class="font-bold text-slate-900 dark:text-white flex-shrink-0">
+            ${{ (bill.amount || 0).toLocaleString() }}
+        </div>
+    </div>
+</div>
 
             <div v-else class="space-y-6">
                 <div v-if="!groupedPaidHistory || Object.keys(groupedPaidHistory).length === 0" class="text-center py-10 text-slate-400 text-xs">
