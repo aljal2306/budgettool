@@ -1592,7 +1592,7 @@
     <div class="font-bold text-sm flex-shrink-0" 
             :class="bill.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-400'">
         <span v-if="bill.type === 'income'">+</span>
-        ${{ (bill.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) }}
+        ${{ (bill.amount_paid || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) }}
     </div>
 </div>
 
@@ -3233,14 +3233,14 @@
 
                     if (balanceError) throw balanceError;
 
-                    // 2. Log Transaction in Ledger (So it shows in history)
+                    // 2. Log Transaction in Ledger
                     const { error: ledgerError } = await _supabase
                         .from('ledger')
                         .insert([{
                             user_id: session.value.user.id,
                             transaction_name: depositNote.value,
-                            amount: depositAmount.value,
-                            type: 'income', // Ensure you handle this type in your history view if needed
+                            amount_paid: depositAmount.value, // 🟢 FIXED: Changed 'amount' to 'amount_paid'
+                            type: 'income',
                             due_date: new Date().toISOString().split('T')[0],
                             is_paid: true,
                             paid_date: new Date().toISOString()
@@ -3248,12 +3248,10 @@
 
                     if (ledgerError) throw ledgerError;
 
-                    // 3. Success! Update UI
+                    // 3. Success!
                     forecastSettings.value.currentBalance = newBalance;
                     showDepositModal.value = false;
-                    await fetchBills(); // Refresh history list
-                    
-                    // 💸 TRIGGER MONEY RAIN!
+                    await fetchBills(); 
                     triggerMoneyRain();
 
                 } catch (e) {
@@ -3285,12 +3283,13 @@
             };
             // 🟢 UNDO DEPOSIT (Delete Log & Deduct Money)
             const deleteDeposit = async (bill) => {
-                if (!confirm(`Remove this deposit of $${bill.amount}? \n\nThis will automatically deduct the amount from your current balance.`)) return;
+                // 🟢 FIXED: Use amount_paid
+                if (!confirm(`Remove this deposit of $${bill.amount_paid}? \n\nThis will automatically deduct the amount from your current balance.`)) return;
 
                 try {
-                    // 1. Deduct the money back OUT of the balance
                     const currentBal = forecastSettings.value.currentBalance || 0;
-                    const newBalance = currentBal - bill.amount;
+                    // 🟢 FIXED: Use amount_paid
+                    const newBalance = currentBal - bill.amount_paid;
 
                     const { error: balanceError } = await _supabase
                         .from('user_settings')
@@ -3299,7 +3298,6 @@
 
                     if (balanceError) throw balanceError;
 
-                    // 2. Delete the ledger record
                     const { error: deleteError } = await _supabase
                         .from('ledger')
                         .delete()
@@ -3307,9 +3305,7 @@
 
                     if (deleteError) throw deleteError;
 
-                    // 3. Update UI
                     forecastSettings.value.currentBalance = newBalance;
-                    // Remove item from local list immediately
                     bills.value = bills.value.filter(b => b.id !== bill.id);
                     
                 } catch (e) {
