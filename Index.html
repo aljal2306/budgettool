@@ -812,6 +812,10 @@
                                     <input type="checkbox" v-model="newItem.is_core" class="text-yellow-500 rounded focus:ring-yellow-500">
                                     <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Core / Essential Item</span>
                                 </label>
+                                <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-amber-300 transition">
+                                    <input type="checkbox" v-model="newItem.is_autopay" class="text-amber-500 rounded focus:ring-amber-500">
+                                    <span class="text-xs font-medium text-slate-700 dark:text-slate-300">⚡ Auto Pay</span>
+                                </label>
                                 <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-blue-300 transition">
                                     <input type="checkbox" v-model="newItem.is_variable" class="text-blue-500 rounded focus:ring-blue-500">
                                     <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Variable (Grocery/Gas)</span>
@@ -1455,7 +1459,7 @@
                 </button>
             </div>
         </div>
-
+            
         <div class="overflow-y-auto flex-1 p-4">
             
             <div v-if="!viewPaidHistory" class="space-y-3">
@@ -1517,6 +1521,89 @@
         </div>
     </div>
 </div>
+       <transition name="fade">
+        <div v-if="showAutoPayReport" class="fixed inset-0 z-[10002] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            
+            <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 animate-slide-up">
+                
+                <div class="p-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-2xl">⚡</span>
+                            <h3 class="font-bold text-lg">Auto-Pay Processed</h3>
+                        </div>
+                        <p class="text-amber-100 text-xs">
+                            We handled the following bills for you.
+                        </p>
+                    </div>
+                    <button @click="showAutoPayReport = false" class="text-white/70 hover:text-white bg-white/10 rounded-full w-8 h-8 font-bold">&times;</button>
+                </div>
+
+                <div class="p-4 max-h-[60vh] overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-900">
+                    
+                    <div v-for="bill in autoPayBills" :key="bill.id" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-all">
+                        
+                        <div v-if="reversingBillId !== bill.id" class="p-4 flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">✓</div>
+                                <div>
+                                    <div class="font-bold text-slate-700 dark:text-slate-200 text-sm">{{ bill.budget_items?.name || bill.transaction_name }}</div>
+                                    <div class="text-[10px] text-slate-400">Paid from Balance</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-slate-900 dark:text-white text-sm">-${{ (bill.amount || 0).toLocaleString() }}</div>
+                                <button @click="reversingBillId = bill.id" class="text-[10px] text-red-400 hover:text-red-600 underline font-medium mt-1">
+                                    Reverse?
+                                </button>
+                            </div>
+                        </div>
+
+                        <div v-else class="p-4 bg-slate-100 dark:bg-slate-800/50">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-xs font-bold text-slate-500 uppercase">Reverse Transaction?</h4>
+                                <button @click="reversingBillId = null" class="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 gap-2">
+                                <button @click="handleReversal(bill, 'onetime')" class="flex items-center gap-3 p-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-indigo-400 group text-left transition">
+                                    <span class="text-lg grayscale group-hover:grayscale-0">↩️</span>
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-700 dark:text-white">One-Time Exception</div>
+                                        <div class="text-[10px] text-slate-400">Just refund money. Keep Auto-Pay on.</div>
+                                    </div>
+                                </button>
+
+                                <button @click="handleReversal(bill, 'disable_auto')" class="flex items-center gap-3 p-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-amber-400 group text-left transition">
+                                    <span class="text-lg grayscale group-hover:grayscale-0">🛑</span>
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-700 dark:text-white">Disable Auto-Pay</div>
+                                        <div class="text-[10px] text-slate-400">Refund & turn off automation.</div>
+                                    </div>
+                                </button>
+
+                                <button @click="handleReversal(bill, 'delete')" class="flex items-center gap-3 p-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-red-400 group text-left transition">
+                                    <span class="text-lg grayscale group-hover:grayscale-0">🗑️</span>
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-700 dark:text-white">Delete Item</div>
+                                        <div class="text-[10px] text-slate-400">Refund & remove bill entirely.</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 text-center">
+                    <button @click="showAutoPayReport = false" class="bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-8 py-2 rounded-lg font-bold shadow-lg hover:scale-105 transition w-full">
+                        Looks Good 👍
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </transition>
 
     </div>
     
@@ -1590,6 +1677,13 @@
             const isListening = ref(false); 
             const showForecastSettings = ref(false); // Collapsed by default
             const isEditingBalance = ref(false);
+
+            // --- autopay
+            const showAutoPayNotification = ref(false);
+            const autoPaySummary = ref({ count: 0, total: 0 });
+            const showAutoPayReport = ref(false);
+            const autoPayBills = ref([]); // Stores the actual bill objects
+            const reversingBillId = ref(null); // Which bill is currently being modified?
 
             // --- GIFT CARD STATE ---
             const giftCards = ref([]);
@@ -2354,7 +2448,7 @@
             const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
             const handleSave = async () => {
                 try {
-                    // 1. Build the data object (including the new Debt Link)
+                    // 1. Build the data object
                     const itemPayload = {
                         user_id: session.value.user.id,
                         name: newItem.value.name,
@@ -2364,11 +2458,15 @@
                         is_core: newItem.value.is_core,
                         is_variable: newItem.value.is_variable,
                         is_wishlist: newItem.value.is_wishlist,
+                        
+                        // 🟢 NEW: Auto-Pay Status
+                        is_autopay: newItem.value.is_autopay || false,
+
                         replaces_id: newItem.value.replaces_id || null,
                         frequency: newItem.value.frequency,
                         category: newItem.value.category,
                         
-                        // 🟢 THIS IS THE KEY NEW FIELD
+                        // Link to Debt
                         debt_id: newItem.value.debt_id || null 
                     };
 
@@ -2394,11 +2492,12 @@
                     await fetchBudgetItems(); // Refresh the list
                     showAddForm.value = false; // Close the side panel
                     
-                    // Optional: Clear the form for next time
+                    // Clear the form for next time
                     if (!isEditing.value) {
                         newItem.value = { 
                             name: '', amount: '', frequency: 'Monthly', 
                             is_core: false, is_variable: false, is_wishlist: false, 
+                            is_autopay: false, // Reset this too
                             debt_id: null 
                         };
                     }
@@ -2774,12 +2873,139 @@
             const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
             const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
             const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
+            // 🟢 NEW: Auto-Pay Processing System
+            const processAutoPay = async () => {
+                if (!bills.value || bills.value.length === 0) return;
 
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const processed = [];
+
+                // 1. Find & Pay Bills
+                for (const bill of bills.value) {
+                    // Criteria: Not Paid + AutoPay Enabled + Due Today or Past
+                    if (!bill.is_paid && bill.budget_items?.is_autopay) {
+                        const dueDate = new Date(bill.due_date + 'T12:00:00');
+                        
+                        if (dueDate <= today) {
+                            // Pay it!
+                            await toggleBillPaid(bill);
+                            processed.push(bill);
+                        }
+                    }
+                }
+
+                // 2. If we did anything, show the Report Modal
+                if (processed.length > 0) {
+                    autoPayBills.value = processed;
+                    showAutoPayReport.value = true;
+                }
+            };
+            const handleReversal = async (bill, action) => {
+                // 1. ALWAYS REVERSE THE TRANSACTION (Refund Money)
+                // We use our existing robust toggle function to handle bank balance math
+                await toggleBillPaid(bill); 
+
+                // 2. HANDLE SPECIFIC ACTIONS
+                if (action === 'disable_auto') {
+                    // Option B: Turn off Auto Pay for the future
+                    const { error } = await _supabase
+                        .from('budget_items')
+                        .update({ is_autopay: false })
+                        .eq('id', bill.budget_item_id);
+
+                    if (error) alert("Failed to update budget template.");
+                    else bill.budget_items.is_autopay = false; // Update local state
+                } 
+                else if (action === 'delete') {
+                    // Option C: Delete this specific bill instance entirely
+                    const { error } = await _supabase
+                        .from('ledger')
+                        .delete()
+                        .eq('id', bill.id);
+
+                    if (error) alert("Failed to delete bill.");
+                    else {
+                        // Remove from main list
+                        bills.value = bills.value.filter(b => b.id !== bill.id);
+                    }
+                }
+                // Option A (One-Time Exception) is already done by step 1.
+
+                // 3. REMOVE FROM REPORT LIST
+                // Remove this bill from the modal so the user sees it's "Handled"
+                autoPayBills.value = autoPayBills.value.filter(b => b.id !== bill.id);
+                reversingBillId.value = null; // Reset selection
+
+                // If list is empty, close modal
+                if (autoPayBills.value.length === 0) {
+                    showAutoPayReport.value = false;
+                }
+            };
             watch(currentView, async (newView) => { await nextTick(); if (newView === 'dashboard') { if(bills.value.length > 0 || budgetItems.value.length > 0) { renderCategoryChart(); renderDashboardChart(); } } else if (newView === 'forecast') { fetchForecastSlots(); runForecast(); } });
 
             onMounted(() => {
-                _supabase.auth.getSession().then(({ data }) => { session.value = data.session; if (session.value) { fetchSettings(); fetchIncomes(); fetchBudgetItems().then(() => { fetchBills().then(() => { nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); }); }); fetchDebts().then(() => { const el = document.getElementById('debt-list-container'); if(el) { new Sortable(el, { handle: '.sortable-handle', animation: 150, onEnd: async (evt) => { const item = debts.value.splice(evt.oldIndex, 1)[0]; debts.value.splice(evt.newIndex, 0, item); const updates = debts.value.map((d, index) => ({ id: d.id, order_index: index, user_id: session.value.user.id, name: d.name, balance: d.balance, rate: d.rate, min_payment: d.min_payment })); await _supabase.from('debts').upsert(updates); } }); } }); fetchForecastSlots(); fetchGiftCards(); } });
-                _supabase.auth.onAuthStateChange((_, _session) => { session.value = _session; });
+                _supabase.auth.getSession().then(({ data }) => {
+                    session.value = data.session;
+                    
+                    if (session.value) {
+                        fetchSettings();
+                        fetchIncomes();
+                        
+                        // 🟢 Main Data Chain
+                        fetchBudgetItems().then(() => {
+                            fetchBills().then(() => {
+                                // Update Charts
+                                nextTick(() => {
+                                    if (typeof renderCategoryChart === 'function') renderCategoryChart();
+                                    if (typeof renderDashboardChart === 'function') renderDashboardChart();
+                                });
+
+                                // ⚡ AUTO PAY TRIGGER
+                                // We wait 1 second to ensure everything is loaded and the UI is ready
+                                setTimeout(() => {
+                                    if (typeof processAutoPay === 'function') {
+                                        processAutoPay();
+                                    }
+                                }, 1000);
+                            });
+                        });
+
+                        // 🟢 Debt Sorting Logic
+                        fetchDebts().then(() => {
+                            const el = document.getElementById('debt-list-container');
+                            if(el) {
+                                new Sortable(el, {
+                                    handle: '.sortable-handle',
+                                    animation: 150,
+                                    onEnd: async (evt) => {
+                                        const item = debts.value.splice(evt.oldIndex, 1)[0];
+                                        debts.value.splice(evt.newIndex, 0, item);
+                                        
+                                        const updates = debts.value.map((d, index) => ({
+                                            id: d.id,
+                                            order_index: index,
+                                            user_id: session.value.user.id,
+                                            name: d.name,
+                                            balance: d.balance,
+                                            rate: d.rate,
+                                            min_payment: d.min_payment
+                                        }));
+                                        await _supabase.from('debts').upsert(updates);
+                                    }
+                                });
+                            }
+                        });
+
+                        fetchForecastSlots();
+                        fetchGiftCards();
+                    }
+                });
+
+                _supabase.auth.onAuthStateChange((_, _session) => {
+                    session.value = _session;
+                });
             });
 
           // --- RETURN VARIABLES ---
@@ -2828,7 +3054,7 @@
                 currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
 
                 // ... other variables ...
-                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario,     
+                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal,      
             };
         }
     }).mount('#app');
