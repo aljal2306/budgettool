@@ -1506,7 +1506,7 @@
                 </div>
 
                 <div v-if="bills">
-                    <div v-for="bill in bills.filter(b => !b.is_paid)" :key="bill.id" 
+                    <div v-for="bill in bills.filter(b => !b.is_paid && b.type !== 'income')" :key="bill.id">
                          class="flex items-center justify-between p-4 rounded-xl border transition bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300 group">
                         
                         <div class="flex items-center gap-4 w-full min-w-0">
