@@ -716,9 +716,7 @@
 
                 <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
                     
-                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
-                        
-                        <div class="sticky top-0 z-20 pb-2 bg-white dark:bg-slate-800">
+                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4" :class="showAddForm ? 'hidden md:block' : ''"> <div class="sticky top-0 z-20 pb-2 bg-white dark:bg-slate-800">
                             <div class="bg-slate-100 dark:bg-slate-700/50 p-1 rounded-xl flex gap-1 shadow-sm border border-slate-200 dark:border-slate-600">
                                 <button @click="setScenarioMode('survival')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'survival' ? 'bg-white dark:bg-slate-600 text-orange-600 dark:text-orange-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50'">
                                     🛡️ Survival
@@ -796,13 +794,14 @@
                         </div>
                     </div>
 
-                    <div v-if="showAddForm" class="md:w-80 bg-slate-50 dark:bg-slate-900/50 border-t md:border-t-0 md:border-l dark:border-slate-700 p-5 overflow-y-auto flex-shrink-0 transition-all">
-                        <div class="flex justify-between items-center mb-4">
+                    <div v-if="showAddForm" class="md:w-80 bg-slate-50 dark:bg-slate-900/50 border-t md:border-t-0 md:border-l dark:border-slate-700 flex flex-col h-full flex-shrink-0 transition-all">
+                        
+                        <div class="flex justify-between items-center p-5 pb-2 flex-shrink-0">
                             <h4 class="text-sm font-bold text-slate-800 dark:text-white">{{ isEditing ? 'Edit Item' : 'Add New Item' }}</h4>
                             <button @click="showAddForm = false" class="text-slate-400 hover:text-slate-600">&times;</button>
                         </div>
                         
-                        <div class="space-y-3">
+                        <div class="flex-1 overflow-y-auto p-5 pt-2 custom-scrollbar space-y-3">
                             <input v-model="newItem.name" type="text" placeholder="Bill Name (e.g. Netflix)" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
                             
                             <div class="grid grid-cols-2 gap-2">
@@ -833,26 +832,26 @@
                                     <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Core / Essential Item</span>
                                 </label>
                                 <div class="col-span-2">
-                                <div class="flex items-center gap-2">
-                                <label class="flex-1 flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-amber-300 transition" :class="newItem.is_autopay ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : ''">
-                                  <input type="checkbox" v-model="newItem.is_autopay" class="text-amber-500 rounded focus:ring-amber-500 w-4 h-4">
-                                  <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                 ⚡ Auto Pay
-                                  </span>
-                                </label>
+                                    <div class="flex items-center gap-2">
+                                        <label class="flex-1 flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-amber-300 transition" :class="newItem.is_autopay ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : ''">
+                                            <input type="checkbox" v-model="newItem.is_autopay" class="text-amber-500 rounded focus:ring-amber-500 w-4 h-4">
+                                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                            ⚡ Auto Pay
+                                            </span>
+                                        </label>
 
-                               <button @click="showAutoPayHelp = !showAutoPayHelp" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-indigo-100 hover:text-indigo-500 transition">
-                                  <span class="font-bold font-serif italic">i</span>
-                               </button>
-                               </div>
+                                        <button @click="showAutoPayHelp = !showAutoPayHelp" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-indigo-100 hover:text-indigo-500 transition">
+                                            <span class="font-bold font-serif italic">i</span>
+                                        </button>
+                                    </div>
 
-                               <div v-if="showAutoPayHelp" class="mt-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-200 text-xs rounded-lg border border-indigo-100 dark:border-indigo-800 animate-slide-down">
-                              <p class="font-bold mb-1">How Auto Pay Works:</p>
-                              <p class="leading-relaxed opacity-90">
-                              If enabled, this bill will be <strong>automatically marked as paid</strong> on its due date every month. The amount will be instantly deducted from your current balance to keep your cash flow accurate.
-                              </p>
-                           </div>
-                         </div>
+                                    <div v-if="showAutoPayHelp" class="mt-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-200 text-xs rounded-lg border border-indigo-100 dark:border-indigo-800 animate-slide-down">
+                                        <p class="font-bold mb-1">How Auto Pay Works:</p>
+                                        <p class="leading-relaxed opacity-90">
+                                            If enabled, this bill will be <strong>automatically marked as paid</strong> on its due date every month.
+                                        </p>
+                                    </div>
+                                </div>
                                 <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-blue-300 transition">
                                     <input type="checkbox" v-model="newItem.is_variable" class="text-blue-500 rounded focus:ring-blue-500">
                                     <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Variable (Grocery/Gas)</span>
@@ -871,16 +870,18 @@
                                 </select>
                             </div>
                             <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800 mt-2">
-                    <label class="block text-[10px] font-bold text-red-400 uppercase mb-1">Pays off a Liability?</label>
-                    <select v-model="newItem.debt_id" class="w-full p-2 border border-red-200 rounded text-xs dark:bg-slate-800 dark:text-white dark:border-slate-600 outline-none">
-                        <option :value="null">-- No, just a regular bill --</option>
-                        <option v-for="debt in debts" :key="debt.id" :value="debt.id">
-                            {{ debt.name }} (Bal: ${{ debt.balance.toLocaleString() }})
-                        </option>
-                    </select>
-                    </div>
+                                <label class="block text-[10px] font-bold text-red-400 uppercase mb-1">Pays off a Liability?</label>
+                                <select v-model="newItem.debt_id" class="w-full p-2 border border-red-200 rounded text-xs dark:bg-slate-800 dark:text-white dark:border-slate-600 outline-none">
+                                    <option :value="null">-- No, just a regular bill --</option>
+                                    <option v-for="debt in debts" :key="debt.id" :value="debt.id">
+                                        {{ debt.name }} (Bal: ${{ debt.balance.toLocaleString() }})
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
 
-                            <button @click="handleSave" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition mt-2">
+                        <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/80 flex-shrink-0 z-10">
+                            <button @click="handleSave" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition transform active:scale-95">
                                 {{ isEditing ? 'Update Item' : 'Save Item' }}
                             </button>
                         </div>
