@@ -2908,22 +2908,19 @@ const billsUrgent = computed(() => {
         const isNowPaid = !bill.is_paid;
         const amount = Number(bill.amount_paid || bill.amount || 0);
 
-        // 1. BANK BALANCE ADJUSTMENT
+        // 1. BANK BALANCE (Checking Account)
         let adjustment = (bill.type === 'income') 
             ? (isNowPaid ? amount : -amount) 
             : (isNowPaid ? -amount : amount);
-
+        
         const currentBal = forecastSettings.value?.currentBalance || 0;
         const newForecastBalance = Number(currentBal) + adjustment;
 
         // 2. DEBT LOGIC
         let debtUpdate = null;
-        
-        // Attempt to find the debt_id from multiple possible paths
         const debtId = bill.budget_items?.debt_id || bill.debt_id || null;
 
         if (debtId) {
-            // Fetch the debt details (Interest rate and Current Balance)
             const { data: debt, error: debtFetchError } = await _supabase
                 .from('debts')
                 .select('*')
@@ -2931,10 +2928,10 @@ const billsUrgent = computed(() => {
                 .single();
 
             if (debt && !debtFetchError) {
-                const currentDebtBalance = Number(debt.current_balance || 0);
+                // MATH using the correct 'balance' column
+                const currentDebtBalance = Number(debt.balance || 0);
                 const annualRate = Number(debt.interest_rate || 0);
                 
-                // MATH: Standard Amortization Formula
                 const monthlyRate = (annualRate / 100) / 12;
                 const interestPaid = currentDebtBalance * monthlyRate;
                 const principalPaid = amount - interestPaid;
@@ -2962,9 +2959,9 @@ const billsUrgent = computed(() => {
             })
             .eq('id', bill.id);
 
-        if (ledgerError) throw new Error("Ledger update failed: " + ledgerError.message);
+        if (ledgerError) throw ledgerError;
 
-        // B. Update Global Balance
+        // B. Update Global Checking Balance
         const userId = session.value?.user?.id || session.user?.id;
         if (userId) {
             await _supabase
@@ -2973,18 +2970,18 @@ const billsUrgent = computed(() => {
                 .eq('user_id', userId);
         }
 
-        // C. Update Debt Table (Only if we found a linked debt)
+        // C. Update Debt Balance (using the 'balance' column)
         if (debtUpdate) {
             const { error: debtUpdateError } = await _supabase
                 .from('debts')
-                .update({ current_balance: debtUpdate.newBalance })
+                .update({ balance: debtUpdate.newBalance }) // Corrected column name here
                 .eq('id', debtUpdate.id);
 
-            if (debtUpdateError) throw new Error("Debt update failed: " + debtUpdateError.message);
+            if (debtUpdateError) throw debtUpdateError;
 
-            // RE-INTRODUCED POPUP
+            // Notification
             const msg = isNowPaid 
-                ? `${debtUpdate.debtName} Updated!\nApplied to Principal: $${debtUpdate.principal.toFixed(2)}\nInterest Component: $${debtUpdate.interest.toFixed(2)}\nRemaining: $${debtUpdate.newBalance.toFixed(2)}`
+                ? `${debtUpdate.debtName} Updated!\nPrincipal: $${debtUpdate.principal.toFixed(2)}\nInterest: $${debtUpdate.interest.toFixed(2)}\nNew Balance: $${debtUpdate.newBalance.toFixed(2)}`
                 : `Payment Reversed\n$${debtUpdate.principal.toFixed(2)} principal added back to ${debtUpdate.debtName}.`;
             
             alert(msg);
@@ -2998,10 +2995,11 @@ const billsUrgent = computed(() => {
         if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
     } catch (err) {
-        console.error("Error in toggleBillPaid:", err);
+        console.error("Action Error:", err);
         alert("Action Failed: " + err.message);
     }
 };
+
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
                 // We must NOT change the status here. Let toggleBillPaid calculate it.
