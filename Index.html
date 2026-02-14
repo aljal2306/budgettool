@@ -2904,13 +2904,12 @@ const billsUrgent = computed(() => {
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
         const toggleBillPaid = async (bill) => {
-    // Determine if we are marking it AS PAID or AS UNPAID
+    console.log("Step 1: Function Started", { billName: bill.transaction_name, isPaid: bill.is_paid });
+
     const isNowPaid = !bill.is_paid;
-    
-    // Get the money amount (Using your normalized 'amount' from fetchBills)
     const amount = Number(bill.amount_paid || bill.amount || 0);
 
-    // 1. FORECAST BALANCE MATH (General Checking Account)
+    // 1. FORECAST BALANCE MATH
     let adjustment = 0;
     if (bill.type === 'income') {
         adjustment = isNowPaid ? amount : -amount; 
@@ -2919,48 +2918,50 @@ const billsUrgent = computed(() => {
     }
     const newForecastBalance = Number(forecastSettings.value.currentBalance || 0) + adjustment;
 
-    // 2. DEBT MATH LOGIC (Principal & Interest)
+    // 2. DEBT MATH LOGIC
     let debtUpdate = null;
-    const debtId = bill.budget_items?.debt_id;
+    
+    // Safety check: Ensure budget_items and debt_id actually exist
+    const debtId = bill.budget_item_id && bill.budget_items ? bill.budget_items.debt_id : null;
+    
+    console.log("Step 2: Debt Check", { debtId, budgetItemId: bill.budget_item_id });
 
     if (debtId) {
-        // Fetch the specific debt details
+        console.log("Step 3: Fetching Debt Details for ID:", debtId);
+        
         const { data: debt, error: debtFetchError } = await _supabase
             .from('debts')
             .select('*')
             .eq('id', debtId)
             .single();
 
+        if (debtFetchError) {
+            console.error("Step 3 Error: Could not find debt record", debtFetchError);
+        }
+
         if (debt && !debtFetchError) {
-            // DATA SANITIZATION: Ensure everything is a valid number
             const currentDebtBalance = Number(debt.current_balance || 0);
             const annualRate = Number(debt.interest_rate || 0);
             
-            // MATH: Interest = Balance * (Rate / 100 / 12 months)
             const monthlyRate = (annualRate / 100) / 12;
             const interestPaid = currentDebtBalance * monthlyRate;
             const principalPaid = amount - interestPaid;
             
-            // Reverse Logic: If paying, subtract principal. If unpaying, add it back.
             const debtAdjustment = isNowPaid ? -principalPaid : principalPaid;
             const newDebtBalance = Math.max(0, currentDebtBalance + debtAdjustment);
             
-            // Safety check against NaN
-            if (!isNaN(newDebtBalance)) {
-                debtUpdate = {
-                    newBalance: newDebtBalance,
-                    principal: principalPaid,
-                    interest: interestPaid,
-                    debtName: debt.name || 'Debt'
-                };
-            } else {
-                console.error("Debt calculation resulted in NaN:", { currentDebtBalance, annualRate, amount });
-            }
+            debtUpdate = {
+                newBalance: newDebtBalance,
+                principal: principalPaid,
+                interest: interestPaid,
+                debtName: debt.name || 'Debt'
+            };
+            console.log("Step 3 Success: Math Calculated", debtUpdate);
         }
     }
 
     // 3. DATABASE UPDATES
-    // A. Update Ledger Status
+    // A. Update Ledger
     const { error: ledgerError } = await _supabase
         .from('ledger')
         .update({ 
@@ -2970,46 +2971,42 @@ const billsUrgent = computed(() => {
         .eq('id', bill.id);
 
     if (ledgerError) {
-        alert("Error updating bill status.");
+        alert("Error updating ledger.");
         return;
     }
 
-    // B. Update Forecast Balance (Checking Account)
+    // B. Update User Balance
     await _supabase
         .from('user_settings')
         .update({ current_balance: newForecastBalance })
         .eq('user_id', session.value.user.id);
 
-    // C. Update Debt Balance (if applicable)
+    // C. Update Debt (Only if debtUpdate was successful)
     if (debtUpdate) {
         const { error: debtDbError } = await _supabase
             .from('debts')
             .update({ current_balance: debtUpdate.newBalance })
             .eq('id', debtId);
 
-        if (!debtDbError) {
-            // Success Notification
-            if (isNowPaid) {
-                alert(`${debtUpdate.debtName} Updated!\n` +
-                      `Applied to Principal: $${debtUpdate.principal.toFixed(2)}\n` +
-                      `Interest Charged: $${debtUpdate.interest.toFixed(2)}\n` +
-                      `New Remaining Balance: $${debtUpdate.newBalance.toFixed(2)}`);
-            } else {
-                alert(`Payment Reversed\n$${debtUpdate.principal.toFixed(2)} added back to ${debtUpdate.debtName} balance.`);
-            }
+        if (debtDbError) {
+            console.error("Database Error updating debt:", debtDbError);
+        } else {
+            // SUCCESS NOTIFICATION
+            const msg = isNowPaid 
+                ? `${debtUpdate.debtName} Updated!\nPrincipal: $${debtUpdate.principal.toFixed(2)}\nInterest: $${debtUpdate.interest.toFixed(2)}\nNew Balance: $${debtUpdate.newBalance.toFixed(2)}`
+                : `Payment Reversed\n$${debtUpdate.principal.toFixed(2)} added back to ${debtUpdate.debtName}.`;
+            
+            alert(msg);
         }
     }
 
-    // 4. LOCAL UI REFRESH (Instant Feedback)
+    // 4. UI REFRESH
     bill.is_paid = isNowPaid;
     bill.paid_date = isNowPaid ? new Date().toISOString() : null;
     forecastSettings.value.currentBalance = newForecastBalance;
     
-    // Refresh lists and charts to ensure "Due Today" red dots update
     await fetchBills();
-    if (typeof renderDashboardChart === 'function') {
-        renderDashboardChart();
-    }
+    if (typeof renderDashboardChart === 'function') renderDashboardChart();
 };
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
