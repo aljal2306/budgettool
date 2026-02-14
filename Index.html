@@ -2904,109 +2904,103 @@ const billsUrgent = computed(() => {
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
         const toggleBillPaid = async (bill) => {
-    console.log("Step 1: Function Started", { billName: bill.transaction_name, isPaid: bill.is_paid });
+    try {
+        const isNowPaid = !bill.is_paid;
+        const amount = Number(bill.amount_paid || bill.amount || 0);
 
-    const isNowPaid = !bill.is_paid;
-    const amount = Number(bill.amount_paid || bill.amount || 0);
+        // 1. BANK BALANCE ADJUSTMENT
+        let adjustment = (bill.type === 'income') 
+            ? (isNowPaid ? amount : -amount) 
+            : (isNowPaid ? -amount : amount);
 
-    // 1. FORECAST BALANCE MATH
-    let adjustment = 0;
-    if (bill.type === 'income') {
-        adjustment = isNowPaid ? amount : -amount; 
-    } else {
-        adjustment = isNowPaid ? -amount : amount;
-    }
-    const newForecastBalance = Number(forecastSettings.value.currentBalance || 0) + adjustment;
+        const currentBal = forecastSettings.value?.currentBalance || 0;
+        const newForecastBalance = Number(currentBal) + adjustment;
 
-    // 2. DEBT MATH LOGIC
-    let debtUpdate = null;
-    
-    // Safety check: Ensure budget_items and debt_id actually exist
-    const debtId = bill.budget_item_id && bill.budget_items ? bill.budget_items.debt_id : null;
-    
-    console.log("Step 2: Debt Check", { debtId, budgetItemId: bill.budget_item_id });
-
-    if (debtId) {
-        console.log("Step 3: Fetching Debt Details for ID:", debtId);
+        // 2. DEBT LOGIC
+        let debtUpdate = null;
         
-        const { data: debt, error: debtFetchError } = await _supabase
-            .from('debts')
-            .select('*')
-            .eq('id', debtId)
-            .single();
+        // Attempt to find the debt_id from multiple possible paths
+        const debtId = bill.budget_items?.debt_id || bill.debt_id || null;
 
-        if (debtFetchError) {
-            console.error("Step 3 Error: Could not find debt record", debtFetchError);
+        if (debtId) {
+            // Fetch the debt details (Interest rate and Current Balance)
+            const { data: debt, error: debtFetchError } = await _supabase
+                .from('debts')
+                .select('*')
+                .eq('id', debtId)
+                .single();
+
+            if (debt && !debtFetchError) {
+                const currentDebtBalance = Number(debt.current_balance || 0);
+                const annualRate = Number(debt.interest_rate || 0);
+                
+                // MATH: Standard Amortization Formula
+                const monthlyRate = (annualRate / 100) / 12;
+                const interestPaid = currentDebtBalance * monthlyRate;
+                const principalPaid = amount - interestPaid;
+                
+                const debtAdjustment = isNowPaid ? -principalPaid : principalPaid;
+                const newDebtBalance = Math.max(0, currentDebtBalance + debtAdjustment);
+                
+                debtUpdate = {
+                    id: debtId,
+                    newBalance: newDebtBalance,
+                    principal: principalPaid,
+                    interest: interestPaid,
+                    debtName: debt.name || 'Debt'
+                };
+            }
         }
 
-        if (debt && !debtFetchError) {
-            const currentDebtBalance = Number(debt.current_balance || 0);
-            const annualRate = Number(debt.interest_rate || 0);
-            
-            const monthlyRate = (annualRate / 100) / 12;
-            const interestPaid = currentDebtBalance * monthlyRate;
-            const principalPaid = amount - interestPaid;
-            
-            const debtAdjustment = isNowPaid ? -principalPaid : principalPaid;
-            const newDebtBalance = Math.max(0, currentDebtBalance + debtAdjustment);
-            
-            debtUpdate = {
-                newBalance: newDebtBalance,
-                principal: principalPaid,
-                interest: interestPaid,
-                debtName: debt.name || 'Debt'
-            };
-            console.log("Step 3 Success: Math Calculated", debtUpdate);
+        // 3. DATABASE UPDATES
+        // A. Update Ledger
+        const { error: ledgerError } = await _supabase
+            .from('ledger')
+            .update({ 
+                is_paid: isNowPaid, 
+                paid_date: isNowPaid ? new Date().toISOString() : null 
+            })
+            .eq('id', bill.id);
+
+        if (ledgerError) throw new Error("Ledger update failed: " + ledgerError.message);
+
+        // B. Update Global Balance
+        const userId = session.value?.user?.id || session.user?.id;
+        if (userId) {
+            await _supabase
+                .from('user_settings')
+                .update({ current_balance: newForecastBalance })
+                .eq('user_id', userId);
         }
-    }
 
-    // 3. DATABASE UPDATES
-    // A. Update Ledger
-    const { error: ledgerError } = await _supabase
-        .from('ledger')
-        .update({ 
-            is_paid: isNowPaid,
-            paid_date: isNowPaid ? new Date().toISOString() : null
-        })
-        .eq('id', bill.id);
+        // C. Update Debt Table (Only if we found a linked debt)
+        if (debtUpdate) {
+            const { error: debtUpdateError } = await _supabase
+                .from('debts')
+                .update({ current_balance: debtUpdate.newBalance })
+                .eq('id', debtUpdate.id);
 
-    if (ledgerError) {
-        alert("Error updating ledger.");
-        return;
-    }
+            if (debtUpdateError) throw new Error("Debt update failed: " + debtUpdateError.message);
 
-    // B. Update User Balance
-    await _supabase
-        .from('user_settings')
-        .update({ current_balance: newForecastBalance })
-        .eq('user_id', session.value.user.id);
-
-    // C. Update Debt (Only if debtUpdate was successful)
-    if (debtUpdate) {
-        const { error: debtDbError } = await _supabase
-            .from('debts')
-            .update({ current_balance: debtUpdate.newBalance })
-            .eq('id', debtId);
-
-        if (debtDbError) {
-            console.error("Database Error updating debt:", debtDbError);
-        } else {
-            // SUCCESS NOTIFICATION
+            // RE-INTRODUCED POPUP
             const msg = isNowPaid 
-                ? `${debtUpdate.debtName} Updated!\nPrincipal: $${debtUpdate.principal.toFixed(2)}\nInterest: $${debtUpdate.interest.toFixed(2)}\nNew Balance: $${debtUpdate.newBalance.toFixed(2)}`
-                : `Payment Reversed\n$${debtUpdate.principal.toFixed(2)} added back to ${debtUpdate.debtName}.`;
+                ? `${debtUpdate.debtName} Updated!\nApplied to Principal: $${debtUpdate.principal.toFixed(2)}\nInterest Component: $${debtUpdate.interest.toFixed(2)}\nRemaining: $${debtUpdate.newBalance.toFixed(2)}`
+                : `Payment Reversed\n$${debtUpdate.principal.toFixed(2)} principal added back to ${debtUpdate.debtName}.`;
             
             alert(msg);
         }
-    }
 
-    // 4. UI REFRESH
-    bill.is_paid = isNowPaid;
-    bill.paid_date = isNowPaid ? new Date().toISOString() : null;
-    forecastSettings.value.currentBalance = newForecastBalance;
-    
-    await fetchBills();
-    if (typeof renderDashboardChart === 'function') renderDashboardChart();
+        // 4. UI SYNC
+        bill.is_paid = isNowPaid;
+        if (forecastSettings.value) forecastSettings.value.currentBalance = newForecastBalance;
+        
+        await fetchBills();
+        if (typeof renderDashboardChart === 'function') renderDashboardChart();
+
+    } catch (err) {
+        console.error("Error in toggleBillPaid:", err);
+        alert("Action Failed: " + err.message);
+    }
 };
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
