@@ -2908,7 +2908,7 @@ const billsUrgent = computed(() => {
         const isNowPaid = !bill.is_paid;
         const amount = Number(bill.amount_paid || bill.amount || 0);
 
-        // 1. BANK BALANCE (Forecast)
+        // 1. BANK BALANCE ADJUSTMENT
         let adjustment = (bill.type === 'income') 
             ? (isNowPaid ? amount : -amount) 
             : (isNowPaid ? -amount : amount);
@@ -2916,32 +2916,39 @@ const billsUrgent = computed(() => {
         const currentBal = forecastSettings.value?.currentBalance || 0;
         const newForecastBalance = Number(currentBal) + adjustment;
 
-        // 2. DEBT LOGIC
+        // 2. DEBT LOGIC & REVERSIBLE MATH
         let debtUpdate = null;
-        const debtId = bill.budget_items?.debt_id || bill.debt_id || null;
+        const targetDebtId = bill.budget_items?.debt_id || bill.debt_id;
 
-        if (debtId) {
-            // Fetch using your specific column names: balance, rate, min_payment
+        if (targetDebtId) {
             const { data: debt, error: debtFetchError } = await _supabase
                 .from('debts')
-                .select('id, name, balance, rate, min_payment')
-                .eq('id', debtId)
+                .select('*')
+                .eq('id', targetDebtId)
                 .single();
 
             if (debt && !debtFetchError) {
                 const currentDebtBalance = Number(debt.balance || 0);
-                const annualRate = Number(debt.rate || 0); // Using 'rate' column
-                
-                // MATH: Interest = (Balance * Rate / 100) / 12
+                const annualRate = Number(debt.rate || 0);
                 const monthlyRate = (annualRate / 100) / 12;
-                const interestPaid = currentDebtBalance * monthlyRate;
-                const principalPaid = amount - interestPaid;
-                
-                const debtAdjustment = isNowPaid ? -principalPaid : principalPaid;
-                const newDebtBalance = Math.max(0, currentDebtBalance + debtAdjustment);
+
+                let interestPaid, principalPaid, newDebtBalance;
+
+                if (isNowPaid) {
+                    // PAYMENT MATH
+                    interestPaid = currentDebtBalance * monthlyRate;
+                    principalPaid = amount - interestPaid;
+                    newDebtBalance = Math.max(0, currentDebtBalance - principalPaid);
+                } else {
+                    // REVERSAL MATH: Finding the original balance
+                    // This formula cancels out the interest shift so the reversal is exact.
+                    newDebtBalance = (currentDebtBalance - (amount * monthlyRate)) / (1 - monthlyRate);
+                    principalPaid = newDebtBalance - currentDebtBalance;
+                    interestPaid = amount - principalPaid;
+                }
                 
                 debtUpdate = {
-                    id: debtId,
+                    id: debt.id,
                     newBalance: newDebtBalance,
                     principal: principalPaid,
                     interest: interestPaid,
@@ -2951,52 +2958,40 @@ const billsUrgent = computed(() => {
         }
 
         // 3. DATABASE UPDATES
-        // A. Update Ledger
         const { error: ledgerError } = await _supabase
             .from('ledger')
-            .update({ 
-                is_paid: isNowPaid, 
-                paid_date: isNowPaid ? new Date().toISOString() : null 
-            })
+            .update({ is_paid: isNowPaid, paid_date: isNowPaid ? new Date().toISOString() : null })
             .eq('id', bill.id);
-
+        
         if (ledgerError) throw ledgerError;
 
-        // B. Update Bank Balance
-        const userId = session.value?.user?.id || session.user?.id;
-        if (userId) {
-            await _supabase
-                .from('user_settings')
-                .update({ current_balance: newForecastBalance })
-                .eq('user_id', userId);
-        }
-
-        // C. Update Debt Table (using 'balance' column)
         if (debtUpdate) {
-            const { error: debtUpdateError } = await _supabase
-                .from('debts')
-                .update({ balance: debtUpdate.newBalance })
-                .eq('id', debtUpdate.id);
-
-            if (debtUpdateError) throw new Error("Debt Update Failed: " + debtUpdateError.message);
-
-            // Success Notification
-            const msg = isNowPaid 
-                ? `${debtUpdate.debtName} Updated!\nPrincipal Applied: $${debtUpdate.principal.toFixed(2)}\nInterest Charged: $${debtUpdate.interest.toFixed(2)}\nRemaining Balance: $${debtUpdate.newBalance.toFixed(2)}`
-                : `Payment Reversed\n$${debtUpdate.principal.toFixed(2)} added back to ${debtUpdate.debtName}.`;
+            await _supabase.from('debts').update({ balance: debtUpdate.newBalance }).eq('id', debtUpdate.id);
             
-            alert(msg);
+            // --- INSTANT UI UPDATE ---
+            // This targets the debts.value array you shared to update the dashboard immediately
+            if (debts && debts.value) {
+                const debtInList = debts.value.find(d => d.id === targetDebtId);
+                if (debtInList) {
+                    debtInList.balance = debtUpdate.newBalance;
+                }
+            }
+
+            // Notification
+            const alertMsg = isNowPaid 
+                ? `Paid: $${debtUpdate.principal.toFixed(2)} to principal.` 
+                : `Reversed: $${debtUpdate.principal.toFixed(2)} restored to balance.`;
+            alert(alertMsg);
         }
 
-        // 4. UI SYNC
+        // 4. SYNC REMAINING UI
         bill.is_paid = isNowPaid;
-        if (forecastSettings.value) forecastSettings.value.currentBalance = newForecastBalance;
+        forecastSettings.value.currentBalance = newForecastBalance;
         
         await fetchBills();
         if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
     } catch (err) {
-        console.error("Critical Error:", err);
         alert("Error: " + err.message);
     }
 };
