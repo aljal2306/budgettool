@@ -2907,50 +2907,60 @@ const billsUrgent = computed(() => {
     // Determine if we are marking it AS PAID or AS UNPAID
     const isNowPaid = !bill.is_paid;
     
-    // Get the money amount
-    const amount = bill.amount_paid || bill.amount || 0;
+    // Get the money amount (Using your normalized 'amount' from fetchBills)
+    const amount = Number(bill.amount_paid || bill.amount || 0);
 
-    // 1. FORECAST BALANCE MATH
+    // 1. FORECAST BALANCE MATH (General Checking Account)
     let adjustment = 0;
     if (bill.type === 'income') {
         adjustment = isNowPaid ? amount : -amount; 
     } else {
         adjustment = isNowPaid ? -amount : amount;
     }
-    const newForecastBalance = (forecastSettings.value.currentBalance || 0) + adjustment;
+    const newForecastBalance = Number(forecastSettings.value.currentBalance || 0) + adjustment;
 
     // 2. DEBT MATH LOGIC (Principal & Interest)
     let debtUpdate = null;
     const debtId = bill.budget_items?.debt_id;
 
     if (debtId) {
-        // Fetch the debt details
-        const { data: debt } = await _supabase
+        // Fetch the specific debt details
+        const { data: debt, error: debtFetchError } = await _supabase
             .from('debts')
             .select('*')
             .eq('id', debtId)
             .single();
 
-        if (debt) {
-            const monthlyRate = (debt.interest_rate / 100) / 12;
-            const interestPaid = debt.current_balance * monthlyRate;
+        if (debt && !debtFetchError) {
+            // DATA SANITIZATION: Ensure everything is a valid number
+            const currentDebtBalance = Number(debt.current_balance || 0);
+            const annualRate = Number(debt.interest_rate || 0);
+            
+            // MATH: Interest = Balance * (Rate / 100 / 12 months)
+            const monthlyRate = (annualRate / 100) / 12;
+            const interestPaid = currentDebtBalance * monthlyRate;
             const principalPaid = amount - interestPaid;
             
-            // If paying: subtract principal. If unpaying: add principal back.
+            // Reverse Logic: If paying, subtract principal. If unpaying, add it back.
             const debtAdjustment = isNowPaid ? -principalPaid : principalPaid;
-            const newDebtBalance = Math.max(0, debt.current_balance + debtAdjustment);
+            const newDebtBalance = Math.max(0, currentDebtBalance + debtAdjustment);
             
-            debtUpdate = {
-                newBalance: newDebtBalance,
-                principal: principalPaid,
-                interest: interestPaid,
-                debtName: debt.name
-            };
+            // Safety check against NaN
+            if (!isNaN(newDebtBalance)) {
+                debtUpdate = {
+                    newBalance: newDebtBalance,
+                    principal: principalPaid,
+                    interest: interestPaid,
+                    debtName: debt.name || 'Debt'
+                };
+            } else {
+                console.error("Debt calculation resulted in NaN:", { currentDebtBalance, annualRate, amount });
+            }
         }
     }
 
     // 3. DATABASE UPDATES
-    // Update Ledger Status
+    // A. Update Ledger Status
     const { error: ledgerError } = await _supabase
         .from('ledger')
         .update({ 
@@ -2960,39 +2970,46 @@ const billsUrgent = computed(() => {
         .eq('id', bill.id);
 
     if (ledgerError) {
-        alert("Error updating bill.");
+        alert("Error updating bill status.");
         return;
     }
 
-    // Update Forecast Balance
+    // B. Update Forecast Balance (Checking Account)
     await _supabase
         .from('user_settings')
         .update({ current_balance: newForecastBalance })
         .eq('user_id', session.value.user.id);
 
-    // Update Debt Balance (if applicable)
+    // C. Update Debt Balance (if applicable)
     if (debtUpdate) {
-        await _supabase
+        const { error: debtDbError } = await _supabase
             .from('debts')
             .update({ current_balance: debtUpdate.newBalance })
             .eq('id', debtId);
-            
-        // Trigger the notification popup
-        if (isNowPaid) {
-            alert(`${debtUpdate.debtName} Updated!\nPrincipal: $${debtUpdate.principal.toFixed(2)}\nInterest: $${debtUpdate.interest.toFixed(2)}\nNew Balance: $${debtUpdate.newBalance.toFixed(2)}`);
-        } else {
-            alert(`Payment Reversed\n$${debtUpdate.principal.toFixed(2)} principal restored to ${debtUpdate.debtName}.`);
+
+        if (!debtDbError) {
+            // Success Notification
+            if (isNowPaid) {
+                alert(`${debtUpdate.debtName} Updated!\n` +
+                      `Applied to Principal: $${debtUpdate.principal.toFixed(2)}\n` +
+                      `Interest Charged: $${debtUpdate.interest.toFixed(2)}\n` +
+                      `New Remaining Balance: $${debtUpdate.newBalance.toFixed(2)}`);
+            } else {
+                alert(`Payment Reversed\n$${debtUpdate.principal.toFixed(2)} added back to ${debtUpdate.debtName} balance.`);
+            }
         }
     }
 
-    // 4. UI REFRESH
+    // 4. LOCAL UI REFRESH (Instant Feedback)
     bill.is_paid = isNowPaid;
     bill.paid_date = isNowPaid ? new Date().toISOString() : null;
     forecastSettings.value.currentBalance = newForecastBalance;
     
-    // Refresh to update charts and "Due Soon" lists
+    // Refresh lists and charts to ensure "Due Today" red dots update
     await fetchBills();
-    if (typeof renderDashboardChart === 'function') renderDashboardChart();
+    if (typeof renderDashboardChart === 'function') {
+        renderDashboardChart();
+    }
 };
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
