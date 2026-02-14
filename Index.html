@@ -2908,7 +2908,7 @@ const billsUrgent = computed(() => {
         const isNowPaid = !bill.is_paid;
         const amount = Number(bill.amount_paid || bill.amount || 0);
 
-        // 1. BANK BALANCE (Checking Account)
+        // 1. BANK BALANCE (Forecast)
         let adjustment = (bill.type === 'income') 
             ? (isNowPaid ? amount : -amount) 
             : (isNowPaid ? -amount : amount);
@@ -2921,17 +2921,18 @@ const billsUrgent = computed(() => {
         const debtId = bill.budget_items?.debt_id || bill.debt_id || null;
 
         if (debtId) {
+            // Fetch using your specific column names: balance, rate, min_payment
             const { data: debt, error: debtFetchError } = await _supabase
                 .from('debts')
-                .select('*')
+                .select('id, name, balance, rate, min_payment')
                 .eq('id', debtId)
                 .single();
 
             if (debt && !debtFetchError) {
-                // MATH using the correct 'balance' column
                 const currentDebtBalance = Number(debt.balance || 0);
-                const annualRate = Number(debt.interest_rate || 0);
+                const annualRate = Number(debt.rate || 0); // Using 'rate' column
                 
+                // MATH: Interest = (Balance * Rate / 100) / 12
                 const monthlyRate = (annualRate / 100) / 12;
                 const interestPaid = currentDebtBalance * monthlyRate;
                 const principalPaid = amount - interestPaid;
@@ -2961,7 +2962,7 @@ const billsUrgent = computed(() => {
 
         if (ledgerError) throw ledgerError;
 
-        // B. Update Global Checking Balance
+        // B. Update Bank Balance
         const userId = session.value?.user?.id || session.user?.id;
         if (userId) {
             await _supabase
@@ -2970,19 +2971,19 @@ const billsUrgent = computed(() => {
                 .eq('user_id', userId);
         }
 
-        // C. Update Debt Balance (using the 'balance' column)
+        // C. Update Debt Table (using 'balance' column)
         if (debtUpdate) {
             const { error: debtUpdateError } = await _supabase
                 .from('debts')
-                .update({ balance: debtUpdate.newBalance }) // Corrected column name here
+                .update({ balance: debtUpdate.newBalance })
                 .eq('id', debtUpdate.id);
 
-            if (debtUpdateError) throw debtUpdateError;
+            if (debtUpdateError) throw new Error("Debt Update Failed: " + debtUpdateError.message);
 
-            // Notification
+            // Success Notification
             const msg = isNowPaid 
-                ? `${debtUpdate.debtName} Updated!\nPrincipal: $${debtUpdate.principal.toFixed(2)}\nInterest: $${debtUpdate.interest.toFixed(2)}\nNew Balance: $${debtUpdate.newBalance.toFixed(2)}`
-                : `Payment Reversed\n$${debtUpdate.principal.toFixed(2)} principal added back to ${debtUpdate.debtName}.`;
+                ? `${debtUpdate.debtName} Updated!\nPrincipal Applied: $${debtUpdate.principal.toFixed(2)}\nInterest Charged: $${debtUpdate.interest.toFixed(2)}\nRemaining Balance: $${debtUpdate.newBalance.toFixed(2)}`
+                : `Payment Reversed\n$${debtUpdate.principal.toFixed(2)} added back to ${debtUpdate.debtName}.`;
             
             alert(msg);
         }
@@ -2995,10 +2996,11 @@ const billsUrgent = computed(() => {
         if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
     } catch (err) {
-        console.error("Action Error:", err);
-        alert("Action Failed: " + err.message);
+        console.error("Critical Error:", err);
+        alert("Error: " + err.message);
     }
 };
+
 
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
