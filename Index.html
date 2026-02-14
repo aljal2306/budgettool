@@ -2109,19 +2109,24 @@
 
             // 2. Check if date is URGENT (Today OR Past)
             const isUrgent = (dateString) => {
-                if (!dateString) return false;
-                const today = new Date();
-                today.setHours(0, 0, 0, 0); // Start of today (midnight)
-                
-                const d = new Date(dateString + 'T12:00:00');
-                return d <= today; // True if Today OR Before Today
-            };
+    if (!dateString) return false;
+    
+    // 1. Get current time and set to the VERY END of today
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); 
+    
+    // 2. Parse the bill date (T12 helps avoid timezone jumping)
+    const d = new Date(dateString + 'T12:00:00');
+    
+    // 3. Now, if d is Today, it is < 23:59:59, so it returns TRUE
+    return d <= today; 
+};
 
-            // 3. Computed: List of ALL Urgent Bills (for the Nav Dot)
-            const billsUrgent = computed(() => {
-                if (!bills.value) return [];
-                return bills.value.filter(b => !b.is_paid && isUrgent(b.due_date));
-            });
+// This stays the same, but will now work correctly for today's bills
+const billsUrgent = computed(() => {
+    if (!bills.value) return [];
+    return bills.value.filter(b => !b.is_paid && isUrgent(b.due_date));
+});
           
             // --- DATA FETCHING (with fixes) ---
             const fetchBudgetItems = async () => {
