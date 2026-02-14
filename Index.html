@@ -2904,57 +2904,96 @@ const billsUrgent = computed(() => {
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
         const toggleBillPaid = async (bill) => {
-                // Determine if we are marking it AS PAID or AS UNPAID
-                const isNowPaid = !bill.is_paid;
-                
-                // Get the money amount (Handle both columns just in case)
-                const amount = bill.amount_paid || bill.amount || 0;
+    // Determine if we are marking it AS PAID or AS UNPAID
+    const isNowPaid = !bill.is_paid;
+    
+    // Get the money amount
+    const amount = bill.amount_paid || bill.amount || 0;
 
-                // 🟢 MATH LOGIC:
-                // If it's a DEPOSIT (Income):
-                //   - Unpaying (Deleting) it means REMOVING money from balance.
-                // If it's a BILL (Expense):
-                //   - Unpaying it means ADDING money back to balance (Refund).
-                let adjustment = 0;
+    // 1. FORECAST BALANCE MATH
+    let adjustment = 0;
+    if (bill.type === 'income') {
+        adjustment = isNowPaid ? amount : -amount; 
+    } else {
+        adjustment = isNowPaid ? -amount : amount;
+    }
+    const newForecastBalance = (forecastSettings.value.currentBalance || 0) + adjustment;
 
-                if (bill.type === 'income') {
-                    // It's a deposit. If we are unpaying/removing it, SUBTRACT.
-                    adjustment = isNowPaid ? amount : -amount; 
-                } else {
-                    // It's a bill. If we are unpaying it, ADD it back.
-                    adjustment = isNowPaid ? -amount : amount;
-                }
+    // 2. DEBT MATH LOGIC (Principal & Interest)
+    let debtUpdate = null;
+    const debtId = bill.budget_items?.debt_id;
 
-                const newBalance = (forecastSettings.value.currentBalance || 0) + adjustment;
+    if (debtId) {
+        // Fetch the debt details
+        const { data: debt } = await _supabase
+            .from('debts')
+            .select('*')
+            .eq('id', debtId)
+            .single();
 
-                // 1. Update Database Status
-                const { error } = await _supabase
-                    .from('ledger')
-                    .update({ 
-                        is_paid: isNowPaid,
-                        paid_date: isNowPaid ? new Date().toISOString() : null
-                    })
-                    .eq('id', bill.id);
-
-                if (error) {
-                    alert("Error updating bill.");
-                    return;
-                }
-
-                // 2. Update Balance
-                await _supabase
-                    .from('user_settings')
-                    .update({ current_balance: newBalance })
-                    .eq('user_id', session.value.user.id);
-
-                // 3. Update Local Data (So the screen changes instantly)
-                bill.is_paid = isNowPaid;
-                bill.paid_date = isNowPaid ? new Date().toISOString() : null;
-                forecastSettings.value.currentBalance = newBalance;
-                
-                // If we just marked it unpaid, refresh the list to move it back to "Due Soon"
-                if (!isNowPaid) await fetchBills();
+        if (debt) {
+            const monthlyRate = (debt.interest_rate / 100) / 12;
+            const interestPaid = debt.current_balance * monthlyRate;
+            const principalPaid = amount - interestPaid;
+            
+            // If paying: subtract principal. If unpaying: add principal back.
+            const debtAdjustment = isNowPaid ? -principalPaid : principalPaid;
+            const newDebtBalance = Math.max(0, debt.current_balance + debtAdjustment);
+            
+            debtUpdate = {
+                newBalance: newDebtBalance,
+                principal: principalPaid,
+                interest: interestPaid,
+                debtName: debt.name
             };
+        }
+    }
+
+    // 3. DATABASE UPDATES
+    // Update Ledger Status
+    const { error: ledgerError } = await _supabase
+        .from('ledger')
+        .update({ 
+            is_paid: isNowPaid,
+            paid_date: isNowPaid ? new Date().toISOString() : null
+        })
+        .eq('id', bill.id);
+
+    if (ledgerError) {
+        alert("Error updating bill.");
+        return;
+    }
+
+    // Update Forecast Balance
+    await _supabase
+        .from('user_settings')
+        .update({ current_balance: newForecastBalance })
+        .eq('user_id', session.value.user.id);
+
+    // Update Debt Balance (if applicable)
+    if (debtUpdate) {
+        await _supabase
+            .from('debts')
+            .update({ current_balance: debtUpdate.newBalance })
+            .eq('id', debtId);
+            
+        // Trigger the notification popup
+        if (isNowPaid) {
+            alert(`${debtUpdate.debtName} Updated!\nPrincipal: $${debtUpdate.principal.toFixed(2)}\nInterest: $${debtUpdate.interest.toFixed(2)}\nNew Balance: $${debtUpdate.newBalance.toFixed(2)}`);
+        } else {
+            alert(`Payment Reversed\n$${debtUpdate.principal.toFixed(2)} principal restored to ${debtUpdate.debtName}.`);
+        }
+    }
+
+    // 4. UI REFRESH
+    bill.is_paid = isNowPaid;
+    bill.paid_date = isNowPaid ? new Date().toISOString() : null;
+    forecastSettings.value.currentBalance = newForecastBalance;
+    
+    // Refresh to update charts and "Due Soon" lists
+    await fetchBills();
+    if (typeof renderDashboardChart === 'function') renderDashboardChart();
+};
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
                 // We must NOT change the status here. Let toggleBillPaid calculate it.
