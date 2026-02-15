@@ -2908,7 +2908,7 @@ const billsUrgent = computed(() => {
         const isNowPaid = !bill.is_paid;
         const amount = Number(bill.amount_paid || bill.amount || 0);
 
-        // 1. CALCULATE NEW BANK BALANCE
+        // 1. BANK BALANCE
         let adjustment = (bill.type === 'income') 
             ? (isNowPaid ? amount : -amount) 
             : (isNowPaid ? -amount : amount);
@@ -2916,7 +2916,7 @@ const billsUrgent = computed(() => {
         const currentBal = forecastSettings.value?.currentBalance || 0;
         const newForecastBalance = Number(currentBal) + adjustment;
 
-        // 2. DEBT MATH LOGIC
+        // 2. DEBT MATH
         let debtUpdate = null;
         const targetDebtId = bill.budget_items?.debt_id || bill.debt_id;
 
@@ -2932,45 +2932,48 @@ const billsUrgent = computed(() => {
                 const annualRate = Number(debt.rate || 0);
                 const monthlyRate = (annualRate / 100) / 12;
 
-                let newDebtBalance;
+                let interestComponent, principalComponent, newDebtBalance;
+
                 if (isNowPaid) {
-                    const interestComponent = currentDBBalance * monthlyRate;
-                    newDebtBalance = Math.max(0, currentDBBalance - (amount - interestComponent));
+                    interestComponent = currentDBBalance * monthlyRate;
+                    principalComponent = amount - interestComponent;
+                    newDebtBalance = Math.max(0, currentDBBalance - principalComponent);
                 } else {
+                    // Reversal Algebra
                     newDebtBalance = (currentDBBalance + amount) / (1 + monthlyRate);
+                    interestComponent = newDebtBalance * monthlyRate;
+                    principalComponent = newDebtBalance - currentDBBalance;
                 }
                 
                 newDebtBalance = Math.round(newDebtBalance * 100) / 100;
-                debtUpdate = { id: debt.id, newBalance: newDebtBalance, name: debt.name };
+                
+                debtUpdate = { 
+                    id: debt.id, 
+                    newBalance: newDebtBalance, 
+                    principal: principalComponent, 
+                    interest: interestComponent,
+                    name: debt.name 
+                };
             }
         }
 
         // 3. DATABASE UPDATES
-        
-        // A. Update Ledger
+        // A. Ledger
         await _supabase.from('ledger').update({ 
             is_paid: isNowPaid, 
             paid_date: isNowPaid ? new Date().toISOString() : null 
         }).eq('id', bill.id);
 
-        // B. Update Bank Balance (user_settings)
+        // B. Bank Balance
         const userId = session.value?.user?.id;
         if (userId) {
-            const { data: balanceData, error: balanceError } = await _supabase
+            await _supabase
                 .from('user_settings')
                 .update({ current_balance: newForecastBalance })
-                .eq('user_id', userId)
-                .select(); // Returns the row to confirm it exists
-
-            if (balanceError) throw new Error("Bank Balance Error: " + balanceError.message);
-            
-            if (!balanceData || balanceData.length === 0) {
-                console.error("User ID mismatch in user_settings. No row found for:", userId);
-                alert("Critical: Bank balance updated locally but could not find your user record in user_settings to save it.");
-            }
+                .eq('user_id', userId);
         }
 
-        // C. Update Debt Table
+        // C. Debt Balance
         if (debtUpdate) {
             await _supabase.from('debts').update({ balance: debtUpdate.newBalance }).eq('id', debtUpdate.id);
             
@@ -2980,14 +2983,21 @@ const billsUrgent = computed(() => {
                 if (dIdx !== -1) debts.value[dIdx].balance = debtUpdate.newBalance;
             }
             
-            alert(isNowPaid ? `Paid toward ${debtUpdate.name}. Balance updated.` : `Payment Reversed for ${debtUpdate.name}.`);
+            // THE RESTORED DETAILED POPUP
+            const msg = isNowPaid 
+                ? `${debtUpdate.name} Payment Applied!\n\n` +
+                  `Principal: $${debtUpdate.principal.toFixed(2)}\n` +
+                  `Interest: $${debtUpdate.interest.toFixed(2)}\n` +
+                  `New Balance: $${debtUpdate.newBalance.toFixed(2)}`
+                : `${debtUpdate.name} Payment Reversed!\n\n` +
+                  `Restored $${debtUpdate.principal.toFixed(2)} to your balance.`;
+            
+            alert(msg);
         }
 
-        // 4. UI SYNC (Instant local update)
+        // 4. UI SYNC
         bill.is_paid = isNowPaid;
-        if (forecastSettings.value) {
-            forecastSettings.value.currentBalance = newForecastBalance;
-        }
+        if (forecastSettings.value) forecastSettings.value.currentBalance = newForecastBalance;
         
         await fetchBills();
         if (typeof renderDashboardChart === 'function') renderDashboardChart();
@@ -2997,6 +3007,7 @@ const billsUrgent = computed(() => {
         alert("Action Failed: " + err.message);
     }
 };
+
 
 
 
