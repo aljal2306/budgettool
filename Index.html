@@ -2903,12 +2903,12 @@ const billsUrgent = computed(() => {
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-        const toggleBillPaid = async (bill) => {
+        const toggleBillPaid = async (bill, silent = false) => {
     try {
         const isNowPaid = !bill.is_paid;
         const amount = Number(bill.amount_paid || bill.amount || 0);
 
-        // 1. BANK BALANCE
+        // 1. BANK BALANCE ADJUSTMENT (user_settings)
         let adjustment = (bill.type === 'income') 
             ? (isNowPaid ? amount : -amount) 
             : (isNowPaid ? -amount : amount);
@@ -2916,18 +2916,18 @@ const billsUrgent = computed(() => {
         const currentBal = forecastSettings.value?.currentBalance || 0;
         const newForecastBalance = Number(currentBal) + adjustment;
 
-        // 2. DEBT MATH
+        // 2. DEBT MATH LOGIC
         let debtUpdate = null;
         const targetDebtId = bill.budget_items?.debt_id || bill.debt_id;
 
         if (targetDebtId) {
-            const { data: debt } = await _supabase
+            const { data: debt, error: debtFetchError } = await _supabase
                 .from('debts')
                 .select('*')
                 .eq('id', targetDebtId)
                 .single();
 
-            if (debt) {
+            if (debt && !debtFetchError) {
                 const currentDBBalance = Number(debt.balance || 0);
                 const annualRate = Number(debt.rate || 0);
                 const monthlyRate = (annualRate / 100) / 12;
@@ -2935,36 +2935,47 @@ const billsUrgent = computed(() => {
                 let interestComponent, principalComponent, newDebtBalance;
 
                 if (isNowPaid) {
+                    // PAYMENT: Calculate interest based on current balance
                     interestComponent = currentDBBalance * monthlyRate;
                     principalComponent = amount - interestComponent;
                     newDebtBalance = Math.max(0, currentDBBalance - principalComponent);
                 } else {
-                    // Reversal Algebra
+                    // REVERSAL: Algebraically find original balance to avoid "rounding drift"
+                    // Formula: (Current Balance + Amount) / (1 + Monthly Rate)
                     newDebtBalance = (currentDBBalance + amount) / (1 + monthlyRate);
-                    interestComponent = newDebtBalance * monthlyRate;
+                    
+                    // Derive portions for the alert display
                     principalComponent = newDebtBalance - currentDBBalance;
+                    interestComponent = amount - principalComponent;
                 }
                 
+                // Round to 2 decimal places to keep Supabase happy
                 newDebtBalance = Math.round(newDebtBalance * 100) / 100;
-                
-                debtUpdate = { 
-                    id: debt.id, 
-                    newBalance: newDebtBalance, 
-                    principal: principalComponent, 
+
+                debtUpdate = {
+                    id: debt.id,
+                    newBalance: newDebtBalance,
+                    principal: principalComponent,
                     interest: interestComponent,
-                    name: debt.name 
+                    debtName: debt.name || 'Debt'
                 };
             }
         }
 
         // 3. DATABASE UPDATES
-        // A. Ledger
-        await _supabase.from('ledger').update({ 
-            is_paid: isNowPaid, 
-            paid_date: isNowPaid ? new Date().toISOString() : null 
-        }).eq('id', bill.id);
+        
+        // A. Update Ledger (Always do this)
+        const { error: ledgerError } = await _supabase
+            .from('ledger')
+            .update({ 
+                is_paid: isNowPaid, 
+                paid_date: isNowPaid ? new Date().toISOString() : null 
+            })
+            .eq('id', bill.id);
 
-        // B. Bank Balance
+        if (ledgerError) throw ledgerError;
+
+        // B. Update Bank Balance (user_settings)
         const userId = session.value?.user?.id;
         if (userId) {
             await _supabase
@@ -2973,42 +2984,49 @@ const billsUrgent = computed(() => {
                 .eq('user_id', userId);
         }
 
-        // C. Debt Balance
+        // C. Update Debt Table
         if (debtUpdate) {
-            await _supabase.from('debts').update({ balance: debtUpdate.newBalance }).eq('id', debtUpdate.id);
-            
-            // Local UI Update for Debts
+            const { error: debtDbError } = await _supabase
+                .from('debts')
+                .update({ balance: debtUpdate.newBalance })
+                .eq('id', debtUpdate.id);
+
+            if (debtDbError) throw debtDbError;
+
+            // --- INSTANT UI UPDATE ---
+            // Update the 'debts' reactive array so the dashboard updates without a refresh
             if (typeof debts !== 'undefined' && debts.value) {
-                const dIdx = debts.value.findIndex(d => d.id === debtUpdate.id);
-                if (dIdx !== -1) debts.value[dIdx].balance = debtUpdate.newBalance;
+                const debtInList = debts.value.find(d => d.id === targetDebtId);
+                if (debtInList) {
+                    debtInList.balance = debtUpdate.newBalance;
+                }
             }
-            
-            // THE RESTORED DETAILED POPUP
-            const msg = isNowPaid 
-                ? `${debtUpdate.name} Payment Applied!\n\n` +
-                  `Principal: $${debtUpdate.principal.toFixed(2)}\n` +
-                  `Interest: $${debtUpdate.interest.toFixed(2)}\n` +
-                  `New Balance: $${debtUpdate.newBalance.toFixed(2)}`
-                : `${debtUpdate.name} Payment Reversed!\n\n` +
-                  `Restored $${debtUpdate.principal.toFixed(2)} to your balance.`;
-            
-            alert(msg);
+
+            // --- NOTIFICATION ---
+            if (!silent) {
+                const msg = isNowPaid 
+                    ? `${debtUpdate.debtName} Payment Applied!\n\nPrincipal: $${debtUpdate.principal.toFixed(2)}\nInterest: $${debtUpdate.interest.toFixed(2)}\nNew Balance: $${debtUpdate.newBalance.toFixed(2)}`
+                    : `${debtUpdate.debtName} Payment Reversed!\n\nRestored $${debtUpdate.principal.toFixed(2)} to your balance.`;
+                alert(msg);
+            }
         }
 
-        // 4. UI SYNC
+        // 4. LOCAL UI SYNC
         bill.is_paid = isNowPaid;
-        if (forecastSettings.value) forecastSettings.value.currentBalance = newForecastBalance;
+        bill.paid_date = isNowPaid ? new Date().toISOString() : null;
+        if (forecastSettings.value) {
+            forecastSettings.value.currentBalance = newForecastBalance;
+        }
         
+        // Final refresh to keep "Due Soon" and Charts synced
         await fetchBills();
         if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
     } catch (err) {
-        console.error("Toggle Error:", err);
+        console.error("Critical Error in toggleBillPaid:", err);
         alert("Action Failed: " + err.message);
     }
 };
-
-
 
 
           const quickPay = async (bill) => {
@@ -3164,53 +3182,40 @@ const billsUrgent = computed(() => {
             const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
             // 🟢 NEW: Auto-Pay Processing System
             const processAutoPay = async () => {
-                console.log("⚡ Auto-Pay Engine: Starting Check...");
+    console.log("⚡ Auto-Pay Engine: Starting Check...");
 
-                if (!bills.value || bills.value.length === 0) {
-                    console.log("⚠️ Auto-Pay: No bills found to check.");
-                    return;
-                }
+    if (!bills.value || bills.value.length === 0) return;
 
-                // 🟢 FIX: Set 'Today' to the very END of the day (11:59 PM)
-                // This ensures bills due today (which are usually set to Noon) are captured.
-                const today = new Date();
-                today.setHours(23, 59, 59, 999);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
 
-                const processed = [];
+    const processed = [];
 
-                for (const bill of bills.value) {
-                    // Check if: 
-                    // 1. Not Paid
-                    // 2. Has budget item data
-                    // 3. Is marked Auto Pay
-                    if (!bill.is_paid && bill.budget_items && bill.budget_items.is_autopay) {
-                        
-                        // Create Date Object for the bill
-                        const billDate = new Date(bill.due_date + 'T12:00:00');
-                        
-                        console.log(`🔎 Checking: ${bill.budget_items.name} (Due: ${bill.due_date})`);
+    for (const bill of bills.value) {
+        // Only process if unpaid and marked for autopay
+        if (!bill.is_paid && bill.budget_items?.is_autopay) {
+            
+            const billDate = new Date(bill.due_date + 'T12:00:00');
 
-                        if (billDate <= today) {
-                            console.log("✅ MATCH! Processing Payment...");
-                            
-                            // Pay it!
-                            await toggleBillPaid(bill);
-                            processed.push(bill);
-                        } else {
-                            console.log("⏳ Skipped: Due date is in the future.");
-                        }
-                    }
-                }
+            if (billDate <= today) {
+                console.log(`✅ Auto-paying: ${bill.transaction_name}`);
+                
+                // CALLING OUR PERFECTED TOGGLE
+                // Note: We pass 'true' as a second argument if we want to 
+                // suppress the 'alert()' and use the Report Modal instead.
+                await toggleBillPaid(bill, true); 
+                
+                processed.push(bill);
+            }
+        }
+    }
 
-                // If we did anything, show the Report Modal
-                if (processed.length > 0) {
-                    autoPayBills.value = processed;
-                    showAutoPayReport.value = true;
-                    console.log(`🚀 Auto-Pay Complete. Processed ${processed.length} bills.`);
-                } else {
-                    console.log("💤 Auto-Pay: Nothing to pay right now.");
-                }
-            };
+    if (processed.length > 0) {
+        autoPayBills.value = processed;
+        showAutoPayReport.value = true;
+    }
+};
+
             const handleReversal = async (bill, action) => {
                 // 1. REFUND THE MONEY (Update Balance & Mark Unpaid)
                 // We await this to ensure the balance is corrected first.
