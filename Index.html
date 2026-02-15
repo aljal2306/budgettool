@@ -2928,25 +2928,28 @@ const billsUrgent = computed(() => {
                 .single();
 
             if (debt && !debtFetchError) {
-                const currentDebtBalance = Number(debt.balance || 0);
+                const currentDBBalance = Number(debt.balance || 0);
                 const annualRate = Number(debt.rate || 0);
                 const monthlyRate = (annualRate / 100) / 12;
 
-                // --- THE MATH FIX ---
-                // We calculate Interest based on the balance AT THIS MOMENT.
-                const interestComponent = currentDebtBalance * monthlyRate;
-                const principalComponent = amount - interestComponent;
-                
-                let newDebtBalance;
+                let interestComponent, principalComponent, newDebtBalance;
 
                 if (isNowPaid) {
-                    // Reduce balance by the principal portion
-                    newDebtBalance = Math.max(0, currentDebtBalance - principalComponent);
+                    // PAYMENT: Use current balance to find interest
+                    interestComponent = currentDBBalance * monthlyRate;
+                    principalComponent = amount - interestComponent;
+                    newDebtBalance = Math.max(0, currentDBBalance - principalComponent);
                 } else {
-                    // RESTORE: To get back to the original balance exactly, 
-                    // we add the principal back. 
-                    // Note: We use the current balance to find what the principal *was* // relative to the current state.
-                    newDebtBalance = currentDebtBalance + principalComponent;
+                    // REVERSAL: The currentDBBalance is the "Paid" (lower) version.
+                    // To get the EXACT original balance, we use this specific formula:
+                    // Original Balance = (Current + Amount*MonthlyRate) / (1 + MonthlyRate)
+                    // No, simpler: Original Balance = (Current + Amount) / (1 + MonthlyRate)
+                    
+                    newDebtBalance = (currentDBBalance + amount) / (1 + monthlyRate);
+                    
+                    // Now derive the original principal/interest portions
+                    interestComponent = newDebtBalance * monthlyRate;
+                    principalComponent = amount - interestComponent;
                 }
                 
                 debtUpdate = {
@@ -2970,17 +2973,16 @@ const billsUrgent = computed(() => {
         if (debtUpdate) {
             await _supabase.from('debts').update({ balance: debtUpdate.newBalance }).eq('id', debtUpdate.id);
             
-            // INSTANT UI UPDATE (for your debts.value array)
+            // INSTANT UI UPDATE
             if (typeof debts !== 'undefined' && debts.value) {
                 const debtInList = debts.value.find(d => d.id === targetDebtId);
                 if (debtInList) debtInList.balance = debtUpdate.newBalance;
             }
 
             // Notification
-            const alertMsg = isNowPaid 
-                ? `Applied: $${debtUpdate.principal.toFixed(2)} principal / $${debtUpdate.interest.toFixed(2)} interest.` 
-                : `Reversed: $${debtUpdate.principal.toFixed(2)} principal added back to balance.`;
-            alert(alertMsg);
+            alert(isNowPaid 
+                ? `Applied: $${debtUpdate.principal.toFixed(2)} Principal` 
+                : `Restored: $${(debtUpdate.newBalance - currentDBBalance).toFixed(2)} to Principal.`);
         }
 
         // 4. UI SYNC
@@ -2994,8 +2996,6 @@ const billsUrgent = computed(() => {
         alert("Error: " + err.message);
     }
 };
-
-
 
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
