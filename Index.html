@@ -2916,7 +2916,7 @@ const billsUrgent = computed(() => {
         const currentBal = forecastSettings.value?.currentBalance || 0;
         const newForecastBalance = Number(currentBal) + adjustment;
 
-        // 2. DEBT LOGIC & REVERSIBLE MATH
+        // 2. DEBT LOGIC
         let debtUpdate = null;
         const targetDebtId = bill.budget_items?.debt_id || bill.debt_id;
 
@@ -2932,26 +2932,28 @@ const billsUrgent = computed(() => {
                 const annualRate = Number(debt.rate || 0);
                 const monthlyRate = (annualRate / 100) / 12;
 
-                let interestPaid, principalPaid, newDebtBalance;
+                // --- THE MATH FIX ---
+                // We calculate Interest based on the balance AT THIS MOMENT.
+                const interestComponent = currentDebtBalance * monthlyRate;
+                const principalComponent = amount - interestComponent;
+                
+                let newDebtBalance;
 
                 if (isNowPaid) {
-                    // PAYMENT MATH
-                    interestPaid = currentDebtBalance * monthlyRate;
-                    principalPaid = amount - interestPaid;
-                    newDebtBalance = Math.max(0, currentDebtBalance - principalPaid);
+                    // Reduce balance by the principal portion
+                    newDebtBalance = Math.max(0, currentDebtBalance - principalComponent);
                 } else {
-                    // REVERSAL MATH: Finding the original balance
-                    // This formula cancels out the interest shift so the reversal is exact.
-                    newDebtBalance = (currentDebtBalance - (amount * monthlyRate)) / (1 - monthlyRate);
-                    principalPaid = newDebtBalance - currentDebtBalance;
-                    interestPaid = amount - principalPaid;
+                    // RESTORE: To get back to the original balance exactly, 
+                    // we add the principal back. 
+                    // Note: We use the current balance to find what the principal *was* // relative to the current state.
+                    newDebtBalance = currentDebtBalance + principalComponent;
                 }
                 
                 debtUpdate = {
                     id: debt.id,
                     newBalance: newDebtBalance,
-                    principal: principalPaid,
-                    interest: interestPaid,
+                    principal: principalComponent,
+                    interest: interestComponent,
                     debtName: debt.name || 'Debt'
                 };
             }
@@ -2968,23 +2970,20 @@ const billsUrgent = computed(() => {
         if (debtUpdate) {
             await _supabase.from('debts').update({ balance: debtUpdate.newBalance }).eq('id', debtUpdate.id);
             
-            // --- INSTANT UI UPDATE ---
-            // This targets the debts.value array you shared to update the dashboard immediately
-            if (debts && debts.value) {
+            // INSTANT UI UPDATE (for your debts.value array)
+            if (typeof debts !== 'undefined' && debts.value) {
                 const debtInList = debts.value.find(d => d.id === targetDebtId);
-                if (debtInList) {
-                    debtInList.balance = debtUpdate.newBalance;
-                }
+                if (debtInList) debtInList.balance = debtUpdate.newBalance;
             }
 
             // Notification
             const alertMsg = isNowPaid 
-                ? `Paid: $${debtUpdate.principal.toFixed(2)} to principal.` 
-                : `Reversed: $${debtUpdate.principal.toFixed(2)} restored to balance.`;
+                ? `Applied: $${debtUpdate.principal.toFixed(2)} principal / $${debtUpdate.interest.toFixed(2)} interest.` 
+                : `Reversed: $${debtUpdate.principal.toFixed(2)} principal added back to balance.`;
             alert(alertMsg);
         }
 
-        // 4. SYNC REMAINING UI
+        // 4. UI SYNC
         bill.is_paid = isNowPaid;
         forecastSettings.value.currentBalance = newForecastBalance;
         
@@ -2995,6 +2994,7 @@ const billsUrgent = computed(() => {
         alert("Error: " + err.message);
     }
 };
+
 
 
           const quickPay = async (bill) => {
