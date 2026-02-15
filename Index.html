@@ -2908,7 +2908,7 @@ const billsUrgent = computed(() => {
         const isNowPaid = !bill.is_paid;
         const amount = Number(bill.amount_paid || bill.amount || 0);
 
-        // 1. BANK BALANCE ADJUSTMENT
+        // 1. CALCULATE NEW BANK BALANCE
         let adjustment = (bill.type === 'income') 
             ? (isNowPaid ? amount : -amount) 
             : (isNowPaid ? -amount : amount);
@@ -2916,86 +2916,88 @@ const billsUrgent = computed(() => {
         const currentBal = forecastSettings.value?.currentBalance || 0;
         const newForecastBalance = Number(currentBal) + adjustment;
 
-        // 2. DEBT LOGIC
+        // 2. DEBT MATH LOGIC
         let debtUpdate = null;
         const targetDebtId = bill.budget_items?.debt_id || bill.debt_id;
 
         if (targetDebtId) {
-            const { data: debt, error: debtFetchError } = await _supabase
+            const { data: debt } = await _supabase
                 .from('debts')
                 .select('*')
                 .eq('id', targetDebtId)
                 .single();
 
-            if (debt && !debtFetchError) {
-                // FIXED: Using consistent variable name currentDBBalance
+            if (debt) {
                 const currentDBBalance = Number(debt.balance || 0);
                 const annualRate = Number(debt.rate || 0);
                 const monthlyRate = (annualRate / 100) / 12;
 
-                let interestComponent, principalComponent, newDebtBalance;
-
+                let newDebtBalance;
                 if (isNowPaid) {
-                    // PAYMENT: Current balance * monthly rate
-                    interestComponent = currentDBBalance * monthlyRate;
-                    principalComponent = amount - interestComponent;
-                    newDebtBalance = Math.max(0, currentDBBalance - principalComponent);
+                    const interestComponent = currentDBBalance * monthlyRate;
+                    newDebtBalance = Math.max(0, currentDBBalance - (amount - interestComponent));
                 } else {
-                    // REVERSAL: Algebraically undo the interest and payment to find Original Balance
-                    // NewBalance = (Current + Amount) / (1 + MonthlyRate)
                     newDebtBalance = (currentDBBalance + amount) / (1 + monthlyRate);
-                    
-                    // Derive the principal that was removed so we can show it in the alert
-                    principalComponent = newDebtBalance - currentDBBalance;
                 }
                 
-                // Final clean-up: Round to 2 decimal places to avoid floating point errors
                 newDebtBalance = Math.round(newDebtBalance * 100) / 100;
-
-                debtUpdate = {
-                    id: debt.id,
-                    newBalance: newDebtBalance,
-                    principal: principalComponent,
-                    debtName: debt.name || 'Debt'
-                };
+                debtUpdate = { id: debt.id, newBalance: newDebtBalance, name: debt.name };
             }
         }
 
         // 3. DATABASE UPDATES
-        const { error: ledgerError } = await _supabase
-            .from('ledger')
-            .update({ is_paid: isNowPaid, paid_date: isNowPaid ? new Date().toISOString() : null })
-            .eq('id', bill.id);
         
-        if (ledgerError) throw ledgerError;
+        // A. Update Ledger
+        await _supabase.from('ledger').update({ 
+            is_paid: isNowPaid, 
+            paid_date: isNowPaid ? new Date().toISOString() : null 
+        }).eq('id', bill.id);
 
+        // B. Update Bank Balance (user_settings)
+        const userId = session.value?.user?.id;
+        if (userId) {
+            const { data: balanceData, error: balanceError } = await _supabase
+                .from('user_settings')
+                .update({ current_balance: newForecastBalance })
+                .eq('user_id', userId)
+                .select(); // Returns the row to confirm it exists
+
+            if (balanceError) throw new Error("Bank Balance Error: " + balanceError.message);
+            
+            if (!balanceData || balanceData.length === 0) {
+                console.error("User ID mismatch in user_settings. No row found for:", userId);
+                alert("Critical: Bank balance updated locally but could not find your user record in user_settings to save it.");
+            }
+        }
+
+        // C. Update Debt Table
         if (debtUpdate) {
             await _supabase.from('debts').update({ balance: debtUpdate.newBalance }).eq('id', debtUpdate.id);
             
-            // INSTANT UI UPDATE
+            // Local UI Update for Debts
             if (typeof debts !== 'undefined' && debts.value) {
-                const debtInList = debts.value.find(d => d.id === targetDebtId);
-                if (debtInList) debtInList.balance = debtUpdate.newBalance;
+                const dIdx = debts.value.findIndex(d => d.id === debtUpdate.id);
+                if (dIdx !== -1) debts.value[dIdx].balance = debtUpdate.newBalance;
             }
-
-            // Notification
-            alert(isNowPaid 
-                ? `Paid: $${debtUpdate.principal.toFixed(2)} applied to principal.` 
-                : `Reversed: $${debtUpdate.principal.toFixed(2)} restored to balance.`);
+            
+            alert(isNowPaid ? `Paid toward ${debtUpdate.name}. Balance updated.` : `Payment Reversed for ${debtUpdate.name}.`);
         }
 
-        // 4. UI SYNC
+        // 4. UI SYNC (Instant local update)
         bill.is_paid = isNowPaid;
-        forecastSettings.value.currentBalance = newForecastBalance;
+        if (forecastSettings.value) {
+            forecastSettings.value.currentBalance = newForecastBalance;
+        }
         
         await fetchBills();
         if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
     } catch (err) {
-        console.error("Error:", err);
-        alert("Error: " + err.message);
+        console.error("Toggle Error:", err);
+        alert("Action Failed: " + err.message);
     }
 };
+
 
 
           const quickPay = async (bill) => {
