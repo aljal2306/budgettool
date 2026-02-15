@@ -2928,6 +2928,7 @@ const billsUrgent = computed(() => {
                 .single();
 
             if (debt && !debtFetchError) {
+                // FIXED: Using consistent variable name currentDBBalance
                 const currentDBBalance = Number(debt.balance || 0);
                 const annualRate = Number(debt.rate || 0);
                 const monthlyRate = (annualRate / 100) / 12;
@@ -2935,28 +2936,26 @@ const billsUrgent = computed(() => {
                 let interestComponent, principalComponent, newDebtBalance;
 
                 if (isNowPaid) {
-                    // PAYMENT: Use current balance to find interest
+                    // PAYMENT: Current balance * monthly rate
                     interestComponent = currentDBBalance * monthlyRate;
                     principalComponent = amount - interestComponent;
                     newDebtBalance = Math.max(0, currentDBBalance - principalComponent);
                 } else {
-                    // REVERSAL: The currentDBBalance is the "Paid" (lower) version.
-                    // To get the EXACT original balance, we use this specific formula:
-                    // Original Balance = (Current + Amount*MonthlyRate) / (1 + MonthlyRate)
-                    // No, simpler: Original Balance = (Current + Amount) / (1 + MonthlyRate)
-                    
+                    // REVERSAL: Algebraically undo the interest and payment to find Original Balance
+                    // NewBalance = (Current + Amount) / (1 + MonthlyRate)
                     newDebtBalance = (currentDBBalance + amount) / (1 + monthlyRate);
                     
-                    // Now derive the original principal/interest portions
-                    interestComponent = newDebtBalance * monthlyRate;
-                    principalComponent = amount - interestComponent;
+                    // Derive the principal that was removed so we can show it in the alert
+                    principalComponent = newDebtBalance - currentDBBalance;
                 }
                 
+                // Final clean-up: Round to 2 decimal places to avoid floating point errors
+                newDebtBalance = Math.round(newDebtBalance * 100) / 100;
+
                 debtUpdate = {
                     id: debt.id,
                     newBalance: newDebtBalance,
                     principal: principalComponent,
-                    interest: interestComponent,
                     debtName: debt.name || 'Debt'
                 };
             }
@@ -2981,8 +2980,8 @@ const billsUrgent = computed(() => {
 
             // Notification
             alert(isNowPaid 
-                ? `Applied: $${debtUpdate.principal.toFixed(2)} Principal` 
-                : `Restored: $${(debtUpdate.newBalance - currentDBBalance).toFixed(2)} to Principal.`);
+                ? `Paid: $${debtUpdate.principal.toFixed(2)} applied to principal.` 
+                : `Reversed: $${debtUpdate.principal.toFixed(2)} restored to balance.`);
         }
 
         // 4. UI SYNC
@@ -2993,9 +2992,11 @@ const billsUrgent = computed(() => {
         if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
     } catch (err) {
+        console.error("Error:", err);
         alert("Error: " + err.message);
     }
 };
+
 
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
