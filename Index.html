@@ -2205,28 +2205,30 @@
 
          // Group Paid Bills by Month (Last 3 Months Only, FIXED Bills Only)
             const groupedPaidHistory = computed(() => {
-    if (!bills.value) return {};
+    if (!bills.value || bills.value.length === 0) return {};
 
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - 3);
 
     const history = bills.value
-        .filter(b => b.is_paid) 
-        // 🟢 NOTICE: NO 'is_variable' check here. We want to see everything.
+        .filter(b => b.is_paid) // 1. Only paid items
         .filter(b => {
-            const dateStr = b.paid_date || b.due_date;
-            return dateStr && new Date(dateStr) >= cutoffDate;
+            // 2. 🟢 REMOVE the 'is_variable' filter if it exists here!
+            // 3. Robust Date Check
+            const d = new Date(b.paid_date || b.due_date);
+            return !isNaN(d.getTime()) && d >= cutoffDate;
         })
         .sort((a, b) => new Date(b.paid_date || b.due_date) - new Date(a.paid_date || a.due_date));
 
     const groups = {};
     history.forEach(bill => {
         const d = new Date(bill.paid_date || bill.due_date);
-        const monthKey = !isNaN(d.getTime()) 
-            ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-            : 'Unknown';
+        const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-        if (!groups[monthKey]) groups[monthKey] = { total: 0, items: [] };
+        if (!groups[monthKey]) {
+            groups[monthKey] = { total: 0, items: [] };
+        }
+        
         groups[monthKey].items.push(bill);
         
         if (bill.type !== 'income') {
