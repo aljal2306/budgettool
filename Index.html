@@ -3184,13 +3184,15 @@ const editLogEntry = (entry) => {
         const toggleBillPaid = async (bill, silent = false, method = 'debit') => {
     try {
         const isNowPaid = !bill.is_paid;
+        
+        // 🟢 FIX: If we are UNPAYING, use the method already stored on the bill
+        // This ensures CC Debt is decreased when you click 'Undo'
+        const effectiveMethod = isNowPaid ? method : (bill.payment_method || 'debit');
+        
         const amount = Number(bill.amount_paid || bill.amount || 0);
 
         // --- 1. CREDIT CARD SHIFT LOGIC ---
-        // If paid via Credit, we increase the CC Debt. 
-        // If reversed (unpaid), we decrease the CC Debt.
-        if (method === 'credit') {
-            // We assume handleCreditCardShift is defined in your script
+        if (effectiveMethod === 'credit') {
             await handleCreditCardShift(amount, isNowPaid);
         }
 
