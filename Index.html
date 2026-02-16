@@ -3242,14 +3242,15 @@ const editLogEntry = (entry) => {
 
         // --- 4. DATABASE UPDATES ---
         
-        // A. Update Ledger
-        const { error: ledgerError } = await _supabase
-            .from('ledger')
-            .update({ 
-                is_paid: isNowPaid, 
-                paid_date: isNowPaid ? new Date().toISOString() : null 
-            })
-            .eq('id', bill.id);
+       // A. Update Ledger
+       const { error: ledgerError } = await _supabase
+       .from('ledger')
+       .update({ 
+        is_paid: isNowPaid, 
+        paid_date: isNowPaid ? new Date().toISOString() : null,
+        payment_method: isNowPaid ? method : 'debit' // 🟢 ADD THIS LINE
+    })
+       .eq('id', bill.id);
 
         if (ledgerError) throw ledgerError;
 
