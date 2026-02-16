@@ -2207,37 +2207,39 @@
             const groupedPaidHistory = computed(() => {
     if (!bills.value || bills.value.length === 0) return {};
 
-    // 1. Get the current Year/Month to calculate a safe 3-month window
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
+    // 1. Set the Limit (3 Months Ago)
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+    cutoffDate.setDate(1); 
+    cutoffDate.setHours(0, 0, 0, 0);
 
     // 2. Filter the list
-    const history = bills.value.filter(b => {
-        if (!b.is_paid) return false;
-        
-        const dateStr = b.paid_date || b.due_date;
-        if (!dateStr) return false;
+    const history = bills.value
+        .filter(b => b.is_paid) // Requirement: Must be paid
+        .filter(b => {
+            // 🟢 REMOVED: The old "is_variable" return false check.
+            // We now allow variable expenses to show in history.
 
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return false;
+            const dateStr = b.paid_date || b.due_date;
+            if (!dateStr) return false;
 
-        // Calculate how many months ago this was
-        const monthsDiff = (currentYear - d.getFullYear()) * 12 + (currentMonth - d.getMonth());
-        
-        // Keep it if it's within the last 3 months (0, 1, 2, or 3)
-        return monthsDiff <= 3;
-    }).sort((a, b) => {
-        return new Date(b.paid_date || b.due_date) - new Date(a.paid_date || a.due_date);
-    });
+            // Ensure we only compare the YYYY-MM-DD part to avoid timezone/format bugs
+            const itemDate = new Date(dateStr.split('T')[0] + 'T12:00:00');
+            return itemDate >= cutoffDate;
+        })
+        .sort((a, b) => {
+            // Newest at the top
+            const dateA = new Date(a.paid_date || a.due_date);
+            const dateB = new Date(b.paid_date || b.due_date);
+            return dateB - dateA;
+        });
 
     // 3. Group them
     const groups = {};
     history.forEach(bill => {
-        const dateStr = bill.paid_date || bill.due_date;
-        const d = new Date(dateStr);
+        const dateSource = (bill.paid_date || bill.due_date).split('T')[0];
+        const d = new Date(dateSource + 'T12:00:00');
         
-        // Ensure we get a consistent "Month Year" key
         const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
         if (!groups[monthKey]) {
@@ -2246,6 +2248,7 @@
         
         groups[monthKey].items.push(bill);
         
+        // Sum the total (only for expenses)
         if (bill.type !== 'income') {
             groups[monthKey].total += Number(bill.amount_paid || bill.amount || 0);
         }
