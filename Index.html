@@ -2360,6 +2360,7 @@ const billsUrgent = computed(() => {
             transaction_name, 
             type,
             budget_item_id,
+            payment_method,  // 🟢 ADDED THIS LINE
             budget_items (
                 id,
                 name,
@@ -2386,18 +2387,16 @@ const billsUrgent = computed(() => {
         let finalAmount = 0;
         
         if (bill.type === 'income') {
-            // Deposits don't have templates, so use the actual amount deposited
             finalAmount = bill.amount_paid || 0;
         } else {
-            // Bills: Use the actual paid amount, or fall back to the "Expected" template price
             finalAmount = bill.amount_paid || template.amount || 0;
         }
 
         const finalName = bill.transaction_name || template.name || 'Unknown Item';
 
         return {
-            ...bill,
-            amount: finalAmount, // The UI looks for this key
+            ...bill, // 🟢 This spreads all properties, including payment_method
+            amount: finalAmount, 
             transaction_name: finalName,
             budget_items: template 
         };
