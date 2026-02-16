@@ -2205,44 +2205,57 @@
 
          // Group Paid Bills by Month (Last 3 Months Only, FIXED Bills Only)
             const groupedPaidHistory = computed(() => {
-    if (!bills.value) return {};
+    // 1. Guard clause: if no bills data, return empty object
+    if (!bills.value || bills.value.length === 0) return {};
 
-    // 1. Set the Limit (3 Months Ago)
+    // 2. Set the Limit (3 Months Ago)
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - 3);
     cutoffDate.setDate(1); 
+    cutoffDate.setHours(0, 0, 0, 0);
 
-    // 2. Filter the list
+    // 3. Filter and Sort the list
     const history = bills.value
-        .filter(b => b.is_paid) // Must be paid
+        .filter(b => b.is_paid) // Requirement 1: Must be marked as paid
         .filter(b => {
-            // 🟢 MODIFIED: We now allow variable items to show in history 
-            // so we can see our expense logs (Groceries, etc.)
-            return true; 
-        })
-        .filter(b => new Date(b.due_date) >= cutoffDate) // Must be recent
-        .sort((a, b) => new Date(b.due_date) - new Date(a.due_date)); // Newest first
+            // Requirement 2: Must be within the 3-month window
+            // Use paid_date if it exists, otherwise use due_date
+            const dateStr = b.paid_date || b.due_date;
+            if (!dateStr) return false;
 
-    // 3. Group them
+            const itemDate = new Date(dateStr);
+            return itemDate >= cutoffDate;
+            
+            // NOTE: I have REMOVED the "is_variable" check here.
+            // This allows your manual credit/debit logs to show up in this history.
+        })
+        .sort((a, b) => {
+            // Newest transactions at the top
+            const dateA = new Date(a.paid_date || a.due_date);
+            const dateB = new Date(b.paid_date || b.due_date);
+            return dateB - dateA;
+        });
+
+    // 4. Group the filtered items by Month
     const groups = {};
+    
     history.forEach(bill => {
-        // Use paid_date if available, otherwise due_date
-        const dateSource = bill.paid_date || bill.due_date;
-        const d = new Date(dateSource + 'T12:00:00');
+        // Normalize the date string for the group key (Month Year)
+        const dateSource = (bill.paid_date || bill.due_date).split('T')[0];
+        const d = new Date(dateSource + 'T12:00:00'); // T12 avoids timezone shifts
+        
         const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
         if (!groups[monthKey]) {
             groups[monthKey] = { total: 0, items: [] };
         }
         
+        // Add to items list
         groups[monthKey].items.push(bill);
         
-        // Add to total (subtract if income, add if expense)
-        const amt = Number(bill.amount_paid || bill.amount || 0);
-        if (bill.type === 'income') {
-            // Optional: Don't add income to the 'Spent' total
-        } else {
-            groups[monthKey].total += amt;
+        // Add to monthly total (don't add income to the "spent" total)
+        if (bill.type !== 'income') {
+            groups[monthKey].total += Number(bill.amount_paid || bill.amount || 0);
         }
     });
 
