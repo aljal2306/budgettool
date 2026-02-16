@@ -2207,40 +2207,28 @@
             const groupedPaidHistory = computed(() => {
     if (!bills.value || bills.value.length === 0) return {};
 
-    // 1. Set the Limit (3 Months Ago)
+    // 1. Cutoff: 3 months ago
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - 3);
-    cutoffDate.setDate(1); 
-    cutoffDate.setHours(0, 0, 0, 0);
 
-    // 2. Filter the list
+    // 2. Filter: ONLY check if it's paid and recent. 
+    // Do NOT check for 'is_variable' anymore!
     const history = bills.value
-        .filter(b => b.is_paid) // Requirement: Must be paid
+        .filter(b => b.is_paid) 
         .filter(b => {
-            // 🟢 REMOVED: The old "is_variable" return false check.
-            // We now allow variable expenses to show in history.
-
-            const dateStr = b.paid_date || b.due_date;
-            if (!dateStr) return false;
-
-            // Ensure we only compare the YYYY-MM-DD part to avoid timezone/format bugs
-            const itemDate = new Date(dateStr.split('T')[0] + 'T12:00:00');
-            return itemDate >= cutoffDate;
+            const d = new Date(b.paid_date || b.due_date);
+            return d >= cutoffDate;
         })
-        .sort((a, b) => {
-            // Newest at the top
-            const dateA = new Date(a.paid_date || a.due_date);
-            const dateB = new Date(b.paid_date || b.due_date);
-            return dateB - dateA;
-        });
+        .sort((a, b) => new Date(b.paid_date || b.due_date) - new Date(a.paid_date || a.due_date));
 
-    // 3. Group them
+    // 3. Grouping
     const groups = {};
     history.forEach(bill => {
-        const dateSource = (bill.paid_date || bill.due_date).split('T')[0];
-        const d = new Date(dateSource + 'T12:00:00');
-        
-        const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const d = new Date(bill.paid_date || bill.due_date);
+        // Fallback for invalid dates
+        const monthKey = !isNaN(d.getTime()) 
+            ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            : 'Unknown Date';
 
         if (!groups[monthKey]) {
             groups[monthKey] = { total: 0, items: [] };
@@ -2248,7 +2236,7 @@
         
         groups[monthKey].items.push(bill);
         
-        // Sum the total (only for expenses)
+        // Sum expenses only
         if (bill.type !== 'income') {
             groups[monthKey].total += Number(bill.amount_paid || bill.amount || 0);
         }
