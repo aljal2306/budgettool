@@ -2908,13 +2908,12 @@ const billsUrgent = computed(() => {
                 }
             };
     const logExpense = async () => {
-    // 1. Validation
+    // 1. Basic Validation
     if (!expenseData.value.budgetId || !expenseData.value.amount) {
         alert("Please enter an amount.");
         return;
     }
 
-    // 2. Setup Variables
     const amount = Math.abs(Number(expenseData.value.amount));
     const method = expenseData.value.method || 'debit';
     
@@ -2925,40 +2924,33 @@ const billsUrgent = computed(() => {
         is_paid: true, 
         due_date: expenseData.value.date, 
         transaction_name: expenseData.value.description,
-        payment_method: method // Ensure this column exists in your 'ledger' table
+        payment_method: method 
     };
 
     let error;
 
     try {
         if (editingExpenseId.value) {
-            // --- EDITING LOGIC (Wipe and Rewrite) ---
-            
-            // A. Reverse the math of the original entry
+            // --- EDIT LOGIC (Reverse Old, Apply New) ---
             if (originalEntrySnapshot.value) {
                 const oldAmount = Number(originalEntrySnapshot.value.amount_paid);
                 const oldMethod = originalEntrySnapshot.value.payment_method || 'debit';
 
-                // Refund Bank Balance
+                // Refund Bank
                 forecastSettings.value.currentBalance += oldAmount;
-                
-                // Refund CC Debt if original was credit
+                // Refund CC Debt if it was credit
                 if (oldMethod === 'credit') {
                     await handleCreditCardShift(oldAmount, false); // false = reversal
                 }
             }
 
-            // B. Apply the new math
+            // Apply New Values
             forecastSettings.value.currentBalance -= amount;
             if (method === 'credit') {
                 await handleCreditCardShift(amount, true); // true = apply
             }
 
-            // C. Update Database
-            const res = await _supabase
-                .from('ledger')
-                .update(payload)
-                .eq('id', editingExpenseId.value);
+            const res = await _supabase.from('ledger').update(payload).eq('id', editingExpenseId.value);
             error = res.error;
 
         } else {
@@ -2967,28 +2959,18 @@ const billsUrgent = computed(() => {
             error = res.error;
             
             if (!error) {
-                // Apply Credit Card Shift
-                if (method === 'credit') {
-                    await handleCreditCardShift(amount, true);
-                }
-
-                // Always Subtract from Buying Power
+                if (method === 'credit') await handleCreditCardShift(amount, true);
                 forecastSettings.value.currentBalance -= amount;
             }
         }
 
-        // --- FINAL SYNC & CLEANUP ---
         if (!error) {
-            // Save the final bank balance to user_settings
-            await saveSettings();
-
+            await saveSettings(); // Save Bank Balance to Supabase
             showExpenseModal.value = false; 
             
             // Reset form for next use
             expenseData.value = {
-                budgetId: '', 
-                amount: '', 
-                description: '', 
+                budgetId: '', amount: '', description: '', 
                 date: new Date().toISOString().split('T')[0],
                 method: 'debit' 
             }; 
@@ -2996,24 +2978,30 @@ const billsUrgent = computed(() => {
             editingExpenseId.value = null; 
             originalEntrySnapshot.value = null;
             
-            // Refresh UI components
             await fetchBills(); 
             if (typeof renderDashboardChart === 'function') renderDashboardChart();
-            
-            // If the transaction history modal is open, refresh it
-            if (showLogModal.value && selectedBudgetLog.value) {
-                openLogModal(selectedBudgetLog.value);
-            }
+            if (showLogModal.value && selectedBudgetLog.value) openLogModal(selectedBudgetLog.value);
         } else { 
             throw error;
         }
 
     } catch (err) {
         console.error("Error in logExpense:", err);
-        alert("Error logging expense: " + err.message);
+        alert("Action Failed: " + err.message);
     }
 };
-            const openLogModal = (item) => { selectedBudgetLog.value = item; const currentMonthStr = new Date().toISOString().slice(0, 7); currentLogEntries.value = bills.value.filter(b => b.budget_item_id === item.id && b.due_date.startsWith(currentMonthStr)).sort((a,b) => b.due_date.localeCompare(a.due_date)); showLogModal.value = true; };
+            const openLogModal = (item) => { 
+    selectedBudgetLog.value = item; 
+    const currentMonthStr = new Date().toISOString().slice(0, 7); 
+    
+    // Filter the ledger entries for this specific budget item
+    currentLogEntries.value = bills.value.filter(b => 
+        b.budget_item_id === item.id && 
+        b.due_date.startsWith(currentMonthStr)
+    ).sort((a,b) => b.due_date.localeCompare(a.due_date)); 
+    
+    showLogModal.value = true; 
+};
             const deleteLogEntry = async (entry) => { 
     if(!confirm("Remove this transaction? Money will be refunded to your balance.")) return; 
     
