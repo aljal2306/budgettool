@@ -2205,55 +2205,47 @@
 
          // Group Paid Bills by Month (Last 3 Months Only, FIXED Bills Only)
             const groupedPaidHistory = computed(() => {
-    // 1. Guard clause: if no bills data, return empty object
     if (!bills.value || bills.value.length === 0) return {};
 
-    // 2. Set the Limit (3 Months Ago)
-    const cutoffDate = new Date();
-    cutoffDate.setMonth(cutoffDate.getMonth() - 3);
-    cutoffDate.setDate(1); 
-    cutoffDate.setHours(0, 0, 0, 0);
+    // 1. Get the current Year/Month to calculate a safe 3-month window
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
 
-    // 3. Filter and Sort the list
-    const history = bills.value
-        .filter(b => b.is_paid) // Requirement 1: Must be marked as paid
-        .filter(b => {
-            // Requirement 2: Must be within the 3-month window
-            // Use paid_date if it exists, otherwise use due_date
-            const dateStr = b.paid_date || b.due_date;
-            if (!dateStr) return false;
-
-            const itemDate = new Date(dateStr);
-            return itemDate >= cutoffDate;
-            
-            // NOTE: I have REMOVED the "is_variable" check here.
-            // This allows your manual credit/debit logs to show up in this history.
-        })
-        .sort((a, b) => {
-            // Newest transactions at the top
-            const dateA = new Date(a.paid_date || a.due_date);
-            const dateB = new Date(b.paid_date || b.due_date);
-            return dateB - dateA;
-        });
-
-    // 4. Group the filtered items by Month
-    const groups = {};
-    
-    history.forEach(bill => {
-        // Normalize the date string for the group key (Month Year)
-        const dateSource = (bill.paid_date || bill.due_date).split('T')[0];
-        const d = new Date(dateSource + 'T12:00:00'); // T12 avoids timezone shifts
+    // 2. Filter the list
+    const history = bills.value.filter(b => {
+        if (!b.is_paid) return false;
         
+        const dateStr = b.paid_date || b.due_date;
+        if (!dateStr) return false;
+
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return false;
+
+        // Calculate how many months ago this was
+        const monthsDiff = (currentYear - d.getFullYear()) * 12 + (currentMonth - d.getMonth());
+        
+        // Keep it if it's within the last 3 months (0, 1, 2, or 3)
+        return monthsDiff <= 3;
+    }).sort((a, b) => {
+        return new Date(b.paid_date || b.due_date) - new Date(a.paid_date || a.due_date);
+    });
+
+    // 3. Group them
+    const groups = {};
+    history.forEach(bill => {
+        const dateStr = bill.paid_date || bill.due_date;
+        const d = new Date(dateStr);
+        
+        // Ensure we get a consistent "Month Year" key
         const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
         if (!groups[monthKey]) {
             groups[monthKey] = { total: 0, items: [] };
         }
         
-        // Add to items list
         groups[monthKey].items.push(bill);
         
-        // Add to monthly total (don't add income to the "spent" total)
         if (bill.type !== 'income') {
             groups[monthKey].total += Number(bill.amount_paid || bill.amount || 0);
         }
@@ -2261,7 +2253,6 @@
 
     return groups;
 });
-
             // --- 3. HELPER FUNCTIONS ---
             const toggleDarkMode = () => { isDarkMode.value = !isDarkMode.value; if(isDarkMode.value) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light'); };
             const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
