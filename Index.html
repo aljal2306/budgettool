@@ -1743,7 +1743,7 @@
                             <span v-if="bill.type === 'income'" class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 rounded font-bold uppercase">Deposit</span>
                         </div>
                         <div class="text-[9px] text-slate-400 mt-0.5 font-medium">
-                            Paid: {{ new Date(bill.paid_date || bill.due_date).toLocaleDateString(undefined, {month:'short', day:'numeric'}) }}
+                            Paid: {{ bill.paid_date ? new Date(bill.paid_date).toLocaleDateString(undefined, {month:'short', day:'numeric'}) : new Date(bill.due_date).toLocaleDateString(undefined, {month:'short', day:'numeric'}) }}
                         </div>
                     </div>
                 </div>
