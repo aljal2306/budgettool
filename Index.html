@@ -2131,6 +2131,55 @@ const billsUrgent = computed(() => {
     if (!bills.value) return [];
     return bills.value.filter(b => !b.is_paid && isUrgent(b.due_date));
 });
+
+    const handleCreditCardShift = async (amount, isNowPaid) => {
+    // 1. Check if the 'Credit Card' debt entry exists in our local list
+    let ccDebt = debts.value.find(d => 
+        d.name.toLowerCase() === 'credit card' || 
+        d.name.toLowerCase() === 'credit cards'
+    );
+    
+    // 2. If it doesn't exist, create it in Supabase
+    if (!ccDebt) {
+        console.log("Credit Card debt not found. Creating new entry...");
+        const { data, error } = await _supabase.from('debts').insert([{
+            user_id: session.value.user.id,
+            name: 'Credit Card',
+            balance: 0,
+            rate: 20, // Default APR fallback
+            min_payment: 25,
+            order_index: 0
+        }]).select();
+
+        if (error) {
+            console.error("Failed to create CC Debt:", error.message);
+            return;
+        }
+        ccDebt = data[0];
+        debts.value.push(ccDebt); // Add to local UI
+    }
+
+    // 3. Calculate the shift
+    // If paying a bill (isNowPaid = true), debt goes UP.
+    // If reversing a bill (isNowPaid = false), debt goes DOWN.
+    const amountNum = Number(amount);
+    const shift = isNowPaid ? amountNum : -amountNum;
+    const newCCBalance = Math.max(0, Number(ccDebt.balance) + shift);
+
+    // 4. Update Supabase
+    const { error: updateError } = await _supabase
+        .from('debts')
+        .update({ balance: newCCBalance })
+        .eq('id', ccDebt.id);
+
+    if (updateError) {
+        console.error("Failed to shift CC balance:", updateError.message);
+    } else {
+        // 5. Update local UI state immediately
+        ccDebt.balance = newCCBalance;
+        console.log(`CC Debt adjusted by ${shift}. New Balance: ${newCCBalance}`);
+    }
+};    
           
             // --- DATA FETCHING (with fixes) ---
             const fetchBudgetItems = async () => {
@@ -2907,12 +2956,21 @@ const billsUrgent = computed(() => {
             const saveRetirementSettings = async () => { await _supabase.from('user_settings').update({ current_age: forecastSettings.value.currentAge, retirement_age: forecastSettings.value.retirementAge, retirement_balance: forecastSettings.value.retirementBalance, expected_return: forecastSettings.value.expectedReturn }).eq('user_id', session.value.user.id); };
 
             const deleteBill = async (bill) => { if(!confirm("Remove?")) return; const { error } = await _supabase.from('ledger').delete().eq('id', bill.id); if(!error) { bills.value = bills.value.filter(b => b.id !== bill.id); renderDashboardChart(); } };
-        const toggleBillPaid = async (bill, silent = false) => {
+        const toggleBillPaid = async (bill, silent = false, method = 'debit') => {
     try {
         const isNowPaid = !bill.is_paid;
         const amount = Number(bill.amount_paid || bill.amount || 0);
 
-        // 1. BANK BALANCE ADJUSTMENT (user_settings)
+        // --- 1. CREDIT CARD SHIFT LOGIC ---
+        // If paid via Credit, we increase the CC Debt. 
+        // If reversed (unpaid), we decrease the CC Debt.
+        if (method === 'credit') {
+            // We assume handleCreditCardShift is defined in your script
+            await handleCreditCardShift(amount, isNowPaid);
+        }
+
+        // --- 2. BANK BALANCE ADJUSTMENT (user_settings) ---
+        // This represents your "Buying Power"
         let adjustment = (bill.type === 'income') 
             ? (isNowPaid ? amount : -amount) 
             : (isNowPaid ? -amount : amount);
@@ -2920,7 +2978,8 @@ const billsUrgent = computed(() => {
         const currentBal = forecastSettings.value?.currentBalance || 0;
         const newForecastBalance = Number(currentBal) + adjustment;
 
-        // 2. DEBT MATH LOGIC
+        // --- 3. SPECIFIC DEBT MATH LOGIC ---
+        // (For loans like Car, Mortgage, etc. tied to the bill)
         let debtUpdate = null;
         const targetDebtId = bill.budget_items?.debt_id || bill.debt_id;
 
@@ -2939,21 +2998,15 @@ const billsUrgent = computed(() => {
                 let interestComponent, principalComponent, newDebtBalance;
 
                 if (isNowPaid) {
-                    // PAYMENT: Calculate interest based on current balance
                     interestComponent = currentDBBalance * monthlyRate;
                     principalComponent = amount - interestComponent;
                     newDebtBalance = Math.max(0, currentDBBalance - principalComponent);
                 } else {
-                    // REVERSAL: Algebraically find original balance to avoid "rounding drift"
-                    // Formula: (Current Balance + Amount) / (1 + Monthly Rate)
                     newDebtBalance = (currentDBBalance + amount) / (1 + monthlyRate);
-                    
-                    // Derive portions for the alert display
                     principalComponent = newDebtBalance - currentDBBalance;
                     interestComponent = amount - principalComponent;
                 }
                 
-                // Round to 2 decimal places to keep Supabase happy
                 newDebtBalance = Math.round(newDebtBalance * 100) / 100;
 
                 debtUpdate = {
@@ -2966,9 +3019,9 @@ const billsUrgent = computed(() => {
             }
         }
 
-        // 3. DATABASE UPDATES
+        // --- 4. DATABASE UPDATES ---
         
-        // A. Update Ledger (Always do this)
+        // A. Update Ledger
         const { error: ledgerError } = await _supabase
             .from('ledger')
             .update({ 
@@ -2988,7 +3041,7 @@ const billsUrgent = computed(() => {
                 .eq('user_id', userId);
         }
 
-        // C. Update Debt Table
+        // C. Update Debt Table (Specific Debt)
         if (debtUpdate) {
             const { error: debtDbError } = await _supabase
                 .from('debts')
@@ -2997,8 +3050,7 @@ const billsUrgent = computed(() => {
 
             if (debtDbError) throw debtDbError;
 
-            // --- INSTANT UI UPDATE ---
-            // Update the 'debts' reactive array so the dashboard updates without a refresh
+            // Instant UI Sync for specific debt
             if (typeof debts !== 'undefined' && debts.value) {
                 const debtInList = debts.value.find(d => d.id === targetDebtId);
                 if (debtInList) {
@@ -3006,7 +3058,7 @@ const billsUrgent = computed(() => {
                 }
             }
 
-            // --- NOTIFICATION ---
+            // Notification
             if (!silent) {
                 const msg = isNowPaid 
                     ? `${debtUpdate.debtName} Payment Applied!\n\nPrincipal: $${debtUpdate.principal.toFixed(2)}\nInterest: $${debtUpdate.interest.toFixed(2)}\nNew Balance: $${debtUpdate.newBalance.toFixed(2)}`
@@ -3015,14 +3067,13 @@ const billsUrgent = computed(() => {
             }
         }
 
-        // 4. LOCAL UI SYNC
+        // --- 5. LOCAL UI SYNC ---
         bill.is_paid = isNowPaid;
         bill.paid_date = isNowPaid ? new Date().toISOString() : null;
         if (forecastSettings.value) {
             forecastSettings.value.currentBalance = newForecastBalance;
         }
         
-        // Final refresh to keep "Due Soon" and Charts synced
         await fetchBills();
         if (typeof renderDashboardChart === 'function') renderDashboardChart();
 
@@ -3527,7 +3578,7 @@ const billsUrgent = computed(() => {
                 currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
 
                 // ... other variables ...
-                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp,    
+                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift,    
                 // Deposits
                 showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit,
             };
