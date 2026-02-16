@@ -1956,7 +1956,13 @@
             // Ledger & Logging
             const showGenModal = ref(false), potentialBills = ref([]), generateMonthOffset = ref(0);
             const showExpenseModal = ref(false), editingExpenseId = ref(null);
-            const expenseData = ref({ budgetId: '', amount: '', description: '', date: new Date().toISOString().split('T')[0] });
+            const expenseData = ref({
+             budgetId: '',
+             amount: '',
+             description: '',
+             date: new Date().toISOString().split('T')[0],
+             method: 'debit' // Add this
+            });
             const showLogModal = ref(false), selectedBudgetLog = ref(null), currentLogEntries = ref([]);
 
             // Forecast
