@@ -3246,7 +3246,33 @@ const editLogEntry = (entry) => {
             const editDebt = (d) => { newDebt.value = { ...d }; editingDebtId.value = d.id; showDebtForm.value = true; };
             const addDebt = async () => { if (!newDebt.value.name || !newDebt.value.balance) return; const payload = { user_id: session.value.user.id, name: newDebt.value.name, balance: Number(newDebt.value.balance), rate: Number(newDebt.value.rate), min_payment: Number(newDebt.value.min_payment) }; let data, error; if (editingDebtId.value) { const res = await _supabase.from('debts').update(payload).eq('id', editingDebtId.value).select(); data = res.data; error = res.error; } else { const maxOrder = debts.value.length > 0 ? Math.max(...debts.value.map(d => d.order_index || 0)) : 0; payload.order_index = maxOrder + 1; const res = await _supabase.from('debts').insert([payload]).select(); data = res.data; error = res.error; } if (data) { if (editingDebtId.value) { const idx = debts.value.findIndex(d => d.id === editingDebtId.value); if (idx !== -1) debts.value[idx] = data[0]; } else { debts.value.push(data[0]); } newDebt.value = { name: '', balance: '', rate: '', min_payment: '' }; editingDebtId.value = null; showDebtForm.value = false; } else if (error) { alert("Error saving debt: " + error.message); } };
             const deleteDebt = async (d) => { if (confirm('Delete debt?')) { await _supabase.from('debts').delete().eq('id', d.id); debts.value = debts.value.filter(x => x.id !== d.id); } };
+            const recordCCPayment = async (debt, amount) => {
+    try {
+        const paymentAmount = Number(amount);
+        if (isNaN(paymentAmount) || paymentAmount <= 0) return;
 
+        // Calculate new balance (it can't go below zero)
+        const newBalance = Math.max(0, Number(debt.balance) - paymentAmount);
+
+        // Update Supabase
+        const { error } = await _supabase
+            .from('debts')
+            .update({ balance: newBalance })
+            .eq('id', debt.id);
+
+        if (error) throw error;
+
+        // Update Local UI
+        debt.balance = newBalance;
+        
+        // Success Notification
+        alert(`Success! CC balance reduced. Your Buying Power was not changed because this cash was already reserved.`);
+        
+    } catch (err) {
+        console.error("Payment failed:", err);
+        alert("Error: " + err.message);
+    }
+};
             // --- ADVISOR & TOURS & MISC ---
             const checkImpulse=()=>{if(!impulseItem.value.cost)return;showImpulseModal.value=false;renderDashboardChart();if(lowPointData.value){const futureLow=lowPointData.value.amount;if(futureLow<0)impulseResult.value={safe:false,message:`Dangerous! Hit $${futureLow}!`};else if(futureLow<forecastSettings.value.safetyMargin)impulseResult.value={safe:false,message:`Risky. Dips below safety ($${futureLow}).`};else impulseResult.value={safe:true,message:`Safe! Low: $${futureLow}`}}};
             const clearImpulse=()=>{impulseItem.value={name:'',cost:'',date:new Date().toISOString().split('T')[0]};impulseResult.value=null;renderDashboardChart()};
@@ -3676,7 +3702,7 @@ const editLogEntry = (entry) => {
                 showScenarioModal, filledScenarioCount, isScenarioActive, addExpense, fillExpense,
 
                 // Debt
-                debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, 
+                debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, recordCCPayment,
 
                 // Advisor
                 showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, 
