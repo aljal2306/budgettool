@@ -3187,17 +3187,16 @@ const editLogEntry = (entry) => {
     try {
         const isNowPaid = !bill.is_paid;
         
-        // 🟢 FIX: If we are UNPAYING, use the method already stored on the bill
-        // This ensures CC Debt is decreased when you click 'Undo'
-        const effectiveMethod = isNowPaid ? method : (bill.payment_method || 'debit');
+        // 🟢 SAFETY: If we are 'unpaying', and no method was passed, 
+        // fall back to what is already saved on the bill object.
+        const activeMethod = method || bill.payment_method || 'debit';
         
         const amount = Number(bill.amount_paid || bill.amount || 0);
 
         // --- 1. CREDIT CARD SHIFT LOGIC ---
-        if (effectiveMethod === 'credit') {
+        if (activeMethod === 'credit') {
             await handleCreditCardShift(amount, isNowPaid);
         }
-
         // --- 2. BANK BALANCE ADJUSTMENT (user_settings) ---
         // This represents your "Buying Power"
         let adjustment = (bill.type === 'income') 
