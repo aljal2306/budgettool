@@ -1724,9 +1724,9 @@
                          <span class="hidden group-hover/btn:inline font-bold text-xs">&times;</span>
                     </button>
                     
-                    <button v-else @click="toggleBillPaid(bill)" class="w-8 h-8 flex-shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center text-xs hover:bg-indigo-100 hover:text-indigo-500 transition border border-slate-200 dark:border-slate-600 shadow-sm" title="Mark as Unpaid">
-                        ✓
-                    </button>
+                    <button v-else @click="toggleBillPaid(bill, false, bill.payment_method)" ...>
+    ✓
+</button>
                     
                     <div class="flex-1 min-w-0 pr-2">
                         <div class="flex items-center gap-2">
