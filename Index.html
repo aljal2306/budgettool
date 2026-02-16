@@ -2268,6 +2268,13 @@ const billsUrgent = computed(() => {
         console.log(`CC Debt adjusted by ${shift}. New Balance: ${newCCBalance}`);
     }
 };    
+          const promptCCPayoff = (debt) => {
+    const amount = prompt(`How much did you pay toward ${debt.name}?`, debt.balance);
+    if (amount !== null) {
+        // This function was defined in our previous step!
+        recordCCPayment(debt, amount);
+    }
+};
           
             // --- DATA FETCHING (with fixes) ---
             const fetchBudgetItems = async () => {
@@ -3739,7 +3746,7 @@ const editLogEntry = (entry) => {
                 showScenarioModal, filledScenarioCount, isScenarioActive, addExpense, fillExpense,
 
                 // Debt
-                debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, recordCCPayment,
+                debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, recordCCPayment, promptCCPayoff,
 
                 // Advisor
                 showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, 
