@@ -2105,7 +2105,7 @@
             // Budget
             const currentScenarioMode = ref('survival'), dashboardMode = ref('standard');
             const showPlanner = ref(false), showAddForm = ref(false), isSubmitting = ref(false), isEditing = ref(false), editingId = ref(null);
-            const newItem = ref({ name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false });
+            const newItem = ref({ name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false, preferred_method: 'debit'});
             const showPaidBills = ref(false), categories = ref(['Mortgage/Rent', 'Essentials', 'Utilities', 'Debts', 'Entertainment', 'Subscriptions', 'Other']);
             const showChartPercentages = ref(false);
             const showPlannerModal = ref(false); // Controls the new Budget Modal
