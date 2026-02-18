@@ -2997,7 +2997,6 @@ const billsUrgent = computed(() => {
         ...item, 
         isFlexible: item.due_day === 0, 
         replaces_id: item.replaces_id || null,
-        // 🟢 This must be INSIDE the curly braces
         preferred_method: item.preferred_method || 'debit' 
     }; 
 
