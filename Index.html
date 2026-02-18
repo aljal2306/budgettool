@@ -3507,6 +3507,8 @@ const editLogEntry = (entry) => {
             if (billDate <= today) {
                 console.log(`✅ Auto-paying: ${bill.transaction_name}`);
                 
+                / 🟢 NEW LOGIC: Look up the preference from the template
+                const method = bill.budget_items?.preferred_method || 'debit';
                 // CALLING OUR PERFECTED TOGGLE
                 // Note: We pass 'true' as a second argument if we want to 
                 // suppress the 'alert()' and use the Report Modal instead.
@@ -3524,9 +3526,11 @@ const editLogEntry = (entry) => {
 };
 
             const handleReversal = async (bill, action) => {
-                // 1. REFUND THE MONEY (Update Balance & Mark Unpaid)
-                // We await this to ensure the balance is corrected first.
-                await toggleBillPaid(bill); 
+                const handleReversal = async (bill, action) => {
+                 // 1. REFUND THE MONEY
+                 // 🟢 NEW LOGIC: Pass the payment_method that was just used.
+                // Since processAutoPay just set it, it will be on the bill object.
+                await toggleBillPaid(bill, false, bill.payment_method); 
 
                 // 2. HANDLE THE SPECIFIC ACTION
                 if (action === 'onetime') {
