@@ -2371,7 +2371,8 @@ const billsUrgent = computed(() => {
                 is_variable, 
                 debt_id,
                 amount, 
-                is_autopay
+                is_autopay,
+                preferred_method
             )
         `)
         .order('due_date', { ascending: true });
