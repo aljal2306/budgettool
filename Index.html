@@ -2942,7 +2942,7 @@ const billsUrgent = computed(() => {
                         
                         // 🟢 NEW: Auto-Pay Status
                         is_autopay: newItem.value.is_autopay || false,
-                        preferred_method: editingItem.value.preferred_method || 'debit',
+                        preferred_method: newItem.value.preferred_method || 'debit',
     
                         replaces_id: newItem.value.replaces_id || null,
                         frequency: newItem.value.frequency,
