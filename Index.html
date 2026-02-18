@@ -3550,7 +3550,7 @@ const editLogEntry = (entry) => {
                 // CALLING OUR PERFECTED TOGGLE
                 // Note: We pass 'true' as a second argument if we want to 
                 // suppress the 'alert()' and use the Report Modal instead.
-                await toggleBillPaid(bill, true); 
+                await toggleBillPaid(bill, true, method); 
                 
                 processed.push(bill);
             }
@@ -3564,7 +3564,6 @@ const editLogEntry = (entry) => {
 };
 
             const handleReversal = async (bill, action) => {
-                const handleReversal = async (bill, action) => {
                  // 1. REFUND THE MONEY
                  // 🟢 NEW LOGIC: Pass the payment_method that was just used.
                  // Since processAutoPay just set it, it will be on the bill object.
