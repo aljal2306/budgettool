@@ -3567,7 +3567,7 @@ const editLogEntry = (entry) => {
                 const handleReversal = async (bill, action) => {
                  // 1. REFUND THE MONEY
                  // 🟢 NEW LOGIC: Pass the payment_method that was just used.
-                // Since processAutoPay just set it, it will be on the bill object.
+                 // Since processAutoPay just set it, it will be on the bill object.
                 await toggleBillPaid(bill, false, bill.payment_method); 
 
                 // 2. HANDLE THE SPECIFIC ACTION
