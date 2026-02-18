@@ -3545,7 +3545,7 @@ const editLogEntry = (entry) => {
             if (billDate <= today) {
                 console.log(`✅ Auto-paying: ${bill.transaction_name}`);
                 
-                / 🟢 NEW LOGIC: Look up the preference from the template
+                // 🟢 NEW LOGIC: Look up the preference from the template
                 const method = bill.budget_items?.preferred_method || 'debit';
                 // CALLING OUR PERFECTED TOGGLE
                 // Note: We pass 'true' as a second argument if we want to 
