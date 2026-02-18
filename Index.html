@@ -2942,7 +2942,8 @@ const billsUrgent = computed(() => {
                         
                         // 🟢 NEW: Auto-Pay Status
                         is_autopay: newItem.value.is_autopay || false,
-
+                        preferred_method: editingItem.value.preferred_method || 'debit',
+    
                         replaces_id: newItem.value.replaces_id || null,
                         frequency: newItem.value.frequency,
                         category: newItem.value.category,
@@ -2988,7 +2989,20 @@ const billsUrgent = computed(() => {
                     alert('Error saving budget item. Check console.');
                 }
             };
-            const startEditing = (item) => { isEditing.value = true; editingId.value = item.id; newItem.value = { ...item, isFlexible: item.due_day === 0, replaces_id: item.replaces_id || null }; showAddForm.value = true; };
+            const startEditing = (item) => { 
+    isEditing.value = true; 
+    editingId.value = item.id; 
+    
+    newItem.value = { 
+        ...item, 
+        isFlexible: item.due_day === 0, 
+        replaces_id: item.replaces_id || null,
+        // 🟢 This must be INSIDE the curly braces
+        preferred_method: item.preferred_method || 'debit' 
+    }; 
+
+    showAddForm.value = true; 
+};
             const resetForm = () => { isEditing.value = false; editingId.value = null; newItem.value = { name: '', amount: '', due_day: '', isFlexible: false, frequency: 'Monthly', is_core: false, is_autopay: false, is_wishlist: false, replaces_id: null, category: 'Essentials', is_variable: false }; showAddForm.value = false; };
             const deleteBudgetItem = async (item) => { 
                 if (!confirm('Delete ' + item.name + '? This will also remove all its history/logs.')) return; 
