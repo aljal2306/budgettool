@@ -2990,14 +2990,18 @@ const billsUrgent = computed(() => {
                 }
             };
             const startEditing = (item) => { 
+    if (!item) return; // Safety check
+    
     isEditing.value = true; 
     editingId.value = item.id; 
     
+    // Use Object.assign or a clean spread to ensure no properties are 'undefined'
     newItem.value = { 
-        ...item, 
-        isFlexible: item.due_day === 0, 
+        ...newItem.value, // Start with defaults
+        ...item,          // Overwrite with real data
+        isFlexible: item.due_day === 0 || item.due_day === null, 
         replaces_id: item.replaces_id || null,
-        preferred_method: item.preferred_method || 'debit' 
+        preferred_method: item.preferred_method || 'debit' // Double-check fallback
     }; 
 
     showAddForm.value = true; 
