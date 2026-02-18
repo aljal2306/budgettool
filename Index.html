@@ -854,29 +854,29 @@
                                 </div>
                                 <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 mt-3">
                                <label class="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
-                             Default Payment Account
-                               </label>
-                               <div class="grid grid-cols-2 gap-2">
-                               <button type="button" 
-                               @click="editingItem.preferred_method = 'debit'"
-                               :class="editingItem.preferred_method === 'debit' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-slate-200 dark:border-slate-700 text-slate-400'"
-                               class="flex items-center justify-center gap-2 p-2 border-2 rounded-lg transition-all">
+                            Default Payment Account
+                              </label>
+                              <div class="grid grid-cols-2 gap-2">
+                            <button type="button"  
+                              @click="newItem.preferred_method = 'debit'"
+                              :class="newItem.preferred_method === 'debit' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-slate-200 dark:border-slate-700 text-slate-400'"
+                              class="flex items-center justify-center gap-2 p-2 border-2 rounded-lg transition-all">
                               <span class="text-sm">🏦</span>
                               <span class="text-xs font-bold">Bank</span>
-                              </button>
+                            </button>
 
-                            <button type="button" 
-                            @click="editingItem.preferred_method = 'credit'"
-                            :class="editingItem.preferred_method === 'credit' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600' : 'border-slate-200 dark:border-slate-700 text-slate-400'"
+                            <button type="button"  
+                             @click="newItem.preferred_method = 'credit'"
+                             :class="newItem.preferred_method === 'credit' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600' : 'border-slate-200 dark:border-slate-700 text-slate-400'"
                             class="flex items-center justify-center gap-2 p-2 border-2 rounded-lg transition-all">
                             <span class="text-sm">💳</span>
                             <span class="text-xs font-bold">Credit</span>
-                            </button>
-                            </div>
-                            <p class="text-[10px] text-slate-400 mt-2 italic">
-                            Used by Auto-Pay and Quick-Pay to determine which balance to hit.
-                          </p>
+                           </button>
                         </div>
+                        <p class="text-[10px] text-slate-400 mt-2 italic">
+                       Used by Auto-Pay and Quick-Pay to determine which balance to hit.
+                       </p>
+                      </div>
                                 <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-blue-300 transition">
                                     <input type="checkbox" v-model="newItem.is_variable" class="text-blue-500 rounded focus:ring-blue-500">
                                     <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Variable (Grocery/Gas)</span>
