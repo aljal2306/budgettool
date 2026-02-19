@@ -316,12 +316,38 @@
                         </div>
 
                         <div class="w-full mb-8">
-                        <div id="tour-breakdown" class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-center gap-8">
-                                <div class="flex-1 w-full"><div class="w-full flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase flex items-center gap-2"><span class="bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 p-1 rounded">📊</span> Spending Breakdown</h3><div class="flex gap-2"><button @click="toggleChartMode" class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-500 dark:text-slate-300 font-bold hover:bg-slate-200">{{ showChartPercentages ? 'Show $' : 'Show %' }}</button></div></div><div class="flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg w-full justify-center"><button @click.stop="setDashboardMode('survival')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='survival'?'bg-white dark:bg-slate-600 shadow text-orange-600 dark:text-orange-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🛡️ Survival</button><button @click.stop="setDashboardMode('standard')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='standard'?'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">⚖️ Standard</button><button @click.stop="setDashboardMode('dream')" class="flex-1 px-2 py-1 text-[9px] rounded font-bold transition" :class="dashboardMode==='dream'?'bg-white dark:bg-slate-600 shadow text-purple-600 dark:text-purple-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🚀 Dream</button></div></div>
-                                <div class="flex-1 flex justify-center relative w-40 h-40"><canvas id="categoryChart"></canvas></div><div class="flex-1 w-full"><div id="cat-legend" class="text-xs text-slate-500 dark:text-slate-400"></div></div>
-                            </div>
-                        </div>
+    <div id="tour-breakdown" class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-center gap-10">
+        <div class="flex-none flex justify-center relative w-48 h-48">
+            <canvas id="categoryChart"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span class="text-[10px] uppercase text-slate-400 font-bold">Spent</span>
+                <span class="text-lg font-black dark:text-white">${{ Math.round(spendGrandTotal).toLocaleString() }}</span>
+            </div>
+        </div>
 
+        <div class="flex-1 w-full flex flex-col h-full">
+            <div class="w-full flex justify-between items-center mb-4">
+                <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase flex items-center gap-2">
+                    <span class="bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 p-1 rounded">📊</span> 
+                    Budget vs. Actual
+                </h3>
+                <div class="flex gap-2">
+                    <button @click="toggleChartMode" class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-500 dark:text-slate-300 font-bold hover:bg-slate-200">
+                        {{ showChartPercentages ? 'Show $' : 'Show %' }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg w-full mb-6">
+                <button @click.stop="setDashboardMode('survival')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='survival'?'bg-white dark:bg-slate-600 shadow text-orange-600 dark:text-orange-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🛡️ Survival</button>
+                <button @click.stop="setDashboardMode('standard')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='standard'?'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">⚖️ Standard</button>
+                <button @click.stop="setDashboardMode('dream')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='dream'?'bg-white dark:bg-slate-600 shadow text-purple-600 dark:text-purple-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🚀 Dream</button>
+            </div>
+
+            <div id="cat-legend" class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1"></div>
+        </div>
+    </div>
+</div>
          <div class="col-span-1 md:col-span-2 lg:col-span-4 mb-8">
                             <div id="tour-gift-wallet" @click="showWalletModal = true" class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-pink-400 transition relative overflow-hidden">
                                 <div class="absolute right-0 top-0 w-24 h-24 bg-pink-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-pink-500/20"></div>
@@ -2565,7 +2591,150 @@ const billsUrgent = computed(() => {
 
             const viewCardImage = (card) => { selectedCard.value = card; showImageModal.value = true; };
 
-            const renderCategoryChart = () => { const ctx = document.getElementById('categoryChart'); if (!ctx) return; if (categoryChartInstance) categoryChartInstance.destroy(); const totals = {}; let grandTotal = 0; categories.value.forEach(c => totals[c] = 0); budgetItems.value.forEach(item => { if(item.frequency === 'One-Time') return; let include = false; if(dashboardMode.value === 'survival') { if(item.is_core) include = true; } else if(dashboardMode.value === 'standard') { if(!item.is_wishlist) include = true; } else { if(item.is_wishlist) include = true; else { const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id); if(!isReplaced) include = true; } } if(include) { const cat = item.category || 'Other'; const monthlyCost = getMonthlyCost(item); totals[cat] = (totals[cat] || 0) + monthlyCost; grandTotal += monthlyCost; } }); const labels = Object.keys(totals); const rawData = Object.values(totals); const colors = ['#EF4444', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6', '#64748B']; categoryChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: rawData, backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const val = context.raw; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; return showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; } } } } } }); const legendEl = document.getElementById('cat-legend'); if(legendEl) { legendEl.innerHTML = labels.map((label, i) => { if(rawData[i] === 0) return ''; const val = rawData[i]; const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0; const displayStr = showChartPercentages.value ? `${pct}%` : `$${Math.round(val).toLocaleString()}`; return `<div class="flex justify-between items-center mb-1"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background-color:${colors[i]}"></span><span>${label}</span></div><span class="font-mono font-bold">${displayStr}</span></div>`; }).join(''); } };
+            const renderCategoryChart = () => {
+    const ctx = document.getElementById('categoryChart');
+    if (!ctx) return;
+    if (categoryChartInstance) categoryChartInstance.destroy();
+
+    const budgetTotals = {};
+    const spendTotals = {};
+    let budgetGrandTotal = 0;
+    let spendGrandTotal = 0;
+
+    // Initialize categories
+    categories.value.forEach(c => {
+        budgetTotals[c] = 0;
+        spendTotals[c] = 0;
+    });
+
+    // 1. Calculate Budget Totals (based on current dashboard mode)
+    budgetItems.value.forEach(item => {
+        if (item.frequency === 'One-Time') return;
+        let include = false;
+        
+        if (dashboardMode.value === 'survival') {
+            if (item.is_core) include = true;
+        } else if (dashboardMode.value === 'standard') {
+            if (!item.is_wishlist) include = true;
+        } else {
+            // Dream Mode logic
+            if (item.is_wishlist) include = true;
+            else {
+                const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id);
+                if (!isReplaced) include = true;
+            }
+        }
+
+        if (include) {
+            const cat = item.category || 'Other';
+            const monthlyCost = getMonthlyCost(item);
+            budgetTotals[cat] = (budgetTotals[cat] || 0) + monthlyCost;
+            budgetGrandTotal += monthlyCost;
+        }
+    });
+
+    // 2. Calculate Real-Time Spend Totals (from Ledger)
+    // Assuming 'bills' contains your ledger entries for the current view/month
+    bills.value.forEach(bill => {
+        if (bill.is_paid) {
+            // Match ledger entry to a category via its parent budget item
+            const cat = bill.budget_items?.category || 'Other';
+            const amount = Number(bill.amount_paid || bill.amount || 0);
+            if (spendTotals[cat] !== undefined) {
+                spendTotals[cat] += amount;
+                spendGrandTotal += amount;
+            }
+        }
+    });
+
+    const labels = Object.keys(budgetTotals).filter(cat => budgetTotals[cat] > 0);
+    const budgetData = labels.map(l => budgetTotals[l]);
+    const spendData = labels.map(l => spendTotals[l]);
+    
+    const colors = ['#6366f1', '#f59e0b', '#10b981', '#f43f5e', '#3b82f6', '#8b5cf6', '#64748b'];
+
+    categoryChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    // Outer Ring: Budget
+                    label: 'Budget',
+                    data: budgetData,
+                    backgroundColor: colors.map(c => c + '44'), // Transparent version
+                    hoverBackgroundColor: colors,
+                    borderWidth: 1,
+                    borderColor: '#ffffff22',
+                    weight: 1
+                },
+                {
+                    // Inner Ring: Actual Spend
+                    label: 'Actual Spend',
+                    data: spendData,
+                    backgroundColor: colors,
+                    borderWidth: 0,
+                    weight: 0.6,
+                    circumference: (ctx) => {
+                        // This makes the inner ring only fill up relative to the budget
+                        return 360; 
+                    }
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.dataset.label;
+                            const val = context.raw;
+                            const cat = context.label;
+                            const total = label === 'Budget' ? budgetGrandTotal : spendGrandTotal;
+                            const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+                            return ` ${label} (${cat}): $${Math.round(val).toLocaleString()} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 3. Update Legend with Budget vs. Actual Comparison
+    const legendEl = document.getElementById('cat-legend');
+    if (legendEl) {
+        legendEl.innerHTML = labels.map((label, i) => {
+            const bVal = budgetTotals[label];
+            const sVal = spendTotals[label];
+            const percentUsed = bVal > 0 ? Math.min(100, Math.round((sVal / bVal) * 100)) : 0;
+            const color = colors[i % colors.length];
+
+            return `
+                <div class="mb-3">
+                    <div class="flex justify-between items-center text-[10px] mb-1">
+                        <div class="flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full" style="background-color:${color}"></span>
+                            <span class="font-bold uppercase dark:text-slate-300">${label}</span>
+                        </div>
+                        <span class="font-mono ${sVal > bVal ? 'text-red-500' : 'text-slate-500'}">
+                            ${percentUsed}% Used
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div class="text-[11px] font-bold dark:text-white">$${Math.round(sVal)} <span class="text-slate-400 font-normal">/ $${Math.round(bVal)}</span></div>
+                        <div class="flex-1 mx-2 h-1 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-1">
+                            <div class="h-full" style="width: ${percentUsed}%; background-color: ${color}"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+};
             
             const setDashboardMode = (mode) => { dashboardMode.value = mode; nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); };
             const toggleChartMode = () => { showChartPercentages.value = !showChartPercentages.value; renderCategoryChart(); };
