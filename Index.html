@@ -2704,30 +2704,41 @@ const billsUrgent = computed(() => {
         }
     });
 
-    // 3. Update Legend with Budget vs. Actual Comparison
+    // 3. Update Legend with Budget vs. Actual Comparison & Warning States
     const legendEl = document.getElementById('cat-legend');
     if (legendEl) {
         legendEl.innerHTML = labels.map((label, i) => {
             const bVal = budgetTotals[label];
             const sVal = spendTotals[label];
-            const percentUsed = bVal > 0 ? Math.min(100, Math.round((sVal / bVal) * 100)) : 0;
+            const isOverBudget = sVal > bVal;
+            const percentUsed = bVal > 0 ? Math.round((sVal / bVal) * 100) : 0;
             const color = colors[i % colors.length];
 
+            // Define Warning Classes
+            const textClass = isOverBudget ? 'text-red-600 dark:text-red-400 font-black' : 'dark:text-slate-300';
+            const borderClass = isOverBudget ? 'border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-900/10' : 'border-transparent';
+
             return `
-                <div class="mb-3">
+                <div class="mb-2 p-2 rounded-lg border transition-colors ${borderClass}">
                     <div class="flex justify-between items-center text-[10px] mb-1">
                         <div class="flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full" style="background-color:${color}"></span>
-                            <span class="font-bold uppercase dark:text-slate-300">${label}</span>
+                            <span class="w-2 h-2 rounded-full ${isOverBudget ? 'animate-pulse' : ''}" style="background-color:${isOverBudget ? '#ef4444' : color}"></span>
+                            <span class="uppercase tracking-wider ${textClass}">${label}</span>
+                            ${isOverBudget ? '<span class="text-[9px] bg-red-500 text-white px-1 rounded ml-1">OVER</span>' : ''}
                         </div>
-                        <span class="font-mono ${sVal > bVal ? 'text-red-500' : 'text-slate-500'}">
-                            ${percentUsed}% Used
+                        <span class="font-mono ${isOverBudget ? 'text-red-600' : 'text-slate-500'}">
+                            ${percentUsed}%
                         </span>
                     </div>
                     <div class="flex justify-between items-end">
-                        <div class="text-[11px] font-bold dark:text-white">$${Math.round(sVal)} <span class="text-slate-400 font-normal">/ $${Math.round(bVal)}</span></div>
-                        <div class="flex-1 mx-2 h-1 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-1">
-                            <div class="h-full" style="width: ${percentUsed}%; background-color: ${color}"></div>
+                        <div class="text-[11px] font-bold dark:text-white">
+                            $${Math.round(sVal).toLocaleString()} 
+                            <span class="text-slate-400 font-normal">/ $${Math.round(bVal).toLocaleString()}</span>
+                        </div>
+                        <div class="flex-1 mx-2 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-1">
+                            <div class="h-full transition-all duration-1000" 
+                                 style="width: ${Math.min(100, percentUsed)}%; background-color: ${isOverBudget ? '#ef4444' : color}">
+                            </div>
                         </div>
                     </div>
                 </div>
