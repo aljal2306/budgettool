@@ -2616,57 +2616,42 @@ const billsUrgent = computed(() => {
     let grandTotal = 0;
     const currentMonthStr = new Date().toISOString().slice(0, 7);
 
-    // 1. Initialize all possible categories to 0
-    // This prevents the legend from trying to read 'undefined'
+    // 1. Initialize categories to 0
     categories.value.forEach(c => totals[c] = 0);
 
     if (showActualSpendMode.value) {
-        // --- ACTUAL SPEND MODE ---
-        // Inside the Actual Spend Mode loop
-bills.value.forEach(bill => {
-    const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
-    if (bill.is_paid && isThisMonth) {
-        const cat = bill.budget_items?.category || bill.category || 'Other';
-        
-        // 🛡️ The "Shield": Convert to number and fallback to 0 immediately
-        const amount = Number(bill.amount_paid) || Number(bill.amount) || 0;
-        
-        totals[cat] = (totals[cat] || 0) + amount;
-        grandTotal += amount;
-    }
-});
+        // --- ACTUAL SPEND ---
+        bills.value.forEach(bill => {
+            const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
+            if (bill.is_paid && isThisMonth) {
+                const cat = bill.budget_items?.category || bill.category || 'Other';
+                // 🛡️ Double-cast to Number and fallback to 0
+                const amount = Number(bill.amount_paid || bill.amount || 0);
+                if (!isNaN(amount)) {
+                    totals[cat] = (totals[cat] || 0) + amount;
+                    grandTotal += amount;
+                }
+            }
+        });
     } else {
         // --- BUDGET MODE ---
         budgetItems.value.forEach(item => {
             if (item.frequency === 'One-Time') return;
+            // ... (Your existing survival/standard/dream logic) ...
             
-            let include = false;
-            if (dashboardMode.value === 'survival') include = item.is_core;
-            else if (dashboardMode.value === 'standard') include = !item.is_wishlist;
-            else {
-                const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id);
-                include = item.is_wishlist || !isReplaced;
-            }
-
-            if (include) {
-                const cat = item.category || 'Other';
-                // 🟢 Safety Check: Sanitize getMonthlyCost output
-                const rawCost = typeof getMonthlyCost === 'function' ? getMonthlyCost(item) : item.amount;
-                const monthlyCost = Number(rawCost) || 0;
-                
-                totals[cat] = (totals[cat] || 0) + monthlyCost;
-                grandTotal += monthlyCost;
-            }
+            // 🛡️ Sanitize getMonthlyCost
+            const monthlyCost = Number(getMonthlyCost(item)) || 0;
+            const cat = item.category || 'Other';
+            totals[cat] = (totals[cat] || 0) + monthlyCost;
+            grandTotal += monthlyCost;
         });
     }
 
-    // 2. Filter out zero values for the Chart data
+    // 🛡️ FINAL SHIELD: If everything failed, make it 0 instead of NaN
+    if (isNaN(grandTotal)) grandTotal = 0;
+
     const labels = Object.keys(totals).filter(cat => totals[cat] > 0);
     const rawData = labels.map(l => totals[l]);
-    
-    // 3. Final NaN check for the Grand Total displayed in the center
-    const displayTotal = isNaN(grandTotal) ? 0 : grandTotal;
-
     const colors = ['#6366f1', '#f59e0b', '#10b981', '#f43f5e', '#3b82f6', '#8b5cf6', '#64748b'];
 
     categoryChartInstance = new Chart(ctx, {
@@ -2676,8 +2661,7 @@ bills.value.forEach(bill => {
             datasets: [{
                 data: rawData,
                 backgroundColor: colors,
-                borderWidth: 2,
-                borderColor: 'transparent'
+                borderWidth: 0
             }]
         },
         options: {
@@ -2689,8 +2673,8 @@ bills.value.forEach(bill => {
                 tooltip: {
                     callbacks: {
                         label: (context) => {
-                            const val = Number(context.raw) || 0;
-                            const pct = displayTotal > 0 ? Math.round((val / displayTotal) * 100) : 0;
+                            const val = context.raw || 0;
+                            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
                             return ` $${Math.round(val).toLocaleString()} (${pct}%)`;
                         }
                     }
@@ -2699,24 +2683,30 @@ bills.value.forEach(bill => {
         }
     });
 
-    // 4. Legend Update
+    // 2. Restore the Legend with Percentage Toggle
     const legendEl = document.getElementById('cat-legend');
     if (legendEl) {
-        legendEl.innerHTML = labels.length > 0 ? labels.map((label, i) => {
+        legendEl.innerHTML = labels.map((label, i) => {
             const val = totals[label] || 0;
-            const pct = displayTotal > 0 ? Math.round((val / displayTotal) * 100) : 0;
+            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
+            
+            // 🟢 Toggle logic: If showChartPercentages is true, show %, else show $
+            const displayValue = showChartPercentages.value 
+                ? `${pct}%` 
+                : `$${Math.round(val).toLocaleString()}`;
+
             return `
                 <div class="flex justify-between items-center mb-1">
                     <div class="flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full" style="background-color:${colors[i % colors.length]}"></span>
-                        <span class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">${label}</span>
+                        <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">${label}</span>
                     </div>
                     <span class="font-mono text-[11px] font-bold dark:text-slate-200">
-                        ${showChartPercentages.value ? pct + '%' : '$' + Math.round(val).toLocaleString()}
+                        ${displayValue}
                     </span>
                 </div>
             `;
-        }).join('') : '<div class="text-[10px] text-slate-400 italic">No data for this mode.</div>';
+        }).join('');
     }
 };
             
