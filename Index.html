@@ -2630,44 +2630,75 @@ const billsUrgent = computed(() => {
     if (!ctx) return;
     if (categoryChartInstance) categoryChartInstance.destroy();
 
+    // 🔍 Debug Logs: Open your browser console (F12) to see these
+    console.log("Budget Items Count:", budgetItems.value?.length || 0);
+    console.log("Current Mode:", dashboardMode.value);
+    console.log("Show Actual Mode:", showActualSpendMode.value);
+
+    // Reset reactive totals
+    grandTotal.value = 0;
     const totals = {};
-    let grandTotal = 0;
     const currentMonthStr = new Date().toISOString().slice(0, 7);
 
     // 1. Initialize categories to 0
-    categories.value.forEach(c => totals[c] = 0);
-
-    if (showActualSpendMode.value) {
-        // --- ACTUAL SPEND ---
-        bills.value.forEach(bill => {
-            const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
-            if (bill.is_paid && isThisMonth) {
-                const cat = bill.budget_items?.category || bill.category || 'Other';
-                // 🛡️ Double-cast to Number and fallback to 0
-                const amount = Number(bill.amount_paid || bill.amount || 0);
-                if (!isNaN(amount)) {
-                    totals[cat] = (totals[cat] || 0) + amount;
-                    grandTotal += amount;
-                }
-            }
-        });
-    } else {
-        // --- BUDGET MODE ---
-        budgetItems.value.forEach(item => {
-            if (item.frequency === 'One-Time') return;
-            // ... (Your existing survival/standard/dream logic) ...
-            
-            // 🛡️ Sanitize getMonthlyCost
-            const monthlyCost = Number(getMonthlyCost(item)) || 0;
-            const cat = item.category || 'Other';
-            totals[cat] = (totals[cat] || 0) + monthlyCost;
-            grandTotal += monthlyCost;
-        });
+    if (categories.value) {
+        categories.value.forEach(c => totals[c] = 0);
     }
 
-    // 🛡️ FINAL SHIELD: If everything failed, make it 0 instead of NaN
-    if (isNaN(grandTotal)) grandTotal = 0;
+    if (showActualSpendMode.value) {
+        // --- ACTUAL SPEND MODE ---
+        if (bills.value) {
+            bills.value.forEach(bill => {
+                const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
+                if (bill.is_paid && isThisMonth) {
+                    const cat = bill.budget_items?.category || bill.category || 'Other';
+                    const amount = Number(bill.amount_paid || bill.amount || 0);
+                    
+                    if (!isNaN(amount)) {
+                        totals[cat] = (totals[cat] || 0) + amount;
+                        grandTotal.value += amount;
+                    }
+                }
+            });
+        }
+    } else {
+        // --- BUDGET MODE ---
+        if (budgetItems.value) {
+            budgetItems.value.forEach(item => {
+                if (item.frequency === 'One-Time') return;
+                
+                let include = false;
+                const mode = dashboardMode.value;
 
+                // 🛡️ Explicit Mode Logic
+                if (mode === 'survival') {
+                    include = item.is_core === true;
+                } else if (mode === 'standard') {
+                    include = !item.is_wishlist;
+                } else if (mode === 'dream') {
+                    if (item.is_wishlist) {
+                        include = true;
+                    } else {
+                        // Check if this standard item is replaced by a wishlist item
+                        const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id);
+                        if (!isReplaced) include = true;
+                    }
+                }
+
+                if (include) {
+                    const cat = item.category || 'Other';
+                    const monthlyCost = Number(getMonthlyCost(item)) || 0;
+                    
+                    totals[cat] = (totals[cat] || 0) + monthlyCost;
+                    grandTotal.value += monthlyCost;
+                }
+            });
+            // Sync the progress bar goal
+            totalBudget.value = grandTotal.value;
+        }
+    }
+
+    // 2. Prepare Chart Data
     const labels = Object.keys(totals).filter(cat => totals[cat] > 0);
     const rawData = labels.map(l => totals[l]);
     const colors = ['#6366f1', '#f59e0b', '#10b981', '#f43f5e', '#3b82f6', '#8b5cf6', '#64748b'];
@@ -2679,7 +2710,9 @@ const billsUrgent = computed(() => {
             datasets: [{
                 data: rawData,
                 backgroundColor: colors,
-                borderWidth: 0
+                borderWidth: 2,
+                borderColor: 'transparent',
+                hoverOffset: 15
             }]
         },
         options: {
@@ -2691,8 +2724,8 @@ const billsUrgent = computed(() => {
                 tooltip: {
                     callbacks: {
                         label: (context) => {
-                            const val = context.raw || 0;
-                            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
+                            const val = Number(context.raw) || 0;
+                            const pct = grandTotal.value > 0 ? Math.round((val / grandTotal.value) * 100) : 0;
                             return ` $${Math.round(val).toLocaleString()} (${pct}%)`;
                         }
                     }
@@ -2701,30 +2734,33 @@ const billsUrgent = computed(() => {
         }
     });
 
-    // 2. Restore the Legend with Percentage Toggle
+    // 3. Update Legend with Toggle Logic
     const legendEl = document.getElementById('cat-legend');
     if (legendEl) {
-        legendEl.innerHTML = labels.map((label, i) => {
-            const val = totals[label] || 0;
-            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
-            
-            // 🟢 Toggle logic: If showChartPercentages is true, show %, else show $
-            const displayValue = showChartPercentages.value 
-                ? `${pct}%` 
-                : `$${Math.round(val).toLocaleString()}`;
+        if (labels.length === 0) {
+            legendEl.innerHTML = `<div class="col-span-2 text-center text-[10px] text-slate-400 italic py-4">No data found for ${dashboardMode.value} mode.</div>`;
+        } else {
+            legendEl.innerHTML = labels.map((label, i) => {
+                const val = totals[label] || 0;
+                const pct = grandTotal.value > 0 ? Math.round((val / grandTotal.value) * 100) : 0;
+                
+                const displayValue = showChartPercentages.value 
+                    ? `${pct}%` 
+                    : `$${Math.round(val).toLocaleString()}`;
 
-            return `
-                <div class="flex justify-between items-center mb-1">
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full" style="background-color:${colors[i % colors.length]}"></span>
-                        <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">${label}</span>
+                return `
+                    <div class="flex justify-between items-center mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full" style="background-color:${colors[i % colors.length]}"></span>
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">${label}</span>
+                        </div>
+                        <span class="font-mono text-[11px] font-bold dark:text-slate-200">
+                            ${displayValue}
+                        </span>
                     </div>
-                    <span class="font-mono text-[11px] font-bold dark:text-slate-200">
-                        ${displayValue}
-                    </span>
-                </div>
-            `;
-        }).join('');
+                `;
+            }).join('');
+        }
     }
 };
             
