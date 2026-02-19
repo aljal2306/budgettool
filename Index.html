@@ -2614,34 +2614,29 @@ const billsUrgent = computed(() => {
 
     const totals = {};
     let grandTotal = 0;
-    const currentMonthStr = new Date().toISOString().slice(0, 7); // "2026-02"
+    const currentMonthStr = new Date().toISOString().slice(0, 7);
 
-    // Initialize categories with 0 to prevent NaN
+    // 1. Initialize all possible categories to 0
+    // This prevents the legend from trying to read 'undefined'
     categories.value.forEach(c => totals[c] = 0);
 
     if (showActualSpendMode.value) {
-    // --- ACTUAL SPEND MODE (Everything Paid This Month) ---
-    bills.value.forEach(bill => {
-        const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
-        
-        if (bill.is_paid && isThisMonth) {
-            // 1. Look for category on the template link
-            // 2. If it's a manual expense, look for a 'category' field on the bill itself
-            // 3. Fallback to 'Other'
-            const cat = bill.budget_items?.category || bill.category || 'Other';
-            
-            const amount = Number(bill.amount_paid || bill.amount || 0);
-            
-            if (categories.value.includes(cat)) {
-                totals[cat] += amount;
-            } else {
-                totals['Other'] = (totals['Other'] || 0) + amount;
+        // --- ACTUAL SPEND MODE ---
+        bills.value.forEach(bill => {
+            const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
+            if (bill.is_paid && isThisMonth) {
+                const cat = bill.budget_items?.category || bill.category || 'Other';
+                // 🟢 Safety Check: Ensure amount is a valid number
+                const amount = Number(bill.amount_paid || bill.amount || 0);
+                
+                if (!isNaN(amount)) {
+                    totals[cat] = (totals[cat] || 0) + amount;
+                    grandTotal += amount;
+                }
             }
-            grandTotal += amount;
-        }
-    });
+        });
     } else {
-        // --- BUDGET MODE (Monthly Template) ---
+        // --- BUDGET MODE ---
         budgetItems.value.forEach(item => {
             if (item.frequency === 'One-Time') return;
             
@@ -2655,15 +2650,23 @@ const billsUrgent = computed(() => {
 
             if (include) {
                 const cat = item.category || 'Other';
-                const monthlyCost = Number(getMonthlyCost(item)) || 0;
-                totals[cat] += monthlyCost;
+                // 🟢 Safety Check: Sanitize getMonthlyCost output
+                const rawCost = typeof getMonthlyCost === 'function' ? getMonthlyCost(item) : item.amount;
+                const monthlyCost = Number(rawCost) || 0;
+                
+                totals[cat] = (totals[cat] || 0) + monthlyCost;
                 grandTotal += monthlyCost;
             }
         });
     }
 
+    // 2. Filter out zero values for the Chart data
     const labels = Object.keys(totals).filter(cat => totals[cat] > 0);
     const rawData = labels.map(l => totals[l]);
+    
+    // 3. Final NaN check for the Grand Total displayed in the center
+    const displayTotal = isNaN(grandTotal) ? 0 : grandTotal;
+
     const colors = ['#6366f1', '#f59e0b', '#10b981', '#f43f5e', '#3b82f6', '#8b5cf6', '#64748b'];
 
     categoryChartInstance = new Chart(ctx, {
@@ -2674,21 +2677,20 @@ const billsUrgent = computed(() => {
                 data: rawData,
                 backgroundColor: colors,
                 borderWidth: 2,
-                borderColor: 'transparent',
-                hoverOffset: 10
+                borderColor: 'transparent'
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '75%', // Makes the ring thinner/smaller
+            cutout: '75%',
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
                         label: (context) => {
-                            const val = context.raw;
-                            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
+                            const val = Number(context.raw) || 0;
+                            const pct = displayTotal > 0 ? Math.round((val / displayTotal) * 100) : 0;
                             return ` $${Math.round(val).toLocaleString()} (${pct}%)`;
                         }
                     }
@@ -2697,14 +2699,14 @@ const billsUrgent = computed(() => {
         }
     });
 
-    // Update Legend
+    // 4. Legend Update
     const legendEl = document.getElementById('cat-legend');
     if (legendEl) {
-        legendEl.innerHTML = labels.map((label, i) => {
-            const val = totals[label];
-            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
+        legendEl.innerHTML = labels.length > 0 ? labels.map((label, i) => {
+            const val = totals[label] || 0;
+            const pct = displayTotal > 0 ? Math.round((val / displayTotal) * 100) : 0;
             return `
-                <div class="flex justify-between items-center mb-1 group cursor-default">
+                <div class="flex justify-between items-center mb-1">
                     <div class="flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full" style="background-color:${colors[i % colors.length]}"></span>
                         <span class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">${label}</span>
@@ -2714,7 +2716,7 @@ const billsUrgent = computed(() => {
                     </span>
                 </div>
             `;
-        }).join('');
+        }).join('') : '<div class="text-[10px] text-slate-400 italic">No data for this mode.</div>';
     }
 };
             
