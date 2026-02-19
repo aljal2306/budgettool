@@ -2622,7 +2622,8 @@ const billsUrgent = computed(() => {
 
     if (showActualSpendMode.value) {
         // --- ACTUAL SPEND MODE ---
-        bills.value.forEach(bill => {
+        // Inside the Actual Spend Mode loop
+bills.value.forEach(bill => {
     const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
     if (bill.is_paid && isThisMonth) {
         const cat = bill.budget_items?.category || bill.category || 'Other';
@@ -2633,8 +2634,7 @@ const billsUrgent = computed(() => {
         totals[cat] = (totals[cat] || 0) + amount;
         grandTotal += amount;
     }
-            }
-        });
+});
     } else {
         // --- BUDGET MODE ---
         budgetItems.value.forEach(item => {
