@@ -2075,6 +2075,7 @@
             const isListening = ref(false); 
             const showForecastSettings = ref(false); // Collapsed by default
             const isEditingBalance = ref(false);
+            const showActualSpendMode = ref(false);
 
             // --- autopay
             const showAutoPayNotification = ref(false);
@@ -2613,16 +2614,26 @@ const billsUrgent = computed(() => {
     categories.value.forEach(c => totals[c] = 0);
 
     if (showActualSpendMode.value) {
-        // --- ACTUAL SPEND MODE (Current Month Only) ---
-        bills.value.forEach(bill => {
-            const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
-            if (bill.is_paid && isThisMonth) {
-                const cat = bill.budget_items?.category || 'Other';
-                const amount = Number(bill.amount_paid || bill.amount || 0);
-                totals[cat] = (totals[cat] || 0) + amount;
-                grandTotal += amount;
+    // --- ACTUAL SPEND MODE (Everything Paid This Month) ---
+    bills.value.forEach(bill => {
+        const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
+        
+        if (bill.is_paid && isThisMonth) {
+            // 1. Look for category on the template link
+            // 2. If it's a manual expense, look for a 'category' field on the bill itself
+            // 3. Fallback to 'Other'
+            const cat = bill.budget_items?.category || bill.category || 'Other';
+            
+            const amount = Number(bill.amount_paid || bill.amount || 0);
+            
+            if (categories.value.includes(cat)) {
+                totals[cat] += amount;
+            } else {
+                totals['Other'] = (totals['Other'] || 0) + amount;
             }
-        });
+            grandTotal += amount;
+        }
+    });
     } else {
         // --- BUDGET MODE (Monthly Template) ---
         budgetItems.value.forEach(item => {
@@ -4009,7 +4020,8 @@ const editLogEntry = (entry) => {
                 currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
 
                 // ... other variables ...
-                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift,    
+                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode 
+              
                 // Deposits
                 showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit,
             };
