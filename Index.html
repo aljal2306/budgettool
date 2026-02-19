@@ -2029,11 +2029,11 @@
     // --- GLOBAL UTILITIES ---
     const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
     const getMonthlyCost = (i) => {
-        let a = Number(i.amount);
-        if (i.frequency === 'Quarterly') return a / 3;
-        if (i.frequency === 'Yearly') return a / 12;
-        return i.frequency === 'One-Time' ? 0 : a;
-    };
+    let a = Number(i.amount) || 0; // 🛡️ Force 0 if amount is empty/null
+    if (i.frequency === 'Quarterly') return a / 3;
+    if (i.frequency === 'Yearly') return a / 12;
+    return i.frequency === 'One-Time' ? 0 : a;
+};
     const formatDate = (dateStr) => {
         if (!dateStr) return '';
         const [y, m, d] = dateStr.split('-');
@@ -2623,16 +2623,16 @@ const billsUrgent = computed(() => {
     if (showActualSpendMode.value) {
         // --- ACTUAL SPEND MODE ---
         bills.value.forEach(bill => {
-            const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
-            if (bill.is_paid && isThisMonth) {
-                const cat = bill.budget_items?.category || bill.category || 'Other';
-                // 🟢 Safety Check: Ensure amount is a valid number
-                const amount = Number(bill.amount_paid || bill.amount || 0);
-                
-                if (!isNaN(amount)) {
-                    totals[cat] = (totals[cat] || 0) + amount;
-                    grandTotal += amount;
-                }
+    const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
+    if (bill.is_paid && isThisMonth) {
+        const cat = bill.budget_items?.category || bill.category || 'Other';
+        
+        // 🛡️ The "Shield": Convert to number and fallback to 0 immediately
+        const amount = Number(bill.amount_paid) || Number(bill.amount) || 0;
+        
+        totals[cat] = (totals[cat] || 0) + amount;
+        grandTotal += amount;
+    }
             }
         });
     } else {
