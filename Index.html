@@ -316,35 +316,44 @@
                         </div>
 
                         <div class="w-full mb-8">
-    <div id="tour-breakdown" class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-center gap-10">
-        <div class="flex-none flex justify-center relative w-48 h-48">
+    <div id="tour-breakdown" class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-center gap-6">
+        
+        <div class="flex-none relative w-44 h-44">
             <canvas id="categoryChart"></canvas>
             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span class="text-[10px] uppercase text-slate-400 font-bold">Spent</span>
-                <span class="text-lg font-black dark:text-white">${{ Math.round(spendGrandTotal).toLocaleString() }}</span>
+                <span class="text-[9px] uppercase text-slate-400 font-black tracking-tighter">
+                    {{ showActualSpendMode ? 'Spent' : 'Budget' }}
+                </span>
+                <span class="text-lg font-black dark:text-white leading-none">
+                    ${{ Math.round(grandTotal).toLocaleString() }}
+                </span>
             </div>
         </div>
 
-        <div class="flex-1 w-full flex flex-col h-full">
-            <div class="w-full flex justify-between items-center mb-4">
-                <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase flex items-center gap-2">
-                    <span class="bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 p-1 rounded">📊</span> 
-                    Budget vs. Actual
+        <div class="flex-1 w-full">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="font-bold text-xs text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    Spending Breakdown
                 </h3>
-                <div class="flex gap-2">
-                    <button @click="toggleChartMode" class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-500 dark:text-slate-300 font-bold hover:bg-slate-200">
-                        {{ showChartPercentages ? 'Show $' : 'Show %' }}
+                
+                <div class="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                    <button @click="showActualSpendMode = false; renderCategoryChart()" 
+                            :class="!showActualSpendMode ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600' : 'text-slate-500'"
+                            class="px-3 py-1 text-[10px] font-bold rounded-md transition-all">
+                        Budget
+                    </button>
+                    <button @click="showActualSpendMode = true; renderCategoryChart()" 
+                            :class="showActualSpendMode ? 'bg-white dark:bg-slate-600 shadow-sm text-emerald-600' : 'text-slate-500'"
+                            class="px-3 py-1 text-[10px] font-bold rounded-md transition-all">
+                        Actual
                     </button>
                 </div>
             </div>
 
-            <div class="flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg w-full mb-6">
-                <button @click.stop="setDashboardMode('survival')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='survival'?'bg-white dark:bg-slate-600 shadow text-orange-600 dark:text-orange-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🛡️ Survival</button>
-                <button @click.stop="setDashboardMode('standard')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='standard'?'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">⚖️ Standard</button>
-                <button @click.stop="setDashboardMode('dream')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='dream'?'bg-white dark:bg-slate-600 shadow text-purple-600 dark:text-purple-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🚀 Dream</button>
-            </div>
+            <div v-if="!showActualSpendMode" class="flex gap-1 mb-4 opacity-80">
+                </div>
 
-            <div id="cat-legend" class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1"></div>
+            <div id="cat-legend" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1"></div>
         </div>
     </div>
 </div>
@@ -2596,107 +2605,74 @@ const billsUrgent = computed(() => {
     if (!ctx) return;
     if (categoryChartInstance) categoryChartInstance.destroy();
 
-    const budgetTotals = {};
-    const spendTotals = {};
-    let budgetGrandTotal = 0;
-    let spendGrandTotal = 0;
+    const totals = {};
+    let grandTotal = 0;
+    const currentMonthStr = new Date().toISOString().slice(0, 7); // "2026-02"
 
-    // Initialize categories
-    categories.value.forEach(c => {
-        budgetTotals[c] = 0;
-        spendTotals[c] = 0;
-    });
+    // Initialize categories with 0 to prevent NaN
+    categories.value.forEach(c => totals[c] = 0);
 
-    // 1. Calculate Budget Totals (based on current dashboard mode)
-    budgetItems.value.forEach(item => {
-        if (item.frequency === 'One-Time') return;
-        let include = false;
-        
-        if (dashboardMode.value === 'survival') {
-            if (item.is_core) include = true;
-        } else if (dashboardMode.value === 'standard') {
-            if (!item.is_wishlist) include = true;
-        } else {
-            // Dream Mode logic
-            if (item.is_wishlist) include = true;
+    if (showActualSpendMode.value) {
+        // --- ACTUAL SPEND MODE (Current Month Only) ---
+        bills.value.forEach(bill => {
+            const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
+            if (bill.is_paid && isThisMonth) {
+                const cat = bill.budget_items?.category || 'Other';
+                const amount = Number(bill.amount_paid || bill.amount || 0);
+                totals[cat] = (totals[cat] || 0) + amount;
+                grandTotal += amount;
+            }
+        });
+    } else {
+        // --- BUDGET MODE (Monthly Template) ---
+        budgetItems.value.forEach(item => {
+            if (item.frequency === 'One-Time') return;
+            
+            let include = false;
+            if (dashboardMode.value === 'survival') include = item.is_core;
+            else if (dashboardMode.value === 'standard') include = !item.is_wishlist;
             else {
                 const isReplaced = budgetItems.value.some(w => w.is_wishlist && w.replaces_id === item.id);
-                if (!isReplaced) include = true;
+                include = item.is_wishlist || !isReplaced;
             }
-        }
 
-        if (include) {
-            const cat = item.category || 'Other';
-            const monthlyCost = getMonthlyCost(item);
-            budgetTotals[cat] = (budgetTotals[cat] || 0) + monthlyCost;
-            budgetGrandTotal += monthlyCost;
-        }
-    });
-
-    // 2. Calculate Real-Time Spend Totals (from Ledger)
-    // Assuming 'bills' contains your ledger entries for the current view/month
-    bills.value.forEach(bill => {
-        if (bill.is_paid) {
-            // Match ledger entry to a category via its parent budget item
-            const cat = bill.budget_items?.category || 'Other';
-            const amount = Number(bill.amount_paid || bill.amount || 0);
-            if (spendTotals[cat] !== undefined) {
-                spendTotals[cat] += amount;
-                spendGrandTotal += amount;
+            if (include) {
+                const cat = item.category || 'Other';
+                const monthlyCost = Number(getMonthlyCost(item)) || 0;
+                totals[cat] += monthlyCost;
+                grandTotal += monthlyCost;
             }
-        }
-    });
+        });
+    }
 
-    const labels = Object.keys(budgetTotals).filter(cat => budgetTotals[cat] > 0);
-    const budgetData = labels.map(l => budgetTotals[l]);
-    const spendData = labels.map(l => spendTotals[l]);
-    
+    const labels = Object.keys(totals).filter(cat => totals[cat] > 0);
+    const rawData = labels.map(l => totals[l]);
     const colors = ['#6366f1', '#f59e0b', '#10b981', '#f43f5e', '#3b82f6', '#8b5cf6', '#64748b'];
 
     categoryChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    // Outer Ring: Budget
-                    label: 'Budget',
-                    data: budgetData,
-                    backgroundColor: colors.map(c => c + '44'), // Transparent version
-                    hoverBackgroundColor: colors,
-                    borderWidth: 1,
-                    borderColor: '#ffffff22',
-                    weight: 1
-                },
-                {
-                    // Inner Ring: Actual Spend
-                    label: 'Actual Spend',
-                    data: spendData,
-                    backgroundColor: colors,
-                    borderWidth: 0,
-                    weight: 0.6,
-                    circumference: (ctx) => {
-                        // This makes the inner ring only fill up relative to the budget
-                        return 360; 
-                    }
-                }
-            ]
+            datasets: [{
+                data: rawData,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: 'transparent',
+                hoverOffset: 10
+            }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '60%',
+            cutout: '75%', // Makes the ring thinner/smaller
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            const label = context.dataset.label;
+                        label: (context) => {
                             const val = context.raw;
-                            const cat = context.label;
-                            const total = label === 'Budget' ? budgetGrandTotal : spendGrandTotal;
-                            const pct = total > 0 ? Math.round((val / total) * 100) : 0;
-                            return ` ${label} (${cat}): $${Math.round(val).toLocaleString()} (${pct}%)`;
+                            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
+                            return ` $${Math.round(val).toLocaleString()} (${pct}%)`;
                         }
                     }
                 }
@@ -2704,43 +2680,21 @@ const billsUrgent = computed(() => {
         }
     });
 
-    // 3. Update Legend with Budget vs. Actual Comparison & Warning States
+    // Update Legend
     const legendEl = document.getElementById('cat-legend');
     if (legendEl) {
         legendEl.innerHTML = labels.map((label, i) => {
-            const bVal = budgetTotals[label];
-            const sVal = spendTotals[label];
-            const isOverBudget = sVal > bVal;
-            const percentUsed = bVal > 0 ? Math.round((sVal / bVal) * 100) : 0;
-            const color = colors[i % colors.length];
-
-            // Define Warning Classes
-            const textClass = isOverBudget ? 'text-red-600 dark:text-red-400 font-black' : 'dark:text-slate-300';
-            const borderClass = isOverBudget ? 'border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-900/10' : 'border-transparent';
-
+            const val = totals[label];
+            const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
             return `
-                <div class="mb-2 p-2 rounded-lg border transition-colors ${borderClass}">
-                    <div class="flex justify-between items-center text-[10px] mb-1">
-                        <div class="flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full ${isOverBudget ? 'animate-pulse' : ''}" style="background-color:${isOverBudget ? '#ef4444' : color}"></span>
-                            <span class="uppercase tracking-wider ${textClass}">${label}</span>
-                            ${isOverBudget ? '<span class="text-[9px] bg-red-500 text-white px-1 rounded ml-1">OVER</span>' : ''}
-                        </div>
-                        <span class="font-mono ${isOverBudget ? 'text-red-600' : 'text-slate-500'}">
-                            ${percentUsed}%
-                        </span>
+                <div class="flex justify-between items-center mb-1 group cursor-default">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full" style="background-color:${colors[i % colors.length]}"></span>
+                        <span class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">${label}</span>
                     </div>
-                    <div class="flex justify-between items-end">
-                        <div class="text-[11px] font-bold dark:text-white">
-                            $${Math.round(sVal).toLocaleString()} 
-                            <span class="text-slate-400 font-normal">/ $${Math.round(bVal).toLocaleString()}</span>
-                        </div>
-                        <div class="flex-1 mx-2 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-1">
-                            <div class="h-full transition-all duration-1000" 
-                                 style="width: ${Math.min(100, percentUsed)}%; background-color: ${isOverBudget ? '#ef4444' : color}">
-                            </div>
-                        </div>
-                    </div>
+                    <span class="font-mono text-[11px] font-bold dark:text-slate-200">
+                        ${showChartPercentages.value ? pct + '%' : '$' + Math.round(val).toLocaleString()}
+                    </span>
                 </div>
             `;
         }).join('');
