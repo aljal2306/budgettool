@@ -318,33 +318,32 @@
                         <div class="w-full mb-8">
     <div id="tour-breakdown" class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-center gap-10">
         
-        <div class="flex-none relative w-40 h-40">
+        <div class="flex-none relative w-44 h-44">
             <canvas id="categoryChart"></canvas>
             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span class="text-[9px] uppercase text-slate-400 font-black tracking-tighter">
                     {{ showActualSpendMode ? 'Total Spent' : 'Planned' }}
                 </span>
-                <span class="text-lg font-black dark:text-white leading-none">
-                    ${{ Math.round(grandTotal).toLocaleString() }}
+                <span class="text-xl font-black dark:text-white leading-none">
+                    ${{ (Number(grandTotal) || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
                 </span>
             </div>
         </div>
 
-        <div class="flex-1 w-full">
-            <div class="flex justify-between items-start mb-6">
+        <div class="flex-1 w-full flex flex-col h-full">
+            <div class="flex justify-between items-start mb-4">
                 <div>
-                    <h3 class="font-bold text-xs text-slate-400 uppercase tracking-widest">
-                        {{ showActualSpendMode ? 'Real-Time Spending' : 'Budget Allocation' }}
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase flex items-center gap-2">
+                        <span class="bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 p-1 rounded">📊</span> 
+                        Spending Breakdown
                     </h3>
-                    <div v-if="showActualSpendMode" class="mt-2 flex items-center gap-3">
-                        <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-indigo-500 transition-all duration-1000" 
-                                 :style="{ width: Math.min(100, (grandTotal / totalBudget) * 100) + '%' }"></div>
-                        </div>
-                        <span class="text-[10px] font-bold text-slate-500">{{ Math.round((grandTotal / totalBudget) * 100) }}% of Budget</span>
-                    </div>
+                    
+                    <button @click="toggleChartMode" 
+                            class="mt-1 text-[10px] font-bold text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest transition-all flex items-center gap-1">
+                        <span>{{ showChartPercentages ? '📊 View as Dollars' : '📈 View as Percent' }}</span>
+                    </button>
                 </div>
-                
+
                 <div class="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-xl shadow-inner">
                     <button @click="showActualSpendMode = false; renderCategoryChart()" 
                             :class="!showActualSpendMode ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600' : 'text-slate-400'"
@@ -359,7 +358,24 @@
                 </div>
             </div>
 
-            <div id="cat-legend" class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-2"></div>
+            <div v-if="!showActualSpendMode" class="flex gap-1 bg-slate-50 dark:bg-slate-900/50 p-1 rounded-lg w-full mb-6 border dark:border-slate-700">
+                <button @click.stop="setDashboardMode('survival')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='survival'?'bg-white dark:bg-slate-600 shadow text-orange-600 dark:text-orange-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🛡️ Survival</button>
+                <button @click.stop="setDashboardMode('standard')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='standard'?'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">⚖️ Standard</button>
+                <button @click.stop="setDashboardMode('dream')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='dream'?'bg-white dark:bg-slate-600 shadow text-purple-600 dark:text-purple-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🚀 Dream</button>
+            </div>
+
+            <div v-if="showActualSpendMode" class="mb-6 animate-fade-in">
+                <div class="flex justify-between items-center mb-1 text-[10px] font-bold text-slate-500 uppercase">
+                    <span>Overall Budget Progress</span>
+                    <span>{{ totalBudget > 0 ? Math.round((grandTotal / totalBudget) * 100) : 0 }}%</span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden border dark:border-slate-600">
+                    <div class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-1000" 
+                         :style="{ width: Math.min(100, (grandTotal / totalBudget) * 100) + '%' }"></div>
+                </div>
+            </div>
+
+            <div id="cat-legend" class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-1"></div>
         </div>
     </div>
 </div>
@@ -2082,6 +2098,8 @@
             const showForecastSettings = ref(false); // Collapsed by default
             const isEditingBalance = ref(false);
             const showActualSpendMode = ref(false);
+            const grandTotal = ref(0);
+            const totalBudget = ref(0);
 
             // --- autopay
             const showAutoPayNotification = ref(false);
@@ -4018,7 +4036,7 @@ const editLogEntry = (entry) => {
                 currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
 
                 // ... other variables ...
-                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, 
+                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, grandTotal, totalBudget,
               
                 // Deposits
                 showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit,
