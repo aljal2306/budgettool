@@ -2778,7 +2778,39 @@ const billsUrgent = computed(() => {
         }
     }
 };
+            const requestPushPermission = async () => {
+    // 1. Check if the browser supports notifications
+    if (!("Notification" in window)) {
+        alert("Your browser does not support desktop or push notifications.");
+        return;
+    }
+
+    // 2. If they already granted it, browsers don't let us turn it off via code.
+    // We have to tell the user to do it in their browser settings.
+    if (Notification.permission === "granted") {
+        alert("Alerts are already active! To turn them off, click the 'Site Information' icon (usually a lock) next to the URL in your browser's address bar.");
+        return;
+    }
+
+    // 3. The actual request (This triggers the browser popup)
+    try {
+        const permission = await Notification.requestPermission();
+        
+        if (permission === "granted") {
+            pushEnabled.value = true;
+            console.log("Permission granted! User is ready for push alerts.");
             
+            // NEXT STEP: Here is where we will eventually generate a 
+            // subscription token and save it to your Supabase 'profiles' table.
+            
+        } else if (permission === "denied") {
+            pushEnabled.value = false;
+            alert("You blocked notifications. If you change your mind, you'll need to reset permissions in your browser settings.");
+        }
+    } catch (error) {
+        console.error("Error requesting notification permission:", error);
+    }
+};
             const setDashboardMode = (mode) => { dashboardMode.value = mode; nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); };
             const toggleChartMode = () => { showChartPercentages.value = !showChartPercentages.value; renderCategoryChart(); };
 
@@ -4093,7 +4125,7 @@ const editLogEntry = (entry) => {
                 currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
 
                 // ... other variables ...
-                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, grandTotal, totalBudget,
+                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, grandTotal, totalBudget, pushEnabled, requestPushPermission,
               
                 // Deposits
                 showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit,
