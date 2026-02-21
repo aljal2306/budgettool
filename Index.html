@@ -3979,67 +3979,73 @@ const editLogEntry = (entry) => {
             watch(currentView, async (newView) => { await nextTick(); if (newView === 'dashboard') { if(bills.value.length > 0 || budgetItems.value.length > 0) { renderCategoryChart(); renderDashboardChart(); } } else if (newView === 'forecast') { fetchForecastSlots(); runForecast(); } });
 
             onMounted(() => {
-                _supabase.auth.getSession().then(({ data }) => {
-                    session.value = data.session;
-                    
-                    if (session.value) {
-                        fetchSettings();
-                        fetchIncomes();
-                        
-                        // 🟢 Main Data Chain
-                        fetchBudgetItems().then(() => {
-                            fetchBills().then(() => {
-                                // Update Charts
-                                nextTick(() => {
-                                    if (typeof renderCategoryChart === 'function') renderCategoryChart();
-                                    if (typeof renderDashboardChart === 'function') renderDashboardChart();
-                                });
+    // 🟢 Notification Check (Browser Level)
+    // Instantly checks if the user has already allowed alerts in the past
+    if ("Notification" in window) {
+        pushEnabled.value = Notification.permission === "granted";
+    }
 
-                                // ⚡ AUTO PAY TRIGGER
-                                // We wait 1 second to ensure everything is loaded and the UI is ready
-                                setTimeout(() => {
-                                    if (typeof processAutoPay === 'function') {
-                                        processAutoPay();
-                                    }
-                                }, 1000);
-                            });
-                        });
+    _supabase.auth.getSession().then(({ data }) => {
+        session.value = data.session;
+        
+        if (session.value) {
+            fetchSettings();
+            fetchIncomes();
+            
+            // 🟢 Main Data Chain
+            fetchBudgetItems().then(() => {
+                fetchBills().then(() => {
+                    // Update Charts
+                    nextTick(() => {
+                        if (typeof renderCategoryChart === 'function') renderCategoryChart();
+                        if (typeof renderDashboardChart === 'function') renderDashboardChart();
+                    });
 
-                        // 🟢 Debt Sorting Logic
-                        fetchDebts().then(() => {
-                            const el = document.getElementById('debt-list-container');
-                            if(el) {
-                                new Sortable(el, {
-                                    handle: '.sortable-handle',
-                                    animation: 150,
-                                    onEnd: async (evt) => {
-                                        const item = debts.value.splice(evt.oldIndex, 1)[0];
-                                        debts.value.splice(evt.newIndex, 0, item);
-                                        
-                                        const updates = debts.value.map((d, index) => ({
-                                            id: d.id,
-                                            order_index: index,
-                                            user_id: session.value.user.id,
-                                            name: d.name,
-                                            balance: d.balance,
-                                            rate: d.rate,
-                                            min_payment: d.min_payment
-                                        }));
-                                        await _supabase.from('debts').upsert(updates);
-                                    }
-                                });
-                            }
-                        });
-
-                        fetchForecastSlots();
-                        fetchGiftCards();
-                    }
-                });
-
-                _supabase.auth.onAuthStateChange((_, _session) => {
-                    session.value = _session;
+                    // ⚡ AUTO PAY TRIGGER
+                    // We wait 1 second to ensure everything is loaded and the UI is ready
+                    setTimeout(() => {
+                        if (typeof processAutoPay === 'function') {
+                            processAutoPay();
+                        }
+                    }, 1000);
                 });
             });
+
+            // 🟢 Debt Sorting Logic
+            fetchDebts().then(() => {
+                const el = document.getElementById('debt-list-container');
+                if(el) {
+                    new Sortable(el, {
+                        handle: '.sortable-handle',
+                        animation: 150,
+                        onEnd: async (evt) => {
+                            const item = debts.value.splice(evt.oldIndex, 1)[0];
+                            debts.value.splice(evt.newIndex, 0, item);
+                            
+                            const updates = debts.value.map((d, index) => ({
+                                id: d.id,
+                                order_index: index,
+                                user_id: session.value.user.id,
+                                name: d.name,
+                                balance: d.balance,
+                                rate: d.rate,
+                                min_payment: d.min_payment
+                            }));
+                            await _supabase.from('debts').upsert(updates);
+                        }
+                    });
+                }
+            });
+
+            fetchForecastSlots();
+            fetchGiftCards();
+        }
+    });
+
+    _supabase.auth.onAuthStateChange((_, _session) => {
+        session.value = _session;
+    });
+});
 
           // --- RETURN VARIABLES ---
             return { 
