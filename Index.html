@@ -2101,7 +2101,22 @@
         const dStr = bill.due_date.replace(/-/g, '');
         return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dStr}/${dStr}`;
     };
+  
+      // Helper to convert VAPID key for the browser
+    const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
 
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+};
     createApp({
         setup() {
             // --- STATE VARIABLES ---
@@ -2781,12 +2796,7 @@ const billsUrgent = computed(() => {
 };
             const requestPushPermission = async () => {
     if (!("Notification" in window)) {
-        alert("Your browser does not support desktop or push notifications.");
-        return;
-    }
-
-    if (Notification.permission === "granted") {
-        alert("Alerts are already active! To turn them off, click the 'Site Information' icon next to the URL.");
+        alert("Your browser does not support push notifications.");
         return;
     }
 
@@ -2797,21 +2807,45 @@ const billsUrgent = computed(() => {
             pushEnabled.value = true;
             console.log("Permission granted! Registering Service Worker...");
             
-            // 🟢 NEW: Register the Service Worker
             if ('serviceWorker' in navigator) {
+                // 1. Register the catcher
                 const registration = await navigator.serviceWorker.register('/sw.js');
-                console.log('Service Worker registered with scope:', registration.scope);
                 
-                // 🟢 NEXT UP: Generate the subscription token here
-                // We will need a VAPID Public Key for this next part!
+                // 2. YOUR VAPID PUBLIC KEY GOES HERE
+                const publicVapidKey = 'BIJjH2sQIaRhZvyDfhEuqmEbTjKIk9RDX6Fvz7znLlOaKW3QAdl9XGYa6GT3Hyc2rGdRlDhE_Tz0F9ES-6rdPwY';
+                
+                // 3. Create the Subscription (The "Mailing Address")
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+                });
+                
+                console.log("Subscription generated:", subscription);
+
+                // 4. Save to Supabase
+                // Assuming you have a 'profiles' or 'settings' table attached to the user
+                if (session.value?.user?.id) {
+                    const { error } = await _supabase
+                        .from('profiles') // Change this if your table is named differently
+                        .update({ 
+                            push_enabled: true,
+                            push_subscription: JSON.parse(JSON.stringify(subscription)) 
+                        })
+                        .eq('id', session.value.user.id);
+                        
+                    if (error) {
+                        console.error("Error saving subscription to Supabase:", error);
+                    } else {
+                        console.log("Successfully securely linked device to Supabase!");
+                    }
+                }
             }
             
-        } else if (permission === "denied") {
+        } else {
             pushEnabled.value = false;
-            alert("You blocked notifications. You'll need to reset permissions in your browser settings to enable them.");
         }
     } catch (error) {
-        console.error("Error requesting notification permission:", error);
+        console.error("Error in notification flow:", error);
     }
 };
             const setDashboardMode = (mode) => { dashboardMode.value = mode; nextTick(() => { renderCategoryChart(); renderDashboardChart(); }); };
