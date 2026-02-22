@@ -2794,6 +2794,30 @@ const billsUrgent = computed(() => {
         }
     }
 };
+          const testNotification = async () => {
+    if (!session.value?.user?.id) {
+        alert("You must be logged in to test notifications.");
+        return;
+    }
+
+    console.log("Firing the Edge Function...");
+
+    // Call the Supabase Edge Function
+    const { data, error } = await _supabase.functions.invoke('send-push-alert', {
+        body: {
+            user_id: session.value.user.id,
+            title: "🔔 It Works!",
+            body: "Your finance dashboard is now sending live alerts."
+        }
+    });
+
+    if (error) {
+        console.error("❌ Function Error:", error);
+        alert("Something went wrong. Check the console.");
+    } else {
+        console.log("✅ Success! Check your screen.", data);
+    }
+};
             const requestPushPermission = async () => {
     if (!("Notification" in window)) {
         alert("Your browser does not support push notifications.");
@@ -4162,7 +4186,7 @@ const editLogEntry = (entry) => {
                 currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
 
                 // ... other variables ...
-                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, grandTotal, totalBudget, pushEnabled, requestPushPermission,
+                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, grandTotal, totalBudget, pushEnabled, requestPushPermission, testNotification,
               
                 // Deposits
                 showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit,
