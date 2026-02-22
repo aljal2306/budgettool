@@ -259,15 +259,6 @@
                     {{ pushEnabled ? 'Alerts On' : 'Enable Alerts' }}
                 </span>
             </div>
-            <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-700 w-full transition-colors"
-     :class="pushEnabled ? 'bg-emerald-50/30 border-emerald-100 dark:border-emerald-900/30' : ''">
-    <div class="flex items-center gap-2">
-        <span class="text-sm">{{ pushEnabled ? '🔔' : '🔕' }}</span>
-        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-            {{ pushEnabled ? 'Push Alerts Active' : 'Enable Alerts' }}
-        </span>
-    </div>
-    
     <div class="flex gap-2">
         <button v-if="pushEnabled" @click="testNotification" 
                 class="px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded transition-all bg-amber-100 text-amber-700 hover:bg-amber-200">
