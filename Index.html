@@ -252,24 +252,27 @@
         </div>
 
         <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 px-2 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 w-full"
-             :class="pushEnabled ? 'bg-emerald-50/30 border-emerald-100 dark:border-emerald-900/30' : ''">
-            <div class="flex items-center gap-1.5">
-                <span class="text-xs">{{ pushEnabled ? '🔔' : '🔕' }}</span>
-                <span class="text-[9px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                    {{ pushEnabled ? 'Alerts On' : 'Enable Alerts' }}
-                </span>
-    <div class="flex gap-2">
+     :class="pushEnabled ? 'bg-emerald-50/30 border-emerald-100 dark:border-emerald-900/30' : ''">
+    
+    <div class="flex items-center gap-1.5">
+        <span class="text-xs">{{ pushEnabled ? '🔔' : '🔕' }}</span>
+        <span class="text-[9px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+            {{ pushEnabled ? 'Alerts On' : 'Enable Alerts' }}
+        </span>
+    </div> <div class="flex gap-2">
         <button v-if="pushEnabled" @click="testNotification" 
                 class="px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded transition-all bg-amber-100 text-amber-700 hover:bg-amber-200">
             Test
         </button>
-            <button @click="requestPushPermission" 
-                    class="px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded transition-all"
-                    :class="pushEnabled ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-sm'">
-                {{ pushEnabled ? 'Manage' : 'Turn On' }}
-            </button>
-        </div>
+        
+        <button @click="requestPushPermission" 
+                class="px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded transition-all"
+                :class="pushEnabled ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-sm'">
+            {{ pushEnabled ? 'Manage' : 'Turn On' }}
+        </button>
     </div>
+    
+</div>
 
     <div class="flex-1 overflow-y-auto space-y-3 relative z-10 pr-1 pb-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600">
         <div v-for="bill in upcomingBills" :key="bill.id" 
