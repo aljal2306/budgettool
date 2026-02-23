@@ -71,18 +71,49 @@
         <div class="min-h-screen transition-colors duration-300 dark:bg-slate-900 dark:text-slate-100 p-4 md:p-8 pb-20">
             <div class="max-w-6xl mx-auto">
 
-                <div v-if="!session" class="min-h-[80vh] flex flex-col items-center justify-center print:hidden">
-                    <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-100 dark:border-slate-700 text-center">
-                        <div class="text-6xl mb-6">🔐</div>
-                        <h1 class="text-2xl font-black mb-2 text-slate-900 dark:text-white">Finance Master</h1>
-                        <p class="text-slate-400 text-sm mb-6">Enter your email to receive a Magic Link.</p>
-                        <input v-model="authEmail" type="email" placeholder="name@example.com" class="w-full p-4 border border-slate-200 dark:border-slate-600 rounded-xl mb-4 bg-slate-50 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" @keyup.enter="handleLogin">
-                        <button @click="handleLogin" :disabled="loading" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-4 rounded-xl hover:bg-slate-800 dark:hover:bg-emerald-500 disabled:opacity-50 shadow-lg">
-                            {{ loading ? 'Sending...' : 'Send Magic Link' }}
-                        </button>
-                        <p v-if="authMessage" class="mt-4 text-emerald-600 dark:text-emerald-400 text-sm p-3 bg-emerald-50 dark:bg-slate-700 rounded-lg font-bold border border-emerald-100 dark:border-slate-600">{{ authMessage }}</p>
-                    </div>
-                </div>
+               <div v-if="!session" class="min-h-[80vh] flex flex-col items-center justify-center print:hidden">
+    <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-100 dark:border-slate-700 text-center">
+        <div class="text-6xl mb-6">🔐</div>
+        <h1 class="text-2xl font-black mb-2 text-slate-900 dark:text-white">Finance Master</h1>
+        
+        <div v-if="!isWaitingForCode">
+            <p class="text-slate-400 text-sm mb-6">Enter your email to receive a secure login code.</p>
+            
+            <input v-model="authEmail" type="email" placeholder="name@example.com" 
+                   class="w-full p-4 border border-slate-200 dark:border-slate-600 rounded-xl mb-4 bg-slate-50 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                   @keyup.enter="handleLogin">
+                   
+            <button @click="handleLogin" :disabled="loading" 
+                    class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-4 rounded-xl hover:bg-slate-800 dark:hover:bg-emerald-500 disabled:opacity-50 shadow-lg transition">
+                {{ loading ? 'Sending...' : 'Send Login Code' }}
+            </button>
+        </div>
+
+        <div v-if="isWaitingForCode">
+            <p class="text-slate-400 text-sm mb-6">
+                Enter the 6-digit code sent to<br>
+                <span class="font-bold text-slate-700 dark:text-slate-300">{{ authEmail }}</span>
+            </p>
+            
+            <input v-model="authCode" type="text" placeholder="123456" maxlength="6"
+                   class="w-full p-4 border border-slate-200 dark:border-slate-600 rounded-xl mb-4 bg-slate-50 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center text-3xl tracking-[0.4em] font-mono" 
+                   @keyup.enter="verifyCode">
+                   
+            <button @click="verifyCode" :disabled="loading" 
+                    class="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 disabled:opacity-50 shadow-lg transition mb-4">
+                {{ loading ? 'Verifying...' : 'Verify & Log In' }}
+            </button>
+            
+            <button @click="isWaitingForCode = false" class="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white underline transition">
+                Use a different email
+            </button>
+        </div>
+
+        <p v-if="authMessage" class="mt-4 text-emerald-600 dark:text-emerald-400 text-sm p-3 bg-emerald-50 dark:bg-slate-800/50 rounded-lg font-bold border border-emerald-100 dark:border-slate-600/50">
+            {{ authMessage }}
+        </p>
+    </div>
+</div>
 
                 <div v-else>
                    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 print:hidden">
@@ -4190,7 +4221,7 @@ const editLogEntry = (entry) => {
           // --- RETURN VARIABLES ---
             return { 
                 session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, 
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening, authCode, isWaitingForCode,
 
                 // Onboarding
                 showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, 
