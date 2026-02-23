@@ -2142,6 +2142,8 @@
             const grandTotal = ref(0);
             const totalBudget = ref(0);
             const pushEnabled = ref(false);
+            const authCode = ref(''); // Holds the 6-digit code the user types
+            const isWaitingForCode = ref(false); // Toggles the UI from Email -> Code
 
             // --- autopay
             const showAutoPayNotification = ref(false);
@@ -2363,7 +2365,42 @@
 });
             // --- 3. HELPER FUNCTIONS ---
             const toggleDarkMode = () => { isDarkMode.value = !isDarkMode.value; if(isDarkMode.value) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light'); };
-            const handleLogin = async () => { loading.value = true; const { error } = await _supabase.auth.signInWithOtp({ email: authEmail.value }); if (error) alert(error.message); else authMessage.value = "Check your email for the Magic Link!"; loading.value = false; };
+            // 1. Send the email with the 6-digit code
+const handleLogin = async () => { 
+    loading.value = true; 
+    const { error } = await _supabase.auth.signInWithOtp({ 
+        email: authEmail.value 
+    }); 
+    
+    if (error) {
+        alert(error.message); 
+    } else { 
+        authMessage.value = "Code sent! Check your email for the 6-digit pin."; 
+        isWaitingForCode.value = true; // Switches the UI to ask for the code
+    } 
+    loading.value = false; 
+};
+
+// 2. NEW: Verify the code they typed in
+const verifyCode = async () => {
+    loading.value = true;
+    const { error } = await _supabase.auth.verifyOtp({
+        email: authEmail.value,
+        token: authCode.value,
+        type: 'email'
+    });
+
+    if (error) {
+        alert("Invalid code. Please try again.");
+        authMessage.value = "Invalid code.";
+    } else {
+        authMessage.value = "Logged in successfully!";
+        isWaitingForCode.value = false; // Reset the UI
+        authCode.value = ''; // Clear the input
+        // Supabase will automatically update your session.value here!
+    }
+    loading.value = false;
+};
             const handleLogout = async () => { await _supabase.auth.signOut(); session.value = null; const cleanUrl = window.location.origin + window.location.pathname; window.history.replaceState(null, '', cleanUrl); window.location.href = cleanUrl; };
             const resetChat = () => { chatMessages.value = []; };
             const printReport = () => { window.print(); };
