@@ -2857,23 +2857,22 @@ const billsUrgent = computed(() => {
                 
                 console.log("Subscription generated:", subscription);
 
-                // 4. Save to Supabase
-                // Assuming you have a 'profiles' or 'settings' table attached to the user
-                if (session.value?.user?.id) {
-                    const { error } = await _supabase
-                        .from('profiles') // Change this if your table is named differently
-                        .update({ 
-                            push_enabled: true,
-                            push_subscription: JSON.parse(JSON.stringify(subscription)) 
-                        })
-                        .eq('id', session.value.user.id);
-                        
-                    if (error) {
-                        console.error("Error saving subscription to Supabase:", error);
-                    } else {
-                        console.log("Successfully securely linked device to Supabase!");
-                    }
+                // Save to Supabase (Using Upsert to guarantee the row is created)
+               if (session.value?.user?.id) {
+               const { error } = await _supabase
+               .from('profiles')
+               .upsert({ 
+                id: session.value.user.id, // Force it to create the row with your exact ID
+                 push_enabled: true,
+                 push_subscription: JSON.parse(JSON.stringify(subscription)) 
+                 }); // 🟢 Notice we removed the .eq() line here!
+        
+            if (error) {
+             console.error("❌ Error saving to Supabase:", error);
+             } else {
+              console.log("✅ Successfully securely linked device to Supabase!");
                 }
+              }
             }
             
         } else {
