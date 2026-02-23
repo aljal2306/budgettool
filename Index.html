@@ -2415,7 +2415,8 @@ const handleLogin = async () => {
 // 2. NEW: Verify the code they typed in
 const verifyCode = async () => {
     loading.value = true;
-    const { error } = await _supabase.auth.verifyOtp({
+    
+    const { data, error } = await _supabase.auth.verifyOtp({
         email: authEmail.value,
         token: authCode.value,
         type: 'email'
@@ -2428,7 +2429,20 @@ const verifyCode = async () => {
         authMessage.value = "Logged in successfully!";
         isWaitingForCode.value = false; // Reset the UI
         authCode.value = ''; // Clear the input
-        // Supabase will automatically update your session.value here!
+        
+        // 1. Tell Vue we are officially logged in
+        if (data?.session) {
+            session.value = data.session;
+        }
+        
+        // 2. WAKE UP THE DASHBOARD! Fetch all the data:
+        fetchSettings();
+        fetchBudgetItems();
+        fetchIncomes();
+        fetchBills();
+        fetchDebts();
+        fetchForecastSlots();
+        fetchGiftCards();
     }
     loading.value = false;
 };
