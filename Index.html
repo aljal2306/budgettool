@@ -2774,6 +2774,9 @@ const billsUrgent = computed(() => {
         // --- ACTUAL SPEND MODE ---
         if (bills.value) {
             bills.value.forEach(bill => {
+                // 🛑 THE BOUNCER: If this is an income deposit, skip it entirely!
+                if (bill.type === 'income') return;
+
                 const isThisMonth = bill.due_date && bill.due_date.startsWith(currentMonthStr);
                 if (bill.is_paid && isThisMonth) {
                     const cat = bill.budget_items?.category || bill.category || 'Other';
