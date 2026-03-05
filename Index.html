@@ -3311,7 +3311,17 @@ const billsUrgent = computed(() => {
             const calculateAndSave = async (mode) => {
                 savingBase.value = true;
                 const { name, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding } = calcInputs.value;
-                const payPeriods = 24; const grossPay = (salary / payPeriods) + (Number(commission)||0); const benefitAmt = Number(medical) + Number(dental) + Number(fsa);
+                let payPeriods = 24; // Default fallback
+                 if (payFrequency === 'Monthly') {
+                 payPeriods = 12;
+                 } else if (payFrequency === 'Bi-Weekly') {
+                 payPeriods = 26;
+                 } else if (payFrequency === 'Weekly') {
+                 payPeriods = 52;
+                 } else if (payFrequency === 'Semi-Monthly') {
+                 payPeriods = 24;
+                 }
+                const grossPay = (salary / payPeriods) + (Number(commission)||0); const benefitAmt = Number(medical) + Number(dental) + Number(fsa);
                 const ficaWages = Math.max(0, grossPay - benefitAmt); const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0);
                 const tradAmt = grossPay * (Number(trad401k) / 100); const rothAmt = grossPay * (Number(roth401k) / 100); const taxable = grossPay - tradAmt - benefitAmt; const annualTaxable = Math.max(0, (taxable * payPeriods));
                 let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods); if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods); if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding); fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod);
