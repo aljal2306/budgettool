@@ -1596,30 +1596,117 @@
                     </transition>
 
                     <transition name="fade">
-                        <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative">
-                                <div class="h-1.5 w-full bg-slate-100"><div class="h-full bg-emerald-500 transition-all duration-500" :style="{ width: (onboardingStep / 5) * 100 + '%' }"></div></div>
-                                <div class="p-8">
-                                    <button @click="showOnboarding = false" class="absolute top-4 right-4 text-slate-300 hover:text-slate-500 font-bold">&times;</button>
-                                    <div v-if="onboardingStep === 1" class="space-y-6">
-                                        <div class="text-center"><div class="text-5xl mb-2">💸</div><h2 class="text-xl font-bold text-slate-900">Let's Get Paid</h2><p class="text-sm text-slate-500">We need accurate numbers to calculate your real take-home pay.</p></div>
-                                        <div class="space-y-3">
-                                            <div class="grid grid-cols-1 gap-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Income Name</label><input v-model="onboardingData.incomeName" type="text" class="w-full p-2 border rounded-lg bg-slate-50" placeholder="e.g. Job 1"></div></div>
-                                            <div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Annual Salary</label><input v-model.number="onboardingData.salary" type="number" class="w-full p-2 border rounded-lg bg-slate-50" placeholder="$"></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Frequency</label><select v-model="onboardingData.frequency" class="w-full p-2 border rounded-lg bg-slate-50 text-sm"><option value="Bi-Weekly">Bi-Weekly</option><option value="Semi-Monthly">15th/30th</option><option value="Monthly">Monthly</option></select></div></div>
-                                            <div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filing Status</label><select v-model="onboardingData.filingStatus" class="w-full p-2 border rounded-lg text-sm bg-white"><option value="Single">Single</option><option value="Married">Married Filing Jointly</option><option value="Head">Head of Household</option></select></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">State Tax %</label><input v-model.number="onboardingData.stateTaxRate" type="number" step="0.1" class="w-full p-2 border rounded-lg text-sm bg-white" placeholder="0.0"></div></div>
-                                            <div class="p-3 bg-blue-50 rounded-xl border border-blue-100"><p class="text-[10px] font-bold text-blue-500 uppercase mb-2">Deductions (Per Paycheck)</p><div class="grid grid-cols-3 gap-2"><div><label class="block text-[9px] text-blue-400 uppercase">Medical</label><input v-model.number="onboardingData.medical" type="number" class="w-full p-1.5 border border-blue-200 rounded text-center text-sm" placeholder="$"></div><div><label class="block text-[9px] text-blue-400 uppercase">Dental</label><input v-model.number="onboardingData.dental" type="number" class="w-full p-1.5 border border-blue-200 rounded text-center text-sm" placeholder="$"></div><div><label class="block text-[9px] text-blue-400 uppercase">401k %</label><input v-model.number="onboardingData.trad401k" type="number" class="w-full p-1.5 border border-blue-200 rounded text-center text-sm" placeholder="%"></div></div></div>
-                                        </div>
-                                    </div>
-                                    <div v-if="onboardingStep === 2" class="space-y-6"><div class="text-center"><div class="text-5xl mb-2">🏦</div><h2 class="text-xl font-bold text-slate-900">Current Standing</h2><p class="text-sm text-slate-500">Where are you right now?</p></div><div class="space-y-3"><div><label class="text-xs font-bold text-slate-400 uppercase">Current Bank Balance</label><input v-model.number="onboardingData.balance" type="number" class="w-full p-3 border rounded-xl bg-slate-50 font-bold" placeholder="$0.00"></div><div><label class="text-xs font-bold text-slate-400 uppercase">Safety Margin</label><input v-model.number="onboardingData.safety" type="number" class="w-full p-3 border rounded-xl bg-slate-50 font-bold" placeholder="$2,000"><p class="text-[10px] text-slate-400 mt-1">Minimum cash you want to keep in checking.</p></div></div></div>
-                                    <div v-if="onboardingStep === 3" class="space-y-6"><div class="text-center"><div class="text-5xl mb-2">🏠</div><h2 class="text-xl font-bold text-slate-900">First Bill or Budget</h2><p class="text-sm text-slate-500">Add a fixed bill (Rent) or a variable budget (Groceries).</p></div><div class="space-y-3"><input v-model="onboardingData.billName" placeholder="Name (e.g. Rent or Groceries)" class="w-full p-3 border rounded-xl bg-slate-50"><div class="grid grid-cols-2 gap-3"><input v-model.number="onboardingData.billAmount" type="number" placeholder="Amount ($)" class="w-full p-3 border rounded-xl bg-slate-50"><input v-if="!onboardingData.isVariable" v-model.number="onboardingData.billDay" type="number" placeholder="Due Day (1-31)" class="w-full p-3 border rounded-xl bg-slate-50"></div><div class="flex flex-col gap-2"><div class="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-100 rounded-xl"><input type="checkbox" v-model="onboardingData.isCore" class="w-5 h-5 text-yellow-600"><span class="text-sm text-yellow-800 font-bold">This is a Core/Essential Item</span></div><div class="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl"><input type="checkbox" v-model="onboardingData.isVariable" class="w-5 h-5 text-blue-600"><span class="text-sm text-blue-800 font-bold">This is a Variable Budget</span></div></div><label class="text-xs font-bold text-slate-400 uppercase mt-2">Category</label><select v-model="onboardingData.category" class="w-full p-2 border rounded-lg text-sm bg-white mb-2"><option v-for="cat in categories" :value="cat">{{ cat }}</option></select></div></div>
-                                    <div v-if="onboardingStep === 4" class="space-y-6"><div class="text-center"><div class="text-5xl mb-2">✨</div><h2 class="text-xl font-bold text-slate-900">Dream Item</h2><p class="text-sm text-slate-500">Something you want to fit into your monthly budget.</p></div><div class="space-y-3"><input v-model="onboardingData.wishName" placeholder="e.g. New Car Payment" class="w-full p-3 border rounded-xl bg-slate-50"><input v-model.number="onboardingData.wishAmount" type="number" placeholder="Monthly Cost ($)" class="w-full p-3 border rounded-xl bg-slate-50"></div></div>
-                                    <div v-if="onboardingStep === 5" class="space-y-6"><div class="text-center"><div class="text-5xl mb-2">🎯</div><h2 class="text-xl font-bold text-slate-900">Set a Goal</h2><p class="text-sm text-slate-500">A one-time project you are saving for.</p></div><div class="space-y-3"><input v-model="onboardingData.goalName" placeholder="e.g. Europe Trip" class="w-full p-3 border rounded-xl bg-slate-50"><input v-model.number="onboardingData.goalCost" type="number" placeholder="Total Cost ($)" class="w-full p-3 border rounded-xl bg-slate-50"></div></div>
-                                    <div class="mt-8 flex gap-3"><button v-if="onboardingStep > 1" @click="onboardingStep--" class="px-4 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-100">Back</button><button @click="nextOnboardingStep" class="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-600 transition transform active:scale-95">{{ onboardingStep === 5 ? 'Finish Setup 🚀' : 'Next' }}</button></div>
-                                </div>
+    <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        
+        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full relative transition-all duration-500 max-h-[90vh] flex flex-col" 
+             :class="onboardingStep === 0 ? 'max-w-4xl' : 'max-w-md'">
+            
+            <div v-if="onboardingStep > 0" class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <div class="h-full bg-emerald-500 transition-all duration-500" :style="{ width: (onboardingStep / 5) * 100 + '%' }"></div>
+            </div>
+            
+            <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar">
+                <button @click="showOnboarding = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xl z-50">&times;</button>
+                
+                <div v-if="onboardingStep === 0" class="animate-fade-in">
+                    <div class="text-center mb-8">
+                        <div class="text-6xl mb-4">👋</div>
+                        <h2 class="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Welcome to Total Home Finance</h2>
+                        <p class="text-slate-500 dark:text-slate-400 text-base max-w-2xl mx-auto leading-relaxed">
+                            This isn't just a ledger; it's a forward-looking cash flow engine. Before we build your plan, here is how the system works.
+                        </p>
+                    </div>
+
+                    <div class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 p-6 rounded-2xl mb-8 shadow-sm relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 text-8xl opacity-10">🏦</div>
+                        <h3 class="text-emerald-800 dark:text-emerald-300 font-black text-lg mb-2 flex items-center gap-2 relative z-10">
+                            <span>🏦</span> The Golden Rule: Balance = Spending Power
+                        </h3>
+                        <p class="text-emerald-700 dark:text-emerald-400 text-sm leading-relaxed relative z-10">
+                            The "Balance" you see in this app is your <strong>actual available cash</strong>, not necessarily the literal number sitting in your checking account. It is the money you have left to safely deploy after your cash flow is calculated.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><span>⚙️</span> The Four Pillars</h4>
+                            <ul class="text-xs text-slate-500 dark:text-slate-300 space-y-2">
+                                <li><strong class="text-slate-700 dark:text-white">🧮 Paycheck:</strong> Where money enters the system.</li>
+                                <li><strong class="text-slate-700 dark:text-white">💸 Budget:</strong> Core bills and daily expenses.</li>
+                                <li><strong class="text-slate-700 dark:text-white">⚔️ Debt:</strong> Link Budget items directly to Liabilities. Pay the bill, drop the debt!</li>
+                                <li><strong class="text-slate-700 dark:text-white">📈 Forecast:</strong> Your financial crystal ball.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2"><span>💳</span> The Points Game</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">When logging expenses, you have two choices:</p>
+                            <ul class="text-xs text-slate-500 dark:text-slate-300 space-y-2">
+                                <li><strong class="text-slate-700 dark:text-white">Debit:</strong> Instantly deducts from spending power.</li>
+                                <li><strong class="text-emerald-600 dark:text-emerald-400 font-bold">Credit:</strong> Deducts from spending power <em>and</em> adds to your Credit Card liability. Rack up points safely!</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><span>🎛️</span> Customizing Reality</h4>
+                            <ul class="text-xs text-slate-500 dark:text-slate-300 space-y-2">
+                                <li><strong class="text-slate-700 dark:text-white">🛡️ Survival, ⚖️ Standard, 🚀 Dream:</strong> Toggle your dashboard to see cash flow based on bare-minimum bills, normal spending, or fully funded wishlists.</li>
+                                <li><strong class="text-slate-700 dark:text-white">⚡ Auto Pay:</strong> Mark bills so you know what handles itself.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2"><span>🎁</span> Family Gift Cards</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
+                                Track gift card balances for <em>everyone</em> in the family. Treat them as alternative spending power so you don't burn your actual cash!
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <button @click="onboardingStep = 1" class="w-full md:w-auto bg-slate-900 dark:bg-emerald-600 text-white font-black text-lg px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transform transition-all flex items-center justify-center gap-3">
+                            I Understand — Let's Build My Plan <span>→</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="onboardingStep === 1" class="space-y-6 animate-fade-in">
+                    <div class="text-center"><div class="text-5xl mb-2">💸</div><h2 class="text-xl font-bold text-slate-900 dark:text-white">Let's Get Paid</h2><p class="text-sm text-slate-500">We need accurate numbers to calculate your real take-home pay.</p></div>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-1 gap-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Income Name</label><input v-model="onboardingData.incomeName" type="text" class="w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="e.g. Job 1"></div></div>
+                        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Annual Salary</label><input v-model.number="onboardingData.salary" type="number" class="w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="$"></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Frequency</label><select v-model="onboardingData.frequency" class="w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white text-sm"><option value="Bi-Weekly">Bi-Weekly</option><option value="Semi-Monthly">15th/30th</option><option value="Monthly">Monthly</option></select></div></div>
+                        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filing Status</label><select v-model="onboardingData.filingStatus" class="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="Single">Single</option><option value="Married">Married Filing Jointly</option><option value="Head">Head of Household</option></select></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">State Tax %</label><input v-model.number="onboardingData.stateTaxRate" type="number" step="0.1" class="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="0.0"></div></div>
+                        
+                        <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                            <p class="text-[10px] font-bold text-blue-500 dark:text-blue-400 uppercase mb-2">Deductions (Per Paycheck)</p>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div><label class="block text-[9px] text-blue-400 uppercase">Medical</label><input v-model.number="onboardingData.medical" type="number" class="w-full p-1.5 border border-blue-200 dark:border-blue-700 rounded text-center text-sm dark:bg-slate-800 dark:text-white" placeholder="$"></div>
+                                <div><label class="block text-[9px] text-blue-400 uppercase">Dental</label><input v-model.number="onboardingData.dental" type="number" class="w-full p-1.5 border border-blue-200 dark:border-blue-700 rounded text-center text-sm dark:bg-slate-800 dark:text-white" placeholder="$"></div>
+                                <div><label class="block text-[9px] text-blue-400 uppercase">401k %</label><input v-model.number="onboardingData.trad401k" type="number" class="w-full p-1.5 border border-blue-200 dark:border-blue-700 rounded text-center text-sm dark:bg-slate-800 dark:text-white" placeholder="%"></div>
                             </div>
                         </div>
-                    </transition>
+                    </div>
+                </div>
 
+                <div v-if="onboardingStep === 2" class="space-y-6 animate-fade-in"><div class="text-center"><div class="text-5xl mb-2">🏦</div><h2 class="text-xl font-bold text-slate-900 dark:text-white">Current Standing</h2><p class="text-sm text-slate-500">Where are you right now?</p></div><div class="space-y-3"><div><label class="text-xs font-bold text-slate-400 uppercase">Current Bank Balance</label><input v-model.number="onboardingData.balance" type="number" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white font-bold" placeholder="$0.00"></div><div><label class="text-xs font-bold text-slate-400 uppercase">Safety Margin</label><input v-model.number="onboardingData.safety" type="number" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white font-bold" placeholder="$2,000"><p class="text-[10px] text-slate-400 mt-1">Minimum cash you want to keep in checking.</p></div></div></div>
+                
+                <div v-if="onboardingStep === 3" class="space-y-6 animate-fade-in"><div class="text-center"><div class="text-5xl mb-2">🏠</div><h2 class="text-xl font-bold text-slate-900 dark:text-white">First Bill or Budget</h2><p class="text-sm text-slate-500">Add a fixed bill (Rent) or a variable budget (Groceries).</p></div><div class="space-y-3"><input v-model="onboardingData.billName" placeholder="Name (e.g. Rent or Groceries)" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"><div class="grid grid-cols-2 gap-3"><input v-model.number="onboardingData.billAmount" type="number" placeholder="Amount ($)" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"><input v-if="!onboardingData.isVariable" v-model.number="onboardingData.billDay" type="number" placeholder="Due Day (1-31)" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div><div class="flex flex-col gap-2"><div class="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded-xl"><input type="checkbox" v-model="onboardingData.isCore" class="w-5 h-5 text-yellow-600"><span class="text-sm text-yellow-800 dark:text-yellow-500 font-bold">This is a Core/Essential Item</span></div><div class="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl"><input type="checkbox" v-model="onboardingData.isVariable" class="w-5 h-5 text-blue-600"><span class="text-sm text-blue-800 dark:text-blue-500 font-bold">This is a Variable Budget</span></div></div><label class="text-xs font-bold text-slate-400 uppercase mt-2">Category</label><select v-model="onboardingData.category" class="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white mb-2"><option v-for="cat in categories" :value="cat">{{ cat }}</option></select></div></div>
+                
+                <div v-if="onboardingStep === 4" class="space-y-6 animate-fade-in"><div class="text-center"><div class="text-5xl mb-2">✨</div><h2 class="text-xl font-bold text-slate-900 dark:text-white">Dream Item</h2><p class="text-sm text-slate-500">Something you want to fit into your monthly budget.</p></div><div class="space-y-3"><input v-model="onboardingData.wishName" placeholder="e.g. New Car Payment" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"><input v-model.number="onboardingData.wishAmount" type="number" placeholder="Monthly Cost ($)" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div></div>
+                
+                <div v-if="onboardingStep === 5" class="space-y-6 animate-fade-in"><div class="text-center"><div class="text-5xl mb-2">🎯</div><h2 class="text-xl font-bold text-slate-900 dark:text-white">Set a Goal</h2><p class="text-sm text-slate-500">A one-time project you are saving for.</p></div><div class="space-y-3"><input v-model="onboardingData.goalName" placeholder="e.g. Europe Trip" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"><input v-model.number="onboardingData.goalCost" type="number" placeholder="Total Cost ($)" class="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div></div>
+
+                <div v-if="onboardingStep > 0" class="mt-8 flex gap-3">
+                    <button v-if="onboardingStep > 1" @click="onboardingStep--" class="px-4 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">Back</button>
+                    <button @click="nextOnboardingStep" class="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-600 transition transform active:scale-95">
+                        {{ onboardingStep === 5 ? 'Finish Setup 🚀' : 'Next' }}
+                    </button>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</transition>
                     <transition name="fade">
                         <div v-if="showImpulseModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
                             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
