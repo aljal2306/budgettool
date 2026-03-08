@@ -3171,22 +3171,42 @@ const billsUrgent = computed(() => {
         return;
     }
 
-    console.log("Firing the Edge Function...");
-
-    // Call the Supabase Edge Function
-    const { data, error } = await _supabase.functions.invoke('send-push-alert', {
-        body: {
-            user_id: session.value.user.id,
-            title: "🔔 It Works!",
-            body: "Your finance dashboard is now sending live alerts."
+    try {
+        // STEP 1: The Apple/iOS Compatibility Check
+        if (!('Notification' in window)) {
+            alert("🛑 ERROR: This browser completely blocks notifications.\n\nIf you are on an iPhone, you MUST tap 'Share' and 'Add to Home Screen', then open the app from your home screen to test this!");
+            return;
         }
-    });
 
-    if (error) {
-        console.error("❌ Function Error:", error);
-        alert("Something went wrong. Check the console.");
-    } else {
-        console.log("✅ Success! Check your screen.", data);
+        // STEP 2: Check or Request Permission
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            alert(`⚠️ WARNING: Permission is currently [ ${permission.toUpperCase()} ]. You must allow notifications for this to work.`);
+            return;
+        }
+
+        // STEP 3: Fire Your Edge Function
+        alert("✅ Permission Granted! Firing the Edge Function now...");
+        console.log("Firing the Edge Function...");
+
+        const { data, error } = await _supabase.functions.invoke('send-push-alert', {
+            body: {
+                user_id: session.value.user.id,
+                title: "🔔 It Works!",
+                body: "Your finance dashboard is now sending live alerts."
+            }
+        });
+
+        if (error) {
+            console.error("❌ Function Error:", error);
+            alert(`🚨 EDGE FUNCTION ERROR: ${error.message || 'Check the console'}`);
+        } else {
+            console.log("✅ Success! Check your screen.", data);
+            alert("🚀 Server fired the message successfully! Did the notification drop down from the top of your screen?");
+        }
+
+    } catch (err) {
+        alert(`🚨 CRITICAL BROWSER ERROR: ${err.message || err}`);
     }
 };
             const requestPushPermission = async () => {
