@@ -4077,10 +4077,92 @@ const editLogEntry = (entry) => {
                 });
                 driverObj.drive();
             };
-            const resetDemo = async () => { if(!confirm("⚠️ WARNING: DELETE ALL DATA?")) return; loading.value=true; const uid=session.value.user.id; await _supabase.from('ledger').delete().eq('user_id',uid); await _supabase.from('budget_items').delete().eq('user_id',uid); await _supabase.from('debts').delete().eq('user_id',uid); await _supabase.from('incomes').delete().eq('user_id',uid); await _supabase.from('user_settings').delete().eq('user_id',uid); window.location.reload(); };
-            const finishOnboarding=async()=>{ isSubmitting.value=true; const{balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost}=onboardingData.value; const settingsPayload = { user_id: session.value.user.id }; if(balance !== '') settingsPayload.current_balance = Number(balance); if(safety !== '') settingsPayload.safety_margin = Number(safety); if(salary !== ''){ const annualSalary = Number(salary); const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); const net = grossPay * 0.75; const finalPay=round(net); await _supabase.from('incomes').insert([{ user_id: session.value.user.id, name: incomeName || 'Main Job', amount: finalPay, frequency: frequency, next_pay_date: new Date().toISOString().split('T')[0], details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } }]); } const { error } = await _supabase.from('user_settings').upsert(settingsPayload); if(balance !== '') forecastSettings.value.currentBalance = Number(balance); if(billName&&billAmount)await _supabase.from('budget_items').insert([{ user_id:session.value.user.id, name:billName, amount:Number(billAmount), due_day: isVariable ? 0 : (Number(billDay)||1), is_core:isCore, is_variable: isVariable, category: category || 'Other', is_active:true }]); if(wishName&&wishAmount)await _supabase.from('budget_items').insert([{user_id:session.value.user.id,name:wishName,amount:Number(wishAmount),due_day:0,is_wishlist:true,is_active:true, category:'Entertainment'}]); if(goalName&&goalCost)project.value={name:goalName,cost:Number(goalCost)}; await fetchIncomes(); await fetchBudgetItems(); await fetchSettings(); confetti({particleCount:150,spread:70,origin:{y:0.6}}); showOnboarding.value=false; isSubmitting.value=false; setTimeout(() => window.location.reload(), 500); };
-            const nextOnboardingStep = async () => { if(onboardingStep.value===5) await finishOnboarding(); else onboardingStep.value++ };
-            const startWizard=()=>{onboardingStep.value=1;showOnboarding.value=true;onboardingData.value={balance:'',safety:'',salary:'',frequency:'Semi-Monthly',medical:'',dental:'',trad401k:'',filingStatus:'Single',stateTaxRate:'',billName:'',billAmount:'',billDay:1,isCore:true,isVariable:false,incomeName:'',category:'Mortgage/Rent',wishName:'',wishAmount:'',goalName:'',goalCost:''}};
+            const resetDemo = async () => { 
+    if(!confirm("⚠️ WARNING: DELETE ALL DATA?")) return; 
+    loading.value = true; 
+    const uid = session.value.user.id; 
+    await _supabase.from('ledger').delete().eq('user_id',uid); 
+    await _supabase.from('budget_items').delete().eq('user_id',uid); 
+    await _supabase.from('debts').delete().eq('user_id',uid); 
+    await _supabase.from('incomes').delete().eq('user_id',uid); 
+    await _supabase.from('user_settings').delete().eq('user_id',uid); 
+    window.location.reload(); 
+};
+
+const finishOnboarding = async () => { 
+    isSubmitting.value = true; 
+    const {balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost} = onboardingData.value; 
+    
+    const settingsPayload = { user_id: session.value.user.id }; 
+    if(balance !== '') settingsPayload.current_balance = Number(balance); 
+    if(safety !== '') settingsPayload.safety_margin = Number(safety); 
+    
+    if(salary !== ''){ 
+        const annualSalary = Number(salary); 
+        const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); 
+        const net = grossPay * 0.75; 
+        const finalPay = Math.round(net); 
+        await _supabase.from('incomes').insert([{ 
+            user_id: session.value.user.id, 
+            name: incomeName || 'Main Job', 
+            amount: finalPay, 
+            frequency: frequency, 
+            next_pay_date: new Date().toISOString().split('T')[0], 
+            details: { salary: annualSalary, medical: Number(medical), dental: Number(dental), trad401k: Number(trad401k), filingStatus: filingStatus || 'Single', stateTaxRate: Number(stateTaxRate) || 0 } 
+        }]); 
+    } 
+    
+    await _supabase.from('user_settings').upsert(settingsPayload); 
+    if(balance !== '') forecastSettings.value.currentBalance = Number(balance); 
+    
+    if(billName && billAmount) {
+        await _supabase.from('budget_items').insert([{ 
+            user_id: session.value.user.id, 
+            name: billName, 
+            amount: Number(billAmount), 
+            due_day: isVariable ? 0 : (Number(billDay) || 1), 
+            is_core: isCore, 
+            is_variable: isVariable, 
+            category: category || 'Other', 
+            is_active: true 
+        }]); 
+    }
+    
+    if(wishName && wishAmount) {
+        await _supabase.from('budget_items').insert([{
+            user_id: session.value.user.id,
+            name: wishName,
+            amount: Number(wishAmount),
+            due_day: 0,
+            is_wishlist: true,
+            is_active: true, 
+            category: 'Entertainment'
+        }]); 
+    }
+    
+    if(goalName && goalCost) project.value = {name: goalName, cost: Number(goalCost)}; 
+    
+    await fetchIncomes(); 
+    await fetchBudgetItems(); 
+    await fetchSettings(); 
+    confetti({particleCount: 150, spread: 70, origin: {y: 0.6}}); 
+    showOnboarding.value = false; 
+    isSubmitting.value = false; 
+    setTimeout(() => window.location.reload(), 500); 
+};
+
+const nextOnboardingStep = async () => { 
+    if(onboardingStep.value === 5) await finishOnboarding(); 
+    else onboardingStep.value++; 
+};
+
+const startWizard = () => {
+    onboardingStep.value = 0; // 🟢 Starts at the new Welcome Screen!
+    showOnboarding.value = true;
+    onboardingData.value = {
+        balance: '', safety: '', salary: '', frequency: 'Semi-Monthly', medical: '', dental: '', trad401k: '', filingStatus: 'Single', stateTaxRate: '', billName: '', billAmount: '', billDay: 1, isCore: true, isVariable: false, incomeName: '', category: 'Mortgage/Rent', wishName: '', wishAmount: '', goalName: '', goalCost: ''
+    };
+};
             // 🟢 NEW: Auto-Pay Processing System
             const processAutoPay = async () => {
     console.log("⚡ Auto-Pay Engine: Starting Check...");
