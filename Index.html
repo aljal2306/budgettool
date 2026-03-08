@@ -134,26 +134,34 @@
         </button>
 
         <transition name="fade">
-            <div v-if="isMobileMenuOpen" class="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-50 flex flex-col text-slate-800 dark:text-white">
-                
-                <button @click="openConsultant(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-b border-slate-100 dark:border-slate-700 touch-manipulation">
-                    <span>🤖</span> Advisor
-                </button>
-                
-                <button @click.stop.prevent="toggleDarkMode(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-b border-slate-100 dark:border-slate-700 touch-manipulation">
-                    <span>{{ isDarkMode ? '☀️' : '🌙' }}</span> {{ isDarkMode ? 'Light Mode' : 'Dark Mode' }}
-                </button>
-                
-                <button @click="exportData(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-b border-slate-100 dark:border-slate-700 touch-manipulation">
-                    <span>📥</span> Export CSV
-                </button>
-                
-                <button @click="handleLogout(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 transition touch-manipulation">
-                    <span>🚪</span> Sign Out
-                </button>
+    <div v-if="isMobileMenuOpen" class="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-50 flex flex-col text-slate-800 dark:text-white text-left">
+        
+        <button @click="openConsultant(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-b border-slate-100 dark:border-slate-700 touch-manipulation">
+            <span>🤖</span> Advisor
+        </button>
+        
+        <button @click.stop.prevent="toggleDarkMode(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-b border-slate-100 dark:border-slate-700 touch-manipulation">
+            <span>{{ isDarkMode ? '☀️' : '🌙' }}</span> {{ isDarkMode ? 'Light Mode' : 'Dark Mode' }}
+        </button>
 
-            </div>
-        </transition>
+        <button @click="startWizard(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-b border-slate-100 dark:border-slate-700 touch-manipulation">
+            <span>🚀</span> Setup Wizard
+        </button>
+        
+        <button @click="exportData(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-b border-slate-100 dark:border-slate-700 touch-manipulation">
+            <span>📥</span> Export CSV
+        </button>
+
+        <button @click="resetDemo(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-orange-500 hover:bg-orange-50 dark:hover:bg-slate-700 transition border-b border-slate-100 dark:border-slate-700 touch-manipulation">
+            <span>⚠️</span> Reset Account
+        </button>
+        
+        <button @click="handleLogout(); isMobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 transition touch-manipulation">
+            <span>🚪</span> Sign Out
+        </button>
+
+    </div>
+</transition>
     </div>
 </div>
 
@@ -622,18 +630,6 @@
                                 </div>
                             </div>
                         </transition>
-
-                        <div class="mt-12 mb-8 text-center border-t border-slate-200 dark:border-slate-700 pt-8 opacity-50 hover:opacity-100 transition flex justify-center gap-4">
-                            <button v-if="budgetItems.length === 0" @click="startWizard" class="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-6 py-3 rounded-lg font-bold hover:bg-emerald-100 hover:scale-105 transition transform shadow-sm">
-                                🚀 Start Setup Wizard
-                            </button>
-                            <button v-else @click="startWizard" class="text-xs bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-lg font-bold hover:bg-slate-100 transition">
-                                ↺ Restart Wizard
-                            </button>
-                            <button @click="resetDemo" class="text-xs bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-800 px-4 py-3 rounded-lg font-bold hover:bg-red-100 transition">
-                                ⚠️ Reset Account
-                            </button>
-                        </div>
 
                     </div>
 
