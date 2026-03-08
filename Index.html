@@ -1598,12 +1598,12 @@
                     <transition name="fade">
     <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
         
-        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full relative transition-all duration-500 max-h-[90vh] flex flex-col" 
-             :class="onboardingStep === 0 ? 'max-w-4xl' : 'max-w-md'">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full relative transition-all duration-500 max-h-[90vh] flex flex-col overflow-hidden" 
+     :class="onboardingStep === 0 ? 'max-w-4xl' : 'max-w-md'">
             
-            <div v-if="onboardingStep > 0" class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
-                <div class="h-full bg-emerald-500 transition-all duration-500" :style="{ width: (onboardingStep / 5) * 100 + '%' }"></div>
-            </div>
+    <div v-if="onboardingStep > 0" class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+        <div class="h-full bg-emerald-500 transition-all duration-500" :style="{ width: (onboardingStep / 5) * 100 + '%' }"></div>
+    </div>
             
             <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar">
                 <button @click="showOnboarding = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xl z-50">&times;</button>
