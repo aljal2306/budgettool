@@ -2416,7 +2416,27 @@
     return groups;
 });
             // --- 3. HELPER FUNCTIONS ---
-            const toggleDarkMode = () => { isDarkMode.value = !isDarkMode.value; if(isDarkMode.value) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light'); };
+            // 1. The updated toggle function
+const toggleDarkMode = () => {
+    isDarkMode.value = !isDarkMode.value;
+    localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light');
+    
+    // Forces the actual HTML document to change colors
+    if (isDarkMode.value) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+};
+
+// 2. The startup sync (Forces the screen to match the memory on load)
+onMounted(() => {
+    if (isDarkMode.value) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+});
             // 1. Send the email with the 6-digit code
 const handleLogin = async () => { 
     loading.value = true; 
