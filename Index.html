@@ -256,7 +256,7 @@
                                 </div>
                             </div>
                           
-                          <div id="tour-due-soon" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 relative overflow-hidden order-2 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                          <div id="tour-due-soon" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 border-t-4 border-t-rose-500 relative overflow-hidden order-2 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
     
     <div class="flex flex-col gap-3 mb-4 relative z-10">
         <div class="flex justify-between items-center">
@@ -346,7 +346,7 @@
         </div>
     </div>
 </div>
-                            <div id="tour-cash-flow" class="lg:col-span-2 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                            <div id="tour-cash-flow" class="lg:col-span-2 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"><div id="tour-cash-flow" class="lg:col-span-2 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 border-t-4 border-t-blue-500 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                                 <div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase flex items-center gap-2"><span class="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 p-1 rounded">📉</span> 30-Day Flow</h3><div class="flex items-center gap-2"><button @click="showImpulseModal=true" class="text-[10px] font-bold bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded hover:bg-purple-200 transition">Can I Afford It?</button><div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-700 p-1 rounded border border-slate-200 dark:border-slate-600"><span class="text-[10px] font-bold text-slate-400 uppercase px-1">Bal:</span><input type="number" v-model.number="forecastSettings.currentBalance" @change="saveSettings" @input="renderDashboardChart" class="w-16 p-0.5 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded text-right font-mono font-bold text-xs text-slate-700 dark:text-white outline-none focus:border-blue-500"></div></div></div>
                                 <div class="h-48 w-full relative"><canvas id="dashboardChart"></canvas></div>
                                 <div v-if="cashFlowLowPoint && !impulseResult" class="mt-2 flex items-center justify-center gap-2 text-xs font-medium p-2 rounded-lg border" :class="cashFlowLowPoint.amount<0?'bg-red-50 dark:bg-red-900/30 border-red-100 dark:border-red-800 text-red-700 dark:text-red-300':'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'"><span class="text-lg">{{cashFlowLowPoint.amount<0?'⚠️':'✅'}}</span> Low Point: <span class="font-mono font-bold">${{cashFlowLowPoint.amount.toLocaleString()}}</span> on {{cashFlowLowPoint.date}}</div>
@@ -355,7 +355,7 @@
                         </div>
 
                         <div class="w-full mb-8">
-    <div id="tour-breakdown" class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-center gap-10 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+    <div id="tour-breakdown" class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 border-t-4 border-t-cyan-500 flex flex-col md:flex-row items-center gap-10 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
         
         <div class="flex-none relative w-44 h-44">
             <canvas id="categoryChart"></canvas>
@@ -419,7 +419,7 @@
     </div>
 </div>
          <div class="col-span-1 md:col-span-2 lg:col-span-4 mb-8">
-                            <div id="tour-gift-wallet" @click="showWalletModal = true" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-pink-400 relative overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                            <div id="tour-gift-wallet" @click="showWalletModal = true" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 border-t-4 border-t-pink-500 cursor-pointer group hover:border-pink-400 relative overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                                 <div class="absolute right-0 top-0 w-24 h-24 bg-pink-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-pink-500/20"></div>
                                 
                                 <div class="relative z-10 flex justify-between items-start">
