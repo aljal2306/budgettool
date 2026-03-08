@@ -127,16 +127,18 @@
                                 <div class="text-xs text-slate-400 font-medium">{{ session.user.email }}</div>
                             </div>
                             <div class="md:hidden flex items-center gap-2">
-                                <button @click="toggleDarkMode" class="text-xl p-2 rounded-lg bg-slate-100 dark:bg-slate-700">
-                                    {{ isDarkMode ? '☀️' : '🌙' }}
-                                </button>
-                                <button @click="exportData" class="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 px-3 py-2 rounded-lg border border-emerald-100 dark:border-emerald-800" title="Export CSV">
-                                    📥
-                                </button>
-                                <button @click="handleLogout" class="text-xs font-bold text-red-400 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-slate-700 transition">
-                                    Sign Out
-                                </button>
-                            </div>
+                            <button @click="openConsultant" class="text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg shadow transition">
+                             🤖
+                            </button>
+                            <button @click="toggleDarkMode" class="text-xl p-2 rounded-lg bg-slate-100 dark:bg-slate-700">
+                            {{ isDarkMode ? '☀️' : '🌙' }}
+                            </button>
+                            <button @click="exportData" class="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 px-3 py-2 rounded-lg border border-emerald-100 dark:border-emerald-800" title="Export CSV">
+                            📥
+                            </button>
+                            <button @click="handleLogout" class="text-xs font-bold text-red-400 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-slate-700 transition">
+                            Sign Out
+                           </button>
                         </div>
 
                         <div class="flex items-center gap-4 w-full md:w-auto">
@@ -176,10 +178,6 @@
                                 </button>
                                 
                                 <div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 self-center"></div>
-                                
-                                <button @click="openConsultant" class="px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition whitespace-nowrap bg-indigo-600 text-white shadow hover:bg-indigo-700">
-                                    <span>🤖</span> Advisor
-                                </button>
                             </div>
 
                             <button @click="toggleDarkMode" class="hidden md:block text-xl p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition" title="Toggle Dark Mode">
@@ -197,7 +195,7 @@
                     </div>
                     <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
                         <div class="w-full flex justify-end mb-4 gap-4">
-    
+                 
                    <button @click="openDepositModal" class="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full shadow-lg shadow-emerald-500/30 transition transform hover:-translate-y-1 font-bold text-sm">
                     <span>💰</span>
                     <span> Get Paid </span>
@@ -2082,6 +2080,44 @@
         </div>
     </div>
 </transition>
+                  <nav class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] md:hidden z-50">
+  <div class="flex justify-around items-center h-16 px-1">
+    
+    <button @click="currentView = 'dashboard'" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 touch-manipulation" :class="currentView === 'dashboard' ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'">
+      <span class="text-xl mb-0.5">🏠</span>
+      <span class="text-[10px] font-bold">Home</span>
+      <div v-if="billsUrgent.length > 0" class="absolute top-1 right-3 flex h-3 w-3">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white dark:border-slate-900"></span>
+      </div>
+    </button>
+
+    <button @click="currentView = 'calculator'" class="flex flex-col items-center justify-center w-full h-full space-y-1 touch-manipulation" :class="currentView === 'calculator' ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'">
+      <span class="text-xl mb-0.5">🧮</span>
+      <span class="text-[10px] font-bold">Paycheck</span>
+    </button>
+
+    <button @click="currentView = 'budget'" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 touch-manipulation" :class="currentView === 'budget' ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'">
+      <span class="text-xl mb-0.5">💸</span>
+      <span class="text-[10px] font-bold">Budget</span>
+      <span v-if="needsNextMonthBills" class="absolute top-1 right-3 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white dark:border-slate-900"></span>
+      </span>
+    </button>
+
+    <button @click="currentView = 'forecast'" class="flex flex-col items-center justify-center w-full h-full space-y-1 touch-manipulation" :class="currentView === 'forecast' ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'">
+      <span class="text-xl mb-0.5">📈</span>
+      <span class="text-[10px] font-bold">Forecast</span>
+    </button>
+
+    <button @click="currentView = 'debt'" class="flex flex-col items-center justify-center w-full h-full space-y-1 touch-manipulation" :class="currentView === 'debt' ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'">
+      <span class="text-xl mb-0.5">⚔️</span>
+      <span class="text-[10px] font-bold">Debt</span>
+    </button>
+
+  </div>
+</nav>
 
     </div>
     
