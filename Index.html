@@ -2865,7 +2865,34 @@ const billsUrgent = computed(() => {
         console.error('Error fetching ledger:', error);
         return;
     }
+              
+    const testPushAlerts = async () => {
+    try {
+        // Step 1: Check if the browser even knows what a notification is
+        if (!('Notification' in window)) {
+            alert("🛑 ERROR: This browser does not support push notifications at all.");
+            return;
+        }
 
+        // Step 2: Request permission from the user
+        const permission = await Notification.requestPermission();
+        
+        // Step 3: Tell us what the user (or the iPhone) decided
+        alert(`🔔 STATUS: Permission is currently [ ${permission.toUpperCase()} ]`);
+        
+        // Step 4: Check for Service Workers (Required for iOS Push)
+        if ('serviceWorker' in navigator) {
+             alert("✅ GOOD NEWS: Service Workers are supported here. We can build this!");
+        } else {
+             alert("⚠️ WARNING: Service Workers are NOT supported. Push will fail.");
+        }
+
+    } catch (error) {
+        // Step 5: Catch the exact Apple error blocking us
+        alert(`🚨 CRITICAL ERROR: ${error.message || error}`);
+    }
+};
+              
     // 2. Map and Normalize the data
     bills.value = data.map(bill => {
         const template = bill.budget_items || {};
@@ -4680,7 +4707,7 @@ const startWizard = () => {
                 currentScenarioMode, addItem, updateItem, getFinancialSnapshot, generateMockResponse, scrollChat, renderCategoryChart, renderDashboardChart, fetchSettings, fetchBudgetItems, fetchBills, fetchDebts, fetchIncomes, setScenarioMode, printReport, showBillModal, totalBillDue, countBillDue,
 
                 // ... other variables ...
-                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, grandTotal, totalBudget, pushEnabled, requestPushPermission, testNotification,
+                currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, grandTotal, totalBudget, pushEnabled, requestPushPermission, testNotification, testPushAlerts,
               
                 // Deposits
                 showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit,
