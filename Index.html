@@ -2196,6 +2196,7 @@
             const pushEnabled = ref(false);
             const authCode = ref(''); // Holds the 6-digit code the user types
             const isWaitingForCode = ref(false); // Toggles the UI from Email -> Code
+            const isMobileMenuOpen = ref(false);
 
             // --- autopay
             const showAutoPayNotification = ref(false);
@@ -4269,7 +4270,7 @@ const editLogEntry = (entry) => {
           // --- RETURN VARIABLES ---
             return { 
                 session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, 
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening, authCode, isWaitingForCode, verifyCode,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening, authCode, isWaitingForCode, verifyCode, isMobileMenuOpen,
 
                 // Onboarding
                 showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, 
