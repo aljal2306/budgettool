@@ -4210,12 +4210,20 @@ const editLogEntry = (entry) => {
 
 const finishOnboarding = async () => { 
     isSubmitting.value = true; 
-    const {balance,safety,salary,frequency,medical,dental,trad401k,filingStatus,stateTaxRate,billName,billAmount,billDay,isCore,isVariable,incomeName,category,wishName,wishAmount,goalName,goalCost} = onboardingData.value; 
+    
+    // 1. Destructure all the new variables!
+    const {
+        balance, safety, salary, frequency, medical, dental, trad401k, filingStatus, stateTaxRate, 
+        ccBalance, otherDebtName, otherDebtBalance, // <-- NEW DEBT FIELDS
+        billName, billAmount, billDay, isCore, isVariable, isAutopay, paymentMethod, // <-- NEW BILL FIELDS
+        incomeName, category, wishName, wishAmount, goalName, goalCost
+    } = onboardingData.value; 
     
     const settingsPayload = { user_id: session.value.user.id }; 
     if(balance !== '') settingsPayload.current_balance = Number(balance); 
     if(safety !== '') settingsPayload.safety_margin = Number(safety); 
     
+    // Process Income
     if(salary !== ''){ 
         const annualSalary = Number(salary); 
         const grossPay = annualSalary / (frequency === 'Monthly' ? 12 : 24); 
@@ -4234,6 +4242,27 @@ const finishOnboarding = async () => {
     await _supabase.from('user_settings').upsert(settingsPayload); 
     if(balance !== '') forecastSettings.value.currentBalance = Number(balance); 
     
+    // 🟢 NEW: Process Debts
+    if(ccBalance !== '') {
+        await _supabase.from('debts').insert([{
+            user_id: session.value.user.id,
+            name: 'Credit Card',
+            balance: Number(ccBalance),
+            interest_rate: 0,
+            minimum_payment: 0
+        }]);
+    }
+    if(otherDebtName && otherDebtBalance !== '') {
+        await _supabase.from('debts').insert([{
+            user_id: session.value.user.id,
+            name: otherDebtName,
+            balance: Number(otherDebtBalance),
+            interest_rate: 0,
+            minimum_payment: 0
+        }]);
+    }
+
+    // Process Budget Item (Now with Auto Pay!)
     if(billName && billAmount) {
         await _supabase.from('budget_items').insert([{ 
             user_id: session.value.user.id, 
@@ -4242,7 +4271,8 @@ const finishOnboarding = async () => {
             due_day: isVariable ? 0 : (Number(billDay) || 1), 
             is_core: isCore, 
             is_variable: isVariable, 
-            category: category || 'Other', 
+            category: category || 'Other',
+            is_autopay: isAutopay, // <-- Saves Auto Pay toggle
             is_active: true 
         }]); 
     }
@@ -4269,17 +4299,19 @@ const finishOnboarding = async () => {
     isSubmitting.value = false; 
     setTimeout(() => window.location.reload(), 500); 
 };
-
 const nextOnboardingStep = async () => { 
     if(onboardingStep.value === 5) await finishOnboarding(); 
     else onboardingStep.value++; 
 };
 
 const startWizard = () => {
-    onboardingStep.value = 0; // 🟢 Starts at the new Welcome Screen!
+    onboardingStep.value = 0; 
     showOnboarding.value = true;
     onboardingData.value = {
-        balance: '', safety: '', salary: '', frequency: 'Semi-Monthly', medical: '', dental: '', trad401k: '', filingStatus: 'Single', stateTaxRate: '', billName: '', billAmount: '', billDay: 1, isCore: true, isVariable: false, incomeName: '', category: 'Mortgage/Rent', wishName: '', wishAmount: '', goalName: '', goalCost: ''
+        balance: '', safety: '', salary: '', frequency: 'Semi-Monthly', medical: '', dental: '', trad401k: '', filingStatus: 'Single', stateTaxRate: '', 
+        ccBalance: '', otherDebtName: '', otherDebtBalance: '', // Reset Debts
+        billName: '', billAmount: '', billDay: 1, isCore: true, isVariable: false, isAutopay: false, paymentMethod: 'Debit', // Reset Bill Options
+        incomeName: '', category: 'Mortgage/Rent', wishName: '', wishAmount: '', goalName: '', goalCost: ''
     };
 };
             // 🟢 NEW: Auto-Pay Processing System
