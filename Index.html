@@ -794,34 +794,39 @@
         <div v-if="showPlannerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div class="bg-white dark:bg-slate-800 w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
                 
-                <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center flex-shrink-0">
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                            <span>🔮</span> Budget Manager
-                        </h2>
-                        <div class="flex items-center gap-3 mt-1 text-xs font-medium">
-                            <span class="text-slate-500 dark:text-slate-400">
-                                Burn: <span class="text-red-500 font-bold">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}</span>
-                            </span>
-                            <span class="w-px h-3 bg-slate-300 dark:bg-slate-600"></span>
-                            <span class="text-slate-500 dark:text-slate-400">
-                                Left: 
-                                <span class="font-bold transition-colors duration-300" :class="(activeMonthlyPay - totalMonthlyBurn) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
-                                    ${{ (activeMonthlyPay - totalMonthlyBurn).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
-                                </span>
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center gap-2">
-                        <button v-if="!showAddForm" @click="showAddForm = true; isEditing = false; newItem = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false };" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-2 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1 border border-indigo-100 shadow-sm">
-                            <span class="text-lg leading-none">+</span> New Item
-                        </button>
-                        <button @click="showPlannerModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition">
-                            &times;
-                        </button>
-                    </div>
-                </div>
+                <div class="p-4 sm:p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-start sm:items-center flex-shrink-0 gap-2">
+    
+    <div class="min-w-0">
+        <h2 class="text-lg sm:text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 truncate">
+            <span>🔮</span> Budget Manager
+        </h2>
+        <div class="flex items-center gap-2 mt-1 text-[10px] sm:text-xs font-medium flex-wrap">
+            <span class="text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                Burn: <span class="text-red-500 font-bold">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}</span>
+            </span>
+            <span class="hidden sm:block w-px h-3 bg-slate-300 dark:bg-slate-600"></span>
+            <span class="text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                Left: 
+                <span class="font-bold transition-colors duration-300" :class="(activeMonthlyPay - totalMonthlyBurn) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
+                    ${{ (activeMonthlyPay - totalMonthlyBurn).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
+                </span>
+            </span>
+        </div>
+    </div>
+    
+    <div class="flex items-center gap-2 flex-shrink-0 mt-0.5 sm:mt-0">
+        <button v-if="!showAddForm" @click="showAddForm = true; isEditing = false; newItem = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false };" 
+                class="flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800 shadow-sm transition-all w-8 h-8 rounded-full sm:w-auto sm:h-auto sm:px-3 sm:py-2 sm:rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800">
+            <span class="text-lg leading-none">+</span>
+            <span class="hidden sm:inline text-xs ml-1">New Item</span>
+        </button>
+
+        <button @click="showPlannerModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center justify-center">
+            &times;
+        </button>
+    </div>
+    
+</div>
 
                 <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
                     
