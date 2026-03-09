@@ -3211,7 +3211,7 @@ const billsUrgent = computed(() => {
         // Save the Subscription to your database
         const { error: dbError } = await _supabase
             .from('profiles') // 🟢 CHANGED: Now pointing to the profiles table
-            .update({ push_notification: JSON.parse(JSON.stringify(subscription)) }) // 🟢 CHANGED: Matches your exact column name
+            .update({ push_subscription: JSON.parse(JSON.stringify(subscription)) }) // 🟢 CHANGED: Matches your exact column name
             .eq('id', session.value.user.id); // Note: If your profiles table uses 'user_id' instead of 'id', change this!
 
         if (dbError) {
