@@ -3184,32 +3184,31 @@ const billsUrgent = computed(() => {
     }
 
     try {
-        // 1. Check for Service Worker
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
             alert("🛑 Push notifications are not supported by this browser.");
             return;
         }
 
-        // 2. Ask for Permission
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
             alert(`⚠️ Permission is [ ${permission.toUpperCase()} ]. You must allow notifications.`);
             return;
         }
 
-        // 3. Register/Wait for the Service Worker
+        // 🟢 THE FIX: Explicitly register the service worker so it doesn't hang!
+        await navigator.serviceWorker.register('/sw.js');
         const registration = await navigator.serviceWorker.ready;
 
-        // 4. Generate the Push Subscription!
         // ⚠️ REPLACE THIS STRING WITH YOUR ACTUAL PUBLIC VAPID KEY FROM SUPABASE
         const publicVapidKey = 'BIJjH2sQIaRhZvyDfhEuqmEbTjKIk9RDX6Fvz7znLlOaKW3QAdl9XGYa6GT3Hyc2rGdRlDhE_Tz0F9ES-6rdPwY'; 
         
+        // This uses your existing urlBase64ToUint8Array helper!
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
         });
 
-        // 5. Save the Subscription to your database
+        // Save the Subscription to your database
         const { error: dbError } = await _supabase
             .from('user_settings')
             .update({ push_subscription: JSON.parse(JSON.stringify(subscription)) })
@@ -3222,7 +3221,7 @@ const billsUrgent = computed(() => {
 
         alert("✅ Address Saved! Firing the Edge Function now...");
 
-        // 6. NOW Fire the Edge Function
+        // NOW Fire the Edge Function
         const { data, error: functionError } = await _supabase.functions.invoke('send-push-alert', {
             body: {
                 user_id: session.value.user.id,
