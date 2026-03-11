@@ -2931,12 +2931,35 @@ const fetchGiftCards = async () => {
             };
             
             const processGiftCardImage = (event) => { 
-                const file = event.target.files[0]; 
-                if (!file) return; 
-                const reader = new FileReader(); 
-                reader.onload = (e) => { giftCardInput.value.imageData = e.target.result; }; 
-                reader.readAsDataURL(file); 
-            };
+    const file = event.target.files[0]; 
+    if (!file) return; 
+
+    const reader = new FileReader(); 
+    reader.onload = (e) => { 
+        // 1. Create an invisible digital image in the app's memory
+        const img = new Image();
+        img.src = e.target.result;
+        
+        img.onload = () => {
+            // 2. Create an invisible canvas and set a max width of 800 pixels
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800; 
+            const scaleSize = MAX_WIDTH / img.width;
+            
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+
+            // 3. Draw the squished image onto the canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // 4. Export it as a JPEG at 70% quality (turns 5MB into ~100KB)
+            giftCardInput.value.imageData = canvas.toDataURL('image/jpeg', 0.7); 
+        };
+    }; 
+    
+    reader.readAsDataURL(file); 
+};
 
             const resetGiftCardForm = () => { 
                 giftCardInput.value = { name: '', owner: '', balance: '', imageData: null }; 
