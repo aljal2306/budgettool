@@ -2909,10 +2909,15 @@ const billsUrgent = computed(() => {
 };
             const fetchDebts = async () => { const { data } = await _supabase.from('debts').select('*').order('order_index', { ascending: true }); if (data) debts.value = data; };
             const fetchForecastSlots = async () => { const { data } = await _supabase.from('forecast_slots').select('*').order('slot_index'); if (data) { const loaded = [null, null, null]; data.forEach(slot => { if(slot.slot_index >= 0 && slot.slot_index < 3) loaded[slot.slot_index] = slot; }); savedForecasts.value = loaded; } };
-            const fetchGiftCards = async () => { 
-                const { data } = await _supabase.from('gift_cards').select('*').order('created_at', { ascending: false }); 
-                if (data) giftCards.value = data.map(c => ({...c, balance: Number(c.balance)})); 
-            };
+            // 🟢 THE SKINNY QUERY: Downloads 2 Kilobytes instead of 75 Megabytes
+const { data } = await _supabase
+    .from('gift_cards')
+    .select('id, name, balance, owner, created_at') // Look, no image_data!
+    .order('created_at', { ascending: false }); 
+                            
+if (data) {
+    giftCards.value = data.map(c => ({...c, balance: Number(c.balance)})); 
+}
 
           // --- UPDATED GIFT CARD LOGIC ---
             const toggleOwner = (owner) => { openOwners.value[owner] = !openOwners.value[owner]; };
