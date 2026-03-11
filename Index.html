@@ -3039,7 +3039,32 @@ if (data) {
                 await manageCard(selectedCard.value);
             };
 
-            const viewCardImage = (card) => { selectedCard.value = card; showImageModal.value = true; };
+            const viewCardImage = async (card) => {
+    // 1. Instantly open your existing modal so the UI feels fast
+    selectedCard.value = card; 
+    showImageModal.value = true;
+
+    // 2. If we haven't downloaded this heavy photo yet, go get it!
+    if (!card.image_data) {
+        const { data, error } = await _supabase
+            .from('gift_cards')
+            .select('image_data')
+            .eq('id', card.id)
+            .single();
+
+        if (error) {
+            console.error("Failed to load image:", error.message);
+            return;
+        }
+
+        if (data && data.image_data) {
+            // 3. Inject the heavy photo into the card. 
+            // Vue is so smart that BOTH your popup modal and the little thumbnail 
+            // will automatically update to show the real photo!
+            card.image_data = data.image_data;
+        }
+    }
+};
 
             const renderCategoryChart = () => {
     const ctx = document.getElementById('categoryChart');
