@@ -1040,7 +1040,8 @@
         </div>
     </transition>
 
-                        <div id="tour-ledger" class="mb-8">
+                      <div id="tour-ledger" class="mb-8">
+    
     <div @click="showBillModal = true" class="bg-gradient-to-br from-indigo-800 to-indigo-900 text-white p-6 rounded-2xl shadow-lg cursor-pointer relative group hover:scale-[1.01] transition-transform duration-200">
         
         <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
@@ -1048,7 +1049,6 @@
         </div>
         
         <div class="relative z-20 flex justify-between items-start">
-            
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10">
                     📉
@@ -1060,8 +1060,7 @@
             </div>
 
             <div class="flex items-center gap-3">
-                
-                <button @click.stop="showActiveBillHelp = !showActiveBillHelp" class="text-indigo-200 hover:text-white transition p-1 rounded-full hover:bg-white/10" title="How do active bills work?">
+                <button @click.stop="showActiveBillHelp = true" class="text-indigo-200 hover:text-white transition p-1 rounded-full hover:bg-white/10" title="How do active bills work?">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                     </svg>
@@ -1076,9 +1075,7 @@
                     <button @click.stop="openGenerateModal(0)" 
                         class="px-4 py-2 rounded-lg font-bold text-xs shadow-lg transition flex items-center gap-2 border relative z-10"
                         :class="needsNextMonthBills ? 'bg-orange-500 hover:bg-orange-400 text-white border-orange-400 shadow-orange-900/20 animate-pulse-slow' : 'bg-indigo-500 hover:bg-indigo-400 text-white border-transparent shadow-indigo-500/20'">
-                        
                         <span class="text-lg leading-none">{{ needsNextMonthBills ? '⚠️' : '+' }}</span>
-                        
                         <span class="flex flex-col items-start leading-tight">
                             <span>{{ needsNextMonthBills ? 'Add Next Month' : 'Review & Add' }}</span>
                         </span>
@@ -1093,52 +1090,52 @@
                 ${{ totalBillDue.toLocaleString(undefined, {minimumFractionDigits: 2}) }}
             </div>
         </div>
+    </div>
 
     <transition name="fade">
-    <div v-if="showActiveBillHelp" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click="showActiveBillHelp = false">
-        
-        <div class="bg-slate-900 border border-slate-600 rounded-xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] animate-slide-up" @click.stop>
+        <div v-if="showActiveBillHelp" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click="showActiveBillHelp = false">
             
-            <div class="flex justify-between items-center p-4 border-b border-slate-700 shrink-0">
-                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Activating Bills</h4>
-                <button @click="showActiveBillHelp = false" class="text-slate-400 hover:text-white font-bold text-xl leading-none">&times;</button>
-            </div>
-            
-            <div class="p-4 space-y-4 text-xs text-slate-300 overflow-y-auto custom-scrollbar">
-                <div class="flex gap-3">
-                    <div class="mt-0.5 text-lg shrink-0">💡</div>
-                    <div>
-                        <span class="text-emerald-400 font-bold block mb-0.5">Make it Active</span>
-                        <span class="leading-tight block opacity-90">Adding a bill makes it "Active." The system will track this expense against your budget so you always know exactly what you owe.</span>
+            <div class="bg-slate-900 border border-slate-600 rounded-xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] animate-slide-up relative" @click.stop>
+                
+                <div class="flex justify-between items-center p-4 border-b border-slate-700 shrink-0">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider">Activating Bills</h4>
+                    <button @click="showActiveBillHelp = false" class="text-slate-400 hover:text-white font-bold text-2xl leading-none">&times;</button>
+                </div>
+                
+                <div class="p-4 space-y-4 text-xs text-slate-300 overflow-y-auto custom-scrollbar">
+                    <div class="flex gap-3">
+                        <div class="mt-0.5 text-lg shrink-0">💡</div>
+                        <div>
+                            <span class="text-emerald-400 font-bold block mb-0.5">Make it Active</span>
+                            <span class="leading-tight block opacity-90">Adding a bill makes it "Active." The system will track this expense against your budget so you always know exactly what you owe.</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="mt-0.5 text-lg shrink-0">🔮</div>
+                        <div>
+                            <span class="text-purple-400 font-bold block mb-0.5">Forecasting</span>
+                            <span class="leading-tight block opacity-90">Active bills are the engine of your financial forecast. They help project your wealth months into the future.</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="mt-0.5 text-lg shrink-0">🔔</div>
+                        <div>
+                            <span class="text-blue-400 font-bold block mb-0.5">Smart Alerts</span>
+                            <span class="leading-tight block opacity-90">Once active, you will automatically receive a push notification 3 days before the due date so you never miss a payment.</span>
+                        </div>
                     </div>
                 </div>
-                <div class="flex gap-3">
-                    <div class="mt-0.5 text-lg shrink-0">🔮</div>
-                    <div>
-                        <span class="text-purple-400 font-bold block mb-0.5">Forecasting</span>
-                        <span class="leading-tight block opacity-90">Active bills are the engine of your financial forecast. They help project your wealth months into the future.</span>
-                    </div>
+                
+                <div @click="showActiveBillHelp = false" class="p-4 text-[10px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:bg-slate-800 rounded-b-xl transition shrink-0">
+                    Tap anywhere to close
                 </div>
-                <div class="flex gap-3">
-                    <div class="mt-0.5 text-lg shrink-0">🔔</div>
-                    <div>
-                        <span class="text-blue-400 font-bold block mb-0.5">Smart Alerts</span>
-                        <span class="leading-tight block opacity-90">Once active, you will automatically receive a push notification 3 days before the due date so you never miss a payment.</span>
-                    </div>
-                </div>
+                
             </div>
-            
-            <div @click="showActiveBillHelp = false" class="p-3 text-[10px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:bg-slate-800 rounded-b-xl transition shrink-0">
-                Tap anywhere to close
-            </div>
-            
         </div>
-    </div>
-</transition>
+    </transition>
 
+</div>
 
-
-    </div>
 </div>
     </div>
                    <div v-if="currentView === 'forecast'" class="space-y-6 pb-24 animate-fade-in">
