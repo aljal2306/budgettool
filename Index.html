@@ -1113,6 +1113,15 @@
         </button>
     </div>
     
+    <div class="relative mt-3">
+    
+    <div class="flex items-center justify-between mb-1">
+        <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Link to Debt Account</label>
+        <span v-if="!isPremiumUser" class="bg-amber-500/10 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1 shadow-sm">
+            👑 Premium
+        </span>
+    </div>
+
     <div v-if="showDebtHelp" class="mb-3 p-2.5 bg-white/60 dark:bg-slate-800/60 text-red-800 dark:text-red-200 text-xs rounded border border-red-100 dark:border-red-800 animate-slide-down">
         <p class="font-bold mb-1">How Debt Linking Works:</p>
         <p class="leading-relaxed opacity-90 text-[11px]">
@@ -1120,15 +1129,25 @@
         </p>
     </div>
 
-    <select v-model="newItem.debt_id" class="w-full p-2 border border-red-200 rounded text-xs dark:bg-slate-800 dark:text-white dark:border-slate-600 outline-none focus:border-red-400">
-        <option :value="null">-- No, just a regular bill --</option>
-        <option v-for="debt in debts" :key="debt.id" :value="debt.id">
-            {{ debt.name }} (Bal: ${{ debt.balance.toLocaleString() }})
-        </option>
-    </select>
+    <div class="relative group">
+        <select v-model="newItem.debt_id" 
+                :disabled="!isPremiumUser"
+                :class="!isPremiumUser ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-900' : 'focus:border-red-400 bg-white dark:bg-slate-800'"
+                class="w-full p-2 border border-red-200 rounded text-xs dark:text-white dark:border-slate-600 outline-none transition-all">
+            <option :value="null">-- No, just a regular bill --</option>
+            <option v-for="debt in debts" :key="debt.id" :value="debt.id">
+                {{ debt.name }} (Bal: ${{ debt.balance.toLocaleString() }})
+            </option>
+        </select>
+        
+        <div v-if="!isPremiumUser" 
+             @click="requirePremium(() => {})" 
+             class="absolute inset-0 z-10 cursor-pointer" 
+             title="Upgrade to Premium to link debts">
+        </div>
+    </div>
+    
 </div>
-                        </div>
-
                         <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/80 flex-shrink-0 z-10">
                             <button @click="handleSave" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition transform active:scale-95">
                                 {{ isEditing ? 'Update Item' : 'Save Item' }}
