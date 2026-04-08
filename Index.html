@@ -2874,7 +2874,25 @@
             // Onboarding & Calc
             const showOnboarding = ref(false), onboardingStep = ref(1), onboardingData = ref({ balance: '', safety: '', salary: '', frequency: 'Semi-Monthly', medical: '', dental: '', trad401k: '', filingStatus: 'Single', stateTaxRate: '', billName: '', billAmount: '', billDay: 1, isCore: true, isVariable: false, incomeName: '', category: 'Mortgage/Rent', wishName: '', wishAmount: '', goalName: '', goalCost: '' });
             const showCalcForm = ref(false), showCalcDetails = ref(false);
-            const calcInputs = ref({ name: '', salary: 0, commission: 0, medical: 0, dental: 0, fsa: 0, postTax: 0, trad401k: 0, roth401k: 0, match401k: 0, nextPayDate: '', payFrequency: 'Semi-Monthly', filingStatus: 'Single', stateTaxRate: 0, dependents: 0, extraWithholding: 0 });
+           const calcInputs = ref({ 
+    name: '', 
+    salary: 0, 
+    commission: 0, 
+    medical: 0, 
+    dental: 0, 
+    fsa: 0, 
+    postTax: 0, 
+    trad401k: 0, 
+    roth401k: 0, 
+    match401k: 0, 
+    nextPayDate: '', 
+    payFrequency: 'Semi-Monthly', 
+    filingStatus: 'Single', 
+    stateTaxRate: 0, 
+    dependents: 0, 
+    extraWithholding: 0,
+    manualNetPay: null // <-- The new escape hatch!
+});
             const calcResult = ref(null), savingBase = ref(false);
 
             // Budget
