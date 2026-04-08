@@ -2535,7 +2535,7 @@
       <span class="text-[10px] font-bold">Forecast</span>
     </button>
 
-    <button @click="currentView = 'debt'" class="flex flex-col items-center justify-center w-full h-full space-y-1 touch-manipulation" :class="currentView === 'debt' ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'">
+    <button @click="requirePremium(() => currentView = 'debt')" class="flex flex-col items-center justify-center w-full h-full space-y-1 touch-manipulation" :class="currentView === 'debt' ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'">
       <span class="text-xl mb-0.5">⚔️</span>
       <span class="text-[10px] font-bold">Debt</span>
     </button>
