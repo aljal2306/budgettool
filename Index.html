@@ -951,34 +951,39 @@
         
         <div v-if="isManualMode" class="py-8 text-center animate-fade-in">
             <div class="text-slate-400 text-[10px] sm:text-xs uppercase tracking-widest mb-2 font-sans font-bold">Exact Take-Home Pay</div>
-            <div class="text-4xl sm:text-5xl font-black text-emerald-400">${{ calcResult.netPay.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}</div>
+            <div class="text-4xl sm:text-5xl font-black text-emerald-400 truncate w-full px-2">${{ calcResult.netPay.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}</div>
         </div>
 
         <div v-else class="text-xs sm:text-sm animate-fade-in">
-            <div class="flex justify-between items-end border-b border-slate-700 pb-2 gap-2">
-                <span class="text-slate-300">Gross Pay:</span> 
-                <span class="font-bold shrink-0">${{ calcResult.gross.toFixed(2) }}</span>
-            </div>
-            <div class="flex justify-between items-end text-slate-400 mt-4 gap-2">
-                <span class="truncate pr-2">- 401k Contrib:</span> 
-                <span class="shrink-0">${{ calcResult.tradAmt.toFixed(2) }}</span>
-            </div>
-            <div class="flex justify-between items-end text-slate-400 mt-2 gap-2" v-if="calcResult.benefitAmt > 0">
-                <span class="truncate pr-2">- Benefits:</span> 
-                <span class="shrink-0">${{ calcResult.benefitAmt.toFixed(2) }}</span>
-            </div>
-            <div class="flex justify-between items-end text-slate-400 mt-2 gap-2">
-                <span class="truncate pr-2">- Taxes (Fed/St/FICA):</span> 
-                <span class="shrink-0">${{ (calcResult.taxes + calcResult.fica).toFixed(2) }}</span>
-            </div>
-            <div class="flex justify-between items-end text-slate-400 mt-2 pb-2 border-b border-slate-700 gap-2">
-                <span class="truncate pr-2">- Post-Tax Ded:</span> 
-                <span class="shrink-0">${{ calcResult.postTaxTotal.toFixed(2) }}</span>
+            
+            <div class="grid grid-cols-[1fr_auto] gap-2 items-end border-b border-slate-700 pb-2">
+                <span class="text-slate-300 truncate">Gross Pay:</span> 
+                <span class="font-bold text-right">${{ calcResult.gross.toFixed(2) }}</span>
             </div>
             
-            <div class="flex justify-between items-end text-lg sm:text-xl font-bold text-emerald-300 pt-3 gap-2">
-                <span>Net Pay:</span> 
-                <span class="shrink-0">${{ calcResult.netPay.toFixed(2) }}</span>
+            <div class="grid grid-cols-[1fr_auto] gap-2 items-end text-slate-400 mt-4">
+                <span class="truncate pr-1">- 401k Contrib:</span> 
+                <span class="text-right">${{ calcResult.tradAmt.toFixed(2) }}</span>
+            </div>
+            
+            <div class="grid grid-cols-[1fr_auto] gap-2 items-end text-slate-400 mt-2" v-if="calcResult.benefitAmt > 0">
+                <span class="truncate pr-1">- Benefits:</span> 
+                <span class="text-right">${{ calcResult.benefitAmt.toFixed(2) }}</span>
+            </div>
+            
+            <div class="grid grid-cols-[1fr_auto] gap-2 items-end text-slate-400 mt-2">
+                <span class="truncate pr-1">- Taxes (Fed/St/FICA):</span> 
+                <span class="text-right">${{ (calcResult.taxes + calcResult.fica).toFixed(2) }}</span>
+            </div>
+            
+            <div class="grid grid-cols-[1fr_auto] gap-2 items-end text-slate-400 mt-2 pb-2 border-b border-slate-700">
+                <span class="truncate pr-1">- Post-Tax Ded:</span> 
+                <span class="text-right">${{ calcResult.postTaxTotal.toFixed(2) }}</span>
+            </div>
+            
+            <div class="grid grid-cols-[1fr_auto] gap-2 items-end text-lg sm:text-xl font-bold text-emerald-300 pt-3">
+                <span class="truncate">Net Pay:</span> 
+                <span class="text-right">${{ calcResult.netPay.toFixed(2) }}</span>
             </div>
             
             <div class="mt-6 pt-5 border-t border-slate-700">
