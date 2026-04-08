@@ -218,8 +218,8 @@
             <span>📈</span> Forecast
         </button>
         
-        <button @click="currentView='debt'" class="px-4 py-2 text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='debt'?'bg-red-500 text-white shadow':'text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400'">
-            <span>⚔️</span> Debt
+        <button @click="requirePremium(() => currentView='debt')" class="px-4 py-2 text-sm font-bold rounded-lg transition whitespace-nowrap" :class="currentView==='debt'?'bg-red-500 text-white shadow':'text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400'">
+    <span>⚔️</span> Debt
         </button>
 
     </div>
