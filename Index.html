@@ -944,8 +944,65 @@
     </div>
 </div>
                             <div class="space-y-6">
-                                <div id="tour-paycheck-result" class="bg-slate-900 dark:bg-slate-800 text-white p-6 rounded-2xl shadow-xl shadow-slate-300 dark:shadow-none"><h2 class="text-lg font-bold mb-4 text-emerald-400">💰 Calculator Result</h2><div v-if="calcResult" class="space-y-4 text-sm font-mono"><div class="flex justify-between border-b border-slate-700 pb-2"><span>Gross Pay:</span> <span>${{ calcResult.gross.toFixed(2) }}</span></div><div class="flex justify-between text-slate-400"><span>- 401k Contrib:</span> <span>${{ calcResult.tradAmt.toFixed(2) }}</span></div><div class="flex justify-between text-slate-400" v-if="calcResult.benefitAmt > 0"><span>- Benefits (Med/Den):</span> <span>${{ calcResult.benefitAmt.toFixed(2) }}</span></div><div class="flex justify-between text-slate-400"><span>- Taxes (Fed/St/FICA):</span> <span>${{ (calcResult.taxes + calcResult.fica).toFixed(2) }}</span></div><div class="flex justify-between text-slate-400 pb-2 border-b border-slate-700"><span>- Post-Tax Ded:</span> <span>${{ calcResult.postTaxTotal.toFixed(2) }}</span></div><div class="flex justify-between text-xl font-bold text-emerald-300 pt-2"><span>Net Pay:</span> <span>${{ calcResult.netPay.toFixed(2) }}</span></div><div class="mt-4 pt-4 border-t border-slate-700"><div class="text-[10px] text-slate-500 uppercase mb-1">Paycheck Anatomy</div><div class="flex w-full h-2 rounded-full overflow-hidden"><div class="bg-emerald-500 h-full" :style="{width: (calcResult.netPay/calcResult.gross)*100 + '%'}"></div><div class="bg-red-500 h-full" :style="{width: ((calcResult.taxes+calcResult.fica)/calcResult.gross)*100 + '%'}"></div><div class="bg-blue-500 h-full" :style="{width: ((calcResult.preTaxTotal+calcResult.postTaxTotal)/calcResult.gross)*100 + '%'}"></div></div><div class="flex justify-between text-[9px] text-slate-400 mt-1"><span class="text-emerald-400">Net {{ Math.round((calcResult.netPay/calcResult.gross)*100) }}%</span><span class="text-red-400">Tax {{ Math.round(((calcResult.taxes+calcResult.fica)/calcResult.gross)*100) }}%</span><span class="text-blue-400">Ded {{ Math.round(((calcResult.preTaxTotal+calcResult.postTaxTotal)/calcResult.gross)*100) }}%</span></div></div></div><div v-else class="text-center text-slate-500 py-12 text-xs">Click "Calculate" to see the breakdown.</div></div>
-                                <div id="tour-active-incomes" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Active Income Sources</h3><div v-if="incomes.length === 0" class="text-center text-slate-400 text-xs py-4">No incomes added yet.</div><div v-for="inc in incomes" :key="inc.id" class="p-3 border dark:border-slate-600 rounded-lg mb-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer group" @click="loadIncomeIntoCalculator(inc)"><div class="flex justify-between items-center mb-1"><div class="font-bold text-sm text-slate-800 dark:text-white">{{ inc.name }}</div><button @click.stop="deleteIncome(inc.id)" class="text-xs text-red-300 hover:text-red-500">✕</button></div><div class="flex justify-between text-xs text-slate-500"><span>{{ inc.frequency }}</span><span class="font-mono font-bold text-emerald-600">${{ inc.amount.toLocaleString() }}/check</span></div></div></div>
+                                <div id="tour-paycheck-result" class="bg-slate-900 dark:bg-slate-800 text-white p-5 sm:p-6 rounded-2xl shadow-xl shadow-slate-300 dark:shadow-none border border-slate-800 dark:border-slate-700">
+    <h2 class="text-base sm:text-lg font-bold mb-4 text-emerald-400">💰 Calculator Result</h2>
+    
+    <div v-if="calcResult" class="space-y-4 font-mono">
+        
+        <div v-if="isManualMode" class="py-8 text-center animate-fade-in">
+            <div class="text-slate-400 text-[10px] sm:text-xs uppercase tracking-widest mb-2 font-sans font-bold">Exact Take-Home Pay</div>
+            <div class="text-4xl sm:text-5xl font-black text-emerald-400">${{ calcResult.netPay.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}</div>
+        </div>
+
+        <div v-else class="text-xs sm:text-sm animate-fade-in">
+            <div class="flex justify-between items-end border-b border-slate-700 pb-2 gap-2">
+                <span class="text-slate-300">Gross Pay:</span> 
+                <span class="font-bold shrink-0">${{ calcResult.gross.toFixed(2) }}</span>
+            </div>
+            <div class="flex justify-between items-end text-slate-400 mt-4 gap-2">
+                <span class="truncate pr-2">- 401k Contrib:</span> 
+                <span class="shrink-0">${{ calcResult.tradAmt.toFixed(2) }}</span>
+            </div>
+            <div class="flex justify-between items-end text-slate-400 mt-2 gap-2" v-if="calcResult.benefitAmt > 0">
+                <span class="truncate pr-2">- Benefits:</span> 
+                <span class="shrink-0">${{ calcResult.benefitAmt.toFixed(2) }}</span>
+            </div>
+            <div class="flex justify-between items-end text-slate-400 mt-2 gap-2">
+                <span class="truncate pr-2">- Taxes (Fed/St/FICA):</span> 
+                <span class="shrink-0">${{ (calcResult.taxes + calcResult.fica).toFixed(2) }}</span>
+            </div>
+            <div class="flex justify-between items-end text-slate-400 mt-2 pb-2 border-b border-slate-700 gap-2">
+                <span class="truncate pr-2">- Post-Tax Ded:</span> 
+                <span class="shrink-0">${{ calcResult.postTaxTotal.toFixed(2) }}</span>
+            </div>
+            
+            <div class="flex justify-between items-end text-lg sm:text-xl font-bold text-emerald-300 pt-3 gap-2">
+                <span>Net Pay:</span> 
+                <span class="shrink-0">${{ calcResult.netPay.toFixed(2) }}</span>
+            </div>
+            
+            <div class="mt-6 pt-5 border-t border-slate-700">
+                <div class="text-[10px] text-slate-500 font-sans font-bold uppercase mb-2 tracking-wider">Paycheck Anatomy</div>
+                
+                <div class="flex w-full h-2.5 rounded-full overflow-hidden">
+                    <div class="bg-emerald-500 h-full transition-all duration-500" :style="{width: (calcResult.gross > 0 ? (calcResult.netPay/calcResult.gross)*100 : 0) + '%'}"></div>
+                    <div class="bg-red-500 h-full transition-all duration-500" :style="{width: (calcResult.gross > 0 ? ((calcResult.taxes+calcResult.fica)/calcResult.gross)*100 : 0) + '%'}"></div>
+                    <div class="bg-blue-500 h-full transition-all duration-500" :style="{width: (calcResult.gross > 0 ? ((calcResult.preTaxTotal+calcResult.postTaxTotal)/calcResult.gross)*100 : 0) + '%'}"></div>
+                </div>
+                
+                <div class="flex flex-wrap justify-between text-[10px] font-sans font-bold text-slate-400 mt-2 gap-x-2 gap-y-1">
+                    <span class="text-emerald-400">Net {{ calcResult.gross > 0 ? Math.round((calcResult.netPay/calcResult.gross)*100) : 0 }}%</span>
+                    <span class="text-red-400">Tax {{ calcResult.gross > 0 ? Math.round(((calcResult.taxes+calcResult.fica)/calcResult.gross)*100) : 0 }}%</span>
+                    <span class="text-blue-400">Ded {{ calcResult.gross > 0 ? Math.round(((calcResult.preTaxTotal+calcResult.postTaxTotal)/calcResult.gross)*100) : 0 }}%</span>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <div v-else class="text-center text-slate-500 py-12 text-xs font-sans">
+        Click "Calculate" to see the breakdown.
+    </div>
+</div>
                             </div>
                         </div>
                     </div>
