@@ -129,9 +129,9 @@
     <transition name="fade">
     <div v-if="showPaywallModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 print:hidden" @click="showPaywallModal = false">
         
-        <div class="bg-slate-800 border border-slate-600 p-6 md:p-8 rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-slide-up" @click.stop>
+        <div class="bg-slate-800 border border-slate-600 p-6 md:p-8 rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-slide-up flex flex-col max-h-[90vh]" @click.stop>
             
-            <div class="text-center mb-6">
+            <div class="text-center mb-6 shrink-0">
                 <div class="text-5xl mb-4 animate-bounce">👑</div>
                 <h2 class="text-2xl font-black text-white mb-2 tracking-tight">Unlock Premium</h2>
                 <p class="text-slate-400 text-sm leading-relaxed">
@@ -139,39 +139,70 @@
                 </p>
             </div>
             
-            <div class="bg-slate-900/50 rounded-xl p-5 mb-8 border border-slate-700/50">
-                <ul class="text-sm text-slate-200 space-y-4 font-medium">
-                    <li class="flex items-start gap-3">
-                        <span class="text-lg leading-none mt-0.5">⚡</span> 
-                        <span>Track <strong class="text-white">irregular & multiple</strong> income streams</span>
+            <div class="bg-slate-900/50 rounded-xl p-5 mb-6 border border-slate-700/50 overflow-y-auto no-scrollbar shadow-inner">
+                <ul class="space-y-5">
+                    
+                    <li class="flex items-start gap-4">
+                        <span class="text-xl leading-none mt-0.5 drop-shadow-md">⚡</span> 
+                        <div>
+                            <strong class="text-white block text-sm font-bold mb-0.5">Unlimited & Irregular Incomes</strong>
+                            <span class="text-xs text-slate-400 leading-snug block">Add side hustles, a partner's income, or track highly variable freelance cash flow.</span>
+                        </div>
                     </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-lg leading-none mt-0.5">🕰️</span> 
-                        <span>Unlock the <strong class="text-white">24-Month</strong> Financial Time Machine</span>
+                    
+                    <li class="flex items-start gap-4">
+                        <span class="text-xl leading-none mt-0.5 drop-shadow-md">🕰️</span> 
+                        <div>
+                            <strong class="text-white block text-sm font-bold mb-0.5">The 24-Month Time Machine</strong>
+                            <span class="text-xs text-slate-400 leading-snug block">Unlock the full 1 to 24-month custom forecasting timeline to project your wealth.</span>
+                        </div>
                     </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-lg leading-none mt-0.5">⚔️</span> 
-                        <span>Access the complete <strong class="text-white">Debt Payoff Engine</strong></span>
+                    
+                    <li class="flex items-start gap-4">
+                        <span class="text-xl leading-none mt-0.5 drop-shadow-md">⚔️</span> 
+                        <div>
+                            <strong class="text-white block text-sm font-bold mb-0.5">The Debt Engine</strong>
+                            <span class="text-xs text-slate-400 leading-snug block">Gain full access to the dedicated debt tracking and automated payoff tools.</span>
+                        </div>
                     </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-lg leading-none mt-0.5">💾</span> 
-                        <span>Save up to 3 custom <strong class="text-white">Forecast</strong> scenarios</span>
+                    
+                    <li class="flex items-start gap-4">
+                        <span class="text-xl leading-none mt-0.5 drop-shadow-md">💾</span> 
+                        <div>
+                            <strong class="text-white block text-sm font-bold mb-0.5">Save Custom Scenarios</strong>
+                            <span class="text-xs text-slate-400 leading-snug block">Save and store your complex "Dream Mode" forecast scenarios for future planning.</span>
+                        </div>
                     </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-lg leading-none mt-0.5">💳</span> 
-                        <span>Scan & store <strong class="text-white">unlimited</strong> digital gift cards</span>
+
+                    <li class="flex items-start gap-4">
+                        <span class="text-xl leading-none mt-0.5 drop-shadow-md">💳</span> 
+                        <div>
+                            <strong class="text-white block text-sm font-bold mb-0.5">Unlimited Digital Gift Cards</strong>
+                            <span class="text-xs text-slate-400 leading-snug block">Scan and safely save an unlimited number of physical gift cards to the database.</span>
+                        </div>
                     </li>
+
+                    <li class="flex items-start gap-4">
+                        <span class="text-xl leading-none mt-0.5 drop-shadow-md">🤖</span> 
+                        <div>
+                            <strong class="text-white block text-sm font-bold mb-0.5">Power Tools & Advisor</strong>
+                            <span class="text-xs text-slate-400 leading-snug block">Export your financial data to CSV and access the AI-powered Consultant features.</span>
+                        </div>
+                    </li>
+
                 </ul>
             </div>
             
-            <button @click="showPaywallModal = false" class="w-full py-3.5 mb-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-lg shadow-orange-500/20 hover:scale-[1.02] transition-transform">
-                Upgrade for $4.99/mo
-            </button>
-            
-            <div class="text-center">
-                <button @click="showPaywallModal = false" class="text-xs text-slate-400 hover:text-white font-medium transition-colors">
-                    Continue with Free Version
+            <div class="shrink-0 pt-2">
+                <button @click="showPaywallModal = false" class="w-full py-3.5 mb-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-lg shadow-orange-500/20 hover:scale-[1.02] transition-transform">
+                    Upgrade for $4.99/mo
                 </button>
+                
+                <div class="text-center">
+                    <button @click="showPaywallModal = false" class="text-xs text-slate-400 hover:text-white font-medium transition-colors">
+                        Continue with Free Version
+                    </button>
+                </div>
             </div>
             
         </div>
