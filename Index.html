@@ -117,7 +117,33 @@
 </div>
 
                 <div v-else>
-                   <div class="bg-gradient-to-r from-emerald-500 to-emerald-700 dark:from-emerald-700 dark:to-emerald-900 p-5 rounded-2xl shadow-lg mb-8 flex justify-between items-center relative print:hidden">
+    
+    <div class="fixed top-4 left-4 z-[100] print:hidden">
+        <button @click="isPremiumUser = !isPremiumUser" 
+                :class="isPremiumUser ? 'bg-amber-500 hover:bg-amber-400' : 'bg-slate-700 hover:bg-slate-600'"
+                class="px-4 py-2 rounded-full font-bold text-xs text-white shadow-xl border-2 border-white/20 transition-colors flex items-center gap-2">
+            <span>{{ isPremiumUser ? '👑 Premium Mode' : '🟢 Free Mode' }}</span>
+        </button>
+    </div>
+
+    <transition name="fade">
+        <div v-if="showPaywallModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 print:hidden" @click="showPaywallModal = false">
+            <div class="bg-slate-800 border border-slate-600 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transform transition-all animate-slide-up" @click.stop>
+                <div class="text-6xl mb-4 animate-bounce">👑</div>
+                <h2 class="text-2xl font-black text-white mb-2 tracking-tight">Upgrade to Premium</h2>
+                <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                    Unlock the 24-month financial time machine, add multiple income streams, and access powerful scenario testing.
+                </p>
+                <button @click="showPaywallModal = false" class="w-full py-3 mb-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm shadow-lg shadow-orange-500/20 hover:scale-[1.02] transition-transform">
+                    Upgrade for $4.99/mo
+                </button>
+                <button @click="showPaywallModal = false" class="text-xs text-slate-400 hover:text-white font-medium transition-colors">
+                    Maybe later
+                </button>
+            </div>
+        </div>
+    </transition>
+    <div class="bg-gradient-to-r from-emerald-500 to-emerald-700 dark:from-emerald-700 dark:to-emerald-900 p-5 rounded-2xl shadow-lg mb-8 flex justify-between items-center relative print:hidden">
     
     <div>
         <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-sm">
@@ -2492,6 +2518,21 @@
             const isMobileMenuOpen = ref(false);
             const showDebtHelp = ref(false);
             const showActiveBillHelp = ref(false);
+            // 1. The Global Key (Your God Mode switch)
+            const isPremiumUser = ref(false)
+
+           // 2. The Paywall Modal Trigger
+           const showPaywallModal = ref(false)
+
+           // 3. The Bouncer Function
+           // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
+           const requirePremium = (actionCallback) => {
+           if (isPremiumUser.value) {
+           actionCallback() // They are premium, let them proceed!
+           } else {
+           showPaywallModal.value = true // They are free, pop the paywall!
+        }
+     }
 
             // --- autopay
             const showAutoPayNotification = ref(false);
@@ -4806,7 +4847,8 @@ const startWizard = () => {
           // --- RETURN VARIABLES ---
             return { 
                 session, authEmail, loading, authMessage, handleLogin, handleLogout, currentView, 
-                isDarkMode, toggleDarkMode, startVoiceEntry, isListening, authCode, isWaitingForCode, verifyCode, isMobileMenuOpen,
+                isDarkMode, toggleDarkMode, startVoiceEntry, isListening, authCode, isWaitingForCode, verifyCode, isMobileMenuOpen, isPremiumUser, showPaywallModal,
+                requirePremium,
 
                 // Onboarding
                 showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, 
