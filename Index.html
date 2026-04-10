@@ -1102,51 +1102,48 @@
                     -${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}
                 </div>
             </div>
-        </div>
-    </div>
-
-    <transition name="fade">
-        <div v-if="showModeHelp" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click="showModeHelp = false">
+        </div> </div> </div> <transition name="fade">
+    <div v-if="showModeHelp" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click="showModeHelp = false">
+        
+        <div class="bg-slate-900 border border-slate-600 rounded-xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] animate-slide-up relative" @click.stop>
             
-            <div class="bg-slate-900 border border-slate-600 rounded-xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] animate-slide-up relative" @click.stop>
-                
-                <div class="flex justify-between items-center p-4 border-b border-slate-700 shrink-0">
-                    <h4 class="text-xs font-bold text-white uppercase tracking-wider">Mode Definitions</h4>
-                    <button @click="showModeHelp = false" class="text-slate-400 hover:text-white font-bold text-2xl leading-none">&times;</button>
-                </div>
-                
-                <div class="p-4 space-y-4 text-xs text-slate-300 overflow-y-auto custom-scrollbar">
-                    <div class="flex gap-3">
-                        <div class="mt-0.5 text-lg shrink-0">🛡️</div>
-                        <div>
-                            <span class="text-orange-400 font-bold block mb-0.5">Survival Mode</span>
-                            <span class="leading-tight block opacity-90">Only "Core" bills (Rent, Utilities) & Variable Budgets (Food). Zero extras.</span>
-                        </div>
-                    </div>
-                    <div class="flex gap-3">
-                        <div class="mt-0.5 text-lg shrink-0">⚖️</div>
-                        <div>
-                            <span class="text-blue-400 font-bold block mb-0.5">Standard Mode</span>
-                            <span class="leading-tight block opacity-90">Your realistic life. Includes all active bills, subscriptions, and variable spending.</span>
-                        </div>
-                    </div>
-                    <div class="flex gap-3">
-                        <div class="mt-0.5 text-lg shrink-0">🚀</div>
-                        <div>
-                            <span class="text-purple-400 font-bold block mb-0.5">Dream Mode</span>
-                            <span class="leading-tight block opacity-90">Standard Mode + items marked "Wishlist". Use this to see if you can afford that new car.</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div @click="showModeHelp = false" class="p-4 text-[10px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:bg-slate-800 rounded-b-xl transition shrink-0">
-                    Tap anywhere to close
-                </div>
-                
+            <div class="flex justify-between items-center p-4 border-b border-slate-700 shrink-0">
+                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Mode Definitions</h4>
+                <button @click="showModeHelp = false" class="text-slate-400 hover:text-white font-bold text-2xl leading-none">&times;</button>
             </div>
+            
+            <div class="p-4 space-y-4 text-xs text-slate-300 overflow-y-auto custom-scrollbar">
+                <div class="flex gap-3">
+                    <div class="mt-0.5 text-lg shrink-0">🛡️</div>
+                    <div>
+                        <span class="text-orange-400 font-bold block mb-0.5">Survival Mode</span>
+                        <span class="leading-tight block opacity-90">Only "Core" bills (Rent, Utilities) & Variable Budgets (Food). Zero extras.</span>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="mt-0.5 text-lg shrink-0">⚖️</div>
+                    <div>
+                        <span class="text-blue-400 font-bold block mb-0.5">Standard Mode</span>
+                        <span class="leading-tight block opacity-90">Your realistic life. Includes all active bills, subscriptions, and variable spending.</span>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="mt-0.5 text-lg shrink-0">🚀</div>
+                    <div>
+                        <span class="text-purple-400 font-bold block mb-0.5">Dream Mode</span>
+                        <span class="leading-tight block opacity-90">Standard Mode + items marked "Wishlist". Use this to see if you can afford that new car.</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div @click="showModeHelp = false" class="p-4 text-[10px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:bg-slate-800 rounded-b-xl transition shrink-0">
+                Tap anywhere to close
+            </div>
+            
         </div>
-    </transition>
-
+        
+    </div>
+</transition>
 </div>
 
 
