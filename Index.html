@@ -1488,14 +1488,12 @@
                 </div>
                 
                 <div @click="showActiveBillHelp = false" class="p-4 text-[10px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:bg-slate-800 rounded-b-xl transition shrink-0">
-                    Tap anywhere to close
-                </div>
-                
+                Tap anywhere to close
             </div>
-        </div>
-    </transition>
-   </div>
-                   <div v-if="currentView === 'forecast'" class="space-y-6 pb-24 animate-fade-in">
+            
+        </div> </div> </transition>
+
+</div> </div> <div v-if="currentView === 'forecast'" class="space-y-6 pb-24 animate-fade-in">
                 
                 <div class="w-full flex justify-end mb-2 print:hidden">
                     <button @click="startForecastTour" class="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold py-1.5 px-3 rounded-full flex items-center gap-2 transition">
