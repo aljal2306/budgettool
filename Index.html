@@ -1393,45 +1393,37 @@
                                 </div>
                             </div>
                             
-                        <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/80 flex-shrink-0 z-10">
-                            <button @click="handleSave" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition transform active:scale-95">
-                                {{ isEditing ? 'Update Item' : 'Save Item' }}
-                            </button>
-                        </div>
-                        
-                    </div> </div> </div> </div> </transition>
-
-    <div id="tour-ledger" class="mb-8 mt-6">
-        <div @click="showBillModal = true" class="bg-gradient-to-br from-indigo-800 to-indigo-900 text-white p-6 rounded-2xl shadow-lg cursor-pointer relative group hover:scale-[1.01] transition-transform duration-200">
-            <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-                <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl group-hover:scale-110 transition-transform duration-500">📅</div>
-            </div>
-            
-            <div class="relative z-20 flex justify-between items-start">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10">
-                        📉
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg tracking-tight">Current Bills</h3>
-                        <p class="text-indigo-200 text-xs font-medium">{{ countBillDue }} Unpaid Bills</p>
-                    </div>
-                </div>
-
-                <button @click.stop="openGenerateModal(0)" 
-                        class="px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-bold text-xs shadow-lg transition flex items-center gap-2">
-                    <span>+</span> Review & Add
+                        <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/80 flex-shrink-0">
+                <button @click="handleSave" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg">
+                    {{ isEditing ? 'Update Item' : 'Save Item' }}
                 </button>
             </div>
 
-            <div class="mt-6 relative z-10">
-                <p class="text-indigo-300 text-xs uppercase tracking-widest font-bold mb-1">Total Due</p>
-                <div class="text-4xl font-black tracking-tight text-white">
-                    ${{ totalBillDue.toLocaleString(undefined, {minimumFractionDigits: 2}) }}
+        </div> </div> </transition> <div id="tour-ledger" class="mt-8 mb-8">
+    <div @click="showBillModal = true" class="bg-gradient-to-br from-indigo-800 to-indigo-900 text-white p-6 rounded-2xl shadow-lg cursor-pointer relative group hover:scale-[1.01] transition-transform duration-200">
+        <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+            <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl">📅</div>
+        </div>
+        
+        <div class="relative z-20 flex justify-between items-start">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl">📉</div>
+                <div>
+                    <h3 class="font-bold text-lg tracking-tight">Current Bills</h3>
+                    <p class="text-indigo-200 text-xs font-medium">{{ countBillDue }} Unpaid Bills</p>
                 </div>
+            </div>
+            <button @click.stop="openGenerateModal(0)" class="px-4 py-2 bg-indigo-500 text-white rounded-lg font-bold text-xs shadow-lg">+ Review & Add</button>
+        </div>
+
+        <div class="mt-6 relative z-10">
+            <p class="text-indigo-300 text-xs uppercase tracking-widest font-bold mb-1">Total Due</p>
+            <div class="text-4xl font-black tracking-tight text-white">
+                ${{ totalBillDue.toLocaleString(undefined, {minimumFractionDigits: 2}) }}
             </div>
         </div>
     </div>
+</div>
 
 </div> <div v-if="currentView === 'forecast'" class="space-y-6 pb-24 animate-fade-in">
                 
