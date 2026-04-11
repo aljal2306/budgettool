@@ -1051,371 +1051,136 @@
         </header>
     </div>
 
-   <div id="tour-manage-budget" class="mb-8 relative z-20">
-    
-    <div class="bg-gradient-to-br from-violet-800 to-fuchsia-900 text-white p-6 rounded-2xl shadow-lg relative group hover:scale-[1.01] transition-transform duration-200">
-        
-        <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-            <div class="absolute -right-6 -bottom-8 opacity-10 text-9xl transition-transform duration-500">🔮</div>
-        </div>
-        
-        <div class="relative z-10">
-            <div class="flex justify-between items-start mb-6">
-                <div class="flex items-center gap-3">
-                    <div @click="showPlannerModal = true" class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10 cursor-pointer hover:bg-white/20 transition">
-                        📝
+    <div id="tour-manage-budget" class="mb-8 relative z-20">
+        <div class="bg-gradient-to-br from-violet-800 to-fuchsia-900 text-white p-6 rounded-2xl shadow-lg relative group hover:scale-[1.01] transition-transform duration-200">
+            <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+                <div class="absolute -right-6 -bottom-8 opacity-10 text-9xl transition-transform duration-500">🔮</div>
+            </div>
+            
+            <div class="relative z-10">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="flex items-center gap-3">
+                        <div @click="showPlannerModal = true" class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10 cursor-pointer hover:bg-white/20 transition">📝</div>
+                        <div>
+                            <h3 class="font-bold text-lg tracking-tight cursor-pointer" @click="showPlannerModal = true">Budget Planner</h3>
+                            <p class="text-fuchsia-200 text-xs font-medium cursor-pointer" @click="showPlannerModal = true">{{ budgetItems.length }} Items Managed</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 class="font-bold text-lg tracking-tight cursor-pointer" @click="showPlannerModal = true">Budget Planner</h3>
-                        <p class="text-fuchsia-200 text-xs font-medium cursor-pointer" @click="showPlannerModal = true">
-                            {{ budgetItems.length }} Items Managed
-                        </p>
+                    <button @click.stop="showModeHelp = true" class="text-fuchsia-200 hover:text-white transition p-1 rounded-full hover:bg-white/10">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                    </button>
+                </div>
+
+                <div class="relative mb-4">
+                    <div class="bg-black/20 p-1 rounded-xl flex gap-1 backdrop-blur-sm border border-white/10">
+                        <button @click="setScenarioMode('survival')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'survival' ? 'bg-white text-orange-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">🛡️ Survival</button>
+                        <button @click="setScenarioMode('standard')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'standard' ? 'bg-white text-blue-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">⚖️ Standard</button>
+                        <button @click="setScenarioMode('dream')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'dream' ? 'bg-white text-purple-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">🚀 Dream</button>
                     </div>
                 </div>
 
-                <button @click.stop="showModeHelp = true" class="text-fuchsia-200 hover:text-white transition p-1 rounded-full hover:bg-white/10" title="What are these modes?">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="relative mb-4">
-                <div class="bg-black/20 p-1 rounded-xl flex gap-1 backdrop-blur-sm border border-white/10">
-                    <button @click="setScenarioMode('survival')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'survival' ? 'bg-white text-orange-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">
-                        🛡️ Survival
-                    </button>
-                    <button @click="setScenarioMode('standard')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'standard' ? 'bg-white text-blue-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">
-                        ⚖️ Standard
-                    </button>
-                    <button @click="setScenarioMode('dream')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'dream' ? 'bg-white text-purple-600 shadow-sm' : 'text-fuchsia-100 hover:bg-white/10'">
-                        🚀 Dream
-                    </button>
+                <div @click="showPlannerModal = true" class="cursor-pointer">
+                    <p class="text-fuchsia-200 text-xs uppercase tracking-widest font-bold mb-1">{{ currentScenarioMode }} Monthly Burn</p>
+                    <div class="text-3xl font-black tracking-tight text-white">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
                 </div>
-            </div>
-
-            <div @click="showPlannerModal = true" class="cursor-pointer">
-                <p class="text-fuchsia-200 text-xs uppercase tracking-widest font-bold mb-1">
-                    {{ currentScenarioMode }} Monthly Burn
-                </p>
-                <div class="text-3xl font-black tracking-tight text-white">
-                    -${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 2}) }}
-                </div>
-            </div>
-        </div> </div> </div> <transition name="fade">
-    <div v-if="showModeHelp" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click="showModeHelp = false">
-        <div class="bg-slate-900 border border-slate-600 rounded-xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] animate-slide-up relative" @click.stop>
-            <div class="flex justify-between items-center p-4 border-b border-slate-700 shrink-0">
-                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Mode Definitions</h4>
-                <button @click="showModeHelp = false" class="text-slate-400 hover:text-white font-bold text-2xl leading-none">&times;</button>
-            </div>
-            <div class="p-4 space-y-4 text-xs text-slate-300 overflow-y-auto custom-scrollbar">
-                <div class="flex gap-3">
-                    <div class="mt-0.5 text-lg shrink-0">🛡️</div>
-                    <div><span class="text-orange-400 font-bold block mb-0.5">Survival Mode</span><span class="leading-tight block opacity-90">Only "Core" bills & variable food budgets. Zero extras.</span></div>
-                </div>
-                <div class="flex gap-3">
-                    <div class="mt-0.5 text-lg shrink-0">⚖️</div>
-                    <div><span class="text-blue-400 font-bold block mb-0.5">Standard Mode</span><span class="leading-tight block opacity-90">Your realistic life. Includes all active bills and variable spending.</span></div>
-                </div>
-                <div class="flex gap-3">
-                    <div class="mt-0.5 text-lg shrink-0">🚀</div>
-                    <div><span class="text-purple-400 font-bold block mb-0.5">Dream Mode</span><span class="leading-tight block opacity-90">Standard + items marked "Wishlist". Perfect for future planning.</span></div>
-                </div>
-            </div>
-            <div @click="showModeHelp = false" class="p-4 text-[10px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:bg-slate-800 rounded-b-xl transition shrink-0">
-                Tap anywhere to close
             </div>
         </div>
     </div>
-</transition>
 
+    <transition name="fade">
+        <div v-if="showModeHelp" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click="showModeHelp = false">
+            <div class="bg-slate-900 border border-slate-600 rounded-xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] animate-slide-up relative" @click.stop>
+                <div class="flex justify-between items-center p-4 border-b border-slate-700 shrink-0">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider">Mode Definitions</h4>
+                    <button @click="showModeHelp = false" class="text-slate-400 hover:text-white font-bold text-2xl leading-none">&times;</button>
+                </div>
+                <div class="p-4 space-y-4 text-xs text-slate-300 overflow-y-auto custom-scrollbar">
+                    <div class="flex gap-3">
+                        <div class="mt-0.5 text-lg shrink-0">🛡️</div>
+                        <div><span class="text-orange-400 font-bold block mb-0.5">Survival Mode</span><span class="leading-tight block opacity-90">Only core bills and food.</span></div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="mt-0.5 text-lg shrink-0">⚖️</div>
+                        <div><span class="text-blue-400 font-bold block mb-0.5">Standard Mode</span><span class="leading-tight block opacity-90">Your realistic life.</span></div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="mt-0.5 text-lg shrink-0">🚀</div>
+                        <div><span class="text-purple-400 font-bold block mb-0.5">Dream Mode</span><span class="leading-tight block opacity-90">Standard + Wishlist.</span></div>
+                    </div>
+                </div>
+                <div @click="showModeHelp = false" class="p-4 text-[10px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:bg-slate-800 rounded-b-xl transition shrink-0">Tap anywhere to close</div>
+            </div>
+        </div>
+    </transition>
 
     <transition name="fade">
         <div v-if="showPlannerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div class="bg-white dark:bg-slate-800 w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
-                
                 <div class="p-4 sm:p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-start sm:items-center flex-shrink-0 gap-2">
-    
-    <div class="min-w-0">
-        <h2 class="text-lg sm:text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 truncate">
-            <span>🔮</span> Budget Manager
-        </h2>
-        <div class="flex items-center gap-2 mt-1 text-[10px] sm:text-xs font-medium flex-wrap">
-            <span class="text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                Burn: <span class="text-red-500 font-bold">-${{ totalMonthlyBurn.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}</span>
-            </span>
-            <span class="hidden sm:block w-px h-3 bg-slate-300 dark:bg-slate-600"></span>
-            <span class="text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                Left: 
-                <span class="font-bold transition-colors duration-300" :class="(activeMonthlyPay - totalMonthlyBurn) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
-                    ${{ (activeMonthlyPay - totalMonthlyBurn).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
-                </span>
-            </span>
-        </div>
-    </div>
-    
-    <div class="flex items-center gap-2 flex-shrink-0 mt-0.5 sm:mt-0">
-        <button v-if="!showAddForm" @click="showAddForm = true; isEditing = false; newItem = { name: '', amount: '', frequency: 'Monthly', is_core: false, is_variable: false, is_autopay: false, is_wishlist: false };" 
-                class="flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800 shadow-sm transition-all w-8 h-8 rounded-full sm:w-auto sm:h-auto sm:px-3 sm:py-2 sm:rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800">
-            <span class="text-lg leading-none">+</span>
-            <span class="hidden sm:inline text-xs ml-1">New Item</span>
-        </button>
-
-        <button @click="showPlannerModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center justify-center">
-            &times;
-        </button>
-    </div>
-    
-</div>
+                    <div class="min-w-0">
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 truncate"><span>🔮</span> Budget Manager</h2>
+                        <div class="flex items-center gap-2 mt-1 text-[10px] sm:text-xs font-medium flex-wrap">
+                            <span class="text-slate-500 dark:text-slate-400">Burn: <span class="text-red-500 font-bold">-${{ totalMonthlyBurn.toLocaleString() }}</span></span>
+                        </div>
+                    </div>
+                    <button @click="showPlannerModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition flex items-center justify-center">&times;</button>
+                </div>
 
                 <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
-                    
-                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4" :class="showAddForm ? 'hidden md:block' : ''"> <div class="sticky top-0 z-20 pb-2 bg-white dark:bg-slate-800">
+                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4" :class="showAddForm ? 'hidden md:block' : ''">
+                        <div class="sticky top-0 z-20 pb-2 bg-white dark:bg-slate-800">
                             <div class="bg-slate-100 dark:bg-slate-700/50 p-1 rounded-xl flex gap-1 shadow-sm border border-slate-200 dark:border-slate-600">
-                                <button @click="setScenarioMode('survival')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'survival' ? 'bg-white dark:bg-slate-600 text-orange-600 dark:text-orange-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50'">
-                                    🛡️ Survival
-                                </button>
-                                <button @click="setScenarioMode('standard')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'standard' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50'">
-                                    ⚖️ Standard
-                                </button>
-                                <button @click="setScenarioMode('dream')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition text-center" :class="currentScenarioMode === 'dream' ? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50'">
-                                    🚀 Dream
-                                </button>
+                                <button @click="setScenarioMode('survival')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition" :class="currentScenarioMode === 'survival' ? 'bg-white dark:bg-slate-600 text-orange-600 shadow-sm' : 'text-slate-500'">🛡️ Survival</button>
+                                <button @click="setScenarioMode('standard')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition" :class="currentScenarioMode === 'standard' ? 'bg-white dark:bg-slate-600 text-blue-600 shadow-sm' : 'text-slate-500'">⚖️ Standard</button>
+                                <button @click="setScenarioMode('dream')" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-lg transition" :class="currentScenarioMode === 'dream' ? 'bg-white dark:bg-slate-600 text-purple-600 shadow-sm' : 'text-slate-500'">🚀 Dream</button>
                             </div>
                         </div>
 
                         <div>
                             <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Active Bills</h4>
                             <div class="space-y-2">
-                                <div v-for="item in standardItems" :key="item.id" 
-                                     class="flex items-center justify-between p-3 border dark:border-slate-700 rounded-xl transition-all group hover:border-blue-300 dark:hover:border-blue-700 cursor-pointer select-none" 
-                                     :class="item.includedInScenario ? 'bg-white dark:bg-slate-800 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 opacity-60 grayscale'" 
-                                     @click="item.includedInScenario = !item.includedInScenario">
-                                    
+                                <div v-for="item in standardItems" :key="item.id" class="flex items-center justify-between p-3 border dark:border-slate-700 rounded-xl transition-all" :class="item.includedInScenario ? 'bg-white dark:bg-slate-800 shadow-sm' : 'opacity-60 grayscale'">
                                     <div class="flex-1">
-                                        <div class="flex items-center gap-2">
-                                            <span v-if="item.is_core" class="text-xs" title="Core Expense">⭐</span>
-                                            <div class="font-bold text-sm dark:text-white">{{ item.name }}</div>
-                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                                <button @click.stop="startEditing(item); showAddForm = true" class="text-[10px] bg-slate-100 dark:bg-slate-700 text-blue-500 px-1.5 py-0.5 rounded hover:bg-blue-50">Edit</button>
-                                                <button @click.stop="deleteBudgetItem(item)" class="text-[10px] bg-slate-100 dark:bg-slate-700 text-red-500 px-1.5 py-0.5 rounded hover:bg-red-50">Del</button>
-                                            </div>
-                                        </div>
-                                        <div class="text-xs text-slate-500 dark:text-slate-400 font-mono flex items-center gap-2 mt-0.5">
-                                            <span>${{ item.amount.toFixed(2) }}</span>
-                                            <span v-if="item.frequency !== 'Monthly'" class="text-[9px] bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-1.5 rounded-full">{{ item.frequency }}</span>
-                                        </div>
+                                        <div class="font-bold text-sm dark:text-white">{{ item.name }}</div>
+                                        <div class="text-xs text-slate-500 font-mono">${{ item.amount.toFixed(2) }}</div>
                                     </div>
-
-                                    <div class="w-10 h-6 rounded-full relative transition-colors duration-200" :class="item.includedInScenario ? 'bg-blue-500' : 'bg-slate-200 dark:bg-slate-600'">
-                                        <div class="absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow-sm transition-transform duration-200" :class="item.includedInScenario ? 'translate-x-4' : 'translate-x-0'"></div>
+                                    <div @click="item.includedInScenario = !item.includedInScenario" class="w-10 h-6 rounded-full relative cursor-pointer transition-colors" :class="item.includedInScenario ? 'bg-blue-500' : 'bg-slate-200 dark:bg-slate-600'">
+                                        <div class="absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform" :class="item.includedInScenario ? 'translate-x-4' : 'translate-x-0'"></div>
                                     </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h4 class="text-xs font-bold text-purple-400 uppercase mb-2 flex items-center gap-2">
-                                ✨ Wishlist / Sandbox <span class="text-[9px] bg-purple-50 text-purple-600 px-2 rounded-full">Not Billed</span>
-                            </h4>
-                            <div class="space-y-2">
-                                <div v-for="item in wishlistItems" :key="item.id" 
-                                     class="flex items-center justify-between p-3 border border-purple-100 dark:border-purple-900 rounded-xl transition-all group hover:bg-purple-50 dark:hover:bg-purple-900/10 cursor-pointer select-none" 
-                                     :class="item.includedInScenario ? 'bg-white dark:bg-slate-800' : 'opacity-60 grayscale'" 
-                                     @click="item.includedInScenario = !item.includedInScenario">
-                                    
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-2">
-                                            <div class="font-bold text-sm text-purple-900 dark:text-purple-300">{{ item.name }}</div>
-                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                                <button @click.stop="startEditing(item); showAddForm = true" class="text-[10px] bg-white border px-1.5 py-0.5 rounded text-slate-400 hover:text-blue-500">Edit</button>
-                                                <button @click.stop="deleteBudgetItem(item)" class="text-[10px] bg-white border px-1.5 py-0.5 rounded text-slate-400 hover:text-red-500">Del</button>
-                                            </div>
-                                        </div>
-                                        <div class="text-xs text-purple-700 dark:text-purple-400 font-mono">${{ item.amount.toFixed(2) }}</div>
-                                    </div>
-
-                                    <div class="w-10 h-6 rounded-full relative transition-colors duration-200" :class="item.includedInScenario ? 'bg-purple-500' : 'bg-slate-200 dark:bg-slate-600'">
-                                        <div class="absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow-sm transition-transform duration-200" :class="item.includedInScenario ? 'translate-x-4' : 'translate-x-0'"></div>
-                                    </div>
-
-                                </div>
-                                <div v-if="wishlistItems.length === 0" class="text-xs text-slate-400 italic p-4 text-center border-2 border-dashed border-slate-100 rounded-xl">
-                                    No items. Create one and check "Wishlist".
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div v-if="showAddForm" class="md:w-80 bg-slate-50 dark:bg-slate-900/50 border-t md:border-t-0 md:border-l dark:border-slate-700 flex flex-col h-full flex-shrink-0 transition-all">
-                        
-                        <div class="flex justify-between items-center p-5 pb-2 flex-shrink-0">
+                    <div v-if="showAddForm" class="md:w-80 bg-slate-50 dark:bg-slate-900/50 border-t md:border-t-0 md:border-l dark:border-slate-700 flex flex-col h-full">
+                        <div class="flex justify-between items-center p-5 pb-2">
                             <h4 class="text-sm font-bold text-slate-800 dark:text-white">{{ isEditing ? 'Edit Item' : 'Add New Item' }}</h4>
                             <button @click="showAddForm = false" class="text-slate-400 hover:text-slate-600">&times;</button>
                         </div>
-                        
-                        <div class="flex-1 overflow-y-auto p-5 pt-2 custom-scrollbar space-y-3">
-                            <input v-model="newItem.name" type="text" placeholder="Bill Name (e.g. Netflix)" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                            
-                            <div class="grid grid-cols-2 gap-2">
-                                <input v-model="newItem.amount" type="number" step="0.01" placeholder="$ Amount" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <input v-if="!newItem.isFlexible" v-model="newItem.due_day" type="number" placeholder="Day (1-31)" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <div v-else class="flex items-center justify-center text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-lg border dark:border-slate-600">Flexible Date</div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-2">
-                                <select v-model="newItem.frequency" class="w-full p-2.5 border rounded-lg text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none">
-                                    <option>Monthly</option>
-                                    <option>Quarterly</option>
-                                    <option>Yearly</option>
-                                    <option>One-Time</option>
-                                </select>
-                                <select v-model="newItem.category" class="w-full p-2.5 border rounded-lg text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none">
-                                    <option v-for="cat in categories" :value="cat">{{ cat }}</option>
-                                </select>
-                            </div>
-
-                            <div class="space-y-2 pt-2">
-                                <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-indigo-300 transition">
-                                    <input type="checkbox" v-model="newItem.isFlexible" class="text-indigo-600 rounded focus:ring-indigo-500">
-                                    <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Flexible Date (No due day)</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-yellow-300 transition">
-                                    <input type="checkbox" v-model="newItem.is_core" class="text-yellow-500 rounded focus:ring-yellow-500">
-                                    <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Core / Essential Item</span>
-                                </label>
-                                <div class="col-span-2">
-                                    <div class="flex items-center gap-2">
-                                        <label class="flex-1 flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-amber-300 transition" :class="newItem.is_autopay ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : ''">
-                                            <input type="checkbox" v-model="newItem.is_autopay" class="text-amber-500 rounded focus:ring-amber-500 w-4 h-4">
-                                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                            ⚡ Auto Pay
-                                            </span>
-                                        </label>
-
-                                        <button @click="showAutoPayHelp = !showAutoPayHelp" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-indigo-100 hover:text-indigo-500 transition">
-                                            <span class="font-bold font-serif italic">i</span>
-                                        </button>
-                                    </div>
-
-                                    <div v-if="showAutoPayHelp" class="mt-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-200 text-xs rounded-lg border border-indigo-100 dark:border-indigo-800 animate-slide-down">
-                                        <p class="font-bold mb-1">How Auto Pay Works:</p>
-                                        <p class="leading-relaxed opacity-90">
-                                            If enabled, this bill will be <strong>automatically marked as paid</strong> on its due date every month.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 mt-3">
-                               <label class="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
-                            Default Payment Account
-                              </label>
-                              <div class="grid grid-cols-2 gap-2">
-                            <button type="button"  
-                              @click="newItem.preferred_method = 'debit'"
-                              :class="newItem.preferred_method === 'debit' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-slate-200 dark:border-slate-700 text-slate-400'"
-                              class="flex items-center justify-center gap-2 p-2 border-2 rounded-lg transition-all">
-                              <span class="text-sm">🏦</span>
-                              <span class="text-xs font-bold">Bank</span>
-                            </button>
-
-                            <button type="button"  
-                             @click="newItem.preferred_method = 'credit'"
-                             :class="newItem.preferred_method === 'credit' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600' : 'border-slate-200 dark:border-slate-700 text-slate-400'"
-                            class="flex items-center justify-center gap-2 p-2 border-2 rounded-lg transition-all">
-                            <span class="text-sm">💳</span>
-                            <span class="text-xs font-bold">Credit</span>
-                           </button>
+                        <div class="flex-1 overflow-y-auto p-5 pt-2 space-y-3">
+                            <input v-model="newItem.name" type="text" placeholder="Bill Name" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                            <input v-model="newItem.amount" type="number" placeholder="$ Amount" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
                         </div>
-                        <p class="text-[10px] text-slate-400 mt-2 italic">
-                       Used by Auto-Pay and Quick-Pay to determine which balance to hit.
-                       </p>
-                      </div>
-                                <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-blue-300 transition">
-                                    <input type="checkbox" v-model="newItem.is_variable" class="text-blue-500 rounded focus:ring-blue-500">
-                                    <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Variable (Grocery/Gas)</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded-lg cursor-pointer hover:border-purple-300 transition">
-                                    <input type="checkbox" v-model="newItem.is_wishlist" class="text-purple-500 rounded focus:ring-purple-500">
-                                    <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Wishlist (Not Billed)</span>
-                                </label>
-                            </div>
-<div v-if="newItem.is_wishlist" class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800 animate-fade-in">
-                                <label class="block text-[10px] font-bold text-purple-400 uppercase mb-1">Replaces existing bill?</label>
-                                <select v-model="newItem.replaces_id" class="w-full p-2 border border-purple-200 rounded text-xs dark:bg-slate-800 dark:text-white dark:border-slate-600">
-                                    <option :value="null">-- None --</option>
-                                    <option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option>
-                                </select>
-                            </div>
-
-                            <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800 mt-2 transition-all">
-                                <div class="flex items-center justify-between mb-2">
-                                    <label class="block text-[10px] font-bold text-red-400 uppercase">Pays off a Liability?</label>
-                                    <button type="button" @click="showDebtHelp = !showDebtHelp" class="w-6 h-6 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-400 hover:bg-red-200 hover:text-red-600 transition">
-                                        <span class="font-bold font-serif italic text-xs">i</span>
-                                    </button>
-                                </div>
-                                
-                                <div class="relative mt-3">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Link to Debt Account</label>
-                                        <span v-if="!isPremiumUser" class="bg-amber-500/10 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1 shadow-sm">
-                                            👑 Premium
-                                        </span>
-                                    </div>
-
-                                    <div v-if="showDebtHelp" class="mb-3 p-2.5 bg-white/60 dark:bg-slate-800/60 text-red-800 dark:text-red-200 text-xs rounded border border-red-100 dark:border-red-800 animate-slide-down">
-                                        <p class="font-bold mb-1">How Debt Linking Works:</p>
-                                        <p class="leading-relaxed opacity-90 text-[11px]">
-                                            If you link this to a tracked Debt (like a Credit Card or Car Loan), logging a payment for this bill will <strong>automatically reduce your total debt balance</strong> accordingly.
-                                        </p>
-                                    </div>
-
-                                    <div class="relative group mb-4">
-                                        <select v-model="newItem.debt_id" 
-                                                :disabled="!isPremiumUser"
-                                                :class="!isPremiumUser ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-900' : 'focus:border-red-400 bg-white dark:bg-slate-800'"
-                                                class="w-full p-2 border border-red-200 rounded text-xs dark:text-white dark:border-slate-600 outline-none transition-all">
-                                            <option :value="null">-- No, just a regular bill --</option>
-                                            <option v-for="debt in debts" :key="debt.id" :value="debt.id">
-                                                {{ debt.name }} (Bal: ${{ debt.balance.toLocaleString() }})
-                                            </option>
-                                        </select>
-                                        
-                                        <div v-if="!isPremiumUser" 
-                                             @click.stop.prevent="requirePremium(() => {})" 
-                                             class="absolute inset-0 z-20 cursor-pointer" 
-                                             title="Upgrade to Premium to link debts">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                        <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/80 flex-shrink-0 z-10">
-                            <button @click="handleSave" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition transform active:scale-95">
+                        <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/80">
+                            <button @click="handleSave" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">
                                 {{ isEditing ? 'Update Item' : 'Save Item' }}
                             </button>
                         </div>
-                        
-                    </div> 
-                </div> 
-            </div> 
-        </div> 
+                    </div>
+                </div>
+            </div>
+        </div>
     </transition>
 
     <div id="tour-ledger" class="mb-8 mt-6">
         <div @click="showBillModal = true" class="bg-gradient-to-br from-indigo-800 to-indigo-900 text-white p-6 rounded-2xl shadow-lg cursor-pointer relative group hover:scale-[1.01] transition-transform duration-200">
-            
             <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
                 <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl group-hover:scale-110 transition-transform duration-500">📅</div>
             </div>
             
             <div class="relative z-20 flex justify-between items-start">
                 <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10">
-                        📉
-                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner border border-white/10">📉</div>
                     <div>
                         <h3 class="font-bold text-lg tracking-tight">Current Bills</h3>
                         <p class="text-indigo-200 text-xs font-medium">{{ countBillDue }} Unpaid Bills</p>
@@ -1423,34 +1188,18 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <button @click.stop="showActiveBillHelp = true" class="text-indigo-200 hover:text-white transition p-1 rounded-full hover:bg-white/10" title="How do active bills work?">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                        </svg>
+                    <button @click.stop="showActiveBillHelp = true" class="text-indigo-200 hover:text-white transition p-1 rounded-full hover:bg-white/10">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
                     </button>
-
-                    <div class="relative">
-                        <div v-if="needsNextMonthBills" class="absolute -top-1 -right-1 w-3 h-3 z-20">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                        </div>
-                        <button @click.stop="openGenerateModal(0)" 
-                            class="px-4 py-2 rounded-lg font-bold text-xs shadow-lg transition flex items-center gap-2 border relative z-10"
-                            :class="needsNextMonthBills ? 'bg-orange-500 hover:bg-orange-400 text-white border-orange-400 shadow-orange-900/20 animate-pulse-slow' : 'bg-indigo-500 hover:bg-indigo-400 text-white border-transparent shadow-indigo-500/20'">
-                            <span class="text-lg leading-none">{{ needsNextMonthBills ? '⚠️' : '+' }}</span>
-                            <span class="flex flex-col items-start leading-tight">
-                                <span>{{ needsNextMonthBills ? 'Add Next Month' : 'Review & Add' }}</span>
-                            </span>
-                        </button>
-                    </div>
+                    <button @click.stop="openGenerateModal(0)" class="px-4 py-2 rounded-lg font-bold text-xs shadow-lg transition flex items-center gap-2 border relative z-10" :class="needsNextMonthBills ? 'bg-orange-500 text-white' : 'bg-indigo-500 text-white'">
+                        <span>{{ needsNextMonthBills ? 'Add Next Month' : 'Review & Add' }}</span>
+                    </button>
                 </div>
             </div>
 
             <div class="mt-6 relative z-10">
                 <p class="text-indigo-300 text-xs uppercase tracking-widest font-bold mb-1">Total Due</p>
-                <div class="text-4xl font-black tracking-tight text-white">
-                    ${{ totalBillDue.toLocaleString(undefined, {minimumFractionDigits: 2}) }}
-                </div>
+                <div class="text-4xl font-black tracking-tight text-white">${{ totalBillDue.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
             </div>
         </div>
 
@@ -1461,15 +1210,13 @@
                         <h4 class="text-xs font-bold text-white uppercase tracking-wider">Activating Bills</h4>
                         <button @click="showActiveBillHelp = false" class="text-slate-400 hover:text-white font-bold text-2xl leading-none">&times;</button>
                     </div>
-                    <div class="p-4 space-y-4 text-xs text-slate-300 overflow-y-auto custom-scrollbar">
+                    <div class="p-4 space-y-4 text-xs text-slate-300 overflow-y-auto">
                         <div class="flex gap-3">
                             <div class="mt-0.5 text-lg shrink-0">💡</div>
                             <div><span class="text-emerald-400 font-bold block mb-0.5">Make it Active</span><span class="leading-tight block opacity-90">Adding a bill makes it "Active."</span></div>
                         </div>
                     </div>
-                    <div @click="showActiveBillHelp = false" class="p-4 text-[10px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:bg-slate-800 rounded-b-xl transition shrink-0">
-                        Tap anywhere to close
-                    </div>
+                    <div @click="showActiveBillHelp = false" class="p-4 text-[10px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:bg-slate-800 transition shrink-0">Tap anywhere to close</div>
                 </div>
             </div>
         </transition>
