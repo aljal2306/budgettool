@@ -1595,58 +1595,62 @@
 </div>
 
                    <div id="tour-forecast-settings" 
-                    @click="showForecastSettings = true" 
-                    class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-green-400 transition relative overflow-visible order-3 z-20">
+     @click="showForecastSettings = true" 
+     class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-green-400 transition relative overflow-visible order-3 z-20">
     
-                    <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-                    <div class="absolute right-0 top-0 w-20 h-20 bg-green-500/10 rounded-bl-full transition group-hover:bg-green-500/20"></div>
-                    </div>
+    <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+        <div class="absolute right-0 top-0 w-20 h-20 bg-green-500/10 rounded-bl-full transition group-hover:bg-green-500/20"></div>
+    </div>
 
-                   <div class="relative z-10">
-                            
-                            <div class="flex justify-between items-start mb-1">
-                                <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cash Flow Engine</h3>
-                                
-                                <button @click.stop="showCashFlowHelp = !showCashFlowHelp" class="text-slate-300 hover:text-green-500 transition p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 -mt-1 -mr-1" title="How does this work?">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                                    </svg>
-                                </button>
-                            </div>
+    <div class="relative z-10">
+            
+        <div class="flex justify-between items-start mb-1">
+            <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cash Flow Engine</h3>
+            
+            <button @click.stop="showCashFlowHelp = !showCashFlowHelp" class="text-slate-300 hover:text-green-500 transition p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 -mt-1 -mr-1" title="How does this work?">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+            </button>
+        </div>
 
-                            <transition name="fade">
-                                <div v-if="showCashFlowHelp" class="absolute top-10 right-0 z-50 w-64 md:w-80 p-4 bg-slate-900 border border-slate-600 rounded-xl shadow-2xl text-left animate-slide-up cursor-default shadow-black/50" @click.stop>
-                                    <div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
-                                        <h4 class="text-xs font-bold text-white uppercase tracking-wider">True Buying Power</h4>
-                                        <button @click.stop="showCashFlowHelp = false" class="text-slate-400 hover:text-white font-bold">&times;</button>
-                                    </div>
-                                    <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
-                                        <p>
-                                            <strong class="text-green-400 block mb-1">Live Adjustments</strong>
-                                            Logging expenses and paying bills automatically updates this number. You can also manually correct it here if needed.
-                                        </p>
-                                        <p>
-                                            <strong class="text-blue-400 block mb-1">Why is this different from my bank?</strong>
-                                            If you use credit cards, your actual bank balance might look high, but you actually have less "real" money. 
-                                        </p>
-                                        <p class="italic text-slate-400 border-l-2 border-slate-600 pl-2">
-                                            This number represents your <strong>True Buying Power</strong> (Cash - Pending Commitments).
-                                        </p>
-                                    </div>
-                                    <div class="mt-3 pt-2 text-[9px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800" @click="showCashFlowHelp = false">
-                                        Close
-                                    </div>
-                                </div>
-                            </transition>
+        <transition name="fade">
+            <div v-if="showCashFlowHelp" class="absolute top-10 right-0 z-50 w-64 md:w-80 p-4 bg-slate-900 border border-slate-600 rounded-xl shadow-2xl text-left animate-slide-up cursor-default shadow-black/50" @click.stop>
+                <div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider">True Buying Power</h4>
+                    <button @click.stop="showCashFlowHelp = false" class="text-slate-400 hover:text-white font-bold">&times;</button>
+                </div>
+                <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+                    <p>
+                        <strong class="text-green-400 block mb-1">Live Adjustments</strong>
+                        Logging expenses and paying bills automatically updates this number. You can also manually correct it here if needed.
+                    </p>
+                    <p>
+                        <strong class="text-blue-400 block mb-1">Why is this different from my bank?</strong>
+                        If you use credit cards, your actual bank balance might look high, but you actually have less "real" money. 
+                    </p>
+                    <p class="italic text-slate-400 border-l-2 border-slate-600 pl-2">
+                        This number represents your <strong>True Buying Power</strong> (Cash - Pending Commitments).
+                    </p>
+                </div>
+                <div class="mt-3 pt-2 text-[9px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:text-white transition" @click="showCashFlowHelp = false">
+                    Close
+                </div>
+            </div>
+        </transition>
 
-                            <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                                ${{ (forecastSettings?.currentBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
-                            </div>
-                            <div class="text-[10px] text-green-600 dark:text-green-400 font-bold mt-1 flex items-center gap-1">
-                                <span>+{{ forecastSettings.months }} Month Horizon</span>
-                            </div>
-                        </div>
-                    </div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+            ${{ (forecastSettings?.currentBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
+        </div>
+        
+        <div class="text-[10px] font-bold mt-1 flex items-center gap-2">
+            <span class="text-green-600 dark:text-green-400">+{{ forecastSettings.months }} Month Horizon</span>
+            <span v-if="!isPremiumUser && forecastSettings.months >= 3" class="bg-amber-500/10 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 shadow-sm flex items-center gap-1">
+                🔒 Max Free Limit
+            </span>
+        </div>
+    </div>
+</div>
 
                 </div>
 
