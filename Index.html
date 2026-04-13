@@ -3368,15 +3368,58 @@ const verifyCode = async () => {
             const printReport = () => { window.print(); };
 
             const exportData = () => {
-                if (bills.value.length === 0) { alert("No transaction data to export!"); return; }
-                const headers = ['Date', 'Bill Name', 'Category', 'Amount', 'Status', 'Core/Variable'];
-                const rows = bills.value.map(b => [ b.due_date, `"${b.budget_items.name}"`, `"${b.budget_items.category}"`, b.budget_items.amount.toFixed(2), b.is_paid ? 'Paid' : 'Unpaid', b.budget_items.is_core ? 'Core' : (b.budget_items.is_variable ? 'Variable' : 'Standard') ]);
-                const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `finance_master_export_${new Date().toISOString().split('T')[0]}.csv`);
-                link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            };
+    try {
+        // 1. Check if data exists
+        if (!bills.value || bills.value.length === 0) { 
+            alert("No transaction data to export!"); 
+            return; 
+        }
+
+        const headers = ['Date', 'Bill Name', 'Category', 'Amount', 'Status', 'Core/Variable'];
+        
+        // 2. Safely map the rows
+        const rows = bills.value.map(b => {
+            // Optional chaining (?.) prevents crashes if budget_items is null/missing
+            const itemName = b.budget_items?.name || 'Unknown Bill';
+            const itemCategory = b.budget_items?.category || 'Uncategorized';
+            const itemAmount = Number(b.budget_items?.amount || 0).toFixed(2);
+            const status = b.is_paid ? 'Paid' : 'Unpaid';
+            const type = b.budget_items?.is_core ? 'Core' : (b.budget_items?.is_variable ? 'Variable' : 'Standard');
+
+            return [
+                `"${b.due_date || ''}"`, 
+                `"${itemName}"`, 
+                `"${itemCategory}"`, 
+                itemAmount, 
+                status, 
+                type
+            ];
+        });
+
+        // 3. Generate CSV Content
+        const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        
+        // 4. Trigger Download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a"); 
+        
+        link.setAttribute("href", url); 
+        link.setAttribute("download", `finance_master_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden'; 
+        
+        document.body.appendChild(link); 
+        link.click(); 
+        document.body.removeChild(link);
+        
+        // Clean up memory
+        URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error("Export Error:", error);
+        alert("There was an issue generating your export. Please check the console.");
+    }
+};
 
             const setForecastMode = (mode) => { forecastMode.value = mode; };
             const setScenarioMode = (mode) => { currentScenarioMode.value = mode; const freshItems = budgetItems.value.map(item => ({...item})); freshItems.forEach(item => { if (item.frequency === 'One-Time') { item.includedInScenario = false; return; } if (mode === 'survival') item.includedInScenario = !!item.is_core; else if (mode === 'standard') item.includedInScenario = !item.is_wishlist; else if (mode === 'dream') item.includedInScenario = true; }); if (mode === 'dream') { const activeWishlist = freshItems.filter(i => i.is_wishlist && i.includedInScenario); activeWishlist.forEach(w => { if (w.replaces_id) { const target = freshItems.find(t => t.id === w.replaces_id); if (target) target.includedInScenario = false; } }); } budgetItems.value = freshItems; };
