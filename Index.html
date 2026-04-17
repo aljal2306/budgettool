@@ -2309,81 +2309,95 @@
 
                     <transition name="fade">
     <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+    
+    <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full relative transition-all duration-500 max-h-[90vh] flex flex-col overflow-hidden" 
+         :class="onboardingStep === 0 ? 'max-w-4xl' : 'max-w-md'">
         
-        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full relative transition-all duration-500 max-h-[90vh] flex flex-col overflow-hidden" 
-     :class="onboardingStep === 0 ? 'max-w-4xl' : 'max-w-md'">
-            
-    <div v-if="onboardingStep === 0" class="animate-fade-in">
-    <div class="text-center mb-8">
-        <div class="text-6xl mb-4">👋</div>
-        <h2 class="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Welcome to Total Home Finance</h2>
-        <p class="text-slate-500 dark:text-slate-400 text-base max-w-2xl mx-auto leading-relaxed">
-            This isn't just a ledger; it's a forward-looking cash flow engine. Before we build your plan, here is how the system works.
-        </p>
-    </div>
-
-    <div class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 p-6 rounded-2xl mb-8 shadow-sm relative overflow-hidden">
-        <div class="absolute -right-4 -top-4 text-8xl opacity-10">🏦</div>
-        <h3 class="text-emerald-800 dark:text-emerald-300 font-black text-lg mb-2 flex items-center gap-2 relative z-10">
-            <span>🏦</span> The Golden Rule: Balance = Spending Power
-        </h3>
-        <p class="text-emerald-700 dark:text-emerald-400 text-sm leading-relaxed relative z-10">
-            The "Balance" you see in this app is your <strong>actual available cash</strong>, not necessarily the literal number sitting in your checking account. It is the money you have left to safely deploy after your cash flow is calculated.
-        </p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
-            <h4 class="font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><span>⚙️</span> The Four Pillars</h4>
-            <ul class="text-xs text-slate-500 dark:text-slate-300 space-y-2">
-                <li><strong class="text-slate-700 dark:text-white">🧮 Paycheck:</strong> Where money enters the system.</li>
-                <li><strong class="text-slate-700 dark:text-white">💸 Budget:</strong> Core bills and daily expenses.</li>
-                <li><strong class="text-slate-700 dark:text-white">⚔️ Debt:</strong> Link Budget items directly to Liabilities. Pay the bill, drop the debt!</li>
-                <li><strong class="text-slate-700 dark:text-white">📈 Forecast:</strong> Your financial crystal ball.</li>
-            </ul>
-        </div>
-
-        <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
-            <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2"><span>💳</span> The Points Game</h4>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">When logging expenses, you have two choices:</p>
-            <ul class="text-xs text-slate-500 dark:text-slate-300 space-y-2">
-                <li><strong class="text-slate-700 dark:text-white">Debit:</strong> Instantly deducts from spending power.</li>
-                <li><strong class="text-emerald-600 dark:text-emerald-400 font-bold">Credit:</strong> Deducts from spending power <em>and</em> adds to your Credit Card liability. Rack up points safely!</li>
-            </ul>
-        </div>
-
-        <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
-            <h4 class="font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><span>🎛️</span> Customizing Reality</h4>
-            <ul class="text-xs text-slate-500 dark:text-slate-300 space-y-2">
-                <li><strong class="text-slate-700 dark:text-white">🛡️ Survival, ⚖️ Standard, 🚀 Dream:</strong> Toggle your dashboard to see cash flow based on bare-minimum bills, normal spending, or fully funded wishlists.</li>
-                <li><strong class="text-slate-700 dark:text-white">⚡ Auto Pay:</strong> Mark bills so you know what handles itself.</li>
-            </ul>
-        </div>
-
-        <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
-            <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2"><span>🎁</span> Family Gift Cards</h4>
-            <p class="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                Track gift card balances for <em>everyone</em> in the family. Treat them as alternative spending power so you don't burn your actual cash!
-            </p>
-        </div>
-    </div>
-
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 sm:p-5 rounded-2xl mb-8 flex items-start gap-4 shadow-sm group">
-        <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0 shadow-sm border border-slate-200 dark:border-slate-600 group-hover:bg-blue-100 dark:group-hover:bg-blue-800 transition-colors">
-            <span class="font-bold font-serif italic text-sm">i</span>
-        </div>
-        <div>
-            <h4 class="font-bold text-blue-900 dark:text-blue-300 mb-1 text-sm">Helpful Pointers Everywhere</h4>
-            <p class="text-xs text-blue-800/80 dark:text-blue-300/80 leading-relaxed">
-                Keep a look out for these information buttons throughout the app! Click them anytime to pick up helpful pointers, pro tips, and deep dives into how the cash flow engine works behind the scenes.
-            </p>
-        </div>
-    </div>
-
-    <div class="flex justify-center pt-4 border-t border-slate-100 dark:border-slate-700">
-        <button @click="onboardingStep = 1" class="w-full md:w-auto bg-slate-900 dark:bg-emerald-600 text-white font-black text-lg px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transform transition-all flex items-center justify-center gap-3">
-            I Understand — Let's Build My Plan <span>→</span>
+        <button @click="showOnboarding = false" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full font-bold text-xl z-50 transition">
+            &times;
         </button>
+
+        <div v-if="onboardingStep > 0" class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+            <div class="h-full bg-emerald-500 transition-all duration-500" :style="{ width: (onboardingStep / 5) * 100 + '%' }"></div>
+        </div>
+        
+        <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 min-h-0">
+            
+            <div v-if="onboardingStep === 0" class="animate-fade-in mt-4 md:mt-0">
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-4">👋</div>
+                    <h2 class="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Welcome to Total Home Finance</h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-base max-w-2xl mx-auto leading-relaxed">
+                        This isn't just a ledger; it's a forward-looking cash flow engine. Before we build your plan, here is how the system works.
+                    </p>
+                </div>
+
+                <div class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 p-6 rounded-2xl mb-8 shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 text-8xl opacity-10">🏦</div>
+                    <h3 class="text-emerald-800 dark:text-emerald-300 font-black text-lg mb-2 flex items-center gap-2 relative z-10">
+                        <span>🏦</span> The Golden Rule: Balance = Spending Power
+                    </h3>
+                    <p class="text-emerald-700 dark:text-emerald-400 text-sm leading-relaxed relative z-10">
+                        The "Balance" you see in this app is your <strong>actual available cash</strong>, not necessarily the literal number sitting in your checking account. It is the money you have left to safely deploy after your cash flow is calculated.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><span>⚙️</span> The Four Pillars</h4>
+                        <ul class="text-xs text-slate-500 dark:text-slate-300 space-y-2">
+                            <li><strong class="text-slate-700 dark:text-white">🧮 Paycheck:</strong> Where money enters the system.</li>
+                            <li><strong class="text-slate-700 dark:text-white">💸 Budget:</strong> Core bills and daily expenses.</li>
+                            <li><strong class="text-slate-700 dark:text-white">⚔️ Debt:</strong> Link Budget items directly to Liabilities. Pay the bill, drop the debt!</li>
+                            <li><strong class="text-slate-700 dark:text-white">📈 Forecast:</strong> Your financial crystal ball.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2"><span>💳</span> The Points Game</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">When logging expenses, you have two choices:</p>
+                        <ul class="text-xs text-slate-500 dark:text-slate-300 space-y-2">
+                            <li><strong class="text-slate-700 dark:text-white">Debit:</strong> Instantly deducts from spending power.</li>
+                            <li><strong class="text-emerald-600 dark:text-emerald-400 font-bold">Credit:</strong> Deducts from spending power <em>and</em> adds to your Credit Card liability. Rack up points safely!</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><span>🎛️</span> Customizing Reality</h4>
+                        <ul class="text-xs text-slate-500 dark:text-slate-300 space-y-2">
+                            <li><strong class="text-slate-700 dark:text-white">🛡️ Survival, ⚖️ Standard, 🚀 Dream:</strong> Toggle your dashboard to see cash flow based on bare-minimum bills, normal spending, or fully funded wishlists.</li>
+                            <li><strong class="text-slate-700 dark:text-white">⚡ Auto Pay:</strong> Mark bills so you know what handles itself.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-600">
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2"><span>🎁</span> Family Gift Cards</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
+                            Track gift card balances for <em>everyone</em> in the family. Treat them as alternative spending power so you don't burn your actual cash!
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 sm:p-5 rounded-2xl mb-8 flex items-start gap-4 shadow-sm group">
+                    <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0 shadow-sm border border-slate-200 dark:border-slate-600 group-hover:bg-blue-100 dark:group-hover:bg-blue-800 transition-colors">
+                        <span class="font-bold font-serif italic text-sm">i</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-blue-900 dark:text-blue-300 mb-1 text-sm">Helpful Pointers Everywhere</h4>
+                        <p class="text-xs text-blue-800/80 dark:text-blue-300/80 leading-relaxed">
+                            Keep a look out for these information buttons throughout the app! Click them anytime to pick up helpful pointers, pro tips, and deep dives into how the cash flow engine works behind the scenes.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex justify-center pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <button @click="onboardingStep = 1" class="w-full md:w-auto bg-slate-900 dark:bg-emerald-600 text-white font-black text-lg px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transform transition-all flex items-center justify-center gap-3">
+                        I Understand — Let's Build My Plan <span>→</span>
+                    </button>
+                </div>
+            </div>
+            
+            </div>
     </div>
 </div>
 
