@@ -1672,7 +1672,8 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     
-                    <div id="tour-retirement-forecast" @click="showRetirementModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-purple-400 transition relative overflow-visible order-1 z-30">
+                    <div id="tour-retirement-forecast" @click="showRetirementModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-purple-400 transition relative overflow-visible order-1 z-30 flex flex-col justify-between">
+    
     <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
         <div class="absolute right-0 top-0 w-20 h-20 bg-purple-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-purple-500/20"></div>
     </div>
@@ -1680,7 +1681,7 @@
     <div class="relative z-10">
         <div class="flex justify-between items-start mb-1">
             <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nest Egg</h3>
-            <button @click.stop="showNestEggHelp = !showNestEggHelp" class="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-purple-100 hover:text-purple-600 transition -mt-1 -mr-1" title="How is this calculated?">
+            <button @click.stop="showNestEggHelp = !showNestEggHelp" class="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-purple-100 hover:text-purple-600 transition -mt-1 -mr-1 shadow-sm" title="How is this calculated?">
                 <span class="font-bold font-serif italic text-[10px]">i</span>
             </button>
         </div>
@@ -1694,7 +1695,7 @@
                     Target Age: {{ forecastSettings.retirementAge }}
                 </div>
             </div>
-            <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-inner">
+            <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-inner flex-shrink-0 text-lg">
                 🥚
             </div>
         </div>
@@ -1722,50 +1723,51 @@
     </transition>
 </div>
 
-<div id="tour-goal-project" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 transition relative overflow-visible order-2 group hover:shadow-md z-20">
+<div id="tour-goal-project" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 transition relative overflow-visible order-2 group hover:shadow-md z-20 flex flex-col justify-between">
+    
     <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
         <div class="absolute right-0 top-0 w-20 h-20 bg-blue-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-blue-500/20"></div>
     </div>
 
-    <div v-if="!isPremiumUser" 
-         @click="requirePremium(() => {})" 
-         class="cursor-pointer flex items-center gap-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50 hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all relative z-10 h-full">
+    <div v-if="!isPremiumUser" @click="requirePremium(() => {})" class="cursor-pointer flex items-center gap-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50 hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all relative z-10 h-full">
         <div class="text-4xl group-hover:scale-110 transition-transform drop-shadow-lg">🔮</div>
         <div>
-            <span class="bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/20 inline-flex items-center gap-1 mb-1 shadow-sm">
-                👑 Premium
-            </span>
+            <span class="bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/20 inline-flex items-center gap-1 mb-1 shadow-sm">👑 Premium</span>
             <h4 class="text-sm font-bold text-slate-800 dark:text-white mb-0.5 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Unlock Scenarios</h4>
             <p class="text-xs text-slate-500 dark:text-slate-400 leading-tight">Save multiple budget plans, set financial goals, and forecast your wealth.</p>
         </div>
     </div>
 
-    <div v-else @click="showScenarioModal = true" class="flex justify-between items-start relative z-10 cursor-pointer h-full">
-        <div class="flex-1">
+    <div v-else @click="showScenarioModal = true" class="relative z-10 cursor-pointer h-full flex flex-col justify-between">
+        <div class="flex justify-between items-start mb-1">
             <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                 {{ currentScenarioName ? 'Current Scenario' : 'Active Scenario' }}
             </h3>
-            <div class="text-xl font-bold text-slate-900 dark:text-white capitalize truncate pr-2">
-                {{ currentScenarioName || (forecastMode === 'survival' ? 'Survival Mode' : (forecastMode === 'dream' ? 'Dream Mode' : 'Standard Plan')) }}
-            </div>
-            <div class="text-[10px] text-blue-500 font-bold mt-1">
-                <span v-if="currentScenarioName" class="capitalize">{{ forecastMode }} Mode</span>
-                <span v-else>{{ filledScenarioCount }} Saved / {{ project ? 'Goal Set' : 'No Goal' }}</span>
-            </div>
         </div>
         
-        <div class="flex flex-col items-end justify-between h-full gap-2">
-            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner">
+        <div class="flex justify-between items-end mt-1">
+            <div class="flex-1 min-w-0 pr-2">
+                <div class="text-xl font-bold text-slate-900 dark:text-white capitalize truncate">
+                    {{ currentScenarioName || (forecastMode === 'survival' ? 'Survival Mode' : (forecastMode === 'dream' ? 'Dream Mode' : 'Standard Plan')) }}
+                </div>
+                <div class="text-[10px] text-blue-500 font-bold mt-1 flex items-center gap-2">
+                    <span v-if="currentScenarioName" class="capitalize">{{ forecastMode }} Mode</span>
+                    <span v-else>{{ filledScenarioCount }} Saved / {{ project ? 'Goal Set' : 'No Goal' }}</span>
+                    
+                    <button @click.stop="quickSaveScenario" class="text-[9px] bg-slate-100 dark:bg-slate-700 hover:bg-blue-100 dark:hover:bg-blue-900 text-slate-600 dark:text-slate-300 hover:text-blue-600 px-2 py-0.5 rounded font-bold transition border border-slate-200 dark:border-slate-600">
+                        {{ currentLoadedSlotIndex !== null ? 'Update' : 'Save' }}
+                    </button>
+                </div>
+            </div>
+            
+            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner flex-shrink-0 text-lg">
                 🔮
             </div>
-            <button @click.stop="quickSaveScenario" class="text-[10px] bg-slate-100 dark:bg-slate-700 hover:bg-blue-100 dark:hover:bg-blue-900 text-slate-600 dark:text-slate-300 hover:text-blue-600 px-3 py-1.5 rounded-lg font-bold transition border border-slate-200 dark:border-slate-600">
-                {{ currentLoadedSlotIndex !== null ? 'Update' : 'Save' }}
-            </button>
         </div>
     </div>
 </div>
 
-<div id="tour-forecast-settings" @click="showForecastSettings = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-green-400 transition relative overflow-visible order-3 z-30">
+<div id="tour-forecast-settings" @click="showForecastSettings = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-green-400 transition relative overflow-visible order-3 z-30 flex flex-col justify-between">
     
     <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
         <div class="absolute right-0 top-0 w-20 h-20 bg-green-500/10 rounded-bl-full transition group-hover:bg-green-500/20"></div>
@@ -1774,23 +1776,26 @@
     <div class="relative z-10">
         <div class="flex justify-between items-start mb-1">
             <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cash Flow Engine</h3>
-            <button @click.stop="showCashFlowHelp = !showCashFlowHelp" class="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-green-100 hover:text-green-600 transition -mt-1 -mr-1" title="How does this work?">
+            <button @click.stop="showCashFlowHelp = !showCashFlowHelp" class="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-green-100 hover:text-green-600 transition -mt-1 -mr-1 shadow-sm" title="How does this work?">
                 <span class="font-bold font-serif italic text-[10px]">i</span>
             </button>
         </div>
 
-        <div class="mt-1">
-            <div class="text-2xl font-bold text-slate-900 dark:text-white">
-                ${{ (forecastSettings?.currentBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
-            </div>
-            
-            <div class="flex justify-between items-end mt-1">
-                <div class="text-[10px] font-bold flex items-center gap-2">
+        <div class="flex justify-between items-end mt-1">
+            <div>
+                <div class="text-2xl font-bold text-slate-900 dark:text-white">
+                    ${{ (forecastSettings?.currentBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
+                </div>
+                <div class="text-[10px] font-bold mt-1 flex items-center gap-2">
                     <span class="text-green-600 dark:text-green-400">+{{ forecastSettings.months }} Month Horizon</span>
                     <span v-if="!isPremiumUser && forecastSettings.months >= 3" class="bg-amber-500/10 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 shadow-sm flex items-center gap-1">
                         🔒 Max Free Limit
                     </span>
                 </div>
+            </div>
+            
+            <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 shadow-inner flex-shrink-0 text-lg">
+                💸
             </div>
         </div>
     </div>
@@ -1820,7 +1825,6 @@
         </div>
     </transition>
 </div>
-
                 </div>
 
                 <div id="tour-forecast-chart" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
