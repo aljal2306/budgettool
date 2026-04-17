@@ -1819,18 +1819,6 @@
             </div>
         </div>
     </transition>
-
-        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-            ${{ (forecastSettings?.currentBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
-        </div>
-        
-        <div class="text-[10px] font-bold mt-1 flex items-center gap-2">
-            <span class="text-green-600 dark:text-green-400">+{{ forecastSettings.months }} Month Horizon</span>
-            <span v-if="!isPremiumUser && forecastSettings.months >= 3" class="bg-amber-500/10 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 shadow-sm flex items-center gap-1">
-                🔒 Max Free Limit
-            </span>
-        </div>
-    </div>
 </div>
 
                 </div>
