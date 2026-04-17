@@ -895,183 +895,176 @@
             </div>
 
             <div v-if="showCalcForm" class="space-y-4 animate-fade-in mt-4">
-    <div class="flex justify-between items-center mb-2 pb-2 border-b dark:border-slate-700">
-        <h3 class="text-xs font-bold text-slate-400 uppercase">New Income</h3>
-        <button @click="showCalcForm = false" class="text-xs text-red-400 hover:text-red-600 font-bold bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded">Cancel</button>
-    </div>
+                
+                <div class="flex justify-between items-center mb-2 pb-2 border-b dark:border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase">New Income</h3>
+                    <button @click="showCalcForm = false" class="text-xs text-red-400 hover:text-red-600 font-bold bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded">Cancel</button>
+                </div>
 
-    <div class="flex bg-slate-100 dark:bg-slate-700/80 p-1 rounded-lg">
-        <button @click="isManualMode = false" class="flex-1 py-2 text-xs font-bold rounded-md transition flex items-center justify-center gap-1.5" :class="!isManualMode ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
-            <span>🧮</span> Auto-Calculate
-        </button>
-        <button @click="isManualMode = true" class="flex-1 py-2 text-xs font-bold rounded-md transition flex items-center justify-center gap-1.5" :class="isManualMode ? 'bg-white dark:bg-slate-600 shadow text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
-            <span>✍️</span> Manual Entry
-        </button>
-    </div>
+                <div class="flex bg-slate-100 dark:bg-slate-700/80 p-1 rounded-lg">
+                    <button @click="isManualMode = false" class="flex-1 py-2 text-xs font-bold rounded-md transition flex items-center justify-center gap-1.5" :class="!isManualMode ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
+                        <span>🧮</span> Auto-Calculate
+                    </button>
+                    <button @click="isManualMode = true" class="flex-1 py-2 text-xs font-bold rounded-md transition flex items-center justify-center gap-1.5" :class="isManualMode ? 'bg-white dark:bg-slate-600 shadow text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
+                        <span>✍️</span> Manual Entry
+                    </button>
+                </div>
 
-    <div>
-        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Income Source Name</label>
-        <input v-model="calcInputs.name" type="text" class="w-full h-11 px-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white text-sm focus:border-blue-500 outline-none" placeholder="e.g. Main Job, Side Hustle">
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-        <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Next Pay Date</label>
-            <input v-model="calcInputs.nextPayDate" type="date" class="w-full h-11 px-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white text-sm focus:border-blue-500 outline-none">
-        </div>
-        <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Frequency</label>
-            <select v-model="calcInputs.payFrequency" class="w-full h-11 px-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white text-sm focus:border-blue-500 outline-none">
-                <option value="Semi-Monthly">Semi-Monthly (15th/30th)</option>
-                <option value="Bi-Weekly">Bi-Weekly (Every 2w)</option>
-                <option value="Monthly">Monthly</option>
-            </select>
-        </div>
-    </div>
-
-    <div v-if="isManualMode" class="space-y-4 animate-fade-in">
-        <div class="p-5 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/50 rounded-xl shadow-sm">
-            <label class="block text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase mb-2">Exact Take-Home Pay</label>
-            <div class="relative">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600/50 dark:text-emerald-400/50 font-bold text-lg">$</span>
-                <input v-model="calcInputs.manualNetPay" type="number" class="w-full p-4 pl-8 border border-emerald-300 dark:border-emerald-700/50 rounded-lg bg-white dark:bg-slate-800 dark:text-white text-xl font-black text-emerald-600 dark:text-emerald-400 shadow-inner focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0.00">
-            </div>
-            <p class="text-[10px] text-emerald-600/70 dark:text-emerald-400/60 mt-2 font-medium">Enter the exact amount that hits your bank account per check.</p>
-        </div>
-
-        <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 space-y-3">
-            <div>
-                <h3 class="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase">Gross Pay & Retirement</h3>
-                <p class="text-[10px] text-slate-400">Required to accurately forecast your retirement wealth.</p>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Gross Pay Amount</label>
-                    <div class="relative">
-                        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
-                        <input v-model="calcInputs.salary" type="number" class="w-full p-2 pl-6 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-blue-500" placeholder="0.00">
-                    </div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Income Source Name</label>
+                    <input v-model="calcInputs.name" type="text" class="w-full h-11 px-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white text-sm focus:border-blue-500 outline-none" placeholder="e.g. Main Job, Side Hustle">
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Timeframe</label>
-                    <select v-model="calcInputs.grossTimeframe" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-blue-500">
-                        <option value="Annual">Annual Salary</option>
-                        <option value="Monthly">Monthly Gross</option>
-                        <option value="PerCheck">Gross Per Check</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
-                <div>
-                    <label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Trad 401k %</label>
-                    <input v-model="calcInputs.trad401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-800 dark:text-white outline-none text-sm" placeholder="0">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Roth 401k %</label>
-                    <input v-model="calcInputs.roth401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-800 dark:text-white outline-none text-sm" placeholder="0">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Match %</label>
-                    <input v-model="calcInputs.match401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-800 dark:text-white outline-none text-sm" placeholder="0">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div v-else class="space-y-4 animate-fade-in">
-        <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Annual Salary</label>
-            <input v-model="calcInputs.salary" type="number" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none focus:border-blue-500" placeholder="$">
-        </div>
-        <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Commission / Bonus (Per Pay)</label>
-            <input v-model="calcInputs.commission" type="number" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none focus:border-blue-500" placeholder="$ (Pre-tax)">
-        </div>
-        
-        <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
-            <h3 class="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase mb-3">Tax Settings</h3>
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filing Status</label>
-                    <select v-model="calcInputs.filingStatus" class="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-600 dark:text-white outline-none">
-                        <option value="Single">Single</option>
-                        <option value="Married">Married Filing Jointly</option>
-                        <option value="Head">Head of Household</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">State Tax Rate (%)</label>
-                    <input v-model="calcInputs.stateTaxRate" type="number" step="0.1" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-600 dark:text-white outline-none" placeholder="0.0">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dependent Credits ($)</label>
-                    <input v-model="calcInputs.dependents" type="number" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-600 dark:text-white outline-none" placeholder="Total $ (e.g. 2000)">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Extra Withholding ($)</label>
-                    <input v-model="calcInputs.extraWithholding" type="number" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-600 dark:text-white outline-none" placeholder="$ per check">
-                </div>
-            </div>
-        </div>
-        
-        <div class="border dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700/50 overflow-hidden">
-            <button @click="showCalcDetails = !showCalcDetails" class="w-full flex justify-between items-center p-3 text-xs font-bold text-slate-500 uppercase hover:bg-slate-100 dark:hover:bg-slate-600 transition">
-                <span>Medical, 401k & Other Deductions</span>
-                <span>{{ showCalcDetails ? '▲' : '▼' }}</span>
-            </button>
-            <transition name="accordion">
-                <div v-if="showCalcDetails" class="p-4 border-t border-slate-200 dark:border-slate-600 space-y-4 bg-white dark:bg-slate-800">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Post-Tax Deductions</label>
-                        <input v-model="calcInputs.postTax" type="number" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Next Pay Date</label>
+                        <input v-model="calcInputs.nextPayDate" type="date" class="w-full h-11 px-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white text-sm focus:border-blue-500 outline-none">
                     </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Medical</label><input v-model="calcInputs.medical" type="number" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none"></div>
-                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dental</label><input v-model="calcInputs.dental" type="number" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none"></div>
-                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">FSA</label><input v-model="calcInputs.fsa" type="number" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none"></div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
-                        <div><label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Trad 401k %</label><input v-model="calcInputs.trad401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-700 dark:text-white outline-none"></div>
-                        <div><label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Roth 401k %</label><input v-model="calcInputs.roth401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-700 dark:text-white outline-none"></div>
-                        <div><label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Match %</label><input v-model="calcInputs.match401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-700 dark:text-white outline-none"></div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Frequency</label>
+                        <select v-model="calcInputs.payFrequency" class="w-full h-11 px-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white text-sm focus:border-blue-500 outline-none">
+                            <option value="Semi-Monthly">Semi-Monthly (15th/30th)</option>
+                            <option value="Bi-Weekly">Bi-Weekly (Every 2w)</option>
+                            <option value="Monthly">Monthly</option>
+                        </select>
                     </div>
                 </div>
-            </transition>
-        </div>
-    </div>
 
-    <div class="pt-4 mt-4 border-t dark:border-slate-700" id="tour-paycheck-save">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button @click="calculateAndSave('default')" :disabled="savingBase" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition text-sm shadow-lg flex-1">
-                {{ savingBase ? 'Saving...' : '💾 Save to Incomes' }}
-            </button>
-            <div class="flex gap-2">
-                <button @click="calculateAndSave('temp')" class="flex-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 font-bold py-3 rounded-lg hover:bg-emerald-200 transition text-sm border border-emerald-200 dark:border-emerald-700 whitespace-nowrap">
-                    ⚡ Use for Session
-                </button>
-                <button @click="showSessionHelp = !showSessionHelp" class="w-12 flex-shrink-0 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-emerald-100 hover:text-emerald-600 transition border border-transparent dark:border-slate-600">
-                    <span class="font-bold font-serif italic">i</span>
-                </button>
-            </div>
-        </div>
+                <div v-if="isManualMode" class="space-y-4 animate-fade-in">
+                    <div class="p-5 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/50 rounded-xl shadow-sm">
+                        <label class="block text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase mb-2">Exact Take-Home Pay</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600/50 dark:text-emerald-400/50 font-bold text-lg">$</span>
+                            <input v-model="calcInputs.manualNetPay" type="number" class="w-full p-4 pl-8 border border-emerald-300 dark:border-emerald-700/50 rounded-lg bg-white dark:bg-slate-800 dark:text-white text-xl font-black text-emerald-600 dark:text-emerald-400 shadow-inner focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0.00">
+                        </div>
+                        <p class="text-[10px] text-emerald-600/70 dark:text-emerald-400/60 mt-2 font-medium">Enter the exact amount that hits your bank account per check.</p>
+                    </div>
 
-        <div v-if="showSessionHelp" class="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 text-xs rounded-lg border border-emerald-100 dark:border-emerald-800 animate-slide-down">
-            <p class="font-bold mb-1">What is "Use for Session"?</p>
-            <p class="leading-relaxed opacity-90">
-                This applies the calculation to your current app session <strong>without saving it</strong> to your permanent incomes. Once calculated, head over to the <span class="font-bold">Forecast Tab</span> to apply it to your timeline.
-            </p>
-            <div class="mt-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50">
-                <em>💡 <strong>Pro Tip:</strong> Perfect for testing out a large commission or bonus month, while keeping your saved base salary untouched!</em>
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 space-y-3">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase">Gross Pay & Retirement</h3>
+                            <p class="text-[10px] text-slate-400">Required to accurately forecast your retirement wealth.</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Gross Pay Amount</label>
+                                <div class="relative">
+                                    <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
+                                    <input v-model="calcInputs.salary" type="number" class="w-full p-2 pl-6 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-blue-500" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Timeframe</label>
+                                <select v-model="calcInputs.grossTimeframe" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-blue-500">
+                                    <option value="Annual">Annual Salary</option>
+                                    <option value="Monthly">Monthly Gross</option>
+                                    <option value="PerCheck">Gross Per Check</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                            <div><label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Trad 401k %</label><input v-model="calcInputs.trad401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-800 dark:text-white outline-none text-sm" placeholder="0"></div>
+                            <div><label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Roth 401k %</label><input v-model="calcInputs.roth401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-800 dark:text-white outline-none text-sm" placeholder="0"></div>
+                            <div><label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Match %</label><input v-model="calcInputs.match401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-800 dark:text-white outline-none text-sm" placeholder="0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else class="space-y-4 animate-fade-in">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Annual Salary</label>
+                        <input v-model="calcInputs.salary" type="number" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none focus:border-blue-500" placeholder="$">
+                    </div>
+                    <div class="mt-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Commission / Bonus (Per Pay)</label>
+                        <input v-model="calcInputs.commission" type="number" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none focus:border-blue-500" placeholder="$ (Pre-tax)">
+                    </div>
+                    
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <h3 class="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase mb-3">Tax Settings</h3>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filing Status</label>
+                                <select v-model="calcInputs.filingStatus" class="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-600 dark:text-white outline-none">
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married Filing Jointly</option>
+                                    <option value="Head">Head of Household</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">State Tax Rate (%)</label>
+                                <input v-model="calcInputs.stateTaxRate" type="number" step="0.1" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-600 dark:text-white outline-none" placeholder="0.0">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dependent Credits ($)</label>
+                                <input v-model="calcInputs.dependents" type="number" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-600 dark:text-white outline-none" placeholder="Total $ (e.g. 2000)">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Extra Withholding ($)</label>
+                                <input v-model="calcInputs.extraWithholding" type="number" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-600 dark:text-white outline-none" placeholder="$ per check">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700/50 overflow-hidden">
+                        <button @click="showCalcDetails = !showCalcDetails" class="w-full flex justify-between items-center p-3 text-xs font-bold text-slate-500 uppercase hover:bg-slate-100 dark:hover:bg-slate-600 transition">
+                            <span>Medical, 401k & Other Deductions</span>
+                            <span>{{ showCalcDetails ? '▲' : '▼' }}</span>
+                        </button>
+                        <transition name="accordion">
+                            <div v-if="showCalcDetails" class="p-4 border-t border-slate-200 dark:border-slate-600 space-y-4 bg-white dark:bg-slate-800">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Post-Tax Deductions</label>
+                                    <input v-model="calcInputs.postTax" type="number" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none">
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Medical</label><input v-model="calcInputs.medical" type="number" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dental</label><input v-model="calcInputs.dental" type="number" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">FSA</label><input v-model="calcInputs.fsa" type="number" class="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 dark:text-white outline-none"></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                                    <div><label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Trad 401k %</label><input v-model="calcInputs.trad401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-700 dark:text-white outline-none"></div>
+                                    <div><label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Roth 401k %</label><input v-model="calcInputs.roth401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-700 dark:text-white outline-none"></div>
+                                    <div><label class="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Match %</label><input v-model="calcInputs.match401k" type="number" class="w-full p-2 border border-blue-200 dark:border-blue-700 rounded text-center dark:bg-slate-700 dark:text-white outline-none"></div>
+                                </div>
+                            </div>
+                        </transition>
+                    </div>
+                </div>
+
+                <div class="pt-4 mt-4 border-t dark:border-slate-700" id="tour-paycheck-save">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button @click="calculateAndSave('default')" :disabled="savingBase" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition text-sm shadow-lg flex-1">
+                            {{ savingBase ? 'Saving...' : '💾 Save to Incomes' }}
+                        </button>
+                        <div class="flex gap-2">
+                            <button @click="calculateAndSave('temp')" class="flex-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 font-bold py-3 rounded-lg hover:bg-emerald-200 transition text-sm border border-emerald-200 dark:border-emerald-700 whitespace-nowrap">
+                                ⚡ Use for Session
+                            </button>
+                            <button @click="showSessionHelp = !showSessionHelp" class="w-12 flex-shrink-0 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-emerald-100 hover:text-emerald-600 transition border border-transparent dark:border-slate-600">
+                                <span class="font-bold font-serif italic">i</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="showSessionHelp" class="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 text-xs rounded-lg border border-emerald-100 dark:border-emerald-800 animate-slide-down">
+                        <p class="font-bold mb-1">What is "Use for Session"?</p>
+                        <p class="leading-relaxed opacity-90">
+                            This applies the calculation to your current app session <strong>without saving it</strong> to your permanent incomes. Once calculated, head over to the <span class="font-bold">Forecast Tab</span> to apply it to your timeline.
+                        </p>
+                        <div class="mt-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50">
+                            <em>💡 <strong>Pro Tip:</strong> Perfect for testing out a large commission or bonus month, while keeping your saved base salary untouched!</em>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
+        </div> 
+        
         <div class="space-y-6">
-            
             <div id="tour-paycheck-result" class="bg-slate-900 dark:bg-slate-800 text-white p-5 sm:p-6 rounded-2xl shadow-xl shadow-slate-300 dark:shadow-none border border-slate-800 dark:border-slate-700">
                 <h2 class="text-base sm:text-lg font-bold mb-4 text-emerald-400">💰 Calculator Result</h2>
                 
