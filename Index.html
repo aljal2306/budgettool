@@ -219,21 +219,21 @@
         
     </div>
 </transition>
-    <div class="bg-gradient-to-r from-emerald-500 to-emerald-700 dark:from-emerald-700 dark:to-emerald-900 p-5 rounded-2xl shadow-lg mb-8 flex justify-between items-center relative print:hidden">
+    <div class="bg-gradient-to-r from-emerald-500 to-emerald-700 dark:from-emerald-700 dark:to-emerald-900 -mx-4 -mt-4 md:mx-0 md:mt-0 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-6 px-6 md:p-6 rounded-none md:rounded-2xl shadow-lg mb-8 flex justify-between items-center relative print:hidden">
     
     <div>
-        <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-sm">
+        <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">
             Total Home <span class="text-emerald-200">Finance</span>
         </h1>
-        <div class="text-xs text-emerald-100 font-medium opacity-90">{{ session.user.email }}</div>
+        <div class="text-sm text-emerald-100 font-medium opacity-90 mt-0.5">{{ session.user.email }}</div>
     </div>
 
     <div class="flex items-center relative z-50">
         <button @click.stop="isMobileMenuOpen = !isMobileMenuOpen" class="p-2 text-white hover:bg-white/20 rounded-lg transition touch-manipulation">
-    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-    </svg>
-</button>
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
 
 <div v-if="isMobileMenuOpen" 
      @click="isMobileMenuOpen = false" 
