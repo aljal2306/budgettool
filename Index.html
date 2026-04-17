@@ -1673,7 +1673,6 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     
                     <div id="tour-retirement-forecast" @click="showRetirementModal = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-purple-400 transition relative overflow-visible order-1 z-30">
-    
     <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
         <div class="absolute right-0 top-0 w-20 h-20 bg-purple-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-purple-500/20"></div>
     </div>
@@ -1721,9 +1720,9 @@
             </div>
         </div>
     </transition>
+</div>
 
 <div id="tour-goal-project" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 transition relative overflow-visible order-2 group hover:shadow-md z-20">
-    
     <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
         <div class="absolute right-0 top-0 w-20 h-20 bg-blue-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-blue-500/20"></div>
     </div>
@@ -1766,9 +1765,7 @@
     </div>
 </div>
 
-
 <div id="tour-forecast-settings" @click="showForecastSettings = true" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer group hover:border-green-400 transition relative overflow-visible order-3 z-30">
-    
     <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
         <div class="absolute right-0 top-0 w-20 h-20 bg-green-500/10 rounded-bl-full transition group-hover:bg-green-500/20"></div>
     </div>
@@ -1776,22 +1773,25 @@
     <div class="relative z-10">
         <div class="flex justify-between items-start mb-1">
             <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cash Flow Engine</h3>
-            
             <button @click.stop="showCashFlowHelp = !showCashFlowHelp" class="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-green-100 hover:text-green-600 transition -mt-1 -mr-1" title="How does this work?">
                 <span class="font-bold font-serif italic text-[10px]">i</span>
             </button>
         </div>
 
-        <div class="flex justify-between items-end mt-1">
-            <div>
-                <div class="text-2xl font-bold text-slate-900 dark:text-white">
-                    ${{ (forecastSettings.currentBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) }}
-                </div>
-                <div class="text-[10px] text-green-500 font-bold mt-1">
-                    Margin: ${{ (forecastSettings.safetyMargin || 0).toLocaleString() }}
+        <div class="mt-1">
+            <div class="text-2xl font-bold text-slate-900 dark:text-white">
+                ${{ (forecastSettings?.currentBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
+            </div>
+            
+            <div class="flex justify-between items-end mt-1">
+                <div class="text-[10px] font-bold flex items-center gap-2">
+                    <span class="text-green-600 dark:text-green-400">+{{ forecastSettings.months }} Month Horizon</span>
+                    <span v-if="!isPremiumUser && forecastSettings.months >= 3" class="bg-amber-500/10 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 shadow-sm flex items-center gap-1">
+                        🔒 Max Free Limit
+                    </span>
                 </div>
             </div>
-            </div>
+        </div>
     </div>
 
     <transition name="fade">
@@ -1818,7 +1818,7 @@
             </div>
         </div>
     </transition>
-
+</div>
         <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">
             ${{ (forecastSettings?.currentBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
         </div>
