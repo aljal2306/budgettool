@@ -4430,58 +4430,98 @@ const fetchGiftCards = async () => {
 
             // --- PAYCHECK CALCULATOR ---
             const loadIncomeIntoCalculator = (inc) => { calcInputs.value = { ...calcInputs.value, id: inc.id, name: inc.name, nextPayDate: inc.next_pay_date, payFrequency: inc.frequency, ...inc.details }; showCalcForm.value = true; calculateAndSave('preview'); };
-            const calculateAndSave = async (mode) => {
-    savingBase.value = true;
-    const { name, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, nextPayDate, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding, manualNetPay } = calcInputs.value;
+            // 1. THE MATH ENGINE (Updates the Preview Card)
+const runCalculation = () => {
+    const { salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, payFrequency, filingStatus, stateTaxRate, dependents, extraWithholding, manualNetPay, grossTimeframe } = calcInputs.value;
     
     let payPeriods = 24; // Default fallback
-    if (payFrequency === 'Monthly') {
-        payPeriods = 12;
-    } else if (payFrequency === 'Bi-Weekly') {
-        payPeriods = 26;
-    } else if (payFrequency === 'Weekly') {
-        payPeriods = 52;
-    } else if (payFrequency === 'Semi-Monthly') {
-        payPeriods = 24;
-    }
+    if (payFrequency === 'Monthly') payPeriods = 12;
+    else if (payFrequency === 'Bi-Weekly') payPeriods = 26;
+    else if (payFrequency === 'Weekly') payPeriods = 52;
+    else if (payFrequency === 'Semi-Monthly') payPeriods = 24;
 
-    let finalPay = 0;
-
-    // 🔀 THE BYPASS LOGIC
+    // 🔀 THE MANUAL BYPASS LOGIC
     if (isManualMode.value) {
-        
-        // Skip the math, just use what they typed
-        finalPay = Number(manualNetPay) || 0;
-        
-        // Feed the UI a zeroed-out result so the breakdown box doesn't break
-        calcResult.value = { gross: finalPay, benefitAmt: 0, tradAmt: 0, preTaxTotal: 0, taxes: 0, fedTax: 0, stateTax: 0, fica: 0, postTaxTotal: 0, netPay: finalPay };
+        const netPay = Number(manualNetPay) || 0;
+        const baseAmount = Number(salary) || 0;
+
+        // Convert whatever gross timeframe they gave us into a Per Check amount
+        let grossPerCheck = 0;
+        if (grossTimeframe === 'Annual') {
+            grossPerCheck = baseAmount / payPeriods;
+        } else if (grossTimeframe === 'Monthly') {
+            grossPerCheck = (baseAmount * 12) / payPeriods;
+        } else {
+            grossPerCheck = baseAmount; // Already Per Check
+        }
+
+        const tradAmt = grossPerCheck * ((Number(trad401k) || 0) / 100);
+        const rothAmt = grossPerCheck * ((Number(roth401k) || 0) / 100);
+
+        // Reverse engineer taxes so the UI bar chart looks pretty
+        const totalTaxes = Math.max(0, grossPerCheck - netPay - tradAmt - rothAmt);
+        const fica = grossPerCheck * 0.0765;
+        const genericTaxes = Math.max(0, totalTaxes - fica);
+
+        calcResult.value = { 
+            gross: round(grossPerCheck), 
+            benefitAmt: 0, 
+            tradAmt: round(tradAmt), 
+            preTaxTotal: round(tradAmt), 
+            taxes: round(genericTaxes), 
+            fedTax: round(genericTaxes), 
+            stateTax: 0, 
+            fica: round(fica), 
+            postTaxTotal: round(rothAmt), 
+            netPay: round(netPay) 
+        };
 
     } else {
-
-        // DO THE HEAVY MATH
-        const grossPay = (salary / payPeriods) + (Number(commission)||0); 
-        const benefitAmt = Number(medical) + Number(dental) + Number(fsa);
+        // ⚙️ YOUR ORIGINAL HEAVY MATH ENGINE
+        const grossPay = (Number(salary) / payPeriods) + (Number(commission)||0); 
+        const benefitAmt = Number(medical||0) + Number(dental||0) + Number(fsa||0);
         const ficaWages = Math.max(0, grossPay - benefitAmt); 
         const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; 
         const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0);
-        const tradAmt = grossPay * (Number(trad401k) / 100); 
-        const rothAmt = grossPay * (Number(roth401k) / 100); 
+        const tradAmt = grossPay * (Number(trad401k||0) / 100); 
+        const rothAmt = grossPay * (Number(roth401k||0) / 100); 
         const taxable = grossPay - tradAmt - benefitAmt; 
         const annualTaxable = Math.max(0, (taxable * payPeriods));
         
         let fedTaxPerPeriod = (calculateFederalTax(annualTaxable, filingStatus) / payPeriods); 
-        if (dependents > 0) fedTaxPerPeriod -= (dependents / payPeriods); 
+        if (dependents > 0) fedTaxPerPeriod -= (Number(dependents) / payPeriods); 
         if (extraWithholding > 0) fedTaxPerPeriod += Number(extraWithholding); 
         fedTaxPerPeriod = Math.max(0, fedTaxPerPeriod);
         
         const stateTaxPerPeriod = grossPay * ((Number(stateTaxRate) || 0) / 100); 
-        const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - Number(postTax) - rothAmt - ssTax - medTax; 
-        finalPay = round(net);
+        const net = taxable - fedTaxPerPeriod - stateTaxPerPeriod - (Number(postTax)||0) - rothAmt - ssTax - medTax; 
         
-        calcResult.value = { gross: round(grossPay), benefitAmt: round(benefitAmt), tradAmt: round(tradAmt), preTaxTotal: round(benefitAmt + tradAmt), taxes: round(fedTaxPerPeriod + stateTaxPerPeriod), fedTax: round(fedTaxPerPeriod), stateTax: round(stateTaxPerPeriod), fica: round(ssTax + medTax), postTaxTotal: round(Number(postTax) + rothAmt), netPay: finalPay };
+        calcResult.value = { 
+            gross: round(grossPay), 
+            benefitAmt: round(benefitAmt), 
+            tradAmt: round(tradAmt), 
+            preTaxTotal: round(benefitAmt + tradAmt), 
+            taxes: round(fedTaxPerPeriod + stateTaxPerPeriod), 
+            fedTax: round(fedTaxPerPeriod), 
+            stateTax: round(stateTaxPerPeriod), 
+            fica: round(ssTax + medTax), 
+            postTaxTotal: round(Number(postTax||0) + rothAmt), 
+            netPay: round(net) 
+        };
+    }
+};
+
+// 2. THE SAVING LOGIC (Commits to Database or Session)
+const calculateAndSave = async (mode) => {
+    // Failsafe: If they didn't preview it first, run the math now
+    if (!calcResult.value) {
+        runCalculation();
     }
 
-    // THE SAVING LOGIC
+    savingBase.value = true;
+    const finalPay = calcResult.value.netPay;
+    const { name, payFrequency, nextPayDate, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding, manualNetPay, grossTimeframe } = calcInputs.value;
+
     if (mode === 'default') {
         const payload = { 
             user_id: session.value.user.id, 
@@ -4489,14 +4529,19 @@ const fetchGiftCards = async () => {
             amount: finalPay, 
             frequency: payFrequency, 
             next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], 
-            details: { isManual: isManualMode.value, manualNetPay, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding } 
+            gross_amount: calcResult.value.gross,
+            trad_401k_pct: Number(trad401k) || 0,
+            match_401k_pct: Number(match401k) || 0,
+            // Added grossTimeframe to details so it saves correctly
+            details: { isManual: isManualMode.value, manualNetPay, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding, grossTimeframe } 
         };
         
         if (calcInputs.value.id) await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id); 
         else await _supabase.from('incomes').insert([payload]); 
         
         await fetchIncomes(); 
-        showCalcForm.value = false; 
+        showCalcForm.value = false;
+        calcResult.value = null; // Clear the preview for next time
         alert("Income Saved!");
         
     } else if (mode === 'temp') { 
@@ -4504,6 +4549,7 @@ const fetchGiftCards = async () => {
         if (payFrequency === 'Monthly') monthlyEq = finalPay; 
         else if (payFrequency === 'Bi-Weekly') monthlyEq = finalPay * 2.166; 
         else if (payFrequency === 'Semi-Monthly') monthlyEq = finalPay * 2; 
+        else if (payFrequency === 'Weekly') monthlyEq = finalPay * 4.333; // Added Weekly conversion
         
         tempCalculatedPay.value = round(monthlyEq); 
         useTempPay.value = true; 
@@ -5550,7 +5596,7 @@ const startWizard = () => {
                 showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, 
                 
                 // Paycheck
-                calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, showSessionHelp, isManualMode,
+                calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, showSessionHelp, isManualMode, runCalculation,
 
                 // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
