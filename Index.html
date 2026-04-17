@@ -3048,8 +3048,8 @@
         </div>
     </div>
 </transition>
-                  <nav class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] md:hidden z-50">
-  <div class="flex justify-around items-center h-16 px-1">
+                  <nav class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-[calc(env(safe-area-inset-bottom)+12px)] md:hidden z-50">
+  <div class="flex justify-around items-center h-[72px] px-1 pt-1">
     
     <button @click="currentView = 'dashboard'" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 touch-manipulation" :class="currentView === 'dashboard' ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'">
       <span class="text-xl mb-0.5">🏠</span>
