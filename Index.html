@@ -707,31 +707,32 @@
 
                         <transition name="accordion">
                             <div v-if="openOwners[owner]" class="border-t border-slate-200 dark:border-slate-700">
-                                <div v-for="card in cards" :key="card.id" class="p-3 flex items-center justify-between border-b dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
-                                    
-                                    <div class="flex items-center gap-3 flex-1 min-w-0 mr-2">
-                                        <div @click="viewCardImage(card)" class="w-10 h-10 flex-shrink-0 rounded-lg bg-slate-100 dark:bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer shadow-sm border border-slate-200 dark:border-slate-500 hover:opacity-80 transition relative">
-                                            <img v-if="card.image_data" :src="card.image_data" class="w-full h-full object-cover">
-                                            <span v-else class="text-[10px] text-slate-400">📷</span>
-                                        </div>
-                                        <div class="truncate">
-                                            <div class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ card.name }}</div>
-                                            <div class="text-[10px] text-slate-400">Upd: {{ formatDate(card.created_at.split('T')[0]) }}</div>
-                                        </div>
-                                    </div>
+                                <div v-for="card in cards" :key="card.id" class="group p-3 flex items-center justify-between border-b dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+    
+    <div class="flex items-center gap-3 flex-1 min-w-0 mr-2">
+        <div @click="viewCardImage(card)" class="w-10 h-10 flex-shrink-0 rounded-lg bg-slate-100 dark:bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer shadow-sm border border-slate-200 dark:border-slate-500 hover:opacity-80 transition relative">
+            <img v-if="card.image_data" :src="card.image_data" class="w-full h-full object-cover">
+            <span v-else class="text-[10px] text-slate-400">📷</span>
+        </div>
+        <div class="truncate">
+            <div class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ card.name }}</div>
+            <div class="text-[10px] text-slate-400">Upd: {{ formatDate(card.created_at.split('T')[0]) }}</div>
+        </div>
+    </div>
 
-                                    <div class="flex items-center gap-3 flex-shrink-0">
-                                        <div class="font-mono font-bold text-slate-700 dark:text-white text-sm bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
-                                            ${{ Number(card.balance).toFixed(2) }}
-                                        </div>
-                                        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                            <button @click="manageCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Log Transaction">📝</button>
-                                            <button @click="editGiftCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-orange-600 bg-white border border-slate-200 hover:border-orange-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Edit Details">⚙️</button>
-                                            <button @click="deleteGiftCard(card.id)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 bg-white border border-slate-200 hover:border-red-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Delete Card">🗑️</button>
-                                        </div>
-                                    </div>
+    <div class="flex items-center gap-3 flex-shrink-0">
+        <div class="font-mono font-bold text-slate-700 dark:text-white text-sm bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
+            ${{ Number(card.balance).toFixed(2) }}
+        </div>
+        
+        <div class="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition duration-200">
+            <button @click="manageCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Log Transaction">📝</button>
+            <button @click="editGiftCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-orange-600 bg-white border border-slate-200 hover:border-orange-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Edit Details">⚙️</button>
+            <button @click="deleteGiftCard(card.id)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 bg-white border border-slate-200 hover:border-red-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Delete Card">🗑️</button>
+        </div>
+    </div>
 
-                                </div>
+</div>
                                 <div class="p-2 text-center bg-slate-50 dark:bg-slate-900/30 border-t dark:border-slate-700">
                                     <button v-if="!isPremiumUser && giftCards.length >= 3" 
                                             @click="requirePremium(() => {})" 
