@@ -4522,6 +4522,7 @@ const runCalculation = () => {
 };
 
 // 2. THE SAVING LOGIC (Commits to Database or Session)
+// 2. THE SAVING LOGIC (Commits to Database or Session)
 const calculateAndSave = async (mode) => {
     // Failsafe: If they didn't preview it first, run the math now
     if (!calcResult.value) {
@@ -4533,33 +4534,51 @@ const calculateAndSave = async (mode) => {
     const { name, payFrequency, nextPayDate, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding, manualNetPay, grossTimeframe } = calcInputs.value;
 
     if (mode === 'default') {
+        // 🛠️ THE FIX: We moved gross_amount and the 401k data safely INSIDE the details JSON object!
         const payload = { 
             user_id: session.value.user.id, 
             name: name || 'New Income', 
             amount: finalPay, 
             frequency: payFrequency, 
             next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], 
-            gross_amount: calcResult.value.gross,
-            trad_401k_pct: Number(trad401k) || 0,
-            match_401k_pct: Number(match401k) || 0,
-            // Added grossTimeframe to details so it saves correctly
-            details: { isManual: isManualMode.value, manualNetPay, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding, grossTimeframe } 
+            details: { 
+                isManual: isManualMode.value, 
+                manualNetPay, salary, commission, medical, dental, fsa, postTax, 
+                trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, 
+                extraWithholding, grossTimeframe,
+                gross_amount: calcResult.value.gross // Tucked safely inside JSON!
+            } 
         };
         
-        if (calcInputs.value.id) await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id); 
-        else await _supabase.from('incomes').insert([payload]); 
+        let dbError = null;
+
+        // Run the Supabase query and explicitly catch any silent errors
+        if (calcInputs.value.id) {
+            const { error } = await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id); 
+            dbError = error;
+        } else {
+            const { error } = await _supabase.from('incomes').insert([payload]); 
+            dbError = error;
+        }
         
-        await fetchIncomes(); 
-        showCalcForm.value = false;
-        calcResult.value = null; // Clear the preview for next time
-        alert("Income Saved!");
+        // Check if Supabase rejected it
+        if (dbError) {
+            console.error("Supabase Error:", dbError);
+            alert("Error saving to database! Check the console.");
+        } else {
+            // Success!
+            await fetchIncomes(); 
+            showCalcForm.value = false;
+            calcResult.value = null; // Clear the preview for next time
+            alert("Income Saved!");
+        }
         
     } else if (mode === 'temp') { 
         let monthlyEq = 0; 
         if (payFrequency === 'Monthly') monthlyEq = finalPay; 
         else if (payFrequency === 'Bi-Weekly') monthlyEq = finalPay * 2.166; 
         else if (payFrequency === 'Semi-Monthly') monthlyEq = finalPay * 2; 
-        else if (payFrequency === 'Weekly') monthlyEq = finalPay * 4.333; // Added Weekly conversion
+        else if (payFrequency === 'Weekly') monthlyEq = finalPay * 4.333;
         
         tempCalculatedPay.value = round(monthlyEq); 
         useTempPay.value = true; 
