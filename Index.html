@@ -1036,22 +1036,32 @@
                     </div>
                 </div>
 
-                <div class="pt-4 mt-4 border-t dark:border-slate-700" id="tour-paycheck-save">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <button @click="calculateAndSave('default')" :disabled="savingBase" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition text-sm shadow-lg flex-1">
-                            {{ savingBase ? 'Saving...' : '💾 Save to Incomes' }}
-                        </button>
-                        <div class="flex gap-2">
-                            <button @click="calculateAndSave('temp')" class="flex-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 font-bold py-3 rounded-lg hover:bg-emerald-200 transition text-sm border border-emerald-200 dark:border-emerald-700 whitespace-nowrap">
-                                ⚡ Use for Session
+                <div class="pt-4 mt-4 border-t dark:border-slate-700 space-y-4" id="tour-paycheck-save">
+                    
+                    <button @click="runCalculation" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition text-sm shadow-lg border border-blue-500 flex justify-center items-center gap-2 transform active:scale-95">
+                        <span class="text-lg">🧮</span> Calculate & Preview
+                    </button>
+
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center">Commit Calculation</h3>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button @click="calculateAndSave('default')" :disabled="savingBase" class="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition text-sm shadow-md flex-1">
+                                {{ savingBase ? 'Saving...' : '💾 Save to Incomes' }}
                             </button>
-                            <button @click="showSessionHelp = !showSessionHelp" class="w-12 flex-shrink-0 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-emerald-100 hover:text-emerald-600 transition border border-transparent dark:border-slate-600">
-                                <span class="font-bold font-serif italic">i</span>
-                            </button>
+                            
+                            <div class="flex gap-2">
+                                <button @click="calculateAndSave('temp')" class="flex-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 font-bold py-3 rounded-lg hover:bg-emerald-200 transition text-sm border border-emerald-200 dark:border-emerald-700 whitespace-nowrap shadow-sm">
+                                    ⚡ Use for Session
+                                </button>
+                                <button @click="showSessionHelp = !showSessionHelp" class="w-12 flex-shrink-0 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition border border-slate-200 dark:border-slate-600 shadow-sm">
+                                    <span class="font-bold font-serif italic">i</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <div v-if="showSessionHelp" class="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 text-xs rounded-lg border border-emerald-100 dark:border-emerald-800 animate-slide-down">
+                    <div v-if="showSessionHelp" class="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 text-xs rounded-lg border border-emerald-100 dark:border-emerald-800 animate-slide-down">
                         <p class="font-bold mb-1">What is "Use for Session"?</p>
                         <p class="leading-relaxed opacity-90">
                             This applies the calculation to your current app session <strong>without saving it</strong> to your permanent incomes. Once calculated, head over to the <span class="font-bold">Forecast Tab</span> to apply it to your timeline.
