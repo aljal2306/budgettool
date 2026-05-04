@@ -4614,37 +4614,49 @@ const calculateAndSave = async (mode) => {
 
     savingBase.value = true;
     const finalPay = calcResult.value.netPay;
-    const { name, payFrequency, nextPayDate, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding, manualNetPay, grossTimeframe } = calcInputs.value;
+    
+    // We specifically pull 'id' out here so we can check it
+    const { id, name, payFrequency, nextPayDate, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding, manualNetPay, grossTimeframe } = calcInputs.value;
 
     if (mode === 'default') {
-        // 🛠️ THE FIX: We moved gross_amount and the 401k data safely INSIDE the details JSON object!
         const payload = { 
             user_id: session.value.user.id, 
             name: name || 'New Income', 
             amount: finalPay, 
-            frequency: payFrequency, 
+            frequency: payFrequency || 'Bi-Weekly', 
             next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], 
             details: { 
                 isManual: isManualMode.value, 
-                manualNetPay, salary, commission, medical, dental, fsa, postTax, 
-                trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, 
-                extraWithholding, grossTimeframe,
-                gross_amount: calcResult.value.gross // Tucked safely inside JSON!
+                manualNetPay: Number(manualNetPay) || 0, 
+                salary: Number(salary) || 0, 
+                commission: Number(commission) || 0, 
+                medical: Number(medical) || 0, 
+                dental: Number(dental) || 0, 
+                fsa: Number(fsa) || 0, 
+                postTax: Number(postTax) || 0, 
+                trad401k: Number(trad401k) || 0, 
+                roth401k: Number(roth401k) || 0, 
+                match401k: Number(match401k) || 0, 
+                filingStatus: filingStatus || 'Single', 
+                stateTaxRate: Number(stateTaxRate) || 0, 
+                dependents: Number(dependents) || 0, 
+                extraWithholding: Number(extraWithholding) || 0, 
+                grossTimeframe: grossTimeframe || 'Annual',
+                gross_amount: calcResult.value.gross || 0 
             } 
         };
         
         let dbError = null;
 
-        // Run the Supabase query and explicitly catch any silent errors
-        if (calcInputs.value.id) {
-            const { error } = await _supabase.from('incomes').update(payload).eq('id', calcInputs.value.id); 
+        // Run the Supabase query: Update if ID exists, Insert if it's new
+        if (id) {
+            const { error } = await _supabase.from('incomes').update(payload).eq('id', id); 
             dbError = error;
         } else {
             const { error } = await _supabase.from('incomes').insert([payload]); 
             dbError = error;
         }
         
-        // Check if Supabase rejected it
         if (dbError) {
             console.error("Supabase Error:", dbError);
             alert("Error saving to database! Check the console.");
@@ -4653,6 +4665,30 @@ const calculateAndSave = async (mode) => {
             await fetchIncomes(); 
             showCalcForm.value = false;
             calcResult.value = null; // Clear the preview for next time
+            
+            // 🛠️ THE FIX: Wipe the form memory clean so the ID doesn't get stuck!
+            calcInputs.value = {
+                id: null,
+                name: '',
+                salary: '',
+                commission: '',
+                medical: '',
+                dental: '',
+                fsa: '',
+                postTax: '',
+                trad401k: '',
+                roth401k: '',
+                match401k: '',
+                filingStatus: 'Single',
+                stateTaxRate: '',
+                dependents: '',
+                extraWithholding: '',
+                manualNetPay: '',
+                grossTimeframe: 'Annual',
+                payFrequency: 'Bi-Weekly',
+                nextPayDate: ''
+            };
+
             alert("Income Saved!");
         }
         
