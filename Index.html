@@ -4574,7 +4574,7 @@ const runCalculation = () => {
         const grossPay = (Number(salary) / payPeriods) + (Number(commission)||0); 
         const benefitAmt = Number(medical||0) + Number(dental||0) + Number(fsa||0);
         const ficaWages = Math.max(0, grossPay - benefitAmt); 
-        const ssTax = Math.min(ficaWages, 174900 / payPeriods) * 0.062; 
+        const ssTax = Math.min(ficaWages, 184500 / payPeriods) * 0.062;
         const medTax = (ficaWages * 0.0145) + (grossPay * payPeriods > 250000 ? ((grossPay * payPeriods - 250000) / payPeriods) * 0.009 : 0);
         const tradAmt = grossPay * (Number(trad401k||0) / 100); 
         const rothAmt = grossPay * (Number(roth401k||0) / 100); 
