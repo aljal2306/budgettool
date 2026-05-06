@@ -5733,22 +5733,20 @@ const startWizard = () => {
           // 🟢 Debt Sorting Logic (UPDATED)
 
 // 1. Define the drag-and-drop physics engine
-fetchDebts();          
 const initDebtDragAndDrop = () => {
-    const el = document.getElementById('debt-list-container');
+    // 🛠️ THE FIX: Look for the Tour ID instead since the browser ignores the duplicate!
+    const el = document.getElementById('tour-debt-list'); 
     
     if (el) {
         new Sortable(el, {
             handle: '.sortable-handle',
             animation: 150,
-            ghostClass: 'opacity-50', // Adds a nice fade effect to the card while you drag it
+            ghostClass: 'opacity-50', 
             
             onEnd: async (evt) => {
-                // 1. Visual swap in the Vue array so it updates instantly on screen
                 const item = debts.value.splice(evt.oldIndex, 1)[0];
                 debts.value.splice(evt.newIndex, 0, item);
                 
-                // 2. Save the new order to Supabase (using your exact working logic!)
                 const updates = debts.value.map((d, index) => ({
                     id: d.id,
                     order_index: index,
@@ -5760,24 +5758,18 @@ const initDebtDragAndDrop = () => {
                 }));
                 
                 await _supabase.from('debts').upsert(updates);
-                
-                // Note: If you have a function that recalculates the "Attack Plan" math 
-                // based on the array order, you should call it right here!
             }
         });
     }
 };
 
-// 2. Watch for the user to open the Debt tab, THEN attach the physics
+// 2. Watch for the Debt tab
 watch(currentView, async (newView) => {
     if (newView === 'debt') {
-        // Wait one microsecond for Vue to physically draw the HTML container
         await nextTick(); 
-        
-        // Now that the container exists, turn on the drag-and-drop!
         initDebtDragAndDrop();
     }
-});
+}, { immediate: true }); // 🛠️ THE FIX: This forces it to run on page load if they start on the Debt tab!
 
             fetchForecastSlots();
             fetchGiftCards();
