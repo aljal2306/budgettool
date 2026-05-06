@@ -2701,24 +2701,35 @@
                 </button>
             </div>
 
-            <div class="p-4 overflow-y-auto flex-1 space-y-2 bg-white dark:bg-slate-900">
-                <div v-if="potentialBills.length === 0" class="text-center text-slate-400 py-8 text-sm">
-                    No missing bills found! 🎉
-                </div>
+            <div class="p-4 overflow-y-auto flex-1 space-y-2 bg-white dark:bg-slate-900 custom-scrollbar">
+    <div v-if="potentialBills.length === 0" class="text-center text-slate-400 py-8 text-sm">
+        No missing bills found! 🎉
+    </div>
 
-                <div v-for="item in potentialBills" :key="item.id" 
-                        class="flex justify-between p-3 border rounded cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition select-none" 
-                        :class="item.selected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500' : 'border-slate-200 dark:border-slate-700'" 
-                        @click="item.selected = !item.selected">
-                    
-                    <div class="text-slate-700 dark:text-slate-200 text-sm font-medium">{{ item.name }}</div>
-                    
-                    <div class="flex items-center gap-3">
-                        <span class="text-slate-500 dark:text-slate-400 text-sm">${{ item.amount }}</span>
-                        <input type="checkbox" v-model="item.selected" class="accent-blue-600 w-4 h-4">
-                    </div>
-                </div>
+    <div v-for="item in potentialBills" :key="item.id" 
+            class="flex justify-between items-center p-3 border rounded cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition select-none" 
+            :class="item.selected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500' : 'border-slate-200 dark:border-slate-700'" 
+            @click="item.selected = !item.selected">
+        
+        <div class="text-slate-700 dark:text-slate-200 text-sm font-medium flex-1 truncate pr-2">
+            {{ item.name }}
+            <div v-if="item.is_variable" class="text-[9px] text-blue-500 uppercase tracking-widest mt-0.5">Variable</div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <div class="relative" @click.stop>
+                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
+                <input type="number" 
+                       v-model.number="item.amount" 
+                       step="0.01" 
+                       class="w-24 pl-5 pr-2 py-1 text-sm font-bold text-right border rounded bg-white dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm" 
+                       :class="item.selected ? 'border-blue-300 dark:border-blue-700' : 'border-slate-200 dark:border-slate-700'">
             </div>
+            
+            <input type="checkbox" v-model="item.selected" class="accent-blue-600 w-5 h-5 flex-shrink-0 cursor-pointer pointer-events-none">
+        </div>
+    </div>
+</div>
 
             <div class="p-4 border-t flex justify-end gap-2 bg-slate-50 dark:bg-slate-800 dark:border-slate-700">
                 <button @click="showGenModal=false" class="px-4 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-sm font-bold">Cancel</button>
