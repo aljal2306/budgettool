@@ -5733,6 +5733,7 @@ const startWizard = () => {
           // 🟢 Debt Sorting Logic (UPDATED)
 
 // 1. Define the drag-and-drop physics engine
+fetchDebts();          
 const initDebtDragAndDrop = () => {
     // 🛠️ THE FIX: Look for the Tour ID instead since the browser ignores the duplicate!
     const el = document.getElementById('tour-debt-list'); 
