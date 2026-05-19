@@ -4994,9 +4994,19 @@ fetchGoals();
        
       // 🎯 Goals Functions
           const openNewStandardGoal = () => {
-          console.log("Standard goal form clicked");
-          // Coming soon!
-          };
+    showGoalsHub.value = false; // Close the hub
+    showAddForm.value = true; // Open your side panel
+    isEditing.value = false;
+    
+    // Pre-fill the form as a Goal!
+    newItem.value = { 
+        name: '', amount: '', frequency: 'Monthly', 
+        is_core: false, is_variable: false, is_autopay: false, 
+        is_wishlist: true, // 👈 Auto-checked!
+        is_goal: true,     // 👈 Auto-checked!
+        debt_id: null 
+    };
+};
 
          const openNewTripGoal = () => {
     showGoalsHub.value = false; // Hide the Hub
@@ -5012,10 +5022,33 @@ fetchGoals();
     showTripPlanner.value = true; // Show the accordion UI
 };
 
-        const openEditGoal = (goal) => {
-        console.log("Editing goal:", goal);
-        // Coming soon!
+       const openEditGoal = (goal) => {
+    console.log("Editing goal:", goal);
+    // We will build the logic to unpack the JSON for this next!
+};
+
+const saveTripGoal = async () => {
+    try {
+        const payload = {
+            user_id: session.value.user.id,
+            name: tripPlan.name,
+            target_amount: tripTotal.value,
+            type: 'trip',
+            breakdown: tripPlan.categories // Pushes the Accordion JSON into the database
         };
+        
+        const { error } = await _supabase.from('goals').insert([payload]);
+        if (error) throw error;
+        
+        showTripPlanner.value = false; // Close planner
+        fetchGoals(); // Refresh the background list
+        showGoalsHub.value = true; // Pop the Hub back open to see the new goal!
+        
+    } catch (err) {
+        console.error("Error saving trip:", err);
+        alert("Error saving trip. Check console.");
+    }
+};
 
         // 4. Cleanup & Refresh
         await fetchBudgetItems(); // Refresh the list
