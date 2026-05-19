@@ -3266,6 +3266,26 @@
 
            // 2. The Paywall Modal Trigger
            const showPaywallModal = ref(false)
+          // 🎯 Goals State
+          const showGoalsHub = ref(false);
+          const goals = ref([]); // We will build the fetch function for this later
+
+          // 🎯 Goals Functions
+          const openNewStandardGoal = () => {
+          console.log("Standard goal form clicked");
+          // Coming soon!
+          };
+
+         const openNewTripGoal = () => {
+         console.log("Trip planner clicked");
+         // Coming soon!
+         };
+
+        const openEditGoal = (goal) => {
+        console.log("Editing goal:", goal);
+        // Coming soon!
+        };
+          
 
            // 3. The Bouncer Function
            // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
@@ -5861,7 +5881,7 @@ watch(currentView, async (newView) => {
                 // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory, countBillDue,
-                totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp,
+                totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
