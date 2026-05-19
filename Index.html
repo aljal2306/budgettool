@@ -3231,8 +3231,7 @@
     </div>
     
 <script>
-    const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
-    const { createClient } = supabase;
+    const { createApp, ref, computed, reactive, onMounted, nextTick, watch } = Vue;    const { createClient } = supabase;
 
     // ⚠️ PASTE YOUR SUPABASE KEYS HERE ⚠️
     const SUPABASE_URL = 'https://kqlfofxarceetacxfecb.supabase.co'
@@ -3369,7 +3368,28 @@
           // 🎯 Goals State
           const showGoalsHub = ref(false);
           const goals = ref([]); // We will build the fetch function for this later
-          
+          // ✈️ Trip Planner State
+         const showTripPlanner = ref(false);
+         const openTripCategory = ref('travel'); 
+
+const tripPlan = reactive({
+    id: null,
+    name: '',
+    categories: {
+        travel: { icon: '🛫', label: 'Flights & Travel', amount: '' },
+        lodging: { icon: '🏨', label: 'Hotel & Lodging', amount: '' },
+        transportation: { icon: '🚗', label: 'Rental Car & Gas', amount: '' },
+        food: { icon: '🍔', label: 'Food & Dining', amount: '' },
+        activities: { icon: '🎟️', label: 'Activities', amount: '' },
+        custom: { icon: '🛍️', label: 'Extras / Custom', amount: '' }
+    }
+});
+
+const tripTotal = computed(() => {
+    return Object.values(tripPlan.categories).reduce((sum, cat) => {
+        return sum + (Number(cat.amount) || 0);
+    }, 0);
+});
 
            // 3. The Bouncer Function
            // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
@@ -6009,7 +6029,7 @@ watch(currentView, async (newView) => {
                 // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory, countBillDue,
-                totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal, fetchGoals, 
+                totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal, fetchGoals, showTripPlanner, openTripCategory, tripPlan, tripTotal,
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
