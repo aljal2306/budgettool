@@ -4920,9 +4920,18 @@ fetchGoals();
           };
 
          const openNewTripGoal = () => {
-         console.log("Trip planner clicked");
-         // Coming soon!
-         };
+    showGoalsHub.value = false; // Hide the Hub
+    
+    // Reset the form for a fresh trip
+    tripPlan.id = null;
+    tripPlan.name = '';
+    Object.keys(tripPlan.categories).forEach(key => {
+        tripPlan.categories[key].amount = '';
+    });
+    
+    openTripCategory.value = 'travel'; // Open the first tab
+    showTripPlanner.value = true; // Show the accordion UI
+};
 
         const openEditGoal = (goal) => {
         console.log("Editing goal:", goal);
