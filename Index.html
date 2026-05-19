@@ -1508,13 +1508,36 @@
                                 </label>
                             </div>
 
-                            <div v-if="newItem.is_wishlist" class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800 animate-fade-in">
-                                <label class="block text-[10px] font-bold text-purple-400 uppercase mb-1">Replaces existing bill?</label>
-                                <select v-model="newItem.replaces_id" class="w-full p-2 border border-purple-200 rounded text-xs dark:bg-slate-800 dark:text-white dark:border-slate-600">
-                                    <option :value="null">-- None --</option>
-                                    <option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option>
-                                </select>
-                            </div>
+                            <div v-if="newItem.is_wishlist" class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800 animate-fade-in space-y-3">
+    
+    <div>
+        <label class="block text-[10px] font-bold text-purple-400 uppercase mb-1">Replaces existing bill?</label>
+        <select v-model="newItem.replaces_id" class="w-full p-2 border border-purple-200 rounded text-xs dark:bg-slate-800 dark:text-white dark:border-slate-600 outline-none">
+            <option :value="null">-- None --</option>
+            <option v-for="i in standardItems" :key="i.id" :value="i.id">{{ i.name }} (${{ i.amount }})</option>
+        </select>
+    </div>
+
+    <div class="pt-2 border-t border-purple-200/50 dark:border-purple-700/50">
+        <label class="flex items-start gap-2 cursor-pointer group">
+            <div class="relative flex items-center justify-center mt-0.5">
+                <input type="checkbox" v-model="newItem.is_goal" class="peer appearance-none w-4 h-4 border-2 border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-slate-800 checked:bg-emerald-500 checked:border-emerald-500 transition-colors cursor-pointer">
+                <svg class="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <div>
+                <span class="text-xs font-bold text-purple-900 dark:text-purple-300 group-hover:text-emerald-600 transition-colors flex items-center gap-1">
+                    🎯 Convert to Financial Goal
+                </span>
+                <p class="text-[10px] text-purple-600/70 dark:text-purple-400/70 leading-tight mt-0.5">
+                    Save this to your Goals Hub so you can target it in your Forecast.
+                </p>
+            </div>
+        </label>
+    </div>
+    
+</div>
 
                             <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800 mt-2 transition-all">
                                 <div class="flex items-center justify-between mb-2">
