@@ -1635,6 +1635,64 @@
     </div>
 </transition>
 
+                    <transition name="fade">
+    <div v-if="showTripPlanner" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+        
+        <div class="bg-slate-50 dark:bg-slate-900 w-full max-w-md h-[85vh] flex flex-col relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-2xl">
+            
+            <div class="sticky top-0 z-50 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-5 border-b border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center flex-shrink-0">
+                <div class="flex-1 mr-4">
+                    <h3 class="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Trip Total</h3>
+                    <input v-model="tripPlan.name" type="text" class="w-full text-lg font-black bg-transparent border-none outline-none focus:ring-0 p-0 text-slate-800 dark:text-white placeholder-slate-300 dark:placeholder-slate-600" placeholder="Name this trip...">
+                </div>
+                <div class="text-3xl font-black text-emerald-500 flex-shrink-0">
+                    ${{ tripTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) }}
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar pb-24">
+                <div v-for="(cat, key) in tripPlan.categories" :key="key" 
+                     class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-all">
+                    
+                    <button @click="openTripCategory = openTripCategory === key ? null : key" 
+                            class="w-full flex items-center justify-between p-4 focus:outline-none hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">{{ cat.icon }}</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-200">{{ cat.label }}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span v-if="cat.amount" class="font-bold text-slate-500">${{ Number(cat.amount).toLocaleString() }}</span>
+                            <span class="text-slate-300 text-xs transition-transform" :class="openTripCategory === key ? 'rotate-180' : ''">▼</span>
+                        </div>
+                    </button>
+
+                    <transition name="slide-down">
+                        <div v-if="openTripCategory === key" class="p-4 pt-0 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2 mt-3">Estimated Cost</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                <input type="number" v-model.number="cat.amount" 
+                                       class="w-full pl-8 p-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-white font-bold text-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition shadow-inner" 
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+                    </transition>
+                </div>
+            </div>
+
+            <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent dark:from-slate-900 dark:via-slate-900 pt-10 flex gap-2">
+                <button @click="showTripPlanner = false; showGoalsHub = true" class="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 font-bold shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                    Cancel
+                </button>
+                <button @click="saveTripGoal" :disabled="!tripPlan.name || tripTotal === 0" class="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Save Trip Target
+                </button>
+            </div>
+
+        </div>
+    </div>
+</transition>
+                    
                       <div id="tour-ledger" class="mb-8">
     
     <div @click="showBillModal = true" class="bg-gradient-to-br from-indigo-800 to-indigo-900 text-white p-6 rounded-2xl shadow-lg cursor-pointer relative group hover:scale-[1.01] transition-transform duration-200">
@@ -3311,6 +3369,7 @@
           // 🎯 Goals State
           const showGoalsHub = ref(false);
           const goals = ref([]); // We will build the fetch function for this later
+          
 
            // 3. The Bouncer Function
            // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
