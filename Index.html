@@ -4786,67 +4786,89 @@ const calculateAndSave = async (mode) => {
             const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
             const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
             const handleSave = async () => {
-                try {
-                    // 1. Build the data object
-                    const itemPayload = {
-                        user_id: session.value.user.id,
-                        name: newItem.value.name,
-                        amount: newItem.value.amount,
-                        // If "Flexible" is checked, send null for due_day
-                        due_day: newItem.value.isFlexible ? null : newItem.value.due_day,
-                        is_core: newItem.value.is_core,
-                        is_variable: newItem.value.is_variable,
-                        is_wishlist: newItem.value.is_wishlist,
-                        
-                        // 🟢 NEW: Auto-Pay Status
-                        is_autopay: newItem.value.is_autopay || false,
-                        preferred_method: newItem.value.preferred_method || 'debit',
-    
-                        replaces_id: newItem.value.replaces_id || null,
-                        frequency: newItem.value.frequency,
-                        category: newItem.value.category,
-                        
-                        // Link to Debt
-                        debt_id: newItem.value.debt_id || null 
-                    };
+    try {
+        // 1. Build the data object (for budget_items)
+        const itemPayload = {
+            user_id: session.value.user.id,
+            name: newItem.value.name,
+            amount: newItem.value.amount,
+            // If "Flexible" is checked, send null for due_day
+            due_day: newItem.value.isFlexible ? null : newItem.value.due_day,
+            is_core: newItem.value.is_core,
+            is_variable: newItem.value.is_variable,
+            is_wishlist: newItem.value.is_wishlist,
+            
+            // Auto-Pay Status
+            is_autopay: newItem.value.is_autopay || false,
+            preferred_method: newItem.value.preferred_method || 'debit',
 
-                    // 2. Send to Database
-                    if (isEditing.value) {
-                        // UPDATE Logic
-                        const { error } = await _supabase
-                            .from('budget_items')
-                            .update(itemPayload)
-                            .eq('id', newItem.value.id);
-                        
-                        if (error) throw error;
-                    } else {
-                        // INSERT Logic
-                        const { error } = await _supabase
-                            .from('budget_items')
-                            .insert([itemPayload]);
-                            
-                        if (error) throw error;
-                    }
+            replaces_id: newItem.value.replaces_id || null,
+            frequency: newItem.value.frequency,
+            category: newItem.value.category,
+            
+            // Link to Debt
+            debt_id: newItem.value.debt_id || null 
+        };
 
-                    // 3. Cleanup & Refresh
-                    await fetchBudgetItems(); // Refresh the list
-                    showAddForm.value = false; // Close the side panel
-                    
-                    // Clear the form for next time
-                    if (!isEditing.value) {
-                        newItem.value = { 
-                            name: '', amount: '', frequency: 'Monthly', 
-                            is_core: false, is_variable: false, is_wishlist: false, 
-                            is_autopay: false, // Reset this too
-                            debt_id: null 
-                        };
-                    }
+        // 2. Send to Database
+        if (isEditing.value) {
+            // UPDATE Logic
+            const { error } = await _supabase
+                .from('budget_items')
+                .update(itemPayload)
+                .eq('id', newItem.value.id);
+            
+            if (error) throw error;
+        } else {
+            // INSERT Logic
+            const { error } = await _supabase
+                .from('budget_items')
+                .insert([itemPayload]);
+                
+            if (error) throw error;
+        }
 
-                } catch (e) {
-                    console.error('Error saving item:', e);
-                    alert('Error saving budget item. Check console.');
-                }
+        // 🟢 NEW: 3. Dual-Save to Goals Table if checked
+        // This runs silently in the background right after the budget item saves
+        if (newItem.value.is_wishlist && newItem.value.is_goal) {
+            const goalPayload = {
+                user_id: session.value.user.id,
+                name: newItem.value.name,
+                target_amount: Number(newItem.value.amount),
+                type: 'standard',
+                breakdown: {} // Empty JSON for standard goals
             };
+            
+            const { error: goalError } = await _supabase
+                .from('goals')
+                .insert([goalPayload]);
+            
+            if (goalError) {
+                console.error("Error copying to goals:", goalError);
+                // Note: We do not throw an error here so the UI still successfully closes
+            }
+        }
+
+        // 4. Cleanup & Refresh
+        await fetchBudgetItems(); // Refresh the list
+        showAddForm.value = false; // Close the side panel
+        
+        // Clear the form for next time
+        if (!isEditing.value) {
+            newItem.value = { 
+                name: '', amount: '', frequency: 'Monthly', 
+                is_core: false, is_variable: false, is_wishlist: false, 
+                is_autopay: false, 
+                debt_id: null,
+                is_goal: false // Ensure the goal checkbox is cleared!
+            };
+        }
+
+    } catch (e) {
+        console.error('Error saving item:', e);
+        alert('Error saving budget item. Check console.');
+    }
+};
             const startEditing = (item) => { 
     if (!item) return; // Safety check
     
