@@ -3307,26 +3307,10 @@
 
            // 2. The Paywall Modal Trigger
            const showPaywallModal = ref(false)
+         
           // 🎯 Goals State
           const showGoalsHub = ref(false);
           const goals = ref([]); // We will build the fetch function for this later
-
-          // 🎯 Goals Functions
-          const openNewStandardGoal = () => {
-          console.log("Standard goal form clicked");
-          // Coming soon!
-          };
-
-         const openNewTripGoal = () => {
-         console.log("Trip planner clicked");
-         // Coming soon!
-         };
-
-        const openEditGoal = (goal) => {
-        console.log("Editing goal:", goal);
-        // Coming soon!
-        };
-          
 
            // 3. The Bouncer Function
            // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
@@ -4909,6 +4893,41 @@ const calculateAndSave = async (mode) => {
                 // Note: We do not throw an error here so the UI still successfully closes
             }
         }
+       // 🟢 Fetch Goals from Supabase
+const fetchGoals = async () => {
+    try {
+        const { data, error } = await _supabase
+            .from('goals')
+            .select('*')
+            .eq('user_id', session.value.user.id)
+            .order('created_at', { ascending: false });
+            
+        if (error) throw error;
+        goals.value = data || [];
+    } catch (err) {
+        console.error("Error fetching goals:", err);
+    }
+};
+
+// Add this into whatever function runs when your app first loads 
+// (usually right next to where you call fetchBudgetItems() or fetchDebts())
+fetchGoals();
+       
+      // 🎯 Goals Functions
+          const openNewStandardGoal = () => {
+          console.log("Standard goal form clicked");
+          // Coming soon!
+          };
+
+         const openNewTripGoal = () => {
+         console.log("Trip planner clicked");
+         // Coming soon!
+         };
+
+        const openEditGoal = (goal) => {
+        console.log("Editing goal:", goal);
+        // Coming soon!
+        };
 
         // 4. Cleanup & Refresh
         await fetchBudgetItems(); // Refresh the list
@@ -5922,7 +5941,7 @@ watch(currentView, async (newView) => {
                 // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory, countBillDue,
-                totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal,
+                totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal, fetchGoals, 
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
