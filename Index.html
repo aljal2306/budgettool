@@ -4972,6 +4972,26 @@ const calculateAndSave = async (mode) => {
                 // Note: We do not throw an error here so the UI still successfully closes
             }
         }
+       // 4. Cleanup & Refresh
+        await fetchBudgetItems(); // Refresh the list
+        showAddForm.value = false; // Close the side panel
+        
+        // Clear the form for next time
+        if (!isEditing.value) {
+            newItem.value = { 
+                name: '', amount: '', frequency: 'Monthly', 
+                is_core: false, is_variable: false, is_wishlist: false, 
+                is_autopay: false, 
+                debt_id: null,
+                is_goal: false // Ensure the goal checkbox is cleared!
+            };
+        }
+
+    } catch (e) {
+        console.error('Error saving item:', e);
+        alert('Error saving budget item. Check console.');
+    }
+};
        // 🟢 Fetch Goals from Supabase
 const fetchGoals = async () => {
     try {
@@ -5006,7 +5026,7 @@ const fetchGoals = async () => {
         is_goal: true,     // 👈 Auto-checked!
         debt_id: null 
     };
-};
+}; 
 
          const openNewTripGoal = () => {
     showGoalsHub.value = false; // Hide the Hub
@@ -5047,27 +5067,6 @@ const saveTripGoal = async () => {
     } catch (err) {
         console.error("Error saving trip:", err);
         alert("Error saving trip. Check console.");
-    }
-};
-
-        // 4. Cleanup & Refresh
-        await fetchBudgetItems(); // Refresh the list
-        showAddForm.value = false; // Close the side panel
-        
-        // Clear the form for next time
-        if (!isEditing.value) {
-            newItem.value = { 
-                name: '', amount: '', frequency: 'Monthly', 
-                is_core: false, is_variable: false, is_wishlist: false, 
-                is_autopay: false, 
-                debt_id: null,
-                is_goal: false // Ensure the goal checkbox is cleared!
-            };
-        }
-
-    } catch (e) {
-        console.error('Error saving item:', e);
-        alert('Error saving budget item. Check console.');
     }
 };
             const startEditing = (item) => { 
