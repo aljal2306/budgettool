@@ -5165,19 +5165,42 @@ const fetchGoals = async () => {
        
       // 🎯 Goals Functions
           const openNewStandardGoal = () => {
-    showGoalsHub.value = false; // Close the hub
-    showAddForm.value = true; // Open your side panel
+    showGoalsHub.value = false;
+    showAddForm.value = true;
     isEditing.value = false;
     
-    // Pre-fill the form as a Goal!
     newItem.value = { 
-        name: '', amount: '', frequency: 'Monthly', 
-        is_core: false, is_variable: false, is_autopay: false, 
-        is_wishlist: true, // 👈 Auto-checked!
-        is_goal: true,     // 👈 Auto-checked!
-        debt_id: null 
+        name: '', 
+        amount: '', 
+        description: '', // Dedicated goal note
+        is_goal: true,   // Used to distinguish the save method
+        is_wishlist: false // 🟢 Set to false so it doesn't enter the budget flow
     };
-}; 
+};
+     // 🎯 NEW: Dedicated Standard Goal Save
+const saveStandardGoal = async () => {
+    try {
+        const payload = {
+            user_id: session.value.user.id,
+            name: newItem.value.name, // Using your existing side panel form
+            target_amount: Number(newItem.value.amount),
+            type: 'standard',
+            breakdown: { note: newItem.value.description || '' }
+        };
+
+        if (newItem.value.goal_id) {
+            await _supabase.from('goals').update(payload).eq('id', newItem.value.goal_id);
+        } else {
+            await _supabase.from('goals').insert([payload]);
+        }
+        
+        fetchGoals();
+        showAddForm.value = false;
+        showGoalsHub.value = true;
+    } catch (err) {
+        console.error("Error saving goal:", err);
+    }
+};     
 const openNewTripGoal = () => {
     showGoalsHub.value = false;
     
@@ -6305,7 +6328,7 @@ watch(currentView, async (newView) => {
                 // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory, countBillDue,
-                totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal, fetchGoals, showTripPlanner, openTripCategory, tripPlan, tripTotal, saveTripGoal, deleteGoal,
+                totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal, fetchGoals, showTripPlanner, openTripCategory, tripPlan, tripTotal, saveTripGoal, deleteGoal, saveStandardGoal,
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
