@@ -5122,16 +5122,14 @@ const calculateAndSave = async (mode) => {
 
         // 🟢 3. Dual-Save to Goals Table
 if (newItem.value.is_wishlist && newItem.value.is_goal) {
-    const goalPayload = {
+    // Automatically creates the goal without opening the Goal Modal
+    await _supabase.from('goals').insert([{
         user_id: session.value.user.id,
         name: newItem.value.name,
-        target_amount: Number(newItem.value.amount),
-        type: 'standard',
-        breakdown: { 
-            budget_id: isEditing.value ? newItem.value.id : budgetData[0].id, 
-            note: newItem.value.description || '' 
-        }
-    };
+        target_amount: newItem.value.amount,
+        type: 'standard'
+    }]);
+}
 
     if (newItem.value.goal_id) {
         // UPDATE existing goal
@@ -5188,17 +5186,14 @@ const fetchGoals = async () => {
        
       // 🎯 Goals Functions
           const openNewStandardGoal = () => {
-    showGoalsHub.value = false;
-    showAddForm.value = true;
-    isEditing.value = false;
+    showGoalsHub.value = false;      // Close the hub
     
-    newItem.value = { 
-        name: '', 
-        amount: '', 
-        description: '', // Dedicated goal note
-        is_goal: true,   // Used to distinguish the save method
-        is_wishlist: false // 🟢 Set to false so it doesn't enter the budget flow
-    };
+    // Reset the specific goal object instead of the 'newItem' budget object
+    standardGoal.name = '';
+    standardGoal.target_amount = 0;
+    standardGoal.id = null;          // Ensure it's clear we are creating a new one
+    
+    showStandardGoalModal.value = true; // Open the dedicated Modal
 };
      // 🎯 NEW: Dedicated Standard Goal Save
 const saveStandardGoal = async () => {
