@@ -5182,11 +5182,48 @@ const openNewTripGoal = () => {
     showTripPlanner.value = true;
 };
 
-       const openEditGoal = (goal) => {
-    console.log("Editing goal:", goal);
-    // We will build the logic to unpack the JSON for this next!
+       // 🟢 UNPACK & EDIT GOAL
+const openEditGoal = (goal) => {
+    showGoalsHub.value = false; // Close the hub
+
+    if (goal.type === 'trip') {
+        // 1. Load the base data
+        tripPlan.id = goal.id;
+        tripPlan.name = goal.name;
+        
+        // 2. Unpack the JSON safely (with fallbacks just in case)
+        const bd = goal.breakdown || {};
+        tripPlan.destination = bd.destination || '';
+        tripPlan.travelers = bd.travelers || 1;
+        tripPlan.duration = bd.duration || 7;
+        tripPlan.transit = bd.transit || 'fly'; 
+        
+        // 3. Unpack categories (merging saved data with our defaults)
+        const defaultCats = getDefaultTripCategories();
+        const savedCats = bd.costs || {};
+        
+        Object.keys(defaultCats).forEach(key => {
+            if (savedCats[key]) {
+                // If we have saved data for this category, blend it in
+                tripPlan.categories[key] = { ...defaultCats[key], ...savedCats[key] };
+            } else {
+                // Otherwise use the fresh default
+                tripPlan.categories[key] = defaultCats[key];
+            }
+        });
+        
+        // 4. Open the UI
+        openTripCategory.value = 'details';
+        showTripPlanner.value = true;
+        
+    } else {
+        // Logic for opening Standard Goals will go here later!
+        alert("Standard goal editing coming soon!");
+        showGoalsHub.value = true; 
+    }
 };
 
+// 🟢 SAVE OR UPDATE TRIP GOAL
 const saveTripGoal = async () => {
     try {
         const payload = {
@@ -5195,19 +5232,34 @@ const saveTripGoal = async () => {
             target_amount: tripTotal.value,
             type: 'trip',
             breakdown: {
-                destination: tripPlan.destination, // 👈 Saved
-                travelers: tripPlan.travelers,     // 👈 Saved
-                duration: tripPlan.duration,       // 👈 Saved
-                costs: tripPlan.categories         // 👈 Nested category logic
+                destination: tripPlan.destination,
+                travelers: tripPlan.travelers,
+                duration: tripPlan.duration,
+                transit: tripPlan.transit, // 👈 Ensures fly/drive status is saved
+                costs: tripPlan.categories
             }
         };
+        
+        if (tripPlan.id) {
+            // UPDATE EXISTING TRIP
+            const { error } = await _supabase
+                .from('goals')
+                .update(payload)
+                .eq('id', tripPlan.id);
                 
-        const { error } = await _supabase.from('goals').insert([payload]);
-        if (error) throw error;
+            if (error) throw error;
+        } else {
+            // INSERT NEW TRIP
+            const { error } = await _supabase
+                .from('goals')
+                .insert([payload]);
+                
+            if (error) throw error;
+        }
         
         showTripPlanner.value = false; // Close planner
         fetchGoals(); // Refresh the background list
-        showGoalsHub.value = true; // Pop the Hub back open to see the new goal!
+        showGoalsHub.value = true; // Pop the Hub back open!
         
     } catch (err) {
         console.error("Error saving trip:", err);
