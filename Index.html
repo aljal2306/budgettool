@@ -6172,6 +6172,9 @@ const startWizard = () => {
             fetchSettings();
             fetchIncomes();
             
+          // 🟢 WAKE UP THE GOALS HUB
+            fetchGoals();
+            
             // 🟢 Main Data Chain
             fetchBudgetItems().then(() => {
                 fetchBills().then(() => {
