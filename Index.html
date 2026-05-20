@@ -5060,17 +5060,21 @@ const fetchGoals = async () => {
 }; 
 
          const openNewTripGoal = () => {
-    showGoalsHub.value = false; // Hide the Hub
+    showGoalsHub.value = false;
     
     // Reset the form for a fresh trip
     tripPlan.id = null;
     tripPlan.name = '';
+    tripPlan.destination = ''; // 👈 Clear it out
+    tripPlan.travelers = 1;    // 👈 Reset to 1
+    tripPlan.duration = 1;     // 👈 Reset to 1
+    
     Object.keys(tripPlan.categories).forEach(key => {
         tripPlan.categories[key].amount = '';
     });
     
-    openTripCategory.value = 'travel'; // Open the first tab
-    showTripPlanner.value = true; // Show the accordion UI
+    openTripCategory.value = 'details'; // 👈 Start them at the details tab
+    showTripPlanner.value = true; 
 };
 
        const openEditGoal = (goal) => {
