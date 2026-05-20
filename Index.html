@@ -5122,28 +5122,43 @@ const calculateAndSave = async (mode) => {
             if (error) throw error;
         }
 
-        // 🟢 3. Dual-Save to Goals Table
+        // 🟢 3. Dual-Save/Update to Goals Table (Unified)
 if (newItem.value.is_wishlist && newItem.value.is_goal) {
-    // Automatically creates the goal without opening the Goal Modal
-    await _supabase.from('goals').insert([{
+    const goalPayload = {
         user_id: session.value.user.id,
         name: newItem.value.name,
-        target_amount: newItem.value.amount,
-        type: 'standard'
-    }]);
-}
+        target_amount: Number(newItem.value.amount),
+        type: 'standard',
+        breakdown: { note: newItem.value.description || '' }
+    };
 
     if (newItem.value.goal_id) {
         // UPDATE existing goal
-        await _supabase.from('goals').update(goalPayload).eq('id', newItem.value.goal_id);
+        const { error: updateError } = await _supabase
+            .from('goals')
+            .update(goalPayload)
+            .eq('id', newItem.value.goal_id);
+            
+        if (updateError) console.error("Error updating goal:", updateError);
     } else {
         // INSERT new goal
-        const { data: newGoal } = await _supabase.from('goals').insert([goalPayload]).select();
-        // If it's a new budget item, link the new goal_id back to it
-        if (!isEditing.value && newGoal) {
-            await _supabase.from('budget_items').update({ goal_id: newGoal[0].id }).eq('id', budgetData[0].id);
+        const { data: newGoal, error: goalError } = await _supabase
+            .from('goals')
+            .insert([goalPayload])
+            .select();
+        
+        if (goalError) {
+            console.error("Error inserting goal:", goalError);
+        } else if (newGoal && budgetData?.[0]) {
+            // Link the new goal_id back to the budget item
+            await _supabase
+                .from('budget_items')
+                .update({ goal_id: newGoal[0].id })
+                .eq('id', budgetData[0].id);
         }
     }
+    
+    // Refresh the goal hub
     fetchGoals();
 }
        // 4. Cleanup & Refresh
