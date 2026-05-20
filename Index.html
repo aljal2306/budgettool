@@ -5106,31 +5106,21 @@ if (newItem.value.is_wishlist && newItem.value.is_goal) {
         name: newItem.value.name,
         target_amount: Number(newItem.value.amount),
         type: 'standard',
-        breakdown: { note: newItem.value.description || '' }
+        breakdown: { 
+            budget_id: isEditing.value ? newItem.value.id : budgetData[0].id, 
+            note: newItem.value.description || '' 
+        }
     };
 
     if (newItem.value.goal_id) {
         // UPDATE existing goal
-        const { error: updateError } = await _supabase
-            .from('goals')
-            .update(goalPayload)
-            .eq('id', newItem.value.goal_id);
-        if (updateError) console.error("Error updating goal:", updateError);
+        await _supabase.from('goals').update(goalPayload).eq('id', newItem.value.goal_id);
     } else {
         // INSERT new goal
-        const { data: newGoal, error: goalError } = await _supabase
-            .from('goals')
-            .insert([goalPayload])
-            .select(); // 👈 Select the new ID
-        
-        if (goalError) {
-            console.error("Error inserting goal:", goalError);
-        } else if (newGoal) {
-            // Update the budget item with the new goal_id
-            await _supabase
-                .from('budget_items')
-                .update({ goal_id: newGoal[0].id })
-                .eq('id', newItem.value.id);
+        const { data: newGoal } = await _supabase.from('goals').insert([goalPayload]).select();
+        // If it's a new budget item, link the new goal_id back to it
+        if (!isEditing.value && newGoal) {
+            await _supabase.from('budget_items').update({ goal_id: newGoal[0].id }).eq('id', budgetData[0].id);
         }
     }
     fetchGoals();
