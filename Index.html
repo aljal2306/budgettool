@@ -5197,28 +5197,20 @@ const fetchGoals = async () => {
 };
      // 🎯 NEW: Dedicated Standard Goal Save
 const saveStandardGoal = async () => {
-    try {
-        const payload = {
-            user_id: session.value.user.id,
-            name: newItem.value.name, // Using your existing side panel form
-            target_amount: Number(newItem.value.amount),
-            type: 'standard',
-            breakdown: { note: newItem.value.description || '' }
-        };
-
-        if (newItem.value.goal_id) {
-            await _supabase.from('goals').update(payload).eq('id', newItem.value.goal_id);
-        } else {
-            await _supabase.from('goals').insert([payload]);
-        }
-        
-        fetchGoals();
-        showAddForm.value = false;
-        showGoalsHub.value = true;
-    } catch (err) {
-        console.error("Error saving goal:", err);
-    }
-};     
+    const payload = {
+        user_id: session.value.user.id,
+        name: standardGoal.name,
+        target_amount: Number(standardGoal.target_amount),
+        type: 'standard',
+        breakdown: { note: '' }
+    };
+    
+    await _supabase.from('goals').insert([payload]);
+    
+    showStandardGoalModal.value = false;
+    fetchGoals();
+    showGoalsHub.value = true;
+};
 const openNewTripGoal = () => {
     showGoalsHub.value = false;
     
