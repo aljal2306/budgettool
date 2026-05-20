@@ -3368,27 +3368,58 @@
           // 🎯 Goals State
           const showGoalsHub = ref(false);
           const goals = ref([]); // We will build the fetch function for this later
-          // ✈️ Trip Planner State
-         const showTripPlanner = ref(false);
-         const openTripCategory = ref('travel'); 
+          // ✈️ Smart Trip Planner State
+const showTripPlanner = ref(false);
+const openTripCategory = ref('details'); 
 
 const tripPlan = reactive({
     id: null,
     name: '',
+    destination: '',
+    travelers: 6,     // Defaulted to 6 for the whole family!
+    duration: 7,      // Default 1 week
+    transit: 'fly',   // 'fly' or 'drive'
+    
+    // Smart Categories with sub-variables for auto-math
     categories: {
-        travel: { icon: '🛫', label: 'Flights & Travel', amount: '' },
-        lodging: { icon: '🏨', label: 'Hotel & Lodging', amount: '' },
-        transportation: { icon: '🚗', label: 'Rental Car & Gas', amount: '' },
-        food: { icon: '🍔', label: 'Food & Dining', amount: '' },
-        activities: { icon: '🎟️', label: 'Activities', amount: '' },
-        custom: { icon: '🛍️', label: 'Extras / Custom', amount: '' }
+        flights: { icon: '✈️', label: 'Flights', amount: 0, per_ticket: 350 },
+        rental_car: { icon: '🚗', label: 'Rental Car', amount: 0, days: 7, per_day: 65 },
+        gas: { icon: '⛽', label: 'Gas / Fuel', amount: 0 },
+        lodging: { icon: '🏨', label: 'Hotel / Lodging', amount: 0, nights: 6, per_night: 180 },
+        food: { icon: '🍔', label: 'Food & Dining', amount: 0, tier: 50 }, // $50 per person/day
+        attractions: { icon: '🎟️', label: 'Attractions', amount: 0 },
+        pet_boarding: { icon: '🐕', label: 'Pet Boarding', amount: 0, pets: 0, per_day: 35 },
+        custom: { icon: '🛍️', label: 'Extras / Custom', amount: 0 }
     }
 });
 
+// 🧠 THE MATH ENGINE
+// This watches the variables. If you change "travelers" or "duration", it recalculates the totals automatically!
+watch(() => [
+    tripPlan.travelers, tripPlan.duration, tripPlan.transit,
+    tripPlan.categories.food.tier,
+    tripPlan.categories.lodging.nights, tripPlan.categories.lodging.per_night,
+    tripPlan.categories.flights.per_ticket,
+    tripPlan.categories.rental_car.days, tripPlan.categories.rental_car.per_day,
+    tripPlan.categories.pet_boarding.pets, tripPlan.categories.pet_boarding.per_day
+], () => {
+    const c = tripPlan.categories;
+    const people = tripPlan.travelers || 1;
+    const days = tripPlan.duration || 1;
+
+    // Auto-Math Formulas
+    c.food.amount = people * days * (c.food.tier || 0);
+    c.lodging.amount = (c.lodging.nights || 0) * (c.lodging.per_night || 0);
+    c.rental_car.amount = (c.rental_car.days || 0) * (c.rental_car.per_day || 0);
+    c.pet_boarding.amount = (c.pet_boarding.pets || 0) * days * (c.pet_boarding.per_day || 0);
+    
+    // Only calculate flights if flying
+    c.flights.amount = tripPlan.transit === 'fly' ? people * (c.flights.per_ticket || 0) : 0;
+    
+}, { deep: true });
+
 const tripTotal = computed(() => {
-    return Object.values(tripPlan.categories).reduce((sum, cat) => {
-        return sum + (Number(cat.amount) || 0);
-    }, 0);
+    return Object.values(tripPlan.categories).reduce((sum, cat) => sum + (Number(cat.amount) || 0), 0);
 });
 
            // 3. The Bouncer Function
