@@ -5239,11 +5239,23 @@ const openEditGoal = (goal) => {
         openTripCategory.value = 'details';
         showTripPlanner.value = true;
         
-    } else {
-        // Logic for opening Standard Goals will go here later!
-        alert("Standard goal editing coming soon!");
-        showGoalsHub.value = true; 
-    }
+    } else if (goal.type === 'standard') {
+    // 🎯 Populate the side panel for Standard Goals
+    newItem.value = {
+        id: goal.breakdown?.budget_id || null, // The linked budget item ID
+        goal_id: goal.id,                    // The Goal ID for updates
+        name: goal.name,
+        amount: goal.target_amount,
+        is_goal: true,
+        is_wishlist: true,
+        description: goal.breakdown?.note || '',
+        // Ensure other required fields for your form exist
+        frequency: 'Monthly', 
+        category: 'Savings'
+    };
+    isEditing.value = true;
+    showAddForm.value = true; // Opens the side panel
+}
 };
 
 // 🟢 SAVE OR UPDATE TRIP GOAL
