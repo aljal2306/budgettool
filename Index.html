@@ -5089,9 +5089,14 @@ const saveTripGoal = async () => {
             name: tripPlan.name,
             target_amount: tripTotal.value,
             type: 'trip',
-            breakdown: tripPlan.categories // Pushes the Accordion JSON into the database
+            breakdown: {
+                destination: tripPlan.destination, // 👈 Saved
+                travelers: tripPlan.travelers,     // 👈 Saved
+                duration: tripPlan.duration,       // 👈 Saved
+                costs: tripPlan.categories         // 👈 Nested category logic
+            }
         };
-        
+                
         const { error } = await _supabase.from('goals').insert([payload]);
         if (error) throw error;
         
