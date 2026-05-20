@@ -5077,8 +5077,80 @@ const calculateAndSave = async (mode) => {
             const deleteIncome = async (id) => { if(!confirm("Delete?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
 
             // --- BUDGET ITEMS & MODALS ---
-            const addItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const payload={user_id:session.value.user.id,name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_active:true, is_variable:newItem.value.is_variable, category:newItem.value.category};const{data}=await _supabase.from('budget_items').insert([payload]).select();if(data){budgetItems.value.push({...data[0],includedInScenario:true});resetForm()}};
-            const updateItem=async()=>{const finalDueDay=newItem.value.isFlexible?0:(Number(newItem.value.due_day)||1);const updates={name:newItem.value.name,amount:Number(newItem.value.amount),due_day:finalDueDay,frequency:newItem.value.frequency,is_core:newItem.value.is_core,is_autopay:newItem.value.is_autopay,is_wishlist:newItem.value.is_wishlist,replaces_id:newItem.value.replaces_id||null,is_variable:newItem.value.is_variable, category:newItem.value.category};await _supabase.from('budget_items').update(updates).eq('id',editingId.value);fetchBudgetItems();resetForm()};
+            const addItem = async () => {
+    const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1);
+    const payload = {
+        user_id: session.value.user.id,
+        name: newItem.value.name,
+        amount: Number(newItem.value.amount),
+        due_day: finalDueDay,
+        frequency: newItem.value.frequency,
+        is_core: newItem.value.is_core,
+        is_autopay: newItem.value.is_autopay,
+        is_wishlist: newItem.value.is_wishlist,
+        replaces_id: newItem.value.replaces_id || null,
+        is_active: true,
+        is_variable: newItem.value.is_variable,
+        category: newItem.value.category
+    };
+
+    const { data } = await _supabase.from('budget_items').insert([payload]).select();
+    
+    if (data) {
+        // 🟢 DUAL-SAVE: Sync to Goals if it's a Wishlist Goal
+        if (newItem.value.is_wishlist && newItem.value.is_goal) {
+            const { data: newGoal } = await _supabase.from('goals').insert([{
+                user_id: session.value.user.id,
+                name: newItem.value.name,
+                target_amount: Number(newItem.value.amount),
+                type: 'standard',
+                breakdown: { note: newItem.value.description || '' }
+            }]).select();
+
+            if (newGoal) {
+                // Link the new goal_id back to this budget item
+                await _supabase.from('budget_items')
+                    .update({ goal_id: newGoal[0].id })
+                    .eq('id', data[0].id);
+            }
+            fetchGoals();
+        }
+        
+        budgetItems.value.push({ ...data[0], includedInScenario: true });
+        resetForm();
+    }
+};
+            const updateItem = async () => {
+    const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1);
+    const updates = {
+        name: newItem.value.name,
+        amount: Number(newItem.value.amount),
+        due_day: finalDueDay,
+        frequency: newItem.value.frequency,
+        is_core: newItem.value.is_core,
+        is_autopay: newItem.value.is_autopay,
+        is_wishlist: newItem.value.is_wishlist,
+        replaces_id: newItem.value.replaces_id || null,
+        is_variable: newItem.value.is_variable,
+        category: newItem.value.category
+    };
+
+    await _supabase.from('budget_items').update(updates).eq('id', editingId.value);
+
+    // 🟢 DUAL-SAVE: Sync update to Goal if it's a wishlist goal
+    if (newItem.value.is_wishlist && newItem.value.is_goal && newItem.value.goal_id) {
+        await _supabase.from('goals').update({
+            name: newItem.value.name,
+            target_amount: Number(newItem.value.amount),
+            breakdown: { note: newItem.value.description || '' }
+        }).eq('id', newItem.value.goal_id);
+        
+        fetchGoals();
+    }
+
+    fetchBudgetItems();
+    resetForm();
+};
             const handleSave = async () => {
     try {
         // 1. Build the data object (for budget_items)
