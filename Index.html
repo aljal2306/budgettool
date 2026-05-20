@@ -3473,7 +3473,22 @@
           // 🎯 Goals State
           const showGoalsHub = ref(false);
           const goals = ref([]); // We will build the fetch function for this later
+        
           // ✈️ Smart Trip Planner State
+
+// 1. BASELINE FACTORY (Generic defaults)
+const getDefaultTripCategories = () => ({
+    flights: { icon: '✈️', label: 'Flights', amount: 0, per_ticket: 350 },
+    rental_car: { icon: '🚗', label: 'Rental Car', amount: 0, days: 7, per_day: 65 },
+    gas: { icon: '⛽', label: 'Gas / Fuel', amount: 0 },
+    lodging: { icon: '🏨', label: 'Hotel / Lodging', amount: 0, nights: 6, per_night: 150 },
+    food: { icon: '🍔', label: 'Food & Dining', amount: 0, tier: 50 }, 
+    attractions: { icon: '🎟️', label: 'Attractions', amount: 0 },
+    pet_boarding: { icon: '🐕', label: 'Pet Boarding', amount: 0, pets: 0, per_day: 30 },
+    custom: { icon: '🛍️', label: 'Extras / Custom', amount: 0 }
+});
+
+// 2. STATE (Generic)
 const showTripPlanner = ref(false);
 const openTripCategory = ref('details'); 
 
@@ -3481,25 +3496,13 @@ const tripPlan = reactive({
     id: null,
     name: '',
     destination: '',
-    travelers: 6,     // Defaulted to 6 for the whole family!
-    duration: 7,      // Default 1 week
-    transit: 'fly',   // 'fly' or 'drive'
-    
-    // Smart Categories with sub-variables for auto-math
-    categories: {
-        flights: { icon: '✈️', label: 'Flights', amount: 0, per_ticket: 350 },
-        rental_car: { icon: '🚗', label: 'Rental Car', amount: 0, days: 7, per_day: 65 },
-        gas: { icon: '⛽', label: 'Gas / Fuel', amount: 0 },
-        lodging: { icon: '🏨', label: 'Hotel / Lodging', amount: 0, nights: 6, per_night: 180 },
-        food: { icon: '🍔', label: 'Food & Dining', amount: 0, tier: 50 }, // $50 per person/day
-        attractions: { icon: '🎟️', label: 'Attractions', amount: 0 },
-        pet_boarding: { icon: '🐕', label: 'Pet Boarding', amount: 0, pets: 0, per_day: 35 },
-        custom: { icon: '🛍️', label: 'Extras / Custom', amount: 0 }
-    }
+    travelers: 1,     // Neutral starting point
+    duration: 7,      
+    transit: 'fly',   
+    categories: getDefaultTripCategories()
 });
 
-// 🧠 THE MATH ENGINE
-// This watches the variables. If you change "travelers" or "duration", it recalculates the totals automatically!
+// 3. THE MATH ENGINE (Stays exactly the same)
 watch(() => [
     tripPlan.travelers, tripPlan.duration, tripPlan.transit,
     tripPlan.categories.food.tier,
@@ -3512,13 +3515,14 @@ watch(() => [
     const people = tripPlan.travelers || 1;
     const days = tripPlan.duration || 1;
 
-    // Auto-Math Formulas
-    c.food.amount = people * days * (c.food.tier || 0);
+    // Stops math if user selects the custom dropdown option
+    if (c.food.tier !== 'custom') {
+        c.food.amount = people * days * (Number(c.food.tier) || 0);
+    }
+    
     c.lodging.amount = (c.lodging.nights || 0) * (c.lodging.per_night || 0);
     c.rental_car.amount = (c.rental_car.days || 0) * (c.rental_car.per_day || 0);
     c.pet_boarding.amount = (c.pet_boarding.pets || 0) * days * (c.pet_boarding.per_day || 0);
-    
-    // Only calculate flights if flying
     c.flights.amount = tripPlan.transit === 'fly' ? people * (c.flights.per_ticket || 0) : 0;
     
 }, { deep: true });
@@ -3526,6 +3530,22 @@ watch(() => [
 const tripTotal = computed(() => {
     return Object.values(tripPlan.categories).reduce((sum, cat) => sum + (Number(cat.amount) || 0), 0);
 });
+
+// 4. BULLETPROOF RESET FUNCTION (Generic)
+const openNewTripGoal = () => {
+    showGoalsHub.value = false;
+    
+    tripPlan.id = null;
+    tripPlan.name = '';
+    tripPlan.destination = '';
+    tripPlan.travelers = 1; // Neutral starting point
+    tripPlan.duration = 7;
+    tripPlan.transit = 'fly';
+    tripPlan.categories = getDefaultTripCategories();
+    
+    openTripCategory.value = 'details';
+    showTripPlanner.value = true;
+};
 
            // 3. The Bouncer Function
            // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
