@@ -5077,6 +5077,8 @@ const calculateAndSave = async (mode) => {
             
             // Link to Debt
             debt_id: newItem.value.debt_id || null 
+            // goals
+            goal_id: newItem.value.goal_id || null, // 👈 Link it!
         };
 
         // 2. Send to Database
@@ -5097,26 +5099,42 @@ const calculateAndSave = async (mode) => {
             if (error) throw error;
         }
 
-        // 🟢 NEW: 3. Dual-Save to Goals Table if checked
-        // This runs silently in the background right after the budget item saves
-        if (newItem.value.is_wishlist && newItem.value.is_goal) {
-            const goalPayload = {
-                user_id: session.value.user.id,
-                name: newItem.value.name,
-                target_amount: Number(newItem.value.amount),
-                type: 'standard',
-                breakdown: {} // Empty JSON for standard goals
-            };
-            
-            const { error: goalError } = await _supabase
-                .from('goals')
-                .insert([goalPayload]);
-            
-            if (goalError) {
-                console.error("Error copying to goals:", goalError);
-                // Note: We do not throw an error here so the UI still successfully closes
-            }
+        // 🟢 3. Dual-Save to Goals Table
+if (newItem.value.is_wishlist && newItem.value.is_goal) {
+    const goalPayload = {
+        user_id: session.value.user.id,
+        name: newItem.value.name,
+        target_amount: Number(newItem.value.amount),
+        type: 'standard',
+        breakdown: { note: newItem.value.description || '' }
+    };
+
+    if (newItem.value.goal_id) {
+        // UPDATE existing goal
+        const { error: updateError } = await _supabase
+            .from('goals')
+            .update(goalPayload)
+            .eq('id', newItem.value.goal_id);
+        if (updateError) console.error("Error updating goal:", updateError);
+    } else {
+        // INSERT new goal
+        const { data: newGoal, error: goalError } = await _supabase
+            .from('goals')
+            .insert([goalPayload])
+            .select(); // 👈 Select the new ID
+        
+        if (goalError) {
+            console.error("Error inserting goal:", goalError);
+        } else if (newGoal) {
+            // Update the budget item with the new goal_id
+            await _supabase
+                .from('budget_items')
+                .update({ goal_id: newGoal[0].id })
+                .eq('id', newItem.value.id);
         }
+    }
+    fetchGoals();
+}
        // 4. Cleanup & Refresh
         await fetchBudgetItems(); // Refresh the list
         showAddForm.value = false; // Close the side panel
