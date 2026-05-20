@@ -3531,22 +3531,6 @@ const tripTotal = computed(() => {
     return Object.values(tripPlan.categories).reduce((sum, cat) => sum + (Number(cat.amount) || 0), 0);
 });
 
-// 4. BULLETPROOF RESET FUNCTION (Generic)
-const openNewTripGoal = () => {
-    showGoalsHub.value = false;
-    
-    tripPlan.id = null;
-    tripPlan.name = '';
-    tripPlan.destination = '';
-    tripPlan.travelers = 1; // Neutral starting point
-    tripPlan.duration = 7;
-    tripPlan.transit = 'fly';
-    tripPlan.categories = getDefaultTripCategories();
-    
-    openTripCategory.value = 'details';
-    showTripPlanner.value = true;
-};
-
            // 3. The Bouncer Function
            // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
            const requirePremium = (actionCallback) => {
@@ -5183,23 +5167,19 @@ const fetchGoals = async () => {
         debt_id: null 
     };
 }; 
-
-         const openNewTripGoal = () => {
+const openNewTripGoal = () => {
     showGoalsHub.value = false;
     
-    // Reset the form for a fresh trip
     tripPlan.id = null;
     tripPlan.name = '';
-    tripPlan.destination = ''; // 👈 Clear it out
-    tripPlan.travelers = 1;    // 👈 Reset to 1
-    tripPlan.duration = 1;     // 👈 Reset to 1
+    tripPlan.destination = '';
+    tripPlan.travelers = 1; // Neutral starting point
+    tripPlan.duration = 7;
+    tripPlan.transit = 'fly';
+    tripPlan.categories = getDefaultTripCategories();
     
-    Object.keys(tripPlan.categories).forEach(key => {
-        tripPlan.categories[key].amount = '';
-    });
-    
-    openTripCategory.value = 'details'; // 👈 Start them at the details tab
-    showTripPlanner.value = true; 
+    openTripCategory.value = 'details';
+    showTripPlanner.value = true;
 };
 
        const openEditGoal = (goal) => {
