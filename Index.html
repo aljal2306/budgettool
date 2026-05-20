@@ -3510,6 +3510,7 @@
           const goals = ref([]); // We will build the fetch function for this later
           const showStandardGoalModal = ref(false);
           const standardGoal = reactive({ name: '', target_amount: 0 });
+          const selectedGoalName = ref(null);
         
           // ✈️ Smart Trip Planner State
 
@@ -6436,7 +6437,7 @@ watch(currentView, async (newView) => {
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory, countBillDue,
                 totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal, fetchGoals, showTripPlanner, openTripCategory, tripPlan, tripTotal, saveTripGoal, deleteGoal, saveStandardGoal, showGoalsHub,
-                showStandardGoalModal, standardGoal,
+                showStandardGoalModal, standardGoal, selectedGoalName,
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
