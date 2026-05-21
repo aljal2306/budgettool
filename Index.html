@@ -3787,6 +3787,10 @@ const tripTotal = computed(() => {
             const currentScenarioName = ref(null);
             const currentLoadedSlotIndex = ref(null);
             const showCashFlowHelp = ref(false);
+            const launchTripPlanner = () => {
+    showScenarioModal.value = false; // Close the scenario manager
+    openNewTripGoal();               // Launch your existing trip planner!
+};
 
             // Debt
             const newDebt = ref({ name: '', balance: '', rate: '', min_payment: '' }), extraDebtPayment = ref(0), showDebtForm = ref(false), editingDebtId = ref(null);
@@ -6639,7 +6643,7 @@ watch(currentView, async (newView) => {
                 // Forecast & Settings (Updated)
                 forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, 
                 showForecastSettings, showRetirementModal, showForecastDetails,
-                isEditingBalance, saveBalanceInline, saveAllForecastSettings, showCashFlowHelp, showNestEggHelp, showScenarioHelp, targetType, syncSelectedGoal, saveProjectFromGoal, selectedGoalId,
+                isEditingBalance, saveBalanceInline, saveAllForecastSettings, showCashFlowHelp, showNestEggHelp, showScenarioHelp, targetType, syncSelectedGoal, saveProjectFromGoal, selectedGoalId, launchTripPlanner,
 
                 // Scenarios
                 saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
