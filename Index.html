@@ -2348,27 +2348,40 @@
                     </div>
 
                     <div v-else class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
-                        <div class="flex gap-2 mb-3">
-                            <button @click="targetType = 'manual'" :class="targetType === 'manual' ? 'bg-slate-900 text-white' : 'bg-slate-200 dark:bg-slate-600'" class="flex-1 py-1 rounded text-[10px] font-bold">Manual</button>
-                            <button @click="targetType = 'goal'" :class="targetType === 'goal' ? 'bg-slate-900 text-white' : 'bg-slate-200 dark:bg-slate-600'" class="flex-1 py-1 rounded text-[10px] font-bold">Saved Goal</button>
-                        </div>
+    
+    <div class="flex gap-2 mb-3">
+        <button @click="targetType = 'manual'" :class="targetType === 'manual' ? 'bg-slate-900 text-white' : 'bg-slate-200 dark:bg-slate-600'" class="flex-1 py-1 rounded text-[10px] font-bold transition">Manual</button>
+        <button @click="targetType = 'goal'" :class="targetType === 'goal' ? 'bg-slate-900 text-white' : 'bg-slate-200 dark:bg-slate-600'" class="flex-1 py-1 rounded text-[10px] font-bold transition">Saved Goal</button>
+    </div>
 
-                        <div v-if="targetType === 'manual'" class="space-y-3">
-                            <input v-model="newProject.name" placeholder="Goal Name (e.g. Tesla)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
-                            <div class="flex gap-2">
-                                <input v-model="newProject.cost" type="number" placeholder="Cost ($)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
-                                <button @click="saveProject" class="bg-slate-900 dark:bg-blue-600 text-white px-4 rounded-lg font-bold text-sm">Set</button>
-                            </div>
-                        </div>
+    <div v-if="targetType === 'manual'" class="space-y-3">
+        <input v-model="newProject.name" placeholder="Goal Name (e.g. Tesla)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+        <div class="flex gap-2">
+            <input v-model="newProject.cost" type="number" placeholder="Cost ($)" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+            <button @click="saveProject" class="bg-slate-900 dark:bg-blue-600 text-white px-4 rounded-lg font-bold text-sm hover:opacity-90 transition">Set</button>
+        </div>
+        
+        <label class="flex items-center gap-2 mt-2 cursor-pointer group">
+            <input type="checkbox" v-model="saveManualAsGoal" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+            <span class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300 font-medium transition">Save as a Standard Goal in Hub</span>
+        </label>
+    </div>
 
-                        <div v-else class="space-y-3">
-                            <select v-model="selectedGoalId" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
-                                <option value="" disabled>Select a goal...</option>
-                                <option v-for="goal in goals" :key="goal.id" :value="goal.id">{{ goal.name }} (${{ goal.target_amount }})</option>
-                            </select>
-                            <button @click="saveProjectFromGoal" class="w-full bg-slate-900 dark:bg-blue-600 text-white p-3 rounded-lg font-bold text-sm">Apply Goal</button>
-                        </div>
-                    </div>
+    <div v-else class="space-y-3">
+        <select v-model="selectedGoalId" class="w-full p-3 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+            <option value="" disabled>Select a goal...</option>
+            <option v-for="goal in goals" :key="goal.id" :value="goal.id">{{ goal.name }} (${{ goal.target_amount }})</option>
+        </select>
+        <button @click="saveProjectFromGoal" class="w-full bg-slate-900 dark:bg-blue-600 text-white p-3 rounded-lg font-bold text-sm hover:opacity-90 transition">Apply Goal</button>
+    </div>
+
+    <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+        <button @click="launchTripPlanner" class="w-full flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 p-2 rounded-lg text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition">
+            <span class="text-base">✈️</span> Plan a New Trip
+        </button>
+    </div>
+
+</div>
                 </div>
             </div>
         </div>
@@ -3566,6 +3579,7 @@
             const showNestEggHelp = ref(false);
             const showScenarioHelp = ref(false);
             const isUnpackingTrip = ref(false);
+            const saveManualAsGoal = ref(false);
 
            // 2. The Paywall Modal Trigger
            const showPaywallModal = ref(false)
@@ -6607,7 +6621,7 @@ watch(currentView, async (newView) => {
 
                 // ... other variables ...
                 currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, grandTotal, totalBudget, pushEnabled, requestPushPermission, testNotification,
-                isUnpackingTrip,
+                isUnpackingTrip, saveManualAsGoa,
               
                 // Deposits
                 showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit,
