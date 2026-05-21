@@ -3578,6 +3578,7 @@
             const showScenarioHelp = ref(false);
             const isUnpackingTrip = ref(false);
             const saveManualAsGoal = ref(false);
+            const isTripFromForecast = ref(false);
 
            // 2. The Paywall Modal Trigger
            const showPaywallModal = ref(false)
@@ -6645,7 +6646,7 @@ watch(currentView, async (newView) => {
                 // Forecast & Settings (Updated)
                 forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, 
                 showForecastSettings, showRetirementModal, showForecastDetails,
-                isEditingBalance, saveBalanceInline, saveAllForecastSettings, showCashFlowHelp, showNestEggHelp, showScenarioHelp, targetType, syncSelectedGoal, saveProjectFromGoal, selectedGoalId, launchTripPlanner,
+                isEditingBalance, saveBalanceInline, saveAllForecastSettings, showCashFlowHelp, showNestEggHelp, showScenarioHelp, targetType, syncSelectedGoal, saveProjectFromGoal, selectedGoalId, launchTripPlanner, isTripFromForecast,
 
                 // Scenarios
                 saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
