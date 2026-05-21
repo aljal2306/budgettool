@@ -3565,6 +3565,7 @@
             const showVariableHelp = ref(false);
             const showNestEggHelp = ref(false);
             const showScenarioHelp = ref(false);
+            const isUnpackingTrip = ref(false);
 
            // 2. The Paywall Modal Trigger
            const showPaywallModal = ref(false)
@@ -3627,6 +3628,9 @@ watch(() => [
     tripPlan.categories.rental_car.days, tripPlan.categories.rental_car.per_day,
     tripPlan.categories.pet_boarding.pets, tripPlan.categories.pet_boarding.per_day
 ], () => {
+    // 🔴 THE SAFETY NET: Stop the math if we are currently unpacking a saved goal
+    if (isUnpackingTrip.value) return;
+
     const c = tripPlan.categories;
     const people = tripPlan.travelers || 1;
     const days = tripPlan.duration || 1;
@@ -5411,6 +5415,9 @@ const openEditGoal = (goal) => {
     showGoalsHub.value = false; // Close the hub
 
     if (goal.type === 'trip') {
+        // 🔴 PAUSE AUTO-MATH
+        isUnpackingTrip.value = true; 
+        
         // 1. Load the base data
         tripPlan.id = goal.id;
         tripPlan.name = goal.name;
@@ -5418,9 +5425,6 @@ const openEditGoal = (goal) => {
         // 2. Unpack the JSON safely
         const bd = goal.breakdown || {};
         
-        // 🚨 DEBUG: Let's prove what Supabase actually handed back
-        console.log("Supabase returned these costs:", bd.costs); 
-
         tripPlan.destination = bd.destination || '';
         tripPlan.travelers = bd.travelers || 1;
         tripPlan.duration = bd.duration || 7;
@@ -5446,6 +5450,11 @@ const openEditGoal = (goal) => {
         // 4. Open the UI
         openTripCategory.value = 'details';
         showTripPlanner.value = true;
+        
+        // 🟢 RESUME AUTO-MATH (Wait for Vue to finish rendering first)
+        Vue.nextTick(() => {
+            isUnpackingTrip.value = false;
+        });
         
     } else if (goal.type === 'standard') {
         // 🎯 Populate the NEW dedicated modal for Standard Goals
@@ -6550,6 +6559,7 @@ watch(currentView, async (newView) => {
 
                 // ... other variables ...
                 currentScenarioName, currentLoadedSlotIndex, quickSaveScenario, showAutoPayNotification, autoPaySummary, showAutoPayReport, autoPayBills, reversingBillId, processAutoPay, handleReversal, showAutoPayHelp, handleCreditCardShift, showActualSpendMode, grandTotal, totalBudget, pushEnabled, requestPushPermission, testNotification,
+                isUnpackingTrip,
               
                 // Deposits
                 showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit,
