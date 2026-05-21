@@ -1657,11 +1657,6 @@
     </div>
 </transition>
 
-<transition name="fade">
-    <div v-if="showTripPlanner" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
-        </div>
-</transition>
-
                     <transition name="fade">
     <div v-if="showTripPlanner" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
         
@@ -2302,6 +2297,10 @@
     </div>
 </transition>
 
+  <transition name="fade">
+    <div v-if="showTripPlanner" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+        </div>
+</transition>
                 <transition name="fade">
     <div v-if="showScenarioModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showScenarioModal = false">
         <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700 max-h-[90vh]">
