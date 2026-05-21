@@ -5415,27 +5415,32 @@ const openEditGoal = (goal) => {
         tripPlan.id = goal.id;
         tripPlan.name = goal.name;
         
-        // 2. Unpack the JSON safely (with fallbacks just in case)
+        // 2. Unpack the JSON safely
         const bd = goal.breakdown || {};
+        
+        // 🚨 DEBUG: Let's prove what Supabase actually handed back
+        console.log("Supabase returned these costs:", bd.costs); 
+
         tripPlan.destination = bd.destination || '';
         tripPlan.travelers = bd.travelers || 1;
         tripPlan.duration = bd.duration || 7;
         tripPlan.transit = bd.transit || 'fly'; 
         
-        // 3. Unpack categories (merging saved data with our defaults)
+        // 3. The Bulletproof Merge
         const defaultCats = getDefaultTripCategories();
         const savedCats = bd.costs || {};
+        
+        // Clear out the reactive object to prevent ghost data
+        tripPlan.categories = {};
 
-        Object.keys(defaultCats).forEach(key => {
-            if (savedCats[key]) {
-                // 🟢 FIX: Spread defaults first, THEN spread saved values
-                tripPlan.categories[key] = { 
-                    ...defaultCats[key], 
-                    ...savedCats[key] 
-                };
-            } else {
-                tripPlan.categories[key] = defaultCats[key];
-            }
+        // Grab ALL keys (both defaults AND any custom ones you added)
+        const allKeys = [...new Set([...Object.keys(defaultCats), ...Object.keys(savedCats)])];
+
+        allKeys.forEach(key => {
+            tripPlan.categories[key] = { 
+                ...(defaultCats[key] || {}), 
+                ...(savedCats[key] || {}) 
+            };
         });
         
         // 4. Open the UI
