@@ -3787,8 +3787,12 @@ const tripTotal = computed(() => {
             const currentLoadedSlotIndex = ref(null);
             const showCashFlowHelp = ref(false);
             const launchTripPlanner = () => {
-    showScenarioModal.value = false; // Close the scenario manager
-    openNewTripGoal();               // Launch your existing trip planner!
+    showScenarioModal.value = false; 
+    isTripFromForecast.value = true; // 🔴 Tell the app we came from Forecast!
+    
+    setTimeout(() => {
+        openNewTripGoal(); 
+    }, 50);
 };
 
             // Debt
