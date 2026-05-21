@@ -5564,9 +5564,13 @@ const saveTripGoal = async () => {
             if (error) throw error;
         }
         
-        showTripPlanner.value = false; // Close planner
-        fetchGoals(); // Refresh the background list
-        showGoalsHub.value = true; // Pop the Hub back open!
+       showTripPlanner.value = false; 
+fetchGoals(); 
+
+// 🟢 Check if we are currently looking at the budget tab
+if (currentView.value === 'budget') { 
+    showGoalsHub.value = true; 
+}
         
     } catch (err) {
         console.error("Error saving trip:", err);
