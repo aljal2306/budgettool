@@ -5420,17 +5420,20 @@ const openEditGoal = (goal) => {
         
         // 3. Unpack categories (merging saved data with our defaults)
         const defaultCats = getDefaultTripCategories();
-        const savedCats = bd.costs || {};
-        
-        Object.keys(defaultCats).forEach(key => {
-            if (savedCats[key]) {
-                // If we have saved data for this category, blend it in
-                tripPlan.categories[key] = { ...defaultCats[key], ...savedCats[key] };
-            } else {
-                // Otherwise use the fresh default
-                tripPlan.categories[key] = defaultCats[key];
-            }
-        });
+const savedCats = bd.costs || {};
+
+Object.keys(defaultCats).forEach(key => {
+    if (savedCats[key]) {
+        // 🟢 FIX: Spread defaults first, THEN spread saved values
+        // This ensures if 'food' is in savedCats, it overrides defaultCats[key]
+        tripPlan.categories[key] = { 
+            ...defaultCats[key], 
+            ...savedCats[key] 
+        };
+    } else {
+        tripPlan.categories[key] = defaultCats[key];
+    }
+});
         
         // 4. Open the UI
         openTripCategory.value = 'details';
