@@ -4901,11 +4901,53 @@ const fetchGiftCards = async () => {
                 renderForecastChart();
             };
 
-            const getOverride = (monthName) => { if (!forecastOverrides.value[monthName]) forecastOverrides.value[monthName] = { income: null, extraExpenses: [] }; return forecastOverrides.value[monthName]; };
-            const updateMonthIncome = (m) => { const ov = getOverride(m.name); ov.income = Number(m.income); runForecast(); };
-            const addExpense = (m) => { if (m.newExpenseName && m.newExpenseAmount) { const ov = getOverride(m.name); ov.extraExpenses.push({ name: m.newExpenseName, amount: Number(m.newExpenseAmount) }); m.newExpenseName = ''; m.newExpenseAmount = ''; m.newExpenseId = ''; runForecast(); } };
-            const fillExpense = (m) => { const selected = budgetItems.value.find(i => i.id === m.newExpenseId); if (selected) { m.newExpenseName = selected.name; m.newExpenseAmount = selected.amount; } };
-            const removeExpense = (m, index) => { const ov = getOverride(m.name); ov.extraExpenses.splice(index, 1); runForecast(); };
+            const getOverride = (monthName) => { 
+    if (!forecastOverrides.value[monthName]) {
+        forecastOverrides.value[monthName] = { income: null, extraExpenses: [] }; 
+    }
+    return forecastOverrides.value[monthName]; 
+};
+
+// Now it just saves the value to the override object and triggers a recalculation
+const updateMonthIncome = (m) => { 
+    const ov = getOverride(m.name); 
+    // Ensure we are saving a valid number, or null if they cleared it
+    ov.income = m.income === '' || m.income === null ? null : Number(m.income); 
+    runForecast(); 
+};
+
+const addExpense = (m) => { 
+    if (m.newExpenseName && m.newExpenseAmount) { 
+        const ov = getOverride(m.name); 
+        
+        // 🔴 CRITICAL FIX: Capture the current income state before we rebuild!
+        // This prevents the income from resetting to 0 when we add an expense
+        if (m.income !== undefined && m.income !== null && m.income !== '') {
+            ov.income = Number(m.income);
+        }
+
+        ov.extraExpenses.push({ name: m.newExpenseName, amount: Number(m.newExpenseAmount) }); 
+        
+        // Reset the expense input fields
+        m.newExpenseName = ''; 
+        m.newExpenseAmount = ''; 
+        m.newExpenseId = ''; 
+        
+        runForecast(); 
+    } 
+};
+
+const removeExpense = (m, index) => { 
+    const ov = getOverride(m.name); 
+    
+    // Also capture income here, just in case they typed an income but didn't trigger @change
+    if (m.income !== undefined && m.income !== null && m.income !== '') {
+            ov.income = Number(m.income);
+    }
+    
+    ov.extraExpenses.splice(index, 1); 
+    runForecast(); 
+};
             
             const saveForecastSlot = async (i) => { 
                 const existing = savedForecasts.value[i];
