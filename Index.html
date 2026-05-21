@@ -6089,7 +6089,48 @@ const editLogEntry = (entry) => {
                 driverObj.drive();
             };
             const startDebtTour = () => { window.driver.js.driver({ showProgress: true, steps: [ { element: '#tour-add-debt', popover: { title: '1. Add Debt', description: 'Start here by listing all your debts (Credit Cards, Loans, etc.). Be accurate with the interest rate!' } }, { element: '#tour-debt-list', popover: { title: '2. Prioritize', description: 'Drag and drop these cards to change the payoff order. We recommend the "Avalanche" method (Highest Interest Rate First) to save money.' } }, { element: '#tour-debt-attack', popover: { title: '3. Attack Plan', description: 'This is the magic. Use the slider to see how adding just a little extra money each month drastically cuts your payoff time.' } }, { element: '#tour-payoff-timeline', popover: { title: '4. Freedom Date', description: 'Your timeline to being debt-free. Watch the months disappear as you increase your monthly attack!' } } ] }).drive(); };
-            const saveProject = () => { if(newProject.value.name && newProject.value.cost) { project.value = { name: newProject.value.name, cost: Number(newProject.value.cost) }; showProjectModal.value = false; newProject.value = { name: '', cost: '' }; runForecast(); } };
+            const saveProject = async () => { 
+    if (newProject.value.name && newProject.value.cost) { 
+        
+        // 1. Set the forecast target
+        project.value = { 
+            name: newProject.value.name, 
+            cost: Number(newProject.value.cost) 
+        }; 
+        
+        // 2. 🟢 NEW: Save to database if the checkbox is checked
+        if (saveManualAsGoal.value) {
+            try {
+                const payload = {
+                    user_id: session.value.user.id,
+                    name: project.value.name,
+                    target_amount: project.value.cost,
+                    type: 'standard',
+                    breakdown: { note: 'Created from Forecast Scenario' }
+                };
+                
+                await _supabase.from('goals').insert([payload]);
+                await fetchGoals(); // Fetch the updated list silently
+                
+                selectedGoalName.value = project.value.name; // Update UI
+            } catch (err) {
+                console.error("Error saving manual target as goal:", err);
+            }
+        } else {
+            // Just update the UI if they didn't check the box
+            selectedGoalName.value = project.value.name;
+        }
+
+        // 3. Cleanup and recalculate
+        showProjectModal.value = false; // Your original close logic
+        showScenarioModal.value = false; // 👈 Added this since it's in the scenario modal now
+        
+        newProject.value = { name: '', cost: '' }; 
+        saveManualAsGoal.value = false; // Reset the checkbox for next time
+        
+        runForecast(); 
+    } 
+};
             const startTour = () => {
                 const driver = window.driver.js.driver;
                 const driverObj = driver({
