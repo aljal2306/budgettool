@@ -4974,7 +4974,30 @@ const removeExpense = (m, index) => {
     ov.extraExpenses.splice(index, 1); 
     runForecast(); 
 };
-            
+
+          const applyGoalToMonth = (m) => {
+    // 1. Make sure we actually have an active goal loaded
+    if (!project.value || !project.value.cost) {
+        alert("Please set a Scenario Goal first!");
+        return;
+    }
+
+    const ov = getOverride(m.name);
+
+    // 2. Lock in the income (just like our bug fix from earlier!)
+    if (m.income !== undefined && m.income !== null && m.income !== '') {
+        ov.income = Number(m.income);
+    }
+
+    // 3. Push the goal into the one-off expenses array
+    ov.extraExpenses.push({ 
+        name: `🎯 ${project.value.name}`, // Added an icon so it stands out in the list
+        amount: Number(project.value.cost) 
+    });
+
+    // 4. Rebuild the timeline to show the impact
+    runForecast();
+};
             const saveForecastSlot = async (i) => { 
                 const existing = savedForecasts.value[i];
                 let name = existing ? existing.name : '';
@@ -6655,7 +6678,7 @@ watch(currentView, async (newView) => {
                 // Forecast & Settings (Updated)
                 forecastSettings, forecastData, forecastMode, setForecastMode, runForecast, project, showProjectModal, newProject, saveProject, forecastResults, retirementProjection, totalMonthlyRetirementContribution, saveRetirementSettings, 
                 showForecastSettings, showRetirementModal, showForecastDetails,
-                isEditingBalance, saveBalanceInline, saveAllForecastSettings, showCashFlowHelp, showNestEggHelp, showScenarioHelp, targetType, syncSelectedGoal, saveProjectFromGoal, selectedGoalId, launchTripPlanner, isTripFromForecast,
+                isEditingBalance, saveBalanceInline, saveAllForecastSettings, showCashFlowHelp, showNestEggHelp, showScenarioHelp, targetType, syncSelectedGoal, saveProjectFromGoal, selectedGoalId, launchTripPlanner, isTripFromForecast, applyGoalToMonth,
 
                 // Scenarios
                 saveForecastSlot, loadForecastSlot, clearForecastSlot, savedForecasts, updateMonthIncome, removeExpense, exportData,
