@@ -5569,19 +5569,18 @@ const saveTripGoal = async () => {
             if (error) throw error;
         }
         
-       showTripPlanner.value = false; 
-fetchGoals(); 
+       showTripPlanner.value = false; // Close planner
+fetchGoals(); // Refresh the background list
 
-// 🟢 Check if we are currently looking at the budget tab
-if (currentView.value === 'budget') { 
+// 🟢 THE FIX: Check our breadcrumb!
+if (isTripFromForecast.value) {
+    // We came from the Forecast tab, so KEEP IT CLOSED.
+    showGoalsHub.value = false; 
+    isTripFromForecast.value = false; // Reset the flag for next time
+} else {
+    // We came from the Budget tab, so pop the Hub back open!
     showGoalsHub.value = true; 
 }
-        
-    } catch (err) {
-        console.error("Error saving trip:", err);
-        alert("Error saving trip. Check console.");
-    }
-};
 
 // 🟢 DELETE GOAL
 const deleteGoal = async (id) => {
