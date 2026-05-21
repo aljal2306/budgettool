@@ -4908,10 +4908,8 @@ const fetchGiftCards = async () => {
     return forecastOverrides.value[monthName]; 
 };
 
-// Now it just saves the value to the override object and triggers a recalculation
 const updateMonthIncome = (m) => { 
     const ov = getOverride(m.name); 
-    // Ensure we are saving a valid number, or null if they cleared it
     ov.income = m.income === '' || m.income === null ? null : Number(m.income); 
     runForecast(); 
 };
@@ -4920,15 +4918,14 @@ const addExpense = (m) => {
     if (m.newExpenseName && m.newExpenseAmount) { 
         const ov = getOverride(m.name); 
         
-        // 🔴 CRITICAL FIX: Capture the current income state before we rebuild!
-        // This prevents the income from resetting to 0 when we add an expense
+        // Lock in the income before rebuilding
         if (m.income !== undefined && m.income !== null && m.income !== '') {
             ov.income = Number(m.income);
         }
 
         ov.extraExpenses.push({ name: m.newExpenseName, amount: Number(m.newExpenseAmount) }); 
         
-        // Reset the expense input fields
+        // Reset fields
         m.newExpenseName = ''; 
         m.newExpenseAmount = ''; 
         m.newExpenseId = ''; 
@@ -4937,10 +4934,19 @@ const addExpense = (m) => {
     } 
 };
 
+// 🟢 PUTTING THIS BACK: The dropdown auto-filler
+const fillExpense = (m) => { 
+    const selected = budgetItems.value.find(i => i.id === m.newExpenseId); 
+    if (selected) { 
+        m.newExpenseName = selected.name; 
+        m.newExpenseAmount = selected.amount; 
+    } 
+};
+
 const removeExpense = (m, index) => { 
     const ov = getOverride(m.name); 
     
-    // Also capture income here, just in case they typed an income but didn't trigger @change
+    // Lock in the income just in case
     if (m.income !== undefined && m.income !== null && m.income !== '') {
             ov.income = Number(m.income);
     }
