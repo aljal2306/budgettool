@@ -1645,15 +1645,23 @@
         </div>
     </div>
 
-   <div class="px-3 py-2 rounded border w-full text-center shadow-inner"
+   <div class="px-3 py-2 rounded border w-full text-center shadow-inner flex items-center justify-center"
          :class="goal.isCommitted ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-700'">
         
         <span v-if="goal.isCommitted" class="text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wide">
             📅 Committed to {{ goal.projectedMonth }}
         </span>
+        
         <span v-else-if="goal.isFundedToday" class="text-emerald-500 font-bold text-[11px] uppercase tracking-wide">
             🟢 Fully Covered Today!
         </span>
+        
+        <button v-else-if="goal.projectedMonth === 'Beyond Forecast Range' && !isPremiumUser" 
+                @click.stop="showPaywallModal = true"
+                class="text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 font-bold text-[11px] uppercase tracking-wide underline decoration-amber-500/50 hover:decoration-amber-500 underline-offset-4 transition-all">
+            🟡 Beyond Range: Unlock Premium to see further &rarr;
+        </button>
+        
         <span v-else class="text-amber-500 font-bold text-[11px] uppercase tracking-wide">
             🟡 Projected Funding: {{ goal.projectedMonth }}
         </span>
