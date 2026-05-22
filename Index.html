@@ -5095,7 +5095,9 @@ const fetchGiftCards = async () => {
         const ov = forecastOverrides.value[m.name];
         if (ov && ov.income !== undefined) monthlyIncome = Number(ov.income);
         m.income = monthlyIncome; 
-        if (ov && ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses];
+        
+        // 🟢 THE FIX: Always wipe the receipt clean, loading ONLY manual expenses first
+        m.extraExpenses = ov && ov.extraExpenses ? [...ov.extraExpenses] : [];
 
         // --- 2. BURN RATE (EXPENSES) CALCULATION ---
         let monthlyBurn = 0;
