@@ -3648,17 +3648,22 @@ const saveProjectFromGoal = () => {
     }
 };
           const goalsWithProjections = computed(() => {
-    // 1. Filter out completed goals and sort by priority
     const activeGoals = goals.value.filter(g => !g.is_completed);
     const sortedGoals = activeGoals.sort((a, b) => (a.priority || 99) - (b.priority || 99));
 
-    // 🟢 THE FIX IS HERE: We are using forecastSettings instead of standalone variables
     let availableLiquidity = forecastSettings.value.currentBalance - forecastSettings.value.safetyMargin;
     if (availableLiquidity < 0) availableLiquidity = 0;
 
     return sortedGoals.map(goal => {
         const cost = goal.target_amount;
         let result = { ...goal, isFundedToday: false, projectedMonth: null, shortfall: 0 };
+
+        // 🟢 PHASE 0: Is it already committed? 
+        if (goal.committed_month) {
+            result.isCommitted = true;
+            result.projectedMonth = goal.committed_month;
+            return result; // Skip the waterfall math entirely!
+        }
 
         // PHASE 1: Can we afford it right now?
         if (availableLiquidity >= cost) {
@@ -3677,7 +3682,13 @@ const saveProjectFromGoal = () => {
         
         for (const month of forecastData.value) { 
             const totalExtra = month.extraExpenses ? month.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0) : 0;
-            const monthSurplus = (month.income || 0) - (month.burn || 0) - totalExtra;
+            
+            // 🟢 Need to deduct committed goals here too so the waterfall knows cash is missing!
+            const committedThisMonth = activeGoals
+                .filter(g => g.committed_month === month.name)
+                .reduce((sum, g) => sum + Number(g.target_amount), 0);
+                
+            const monthSurplus = (month.income || 0) - (month.burn || 0) - totalExtra - committedThisMonth;
             
             if (monthSurplus > 0) {
                 accumulatedSurplus += monthSurplus;
