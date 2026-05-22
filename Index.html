@@ -1599,9 +1599,16 @@
         <div class="bg-white dark:bg-slate-900 w-full max-w-md h-[85vh] flex flex-col relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-2xl">
             
             <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/80 flex-shrink-0">
-                <h2 class="text-xl font-black text-slate-900 dark:text-white">Financial Goals</h2>
-                <button @click="showGoalsHub = false" class="text-slate-400 hover:text-red-500 text-2xl">&times;</button>
-            </div>
+    <h2 class="text-xl font-black text-slate-900 dark:text-white">Financial Goals</h2>
+    
+    <div class="flex items-center gap-4">
+        <button @click="showGoalsHub = false; currentView = 'forecast'" class="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50 rounded-xl text-xs uppercase tracking-wide font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shadow-sm">
+            📈 View Forecast
+        </button>
+        
+        <button @click="showGoalsHub = false" class="text-slate-400 hover:text-red-500 text-2xl transition-colors">&times;</button>
+    </div>
+</div>
 
             <div class="overflow-y-auto flex-1 p-4 space-y-3 custom-scrollbar">
                 
