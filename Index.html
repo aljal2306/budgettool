@@ -1609,9 +1609,17 @@
                      class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500 transition-all flex flex-col gap-3 group relative">
                     
                     <div class="flex justify-between items-center w-full">
-                        <div class="flex items-center gap-4">
-                            <span class="text-3xl group-hover:scale-110 transition-transform">{{ goal.type === 'trip' ? '✈️' : '🎯' }}</span>
-                            <div>
+                        <div class="flex items-center gap-3">
+    <div class="flex flex-col gap-1 mr-1">
+        <button @click.stop="moveGoalPriority(goal, 'up')" class="p-0.5 text-slate-300 hover:text-emerald-500 bg-slate-100 dark:bg-slate-800 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+        <button @click.stop="moveGoalPriority(goal, 'down')" class="p-0.5 text-slate-300 hover:text-emerald-500 bg-slate-100 dark:bg-slate-800 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+    </div>
+
+    <span class="text-3xl group-hover:scale-110 transition-transform">{{ goal.type === 'trip' ? '✈️' : '🎯' }}</span>
                                 <div class="font-bold text-slate-700 dark:text-slate-200">{{ goal.name }}</div>
                                 <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{{ goal.type === 'trip' ? 'Family Trip' : 'Standard Goal' }}</div>
                             </div>
@@ -3684,6 +3692,39 @@ const saveProjectFromGoal = () => {
         return result;
     });
 });
+          const moveGoalPriority = async (goal, direction) => {
+    // 1. Get the current sorted active list
+    let sorted = goals.value
+        .filter(g => !g.is_completed)
+        .sort((a, b) => (a.priority || 99) - (b.priority || 99));
+
+    const index = sorted.findIndex(g => g.id === goal.id);
+
+    // 2. Prevent moving out of bounds (can't go higher than 1st place)
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === sorted.length - 1) return;
+
+    // 3. Swap the items in the array
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    const temp = sorted[index];
+    sorted[index] = sorted[swapIndex];
+    sorted[swapIndex] = temp;
+
+    // 4. Assign clean sequence numbers (1, 2, 3...)
+    sorted.forEach((g, i) => {
+        g.priority = i + 1;
+    });
+
+    // 5. Sync the new order to Supabase
+    try {
+        for (const g of sorted) {
+            await _supabase.from('goals').update({ priority: g.priority }).eq('id', g.id);
+        }
+    } catch (err) {
+        console.error("Error reordering goals:", err);
+    }
+};
+          
           const markGoalCompleted = async (goal) => {
     if (!confirm(`Are you sure you want to mark "${goal.name}" as paid and complete?`)) return;
 
