@@ -5033,117 +5033,117 @@ const fetchGiftCards = async () => {
 
             // --- FORECAST LOGIC ---
             const runForecast = () => {
-                let balance = round(forecastSettings.value.currentBalance);
-                const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-                const today = new Date();
-                const currentMonthStr = today.toISOString().slice(0, 7); 
-                
-                if (forecastData.value.length !== forecastSettings.value.months) {
-                    forecastData.value = [];
-                    for (let i = 0; i < forecastSettings.value.months; i++) {
-                        const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-                        forecastData.value.push({ name: `${monthNames[d.getMonth()]} ${d.getFullYear()}`, income: activeMonthlyPay.value, extraExpenses: [], newExpenseId: '', newExpenseName: '', newExpenseAmount: '', isOpen: false, burn: 0 })
-                    }
+    let balance = round(forecastSettings.value.currentBalance);
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const today = new Date();
+    const currentMonthStr = today.toISOString().slice(0, 7); 
+    
+    if (forecastData.value.length !== forecastSettings.value.months) {
+        forecastData.value = [];
+        for (let i = 0; i < forecastSettings.value.months; i++) {
+            const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+            forecastData.value.push({ name: `${monthNames[d.getMonth()]} ${d.getFullYear()}`, income: activeMonthlyPay.value, extraExpenses: [], newExpenseId: '', newExpenseName: '', newExpenseAmount: '', isOpen: false, burn: 0 });
+        }
+    }
+    forecastResults.value.affordableMonth = null;
+    
+    forecastData.value.forEach((m, idx) => {
+        const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1);
+        const isCurrentMonth = idx === 0;
+        
+        // --- 1. INCOME CALCULATION ---
+        let monthlyIncome = 0;
+        if (isCurrentMonth) {
+            incomes.value.forEach(inc => {
+                let nextPay = new Date(inc.next_pay_date);
+                while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) {
+                    if (nextPay >= today) monthlyIncome += Number(inc.amount);
+                    if (inc.frequency === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
+                    else if (inc.frequency === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
+                    else if (inc.frequency === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
+                    else break; 
                 }
-                forecastResults.value.affordableMonth = null;
+            });
+            if (useTempPay.value && monthlyIncome === 0) monthlyIncome = tempCalculatedPay.value; 
+        } else {
+            monthlyIncome = activeMonthlyPay.value;
+        }
+        
+        const ov = forecastOverrides.value[m.name];
+        if (ov && ov.income !== undefined) monthlyIncome = Number(ov.income);
+        m.income = monthlyIncome; 
+        if (ov && ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses];
+
+        // --- 2. BURN RATE (EXPENSES) CALCULATION ---
+        let monthlyBurn = 0;
+        
+        if (isCurrentMonth) {
+            const unpaidBills = bills.value.filter(b => {
+                if (b.type === 'income') return false; 
+                if (!b.due_date.startsWith(currentMonthStr)) return false; 
+                if (b.is_paid) return false; 
                 
-                forecastData.value.forEach((m, idx) => {
-                    const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1);
-                    const isCurrentMonth = idx === 0;
-                    
-                    // --- 1. INCOME CALCULATION ---
-                    let monthlyIncome = 0;
-                    if (isCurrentMonth) {
-                        incomes.value.forEach(inc => {
-                            let nextPay = new Date(inc.next_pay_date);
-                            while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) {
-                                if (nextPay >= today) monthlyIncome += Number(inc.amount);
-                                if (inc.frequency === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
-                                else if (inc.frequency === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
-                                else if (inc.frequency === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
-                                else break; 
-                            }
-                        });
-                        if (useTempPay.value && monthlyIncome === 0) monthlyIncome = tempCalculatedPay.value; 
-                    } else {
-                        monthlyIncome = activeMonthlyPay.value;
-                    }
-                    
-                    const ov = forecastOverrides.value[m.name];
-                    if (ov && ov.income !== undefined) monthlyIncome = Number(ov.income);
-                    m.income = monthlyIncome; 
-                    if (ov && ov.extraExpenses) m.extraExpenses = [...ov.extraExpenses];
+                const item = b.budget_items || {}; 
+                
+                if (item.is_variable) return false; 
+                if (forecastMode.value === 'survival' && !item.is_core) return false;
+                if (forecastMode.value === 'standard' && item.is_wishlist) return false;
+                
+                return true;
+            });
 
-                    // --- 2. BURN RATE (EXPENSES) CALCULATION ---
-                    let monthlyBurn = 0;
-                    
-                    if (isCurrentMonth) {
-                        // 🟢 FIX IS HERE: Filter out Income from the Bill list!
-                        const unpaidBills = bills.value.filter(b => {
-                            // If it's a deposit, SKIP IT (Don't treat money in as an expense!)
-                            if (b.type === 'income') return false; 
+            const fixedBurn = unpaidBills.reduce((sum, b) => {
+                const amount = b.amount_paid || b.budget_items?.amount || 0;
+                return sum + amount;
+            }, 0);
 
-                            if (!b.due_date.startsWith(currentMonthStr)) return false; 
-                            if (b.is_paid) return false; 
-                            
-                            const item = b.budget_items || {}; // Safety check
-                            
-                            if (item.is_variable) return false; 
-                            if (forecastMode.value === 'survival' && !item.is_core) return false;
-                            if (forecastMode.value === 'standard' && item.is_wishlist) return false;
-                            
-                            return true;
-                        });
+            const activeVariables = variableBudgets.value.filter(v => {
+                if (forecastMode.value === 'survival') return v.is_core;
+                if (forecastMode.value === 'standard') return !v.is_wishlist;
+                return true;
+            });
+            const variableBurn = activeVariables.reduce((sum, v) => sum + Math.max(0, v.remaining), 0);
+            monthlyBurn = fixedBurn + variableBurn;
 
-                        // Calculate sum safely
-                        const fixedBurn = unpaidBills.reduce((sum, b) => {
-                            const amount = b.amount_paid || b.budget_items?.amount || 0;
-                            return sum + amount;
-                        }, 0);
+        } else {
+            if (forecastMode.value === 'survival') monthlyBurn = budgetItems.value.filter(i => i.is_core).reduce((a, b) => a + getMonthlyCost(b), 0);
+            else if (forecastMode.value === 'standard') monthlyBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((a, b) => a + getMonthlyCost(b), 0);
+            else if (forecastMode.value === 'dream') budgetItems.value.forEach(i => { if (i.is_wishlist) monthlyBurn += getMonthlyCost(i); else { const replaced = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replaced) monthlyBurn += getMonthlyCost(i); } });
+        }
 
-                        const activeVariables = variableBudgets.value.filter(v => {
-                            if (forecastMode.value === 'survival') return v.is_core;
-                            if (forecastMode.value === 'standard') return !v.is_wishlist;
-                            return true;
-                        });
-                        const variableBurn = activeVariables.reduce((sum, v) => sum + Math.max(0, v.remaining), 0);
-                        monthlyBurn = fixedBurn + variableBurn;
+        m.burn = round(monthlyBurn);
 
-                    } else {
-                        // FUTURE MONTHS LOGIC
-                        if (forecastMode.value === 'survival') monthlyBurn = budgetItems.value.filter(i => i.is_core).reduce((a, b) => a + getMonthlyCost(b), 0);
-                        else if (forecastMode.value === 'standard') monthlyBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((a, b) => a + getMonthlyCost(b), 0);
-                        else if (forecastMode.value === 'dream') budgetItems.value.forEach(i => { if (i.is_wishlist) monthlyBurn += getMonthlyCost(i); else { const replaced = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replaced) monthlyBurn += getMonthlyCost(i); } });
-                    }
+        // --- 3. COMMITTED GOALS & FINAL MATH ---
+        
+        // Find goals committed to this specific month
+        const committedForMonth = goals.value.filter(g => !g.is_completed && g.committed_month === m.name);
 
-                   m.burn = round(monthlyBurn);
+        // INJECT goals directly into the UI list!
+        committedForMonth.forEach(g => {
+            m.extraExpenses.push({
+                id: g.id,
+                name: `🎯 ${g.name}`, 
+                amount: Number(g.target_amount),
+                isCommittedGoal: true 
+            });
+        });
 
-                    // 1. Find goals committed to this specific month
-                    const committedForMonth = goals.value.filter(g => !g.is_completed && g.committed_month === m.name);
-
-                    // 2. 🟢 INJECT goals directly into the UI list!
-                    committedForMonth.forEach(g => {
-                        m.extraExpenses.push({
-                            id: g.id,
-                            name: `🎯 ${g.name}`, 
-                            amount: Number(g.target_amount),
-                            isCommittedGoal: true // Flag this so the UI knows it's a dynamic goal
-                        });
-                    });
-
-                    // 3. Total up ALL expenses (Manual + Injected Goals)
-                    const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0);
-                    
-                    // 4. Calculate final balance 
-                    const monthlyNet = m.income - monthlyBurn - totalExtra;
-                    balance = round(balance + monthlyNet);
-                    m.endBalance = balance;
-                    
-                    if (project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) { 
-                        forecastResults.value.affordableMonth = m.name; 
-                        forecastResults.value.affordableIndex = idx;
-                    }
-                });
+        // Total up ALL expenses (Manual + Injected Goals)
+        const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+        
+        // Calculate final balance 
+        const monthlyNet = m.income - monthlyBurn - totalExtra;
+        balance = round(balance + monthlyNet);
+        m.endBalance = balance;
+        
+        if (project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) { 
+            forecastResults.value.affordableMonth = m.name; 
+            forecastResults.value.affordableIndex = idx;
+        }
+    });
+    
+    renderForecastChart();
+};
 
 // 🟢 NEW: Find goals committed to THIS specific month and total them up
 const committedGoalsCost = goals.value
