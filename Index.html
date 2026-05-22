@@ -5117,7 +5117,37 @@ const fetchGiftCards = async () => {
                     }
 
                     m.burn = round(monthlyBurn);
+
+                    // 1. Grab any manual extra expenses you typed in for this month
+                    const ov = forecastOverrides.value[m.name];
+                    m.extraExpenses = ov && ov.extraExpenses ? [...ov.extraExpenses] : [];
+
+                    // 2. Find goals committed to this specific month
+                    const committedForMonth = goals.value.filter(g => !g.is_completed && g.committed_month === m.name);
+
+                    // 3. 🟢 INJECT goals directly into the UI list so you can see them!
+                    committedForMonth.forEach(g => {
+                        m.extraExpenses.push({
+                            id: g.id,
+                            name: `🎯 ${g.name}`, 
+                            amount: Number(g.target_amount),
+                            isCommittedGoal: true // Flag this so the UI knows it's a dynamic goal
+                        });
+                    });
+
+                    // 4. Total up ALL expenses (Manual + Injected Goals)
                     const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+                    
+                    // 5. Calculate final balance 
+                    const monthlyNet = m.income - monthlyBurn - totalExtra;
+                    balance = round(balance + monthlyNet);
+                    m.endBalance = balance;
+                    
+                    if (project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) { 
+                        forecastResults.value.affordableMonth = m.name; 
+                        forecastResults.value.affordableIndex = idx;
+                    }
+                });
 
 // 🟢 NEW: Find goals committed to THIS specific month and total them up
 const committedGoalsCost = goals.value
