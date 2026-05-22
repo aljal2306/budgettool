@@ -3611,6 +3611,62 @@ const saveProjectFromGoal = () => {
         runForecast();
     }
 };
+          const goalsWithProjections = computed(() => {
+    // 1. Sort goals by your new priority column
+    const sortedGoals = [...goals.value].sort((a, b) => a.priority - b.priority);
+
+    // 2. Determine cash available TODAY
+    // (Assuming currentBalance and safetyMargin are your existing variables)
+    let availableLiquidity = currentBalance.value - safetyMargin.value;
+    if (availableLiquidity < 0) availableLiquidity = 0;
+
+    return sortedGoals.map(goal => {
+        const cost = goal.target_amount;
+        let result = { ...goal, isFundedToday: false, projectedMonth: null, shortfall: 0 };
+
+        // PHASE 1: Check if we have the cash right now
+        if (availableLiquidity >= cost) {
+            availableLiquidity -= cost;
+            result.isFundedToday = true;
+            result.projectedMonth = 'Ready Now';
+            return result;
+        }
+
+        // PHASE 2: Cash is short. Drain what's left and calculate the gap.
+        let gap = cost - availableLiquidity;
+        availableLiquidity = 0; // The current cash bucket is now empty
+
+        // PHASE 3: Scan the forecast timeline to find the money!
+        // (Assuming you have an array of generated months from your forecast engine)
+        let accumulatedSurplus = 0;
+        
+        for (const month of forecastTimeline.value) { // Swap with your actual forecast array variable!
+            // Grab the monthly surplus (Income minus all expenses)
+            const monthSurplus = (month.income || 0) - (month.totalExpenses || 0);
+            
+            if (monthSurplus > 0) {
+                accumulatedSurplus += monthSurplus;
+                
+                // Did this month finally push us over the finish line?
+                if (accumulatedSurplus >= gap) {
+                    result.projectedMonth = month.name; // e.g., "October"
+                    
+                    // The remaining surplus from this month rolls over to the next priority goal
+                    availableLiquidity = accumulatedSurplus - gap; 
+                    break; 
+                }
+            }
+        }
+
+        // If the loop finishes and it's still not funded, it's beyond the forecast timeline
+        if (!result.projectedMonth) {
+            result.projectedMonth = 'Beyond Forecast Range';
+            result.shortfall = gap - accumulatedSurplus;
+        }
+
+        return result;
+    });
+});
         
           // ✈️ Smart Trip Planner State
 
