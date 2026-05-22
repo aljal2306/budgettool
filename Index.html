@@ -5145,20 +5145,6 @@ const fetchGiftCards = async () => {
     renderForecastChart();
 };
 
-// 🟢 NEW: Find goals committed to THIS specific month and total them up
-const committedGoalsCost = goals.value
-    .filter(g => !g.is_completed && g.committed_month === m.name)
-    .reduce((sum, g) => sum + Number(g.target_amount), 0);
-
-// 🟢 NEW: Deduct the committed goals from the monthly net!
-const monthlyNet = m.income - monthlyBurn - totalExtra - committedGoalsCost;
-balance = round(balance + monthlyNet);
-                    m.endBalance = balance;
-                    if (project.value && !forecastResults.value.affordableMonth && (balance - project.value.cost >= forecastSettings.value.safetyMargin)) { forecastResults.value.affordableMonth = m.name; forecastResults.value.affordableIndex = idx }
-                });
-                renderForecastChart();
-            };
-
             const getOverride = (monthName) => { 
     if (!forecastOverrides.value[monthName]) {
         forecastOverrides.value[monthName] = { income: null, extraExpenses: [] }; 
