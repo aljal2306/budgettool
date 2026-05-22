@@ -127,7 +127,7 @@
     </div>
 
     <transition name="fade">
-    <div v-if="showPaywallModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 print:hidden" @click="showPaywallModal = false">
+    <div v-if="showPaywallModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 print:hidden" @click="showPaywallModal = false">
         
         <div class="bg-slate-800 border border-slate-600 p-6 md:p-8 rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-slide-up flex flex-col max-h-[90vh]" @click.stop>
             
@@ -1656,11 +1656,11 @@
             🟢 Fully Covered Today!
         </span>
         
-        <<button v-else-if="goal.projectedMonth === 'Beyond Forecast Range' && !isPremiumUser" 
-        @click.stop="showGoalsHub = false; showPaywallModal = true"
-        class="text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 font-bold text-[11px] uppercase tracking-wide underline decoration-amber-500/50 hover:decoration-amber-500 underline-offset-4 transition-all">
-    🟡 Beyond Range: Unlock Premium to see further &rarr;
-</button>
+        <button v-else-if="goal.projectedMonth === 'Beyond Forecast Range' && !isPremiumUser" 
+                @click.stop="showPaywallModal = true"
+                class="text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 font-bold text-[11px] uppercase tracking-wide underline decoration-amber-500/50 hover:decoration-amber-500 underline-offset-4 transition-all">
+            🟡 Beyond Range: Unlock Premium to see further &rarr;
+        </button>
         
         <span v-else class="text-amber-500 font-bold text-[11px] uppercase tracking-wide">
             🟡 Projected Funding: {{ goal.projectedMonth }}
