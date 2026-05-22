@@ -3668,59 +3668,67 @@ const saveProjectFromGoal = () => {
     const activeGoals = goals.value.filter(g => !g.is_completed);
     const sortedGoals = activeGoals.sort((a, b) => (a.priority || 99) - (b.priority || 99));
 
-    let availableLiquidity = forecastSettings.value.currentBalance - forecastSettings.value.safetyMargin;
-    if (availableLiquidity < 0) availableLiquidity = 0;
+    // 1. Create a simulated timeline based on your ACTUAL forecast engine balances
+    let simulatedBalances = forecastData.value.map(m => m.endBalance - forecastSettings.value.safetyMargin);
+    let simulatedCurrentCash = forecastSettings.value.currentBalance - forecastSettings.value.safetyMargin;
 
     return sortedGoals.map(goal => {
-        const cost = goal.target_amount;
+        const cost = Number(goal.target_amount);
         let result = { ...goal, isFundedToday: false, projectedMonth: null, shortfall: 0 };
 
-        // 🟢 PHASE 0: Is it already committed? 
+        // PHASE 0: If already committed, skip the math entirely
         if (goal.committed_month) {
             result.isCommitted = true;
             result.projectedMonth = goal.committed_month;
-            return result; // Skip the waterfall math entirely!
+            return result; 
         }
 
-        // PHASE 1: Can we afford it right now?
-        if (availableLiquidity >= cost) {
-            availableLiquidity -= cost;
+        // PHASE 1: Safe to spend TODAY?
+        // To safely spend today, the current cash AND every single future month's balance must survive the hit.
+        let safeToSpendToday = simulatedCurrentCash;
+        for (let i = 0; i < simulatedBalances.length; i++) {
+            if (simulatedBalances[i] < safeToSpendToday) {
+                safeToSpendToday = simulatedBalances[i];
+            }
+        }
+
+        if (safeToSpendToday >= cost) {
             result.isFundedToday = true;
             result.projectedMonth = 'Ready Now';
+            
+            // Deduct this purchase from our simulated timeline so the next goal doesn't double-spend it
+            simulatedCurrentCash -= cost;
+            for (let i = 0; i < simulatedBalances.length; i++) {
+                simulatedBalances[i] -= cost;
+            }
             return result;
         }
 
-        // PHASE 2: We are short. Drain current cash and find the gap.
-        let gap = cost - availableLiquidity;
-        availableLiquidity = 0; 
-
-        // PHASE 3: Scan the forecast timeline
-        let accumulatedSurplus = 0;
-        
-        for (const month of forecastData.value) { 
-            const totalExtra = month.extraExpenses ? month.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0) : 0;
+        // PHASE 2: Scan the forecast timeline for the true "Safe" month
+        for (let mIndex = 0; mIndex < simulatedBalances.length; mIndex++) {
             
-            // 🟢 Need to deduct committed goals here too so the waterfall knows cash is missing!
-            const committedThisMonth = activeGoals
-                .filter(g => g.committed_month === month.name)
-                .reduce((sum, g) => sum + Number(g.target_amount), 0);
-                
-            const monthSurplus = (month.income || 0) - (month.burn || 0) - totalExtra - committedThisMonth;
-            
-            if (monthSurplus > 0) {
-                accumulatedSurplus += monthSurplus;
-                
-                if (accumulatedSurplus >= gap) {
-                    result.projectedMonth = month.name; 
-                    availableLiquidity = accumulatedSurplus - gap; 
-                    break; 
+            // Find the lowest balance point from THIS month to the end of the timeline
+            let minFutureBalance = simulatedBalances[mIndex];
+            for (let futureIndex = mIndex; futureIndex < simulatedBalances.length; futureIndex++) {
+                if (simulatedBalances[futureIndex] < minFutureBalance) {
+                    minFutureBalance = simulatedBalances[futureIndex];
                 }
+            }
+
+            // If the absolute lowest future balance is still higher than the goal cost, it's safe!
+            if (minFutureBalance >= cost) {
+                result.projectedMonth = forecastData.value[mIndex].name;
+                
+                // Deduct the cost from this month and all months AFTER it
+                for (let i = mIndex; i < simulatedBalances.length; i++) {
+                    simulatedBalances[i] -= cost;
+                }
+                break;
             }
         }
 
         if (!result.projectedMonth) {
             result.projectedMonth = 'Beyond Forecast Range';
-            result.shortfall = gap - accumulatedSurplus;
         }
 
         return result;
