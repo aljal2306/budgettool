@@ -3689,6 +3689,28 @@ const saveProjectFromGoal = () => {
         return result;
     });
 });
+          const markGoalCompleted = async (goal) => {
+    if (!confirm(`Are you sure you want to mark "${goal.name}" as paid and complete?`)) return;
+
+    try {
+        const { error } = await _supabase
+            .from('goals')
+            .update({ is_completed: true })
+            .eq('id', goal.id);
+
+        if (error) throw error;
+
+        // Instantly hide it from the UI by updating local memory
+        const index = goals.value.findIndex(g => g.id === goal.id);
+        if (index !== -1) {
+            goals.value[index].is_completed = true;
+        }
+        
+    } catch (err) {
+        console.error("Error completing goal:", err);
+        alert("Failed to mark goal as complete.");
+    }
+};
         
           // ✈️ Smart Trip Planner State
 
