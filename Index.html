@@ -3730,6 +3730,32 @@ const saveProjectFromGoal = () => {
         console.error("Error reordering goals:", err);
     }
 };
+          const toggleCommitGoal = async (goal, monthName) => {
+    // If they pass null, it acts as an "Undo/Uncommit"
+    const newMonth = monthName || null;
+    
+    try {
+        const { error } = await _supabase
+            .from('goals')
+            .update({ committed_month: newMonth })
+            .eq('id', goal.id);
+
+        if (error) throw error;
+
+        // Instantly update the local memory
+        const index = goals.value.findIndex(g => g.id === goal.id);
+        if (index !== -1) {
+            goals.value[index].committed_month = newMonth;
+        }
+        
+        // 🟢 CRITICAL: Re-run the forecast engine so it recalculates the new cash flow!
+        runForecast(); 
+        
+    } catch (err) {
+        console.error("Error committing goal:", err);
+        alert("Failed to commit goal.");
+    }
+};
           
           const markGoalCompleted = async (goal) => {
     if (!confirm(`Are you sure you want to mark "${goal.name}" as paid and complete?`)) return;
@@ -6819,7 +6845,7 @@ watch(currentView, async (newView) => {
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory, countBillDue,
                 totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal, fetchGoals, showTripPlanner, openTripCategory, tripPlan, tripTotal, saveTripGoal, deleteGoal, saveStandardGoal, showGoalsHub,
-                showStandardGoalModal, standardGoal, selectedGoalName, wasHubOpen, moveGoalPriority,
+                showStandardGoalModal, standardGoal, selectedGoalName, wasHubOpen, moveGoalPriority, toggleCommitGoal,
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
