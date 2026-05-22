@@ -1667,9 +1667,21 @@
         </span>
     </div>
 
-    <div class="flex gap-2 w-full mt-1">
+   <div class="flex gap-2 w-full mt-1">
         
-        <select v-if="!goal.isCommitted" 
+        <button v-if="goal.isCommitted" 
+                @click.stop="toggleCommitGoal(goal, null)" 
+                class="flex-1 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg text-[10px] uppercase font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition shadow-sm">
+            ↩️ Uncommit
+        </button>
+
+        <button v-else-if="goal.projectedMonth === 'Beyond Forecast Range' && !isPremiumUser" 
+                @click.stop="showPaywallModal = true"
+                class="flex-1 py-2.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 rounded-lg text-[10px] uppercase font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition shadow-sm flex items-center justify-center gap-1">
+            🔒 Schedule
+        </button>
+
+        <select v-else 
                 @change="toggleCommitGoal(goal, $event.target.value)" 
                 @click.stop
                 class="flex-1 px-2 py-2.5 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] uppercase font-bold cursor-pointer hover:border-blue-400 transition outline-none">
@@ -1677,17 +1689,10 @@
             <option v-for="m in forecastData" :key="m.name" :value="m.name">{{ m.name }}</option>
         </select>
 
-        <button v-else 
-                @click.stop="toggleCommitGoal(goal, null)" 
-                class="flex-1 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg text-[10px] uppercase font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition shadow-sm">
-            ↩️ Uncommit
-        </button>
-
         <button @click.stop="markGoalCompleted(goal)" class="flex-1 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 rounded-lg text-[10px] uppercase font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition shadow-sm">
             ✅ Mark as Paid
         </button>
     </div>
-</div>
             
             </div> <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 flex gap-3 flex-shrink-0">
                 <button @click="openNewStandardGoal" class="flex-1 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm">
