@@ -5116,16 +5116,12 @@ const fetchGiftCards = async () => {
                         else if (forecastMode.value === 'dream') budgetItems.value.forEach(i => { if (i.is_wishlist) monthlyBurn += getMonthlyCost(i); else { const replaced = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replaced) monthlyBurn += getMonthlyCost(i); } });
                     }
 
-                    m.burn = round(monthlyBurn);
+                   m.burn = round(monthlyBurn);
 
-                    // 1. Grab any manual extra expenses you typed in for this month
-                    const ov = forecastOverrides.value[m.name];
-                    m.extraExpenses = ov && ov.extraExpenses ? [...ov.extraExpenses] : [];
-
-                    // 2. Find goals committed to this specific month
+                    // 1. Find goals committed to this specific month
                     const committedForMonth = goals.value.filter(g => !g.is_completed && g.committed_month === m.name);
 
-                    // 3. 🟢 INJECT goals directly into the UI list so you can see them!
+                    // 2. 🟢 INJECT goals directly into the UI list!
                     committedForMonth.forEach(g => {
                         m.extraExpenses.push({
                             id: g.id,
@@ -5135,10 +5131,10 @@ const fetchGiftCards = async () => {
                         });
                     });
 
-                    // 4. Total up ALL expenses (Manual + Injected Goals)
+                    // 3. Total up ALL expenses (Manual + Injected Goals)
                     const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0);
                     
-                    // 5. Calculate final balance 
+                    // 4. Calculate final balance 
                     const monthlyNet = m.income - monthlyBurn - totalExtra;
                     balance = round(balance + monthlyNet);
                     m.endBalance = balance;
