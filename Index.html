@@ -6160,14 +6160,27 @@ const editLogEntry = (entry) => {
 
                 let interestComponent, principalComponent, newDebtBalance;
 
-                if (isNowPaid) {
-                    interestComponent = currentDBBalance * monthlyRate;
-                    principalComponent = amount - interestComponent;
-                    newDebtBalance = Math.max(0, currentDBBalance - principalComponent);
+                // 🟢 NEW LOGIC: Is this our "Extra Principal" budget item?
+                const isPrincipalOnly = bill.budget_items?.is_extra_principal || bill.is_extra_principal;
+
+                if (isPrincipalOnly) {
+                    // PRINCIPAL-ONLY MATH (Bypasses Interest)
+                    interestComponent = 0;
+                    principalComponent = amount;
+                    newDebtBalance = isNowPaid 
+                        ? Math.max(0, currentDBBalance - amount) 
+                        : currentDBBalance + amount; // If un-paying, put it back
                 } else {
-                    newDebtBalance = (currentDBBalance + amount) / (1 + monthlyRate);
-                    principalComponent = newDebtBalance - currentDBBalance;
-                    interestComponent = amount - principalComponent;
+                    // STANDARD AMORTIZATION MATH (Splits Interest/Principal)
+                    if (isNowPaid) {
+                        interestComponent = currentDBBalance * monthlyRate;
+                        principalComponent = amount - interestComponent;
+                        newDebtBalance = Math.max(0, currentDBBalance - principalComponent);
+                    } else {
+                        newDebtBalance = (currentDBBalance + amount) / (1 + monthlyRate);
+                        principalComponent = newDebtBalance - currentDBBalance;
+                        interestComponent = amount - principalComponent;
+                    }
                 }
                 
                 newDebtBalance = Math.round(newDebtBalance * 100) / 100;
@@ -6190,7 +6203,7 @@ const editLogEntry = (entry) => {
        .update({ 
         is_paid: isNowPaid, 
         paid_date: isNowPaid ? new Date().toISOString() : null,
-        payment_method: isNowPaid ? method : 'debit' // 🟢 ADD THIS LINE
+        payment_method: isNowPaid ? method : 'debit' 
     })
        .eq('id', bill.id);
 
@@ -6247,7 +6260,26 @@ const editLogEntry = (entry) => {
     }
 };
 
-
+const turnAttackIntoBudget = (debt, extraAmount) => {
+    currentView.value = 'budget';
+    showPlannerModal.value = true;
+    
+    isEditing.value = false;
+    newItem.value = {
+        name: `⚡ Extra Principal: ${debt.name}`, // Updated name for clarity
+        amount: Number(extraAmount),
+        frequency: 'Monthly',
+        is_core: true, 
+        is_variable: false,
+        is_autopay: false,
+        is_wishlist: false,
+        debt_id: debt.id, 
+        is_extra_principal: true, // 🟢 THE NEW FLAG
+        preferred_method: 'debit'
+    };
+    
+    showAddForm.value = true;
+};
           const quickPay = async (bill) => {
                 // 🔴 DELETED: bill.is_paid = true; 
                 // We must NOT change the status here. Let toggleBillPaid calculate it.
@@ -6940,7 +6972,7 @@ watch(currentView, async (newView) => {
                 showScenarioModal, filledScenarioCount, isScenarioActive, addExpense, fillExpense,
 
                 // Debt
-                debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, recordCCPayment, promptCCPayoff, showDebtHelp,
+                debts, newDebt, showDebtForm, addDebt, deleteDebt, editDebt, editingDebtId, debtPlan, extraDebtPayment, recordCCPayment, promptCCPayoff, showDebtHelp, turnAttackIntoBudget,
 
                 // Advisor
                 showImpulseModal, impulseItem, checkImpulse, impulseResult, clearImpulse, cashFlowLowPoint, 
