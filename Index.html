@@ -5130,21 +5130,20 @@ const fetchGiftCards = async () => {
 
             const fixedBurn = unpaidBills.reduce((sum, b) => sum + (b.amount_paid || b.budget_items?.amount || 0), 0);
 
-            // B. 🟢 FIX 2: Handle Variable Budgets Directly
-            const activeVariables = budgetItems.value.filter(i => i.is_variable);
+            // B. Handle Variable Budgets Directly (Using your pre-computed array!)
+            const activeVariables = variableBudgets.value.filter(v => {
+                // Respect the forecast modes
+                if (forecastMode.value === 'survival' && !v.is_core) return false;
+                if (forecastMode.value === 'standard' && v.is_wishlist) return false;
+                return true;
+            });
             
-            const variableBurn = activeVariables.reduce((sum, item) => {
-                if (forecastMode.value === 'survival' && !item.is_core) return sum;
-                if (forecastMode.value === 'standard' && item.is_wishlist) return sum;
-
-                // 🚨 CRITICAL HANDOFF: We need to subtract what you've ALREADY spent!
-                // Update 'item.amount_spent' to whatever property your app uses to track logged expenses.
-                const amountSpentSoFar = Number(item.amount_spent || item.spent || item.amount_paid || 0);
-                
-                // If you overspend (spent > budget), this safely adds $0 so we don't double-penalize you!
-                const remainingBudget = Math.max(0, item.amount - amountSpentSoFar);
-                
-                return sum + remainingBudget;
+            const variableBurn = activeVariables.reduce((sum, v) => {
+                // 🚨 THE CRITICAL CALCULATION: 
+                // Math.max(0) ensures that if you overspend and remaining goes negative, 
+                // we just count it as $0 remaining budget. We don't want to accidentally 
+                // ADD money back to your forecast because you went negative!
+                return sum + Math.max(0, Number(v.remaining || 0));
             }, 0);
 
             monthlyBurn = fixedBurn + variableBurn;
