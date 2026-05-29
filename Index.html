@@ -5087,12 +5087,17 @@ const fetchGiftCards = async () => {
         const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1);
         const isCurrentMonth = idx === 0;
         
-       // --- 1. INCOME CALCULATION ---
+// --- 1. INCOME CALCULATION ---
         let monthlyIncome = 0;
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        const daysLeft = Math.max(1, daysInMonth - today.getDate() + 1); 
+
         if (isCurrentMonth) {
+            let foundSpecificPaychecks = false;
             incomes.value.forEach(inc => {
                 let nextPay = new Date(inc.next_pay_date);
                 while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) {
+                    foundSpecificPaychecks = true;
                     if (nextPay >= today) monthlyIncome += Number(inc.amount);
                     if (inc.frequency === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
                     else if (inc.frequency === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
@@ -5100,25 +5105,40 @@ const fetchGiftCards = async () => {
                     else break; 
                 }
             });
-            // 🟢 FIX 1: Removed the "Ghost Income" fallback. If a paycheck isn't scheduled, 
-            // we assume your current bank balance already contains your money!
+
+            // 🟢 FALLBACK: If no specific dates were found, we MUST prorate their standard pay 
+            // based on the days remaining, so we don't double count money already in the bank!
+            if (!foundSpecificPaychecks) {
+                const basePay = useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value;
+                monthlyIncome = (basePay / daysInMonth) * daysLeft;
+            }
         } else {
             monthlyIncome = activeMonthlyPay.value;
         }
         
+        // Handle Manual Overrides
         const ov = forecastOverrides.value[m.name];
         if (ov && ov.income !== undefined) {
-            monthlyIncome = isCurrentMonth && ov.income === 0 ? 0 : Number(ov.income);
+            if (isCurrentMonth) {
+                 // Prorate the override so it doesn't dump a full month of fake cash into the last few days
+                 monthlyIncome = (Number(ov.income) / daysInMonth) * daysLeft;
+            } else {
+                 monthlyIncome = Number(ov.income);
+            }
         }
+        
         m.income = round(monthlyIncome); 
         m.extraExpenses = ov && ov.extraExpenses ? [...ov.extraExpenses] : [];
 
         // --- 2. BURN RATE (EXPENSES) CALCULATION ---
         let monthlyBurn = 0;
+        let fixedBurn = 0;
+        let variableBurn = 0;
         
         if (isCurrentMonth) {
-            // A. Handle Unpaid Fixed Bills
             const endOfMonthStr = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+            
+            // A. Fixed Bills
             const unpaidBills = bills.value.filter(b => {
                 if (b.type === 'income' || b.is_paid || b.due_date > endOfMonthStr) return false; 
                 const item = b.budget_items || {}; 
@@ -5128,28 +5148,28 @@ const fetchGiftCards = async () => {
                 return true;
             });
 
-            const fixedBurn = unpaidBills.reduce((sum, b) => sum + (b.amount_paid || b.budget_items?.amount || 0), 0);
+            fixedBurn = unpaidBills.reduce((sum, b) => sum + (b.amount_paid || b.budget_items?.amount || 0), 0);
 
-            // B. Handle Variable Budgets Directly (Using your pre-computed array!)
+            // B. Variable Budgets
             const activeVariables = variableBudgets.value.filter(v => {
-                // Respect the forecast modes
                 if (forecastMode.value === 'survival' && !v.is_core) return false;
                 if (forecastMode.value === 'standard' && v.is_wishlist) return false;
                 return true;
             });
             
-            const variableBurn = activeVariables.reduce((sum, v) => {
-                // 🚨 THE CRITICAL CALCULATION: 
-                // Math.max(0) ensures that if you overspend and remaining goes negative, 
-                // we just count it as $0 remaining budget. We don't want to accidentally 
-                // ADD money back to your forecast because you went negative!
-                return sum + Math.max(0, Number(v.remaining || 0));
-            }, 0);
-
+            variableBurn = activeVariables.reduce((sum, v) => sum + Math.max(0, Number(v.remaining || 0)), 0);
             monthlyBurn = fixedBurn + variableBurn;
 
+            // 🛠️ DEBUG LOGGER: Let's see the math! 🛠️
+            console.log(`\n--- CURRENT MONTH (${m.name}) MATH ENGINE ---`);
+            console.log(`1. Starting Bank Balance: $${balance}`);
+            console.log(`2. Incoming Money (${daysLeft} days left): +$${m.income}`);
+            console.log(`3. Unpaid Fixed Bills: -$${fixedBurn}`);
+            console.log(`4. Remaining Variable Budget: -$${variableBurn}`);
+            console.log(`Projected End Balance = $${balance + m.income - monthlyBurn}`);
+            console.log(`-------------------------------------------\n`);
+
         } else {
-            // Future Months (Unchanged)
             if (forecastMode.value === 'survival') monthlyBurn = budgetItems.value.filter(i => i.is_core).reduce((a, b) => a + getMonthlyCost(b), 0);
             else if (forecastMode.value === 'standard') monthlyBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((a, b) => a + getMonthlyCost(b), 0);
             else if (forecastMode.value === 'dream') budgetItems.value.forEach(i => { if (i.is_wishlist) monthlyBurn += getMonthlyCost(i); else { const replaced = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replaced) monthlyBurn += getMonthlyCost(i); } });
