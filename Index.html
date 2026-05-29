@@ -5083,7 +5083,7 @@ const fetchGiftCards = async () => {
     }
     forecastResults.value.affordableMonth = null;
     
-    forecastData.value.forEach((m, idx) => {
+   forecastData.value.forEach((m, idx) => {
         const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1);
         const isCurrentMonth = idx === 0;
         
@@ -5100,26 +5100,47 @@ const fetchGiftCards = async () => {
                     else break; 
                 }
             });
-            if (useTempPay.value && monthlyIncome === 0) monthlyIncome = tempCalculatedPay.value; 
+            
+            // 🟢 FIX 1: If no specific future pay dates exist, prorate the standard monthly pay!
+            if (monthlyIncome === 0) {
+                const basePay = useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value;
+                const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                const daysLeft = daysInMonth - today.getDate() + 1;
+                monthlyIncome = (basePay / daysInMonth) * daysLeft;
+            }
         } else {
             monthlyIncome = activeMonthlyPay.value;
         }
         
         const ov = forecastOverrides.value[m.name];
-        if (ov && ov.income !== undefined) monthlyIncome = Number(ov.income);
-        m.income = monthlyIncome; 
+        if (ov && ov.income !== undefined) {
+            // 🟢 FIX 2: Prevent manual overrides from double-counting in the current month
+            if (isCurrentMonth) {
+                const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                const daysLeft = daysInMonth - today.getDate() + 1;
+                monthlyIncome = (Number(ov.income) / daysInMonth) * daysLeft;
+            } else {
+                monthlyIncome = Number(ov.income);
+            }
+        }
+        m.income = round(monthlyIncome); 
         
-        // 🟢 THE FIX: Always wipe the receipt clean, loading ONLY manual expenses first
+        // Wipe the receipt clean, loading ONLY manual expenses first
         m.extraExpenses = ov && ov.extraExpenses ? [...ov.extraExpenses] : [];
 
         // --- 2. BURN RATE (EXPENSES) CALCULATION ---
         let monthlyBurn = 0;
         
         if (isCurrentMonth) {
+            // 🟢 FIX 3: Create an exact end-of-month date string to catch overdue bills
+            const endOfMonthStr = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+            
             const unpaidBills = bills.value.filter(b => {
                 if (b.type === 'income') return false; 
-                if (!b.due_date.startsWith(currentMonthStr)) return false; 
                 if (b.is_paid) return false; 
+                
+                // Stop ignoring overdue bills! Include anything due on or before the last day of this month.
+                if (b.due_date > endOfMonthStr) return false; 
                 
                 const item = b.budget_items || {}; 
                 
@@ -5140,6 +5161,9 @@ const fetchGiftCards = async () => {
                 if (forecastMode.value === 'standard') return !v.is_wishlist;
                 return true;
             });
+            
+            // 🟢 FIX 4: Only subtract remaining variable budget if there is any left. 
+            // If you overspent, the money is already gone from the real-time bank balance.
             const variableBurn = activeVariables.reduce((sum, v) => sum + Math.max(0, v.remaining), 0);
             monthlyBurn = fixedBurn + variableBurn;
 
@@ -5152,11 +5176,8 @@ const fetchGiftCards = async () => {
         m.burn = round(monthlyBurn);
 
         // --- 3. COMMITTED GOALS & FINAL MATH ---
-        
-        // Find goals committed to this specific month
         const committedForMonth = goals.value.filter(g => !g.is_completed && g.committed_month === m.name);
 
-        // INJECT goals directly into the UI list!
         committedForMonth.forEach(g => {
             m.extraExpenses.push({
                 id: g.id,
@@ -5166,10 +5187,9 @@ const fetchGiftCards = async () => {
             });
         });
 
-        // Total up ALL expenses (Manual + Injected Goals)
         const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0);
         
-        // Calculate final balance 
+        // Calculate final balance based on EXACT remaining runway
         const monthlyNet = m.income - monthlyBurn - totalExtra;
         balance = round(balance + monthlyNet);
         m.endBalance = balance;
@@ -5179,9 +5199,6 @@ const fetchGiftCards = async () => {
             forecastResults.value.affordableIndex = idx;
         }
     });
-    
-    renderForecastChart();
-};
 
             const getOverride = (monthName) => { 
     if (!forecastOverrides.value[monthName]) {
