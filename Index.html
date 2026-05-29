@@ -5136,15 +5136,25 @@ const fetchGiftCards = async () => {
         let variableBurn = 0;
         
         if (isCurrentMonth) {
-            const endOfMonthStr = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+            // 🟢 THE BULLETPROOF DATE MATH
+            const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            const firstDayOfThisMonth = `${currentMonthStr}-01`;
             
             // A. Fixed Bills
             const unpaidBills = bills.value.filter(b => {
-                if (b.type === 'income' || b.is_paid || b.due_date > endOfMonthStr) return false; 
+                if (b.type === 'income' || b.is_paid) return false; 
+                
+                // Keep it if it belongs to this month OR if it's a past overdue bill
+                const isThisMonth = b.due_date && b.due_date.startsWith(currentMonthStr);
+                const isOverdue = b.due_date && b.due_date < firstDayOfThisMonth;
+                
+                if (!isThisMonth && !isOverdue) return false; // Ignore future months!
+                
                 const item = b.budget_items || {}; 
                 if (item.is_variable) return false; 
                 if (forecastMode.value === 'survival' && !item.is_core) return false;
                 if (forecastMode.value === 'standard' && item.is_wishlist) return false;
+                
                 return true;
             });
 
