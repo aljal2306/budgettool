@@ -5199,6 +5199,9 @@ const fetchGiftCards = async () => {
             forecastResults.value.affordableIndex = idx;
         }
     });
+      renderForecastChart();
+
+}; 
 
             const getOverride = (monthName) => { 
     if (!forecastOverrides.value[monthName]) {
