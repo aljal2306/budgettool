@@ -3573,7 +3573,7 @@
                         <span class="text-3xl mb-2 block drop-shadow-sm">🔒</span>
                         <h4 class="font-bold text-amber-800 dark:text-amber-400 text-lg">Pro Feature Locked</h4>
                         <p class="text-xs text-amber-700/80 dark:text-amber-500/80 mt-2 mb-5 max-w-sm mx-auto">Track credit card floats, snowball debt, and separate your buying power from your borrowed cash.</p>
-                        <button class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-orange-500/30 transition transform hover:-translate-y-0.5">
+                        <button @click="showPremiumModal = true" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-orange-500/30 transition transform hover:-translate-y-0.5">
                             Upgrade to Unlock
                         </button>
                     </div>
@@ -3652,12 +3652,12 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Have extra cash leftover this week? Apply a principal-only payment to any debt. This will directly lower your bank balance.</p>
                     </div>
 
-                    <div v-if="!isPremium" class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-700/30 text-center relative overflow-hidden shadow-inner">
+                    <div v-if="!isPremium" class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 p-6 rounded-2xl border border-amber-200 dark:border-amber-700/30 text-center relative overflow-hidden shadow-inner">
                         <div class="absolute -left-6 -bottom-6 text-7xl opacity-5 grayscale filter">🚀</div>
                         <span class="text-3xl mb-2 block drop-shadow-sm">🔒</span>
-                        <h4 class="font-bold text-indigo-800 dark:text-indigo-400 text-lg">Pro Feature Locked</h4>
-                        <p class="text-xs text-indigo-700/80 dark:text-indigo-500/80 mt-2 mb-5 max-w-sm mx-auto">Access the Debt Attack engine. Funnel leftover cash directly into high-interest principal and shave years off your payoff date.</p>
-                        <button class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white text-sm font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-indigo-500/30 transition transform hover:-translate-y-0.5">
+                        <h4 class="font-bold text-amber-800 dark:text-amber-400 text-lg">Pro Feature Locked</h4>
+                        <p class="text-xs text-amber-700/80 dark:text-amber-500/80 mt-2 mb-5 max-w-sm mx-auto">Access the Debt Attack engine. Funnel leftover cash directly into high-interest principal and shave years off your payoff date.</p>
+                        <button @click="showPremiumModal = true" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-orange-500/30 transition transform hover:-translate-y-0.5">
                             Upgrade to Unlock
                         </button>
                     </div>
