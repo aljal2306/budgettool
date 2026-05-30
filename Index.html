@@ -3535,7 +3535,7 @@
     </div>
 </transition>
           
-          <transition name="fade">
+         <transition name="fade">
     <div v-if="showTrueUpModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4" @click.self="showTrueUpModal = false">
         <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700 max-h-[90vh] animate-slide-up">
             
@@ -3548,14 +3548,15 @@
                 </div>
                 
                 <div class="flex justify-between gap-2">
-                    <div v-for="i in 4" :key="i" class="h-1.5 flex-1 rounded-full transition-colors duration-300" :class="trueUpStep >= i ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'"></div>
+                    <div v-for="i in 5" :key="i" class="h-1.5 flex-1 rounded-full transition-colors duration-300" :class="trueUpStep >= i ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'"></div>
                 </div>
                 <div class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-2 text-center">
-                    Step {{ trueUpStep }} of 4: 
+                    Step {{ trueUpStep }} of 5: 
                     <span v-if="trueUpStep === 1">The Float</span>
                     <span v-if="trueUpStep === 2">Action Items</span>
                     <span v-if="trueUpStep === 3">Big Wins</span>
-                    <span v-if="trueUpStep === 4">Ground Truth</span>
+                    <span v-if="trueUpStep === 4">Extra Principal</span>
+                    <span v-if="trueUpStep === 5">Ground Truth</span>
                 </div>
             </div>
 
@@ -3567,11 +3568,11 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Want to sweep any cash toward your active credit cards? This lowers debt without reducing your calculated Buying Power.</p>
                     </div>
                     
-                    <div v-if="debts.length === 0" class="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 text-sm">
-                        No active debts found. You're completely clear!
+                    <div v-if="trueUpState.ccDebts.length === 0" class="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 text-sm">
+                        No active credit cards found. You're completely clear!
                     </div>
 
-                    <div v-for="debt in debts" :key="debt.id" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div v-for="debt in trueUpState.ccDebts" :key="debt.id" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                         <div>
                             <div class="font-bold text-slate-700 dark:text-slate-200">{{ debt.name }}</div>
                             <div class="text-xs text-slate-400 font-mono">Bal: ${{ Number(debt.balance).toLocaleString() }}</div>
@@ -3635,6 +3636,33 @@
 
                 <div v-if="trueUpStep === 4" class="space-y-6 animate-fade-in">
                     <div class="text-center mb-6">
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Debt Attack</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Have extra cash leftover this week? Apply a principal-only payment to any debt. This will directly lower your bank balance.</p>
+                    </div>
+
+                    <div class="bg-rose-50 dark:bg-rose-900/10 p-5 rounded-2xl border border-rose-200 dark:border-rose-800/30 space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-rose-500 uppercase mb-1">Select Debt to Attack</label>
+                            <select v-model="trueUpState.extraDebtPayment.debtId" class="w-full p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-rose-500">
+                                <option value="">-- Choose a debt (Optional) --</option>
+                                <option v-for="debt in debts" :key="debt.id" :value="debt.id">
+                                    {{ debt.name }} (Bal: ${{ Number(debt.balance).toLocaleString() }})
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <div v-if="trueUpState.extraDebtPayment.debtId">
+                            <label class="block text-[10px] font-bold text-rose-500 uppercase mb-1">Extra Payment Amount</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-rose-500 font-bold">$</span>
+                                <input type="number" step="0.01" v-model="trueUpState.extraDebtPayment.amount" placeholder="0.00" class="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-rose-500 text-lg font-bold">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="trueUpStep === 5" class="space-y-6 animate-fade-in">
+                    <div class="text-center mb-6">
                         <h3 class="text-lg font-bold text-slate-800 dark:text-white">The Ground Truth</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">The dust has settled. Ensure these numbers perfectly match your real-world accounts right now.</p>
                     </div>
@@ -3645,7 +3673,7 @@
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold text-xl">$</span>
                             <input type="number" step="0.01" v-model="forecastSettings.currentBalance" class="w-full bg-slate-50 dark:bg-slate-900 border-2 border-emerald-500 rounded-xl pl-8 pr-4 py-3 text-2xl font-black text-slate-900 dark:text-white outline-none shadow-sm focus:ring-4 focus:ring-emerald-500/20 transition">
                         </div>
-                        <p class="text-[10px] text-slate-400 ml-1">Includes all changes from previous steps.</p>
+                        <p class="text-[10px] text-slate-400 ml-1">Includes all deductions from your previous steps.</p>
                     </div>
 
                     <div class="space-y-2">
@@ -3661,10 +3689,10 @@
 
             <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between gap-3">
                 <button @click="skipTrueUpStep" class="px-5 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-                    {{ trueUpStep === 4 ? 'Cancel' : 'Skip Step' }}
+                    {{ trueUpStep === 5 ? 'Cancel' : 'Skip Step' }}
                 </button>
                 <button @click="processTrueUpStep" class="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400 transition shadow-lg flex justify-center items-center gap-2">
-                    <span v-if="trueUpStep < 4">Process & Continue &rarr;</span>
+                    <span v-if="trueUpStep < 5">Process & Continue &rarr;</span>
                     <span v-else>Finish & Lock In ✨</span>
                 </button>
             </div>
@@ -5208,45 +5236,46 @@ const fetchGiftCards = async () => {
 
             const renderForecastChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
 
-            // --- TRUE UP WIZARD STATE ---
+// --- TRUE UP WIZARD STATE ---
 const showTrueUpModal = ref(false);
 const trueUpStep = ref(1);
 
 const trueUpState = ref({
-    ccPayments: {},               // Stores amounts typed in for Step 1 { debt_id: amount }
-    pendingTransactions: [],      // Bills/Incomes due today or earlier (Step 2)
-    selectedTransactionIds: [],   // IDs of the transactions they actually check off
-    pendingGoals: [],             // Goals committed to this month (Step 3)
-    selectedGoalIds: []           // IDs of the goals they actually check off
+    ccDebts: [],                  // Filtered Credit Cards for Step 1
+    ccPayments: {},               
+    pendingTransactions: [],      
+    selectedTransactionIds: [],   
+    pendingGoals: [],             
+    selectedGoalIds: [],          
+    extraDebtPayment: { debtId: '', amount: '' } // NEW: Step 4 Debt Attack
 });
 
-// --- 1. THE SCANNER (Opens the Wizard) ---
+// --- 1. THE SCANNER ---
 const startTrueUpWizard = () => {
-    // 1. Reset everything to Step 1
     trueUpStep.value = 1;
-    trueUpState.value = { ccPayments: {}, pendingTransactions: [], selectedTransactionIds: [], pendingGoals: [], selectedGoalIds: [] };
+    trueUpState.value = { 
+        ccDebts: [], ccPayments: {}, pendingTransactions: [], selectedTransactionIds: [], 
+        pendingGoals: [], selectedGoalIds: [], extraDebtPayment: { debtId: '', amount: '' } 
+    };
+
+    // 1. Scan for Credit Cards ONLY (Ensure 'Credit Card' matches your exact DB string!)
+    trueUpState.value.ccDebts = debts.value.filter(d => d.type === 'Credit Card' || d.type === 'credit_card');
 
     const todayStr = new Date().toISOString().slice(0, 10);
-    
-    // 2. Scan for Action Items (Step 2)
-    // Grabs anything that is NOT paid, and is due today or earlier.
+    // 2. Scan for Action Items
     trueUpState.value.pendingTransactions = bills.value.filter(b => !b.is_paid && b.due_date && b.due_date <= todayStr);
-    
-    // Auto-select them all by default (they can uncheck them in the UI)
     trueUpState.value.selectedTransactionIds = trueUpState.value.pendingTransactions.map(b => b.id);
 
-    // 3. Scan for Committed Goals (Step 3)
+    // 3. Scan for Committed Goals
     const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const d = new Date();
     const currentMonthName = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
-    
     trueUpState.value.pendingGoals = goals.value.filter(g => !g.is_completed && g.committed_month === currentMonthName);
 
-    // 4. Open the modal
     showTrueUpModal.value = true;
 };
 
-// --- 2. THE ENGINE (Processes each step when they click 'Next') ---
+// --- 2. THE ENGINE ---
 const processTrueUpStep = async () => {
     try {
         if (trueUpStep.value === 1) {
@@ -5255,46 +5284,57 @@ const processTrueUpStep = async () => {
                 const amount = Number(trueUpState.value.ccPayments[debtId]);
                 if (amount > 0) {
                     const debt = debts.value.find(d => d.id === debtId);
-                    if (debt) await recordCCPayment(debt, amount); // Fires your existing CC function!
+                    if (debt) await recordCCPayment(debt, amount); 
                 }
             }
         } 
         else if (trueUpStep.value === 2) {
-            // STEP 2: Process Action Items (Bills/Income)
+            // STEP 2: Process Action Items
             const itemsToProcess = trueUpState.value.pendingTransactions.filter(b => trueUpState.value.selectedTransactionIds.includes(b.id));
-            
             for (const bill of itemsToProcess) {
-                // Fires your existing function silently (true) so it doesn't spam alerts!
                 await toggleBillPaid(bill, true); 
             }
         } 
         else if (trueUpStep.value === 3) {
             // STEP 3: Process Big Wins (Goals)
             const goalsToProcess = trueUpState.value.pendingGoals.filter(g => trueUpState.value.selectedGoalIds.includes(g.id));
-            
             for (const goal of goalsToProcess) {
-                // A. Update Database
                 await _supabase.from('goals').update({ is_completed: true }).eq('id', goal.id);
-                // B. Local Sync
                 goal.is_completed = true;
-                // C. Instantly deduct from their Buying Power so Step 4 is accurate!
                 if (forecastSettings.value) {
                     forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - Number(goal.target_amount);
                 }
             }
         }
         else if (trueUpStep.value === 4) {
-            // STEP 4: The Ground Truth (Final Balances)
-            await saveAllForecastSettings(); // Uses your existing save function
-            showTrueUpModal.value = false;
+            // NEW STEP 4: Extra Principal / Debt Attack
+            const selectedDebtId = trueUpState.value.extraDebtPayment.debtId;
+            const extraAmount = Number(trueUpState.value.extraDebtPayment.amount);
             
-            // Re-run the forecast one last time so the dashboard catches up
+            if (selectedDebtId && extraAmount > 0) {
+                const debtToAttack = debts.value.find(d => d.id === selectedDebtId);
+                if (debtToAttack) {
+                    const newBalance = Math.max(0, Number(debtToAttack.balance) - extraAmount);
+                    // Update Database
+                    await _supabase.from('debts').update({ balance: newBalance }).eq('id', debtToAttack.id);
+                    // Local Sync
+                    debtToAttack.balance = newBalance;
+                    // Deduct from bank balance immediately so Step 5 is accurate!
+                    if (forecastSettings.value) {
+                        forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - extraAmount;
+                    }
+                }
+            }
+        }
+        else if (trueUpStep.value === 5) {
+            // STEP 5: The Ground Truth (Final Balances)
+            await saveAllForecastSettings(); 
+            showTrueUpModal.value = false;
             runForecast();
             alert("✨ True Up Complete! Your forecast is 100% locked in.");
             return;
         }
         
-        // Success? Move to the next screen!
         trueUpStep.value++;
         
     } catch (err) {
@@ -5303,9 +5343,9 @@ const processTrueUpStep = async () => {
     }
 };
 
-// --- 3. THE BYPASS (For when they click 'Skip') ---
+// --- 3. THE BYPASS ---
 const skipTrueUpStep = () => {
-    if (trueUpStep.value === 4) {
+    if (trueUpStep.value === 5) {
         showTrueUpModal.value = false;
     } else {
         trueUpStep.value++;
