@@ -314,11 +314,11 @@
     </div>
 </div>
                     <div v-if="currentView==='dashboard'" class="animate-fade-in print:hidden">
-    <div class="w-full flex justify-end mb-4 gap-3 items-center">
+    <div class="w-full flex flex-wrap justify-center sm:justify-end mb-4 gap-2 sm:gap-3 items-center">
 
         <div class="flex items-center gap-1.5 relative group">
             
-            <button @click="startTrueUpWizard" class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all transform hover:-translate-y-0.5 hover:shadow-md bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/30 shadow-sm">
+            <button @click="startTrueUpWizard" class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all transform hover:-translate-y-0.5 hover:shadow-md bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/30 shadow-sm">
                 <span>✨</span> True Up
             </button> 
 
@@ -326,22 +326,23 @@
                 i
             </div>
             
-            <div class="absolute bottom-full right-0 mb-3 w-60 p-3 bg-slate-800 text-white text-xs leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none translate-y-1 group-hover:translate-y-0">
+            <div class="absolute bottom-full right-0 sm:-right-4 mb-3 w-56 sm:w-60 p-3 bg-slate-800 text-white text-xs leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none translate-y-1 group-hover:translate-y-0">
                 <strong class="block text-indigo-300 mb-1">What is a True Up?</strong>
                 A 60-second wizard to clear pending bills, process credit card floats, and perfectly sync your forecast with your real bank account.
-                <div class="absolute -bottom-1 right-2 w-3 h-3 bg-slate-800 transform rotate-45"></div>
+                <div class="absolute -bottom-1 right-3 sm:right-6 w-3 h-3 bg-slate-800 transform rotate-45"></div>
             </div>
         </div>
 
-        <button @click="openDepositModal" class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all transform hover:-translate-y-0.5 hover:shadow-md bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm shadow-emerald-500/30 border border-emerald-500">
+        <button @click="openDepositModal" class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all transform hover:-translate-y-0.5 hover:shadow-md bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm shadow-emerald-500/30 border border-emerald-500">
             <span>💰</span> Get Paid 
         </button>
 
-        <button @click="startDashboardTour" class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all transform hover:-translate-y-0.5 hover:shadow-md bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-sm">
+        <button @click="startDashboardTour" class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all transform hover:-translate-y-0.5 hover:shadow-md bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-sm">
             <span>📍</span> Tour
         </button>
 
     </div>
+
 
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                            <div id="tour-safe-spend" class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 dark:shadow-none text-white relative overflow-hidden group transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-300 dark:hover:shadow-none">
