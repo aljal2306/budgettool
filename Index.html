@@ -1839,48 +1839,48 @@
     </div>
     
     <div class="relative z-10">
-        <div class="flex justify-between items-start mb-1">
-            <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nest Egg</h3>
-            <button @click.stop="showNestEggHelp = !showNestEggHelp" class="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-purple-100 hover:text-purple-600 transition -mt-1 -mr-1 shadow-sm" title="How is this calculated?">
-                <span class="font-bold font-serif italic text-[10px]">i</span>
-            </button>
+    <div class="flex justify-between items-start mb-1">
+        <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nest Egg</h3>
+        <button @click.stop="showNestEggHelp = !showNestEggHelp" class="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-purple-100 hover:text-purple-600 transition -mt-1 -mr-1 shadow-sm" title="How is this calculated?">
+            <span class="font-bold font-serif italic text-[10px]">i</span>
+        </button>
+    </div>
+    
+    <div class="flex justify-between items-end mt-1">
+        <div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white">
+                ${{ (retirementProjection || 0).toLocaleString(undefined, {maximumFractionDigits: 0}) }}
+            </div>
+            <div class="text-[10px] text-purple-500 font-bold mt-1">
+                Target Age: {{ forecastSettings.retirementAge }}
+            </div>
         </div>
-        
-        <div class="flex justify-between items-end mt-1">
-            <div>
-                <div class="text-2xl font-bold text-slate-900 dark:text-white">
-                    ${{ (retirementProjection || 0).toLocaleString(undefined, {maximumFractionDigits: 0}) }}
-                </div>
-                <div class="text-[10px] text-purple-500 font-bold mt-1">
-                    Target Age: {{ forecastSettings.retirementAge }}
-                </div>
-            </div>
-            <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-inner flex-shrink-0 text-lg">
-                🥚
-            </div>
+        <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-inner flex-shrink-0 text-lg">
+            🥚
         </div>
     </div>
+</div>
 
-    <transition name="fade">
-        <div v-if="showNestEggHelp" class="absolute top-10 right-0 md:left-auto md:right-0 w-64 md:w-80 p-4 bg-slate-900 border border-slate-600 rounded-xl shadow-2xl text-left animate-slide-up cursor-default shadow-black/50" @click.stop>
-            <div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
-                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Projection Engine</h4>
-                <button @click.stop="showNestEggHelp = false" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
-            </div>
-            <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
-                <p>
-                    This forecast grows automatically based on the <strong>401k contribution</strong> and <strong>company match</strong> percentages you've added to your saved Active Incomes.
-                </p>
-                <div class="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-200">
-                    <span class="font-bold text-purple-400 block mb-1">💡 Pro Tip:</span>
-                    Head over to the <strong>Paycheck Tab</strong> to edit your income sources and see how bumping your contribution impacts your final nest egg!
-                </div>
-            </div>
-            <div class="mt-3 pt-2 text-[9px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:text-white transition" @click="showNestEggHelp = false">
-                Close
+<transition name="fade">
+    <div v-if="showNestEggHelp" class="absolute z-50 top-10 right-0 md:left-auto md:right-0 w-64 md:w-80 p-4 bg-slate-900 border border-slate-600 rounded-xl shadow-2xl text-left animate-slide-up cursor-default shadow-black/50" @click.stop>
+        <div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Projection Engine</h4>
+            <button @click.stop="showNestEggHelp = false" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+        </div>
+        <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+            <p>
+                This forecast grows automatically based on the <strong>401k contribution</strong> and <strong>company match</strong> percentages you've added to your saved Active Incomes.
+            </p>
+            <div class="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-200">
+                <span class="font-bold text-purple-400 block mb-1">💡 Pro Tip:</span>
+                Head over to the <strong>Paycheck Tab</strong> to edit your income sources and see how bumping your contribution impacts your final nest egg!
             </div>
         </div>
-    </transition>
+        <div class="mt-3 pt-2 text-[9px] text-slate-500 text-center uppercase font-bold tracking-widest border-t border-slate-800 cursor-pointer hover:text-white transition" @click="showNestEggHelp = false">
+            Close
+        </div>
+    </div>
+</transition>
 </div>
 
 <div id="tour-goal-project" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 transition relative overflow-visible order-2 group hover:shadow-md z-20 flex flex-col justify-between" :class="showScenarioHelp ? 'z-50' : 'z-20'">
