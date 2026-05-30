@@ -5258,8 +5258,12 @@ const startTrueUpWizard = () => {
         pendingGoals: [], selectedGoalIds: [], extraDebtPayment: { debtId: '', amount: '' } 
     };
 
-    // 1. Scan for Credit Cards ONLY (Ensure 'Credit Card' matches your exact DB string!)
-    trueUpState.value.ccDebts = debts.value.filter(d => d.type === 'Credit Card' || d.type === 'credit_card');
+    // 1. Scan for Credit Cards ONLY (Bulletproof string matching)
+    trueUpState.value.ccDebts = debts.value.filter(d => {
+        if (!d.type) return false;
+        // Convert to lowercase and check if it contains the word "credit"
+        return d.type.toLowerCase().includes('credit');
+    });
 
     const todayStr = new Date().toISOString().slice(0, 10);
     // 2. Scan for Action Items
@@ -5274,7 +5278,6 @@ const startTrueUpWizard = () => {
 
     showTrueUpModal.value = true;
 };
-
 // --- 2. THE ENGINE ---
 const processTrueUpStep = async () => {
     try {
