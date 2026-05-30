@@ -3710,14 +3710,21 @@
 
             </div>
 
-            <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between gap-3">
-                <button @click="skipTrueUpStep" class="px-5 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-                    {{ trueUpStep === 5 ? 'Cancel' : 'Skip Step' }}
+          <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex gap-2">
+                
+                <button v-if="trueUpStep > 1" @click="trueUpStep--" class="px-4 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center">
+                    &larr; <span class="hidden sm:inline ml-1">Back</span>
                 </button>
-                <button @click="processTrueUpStep" class="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400 transition shadow-lg flex justify-center items-center gap-2">
-                    <span v-if="trueUpStep < 5">Process & Continue &rarr;</span>
+
+                <button @click="skipTrueUpStep" class="px-4 sm:px-5 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center" :class="trueUpStep === 1 ? 'px-6' : ''">
+                    {{ trueUpStep === 5 ? 'Cancel' : 'Skip' }}
+                </button>
+                
+                <button @click="processTrueUpStep" class="flex-1 px-4 sm:px-6 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400 transition shadow-lg flex justify-center items-center gap-2">
+                    <span v-if="trueUpStep < 5">Process <span class="hidden sm:inline">& Continue</span> &rarr;</span>
                     <span v-else>Finish & Lock In ✨</span>
                 </button>
+                
             </div>
 
         </div>
