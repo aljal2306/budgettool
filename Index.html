@@ -5258,11 +5258,10 @@ const startTrueUpWizard = () => {
         pendingGoals: [], selectedGoalIds: [], extraDebtPayment: { debtId: '', amount: '' } 
     };
 
-    // 1. Scan for Credit Cards ONLY (Bulletproof string matching)
+    // 1. Scan for Credit Cards ONLY (Looking at the 'name' column now!)
     trueUpState.value.ccDebts = debts.value.filter(d => {
-        if (!d.type) return false;
-        // Convert to lowercase and check if it contains the word "credit"
-        return d.type.toLowerCase().includes('credit');
+        if (!d.name) return false;
+        return d.name.toLowerCase().includes('credit');
     });
 
     const todayStr = new Date().toISOString().slice(0, 10);
