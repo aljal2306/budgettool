@@ -3568,18 +3568,30 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Want to sweep any cash toward your active credit cards? This lowers debt without reducing your calculated Buying Power.</p>
                     </div>
                     
-                    <div v-if="trueUpState.ccDebts.length === 0" class="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 text-sm">
-                        No active credit cards found. You're completely clear!
+                    <div v-if="!isPremium" class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 p-6 rounded-2xl border border-amber-200 dark:border-amber-700/30 text-center relative overflow-hidden shadow-inner">
+                        <div class="absolute -right-6 -top-6 text-7xl opacity-5 grayscale filter">👑</div>
+                        <span class="text-3xl mb-2 block drop-shadow-sm">🔒</span>
+                        <h4 class="font-bold text-amber-800 dark:text-amber-400 text-lg">Pro Feature Locked</h4>
+                        <p class="text-xs text-amber-700/80 dark:text-amber-500/80 mt-2 mb-5 max-w-sm mx-auto">Track credit card floats, snowball debt, and separate your buying power from your borrowed cash.</p>
+                        <button class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-orange-500/30 transition transform hover:-translate-y-0.5">
+                            Upgrade to Unlock
+                        </button>
                     </div>
 
-                    <div v-for="debt in trueUpState.ccDebts" :key="debt.id" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <div>
-                            <div class="font-bold text-slate-700 dark:text-slate-200">{{ debt.name }}</div>
-                            <div class="text-xs text-slate-400 font-mono">Bal: ${{ Number(debt.balance).toLocaleString() }}</div>
+                    <div v-else>
+                        <div v-if="trueUpState.ccDebts.length === 0" class="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 text-sm">
+                            No active credit cards found. You're completely clear!
                         </div>
-                        <div class="relative w-32">
-                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                            <input type="number" v-model="trueUpState.ccPayments[debt.id]" placeholder="0.00" class="w-full pl-7 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+
+                        <div v-for="debt in trueUpState.ccDebts" :key="debt.id" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-3">
+                            <div>
+                                <div class="font-bold text-slate-700 dark:text-slate-200">{{ debt.name }}</div>
+                                <div class="text-xs text-slate-400 font-mono">Bal: ${{ Number(debt.balance).toLocaleString() }}</div>
+                            </div>
+                            <div class="relative w-32">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                <input type="number" v-model="trueUpState.ccPayments[debt.id]" placeholder="0.00" class="w-full pl-7 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3637,10 +3649,20 @@
                 <div v-if="trueUpStep === 4" class="space-y-6 animate-fade-in">
                     <div class="text-center mb-6">
                         <h3 class="text-lg font-bold text-slate-800 dark:text-white">Debt Attack</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Have extra cash leftover? Apply a principal-only payment to any debt. This will directly lower your bank balance.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Have extra cash leftover this week? Apply a principal-only payment to any debt. This will directly lower your bank balance.</p>
                     </div>
 
-                    <div class="bg-rose-50 dark:bg-rose-900/10 p-5 rounded-2xl border border-rose-200 dark:border-rose-800/30 space-y-4">
+                    <div v-if="!isPremium" class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-700/30 text-center relative overflow-hidden shadow-inner">
+                        <div class="absolute -left-6 -bottom-6 text-7xl opacity-5 grayscale filter">🚀</div>
+                        <span class="text-3xl mb-2 block drop-shadow-sm">🔒</span>
+                        <h4 class="font-bold text-indigo-800 dark:text-indigo-400 text-lg">Pro Feature Locked</h4>
+                        <p class="text-xs text-indigo-700/80 dark:text-indigo-500/80 mt-2 mb-5 max-w-sm mx-auto">Access the Debt Attack engine. Funnel leftover cash directly into high-interest principal and shave years off your payoff date.</p>
+                        <button class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white text-sm font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-indigo-500/30 transition transform hover:-translate-y-0.5">
+                            Upgrade to Unlock
+                        </button>
+                    </div>
+
+                    <div v-else class="bg-rose-50 dark:bg-rose-900/10 p-5 rounded-2xl border border-rose-200 dark:border-rose-800/30 space-y-4">
                         <div>
                             <label class="block text-[10px] font-bold text-rose-500 uppercase mb-1">Select Debt to Attack</label>
                             <select v-model="trueUpState.extraDebtPayment.debtId" class="w-full p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-rose-500">
