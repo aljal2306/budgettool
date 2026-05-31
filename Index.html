@@ -5389,17 +5389,29 @@ const startTrueUpWizard = () => {
 
 // --- 2. THE ENGINE ---
 const processTrueUpStep = async () => {
+    
+    // NEW: The Catch-All Sanitizer
+    const sanitizeBalance = () => {
+        if (forecastSettings) {
+            if (forecastSettings.currentBalance !== undefined) {
+                forecastSettings.currentBalance = Number(Number(forecastSettings.currentBalance).toFixed(2));
+            }
+            if (forecastSettings.current_balance !== undefined) {
+                forecastSettings.current_balance = Number(Number(forecastSettings.current_balance).toFixed(2));
+            }
+        }
+    };
+
     try {
         if (trueUpStep.value === 1) {
             
-            // If they are a Free User or have no cards, bypass the sub-steps entirely!
             if (!isPremiumUser.value || trueUpState.value.ccDebts.length === 0) {
                 trueUpStep.value = 2;
                 return;
             }
 
             if (ccSubStep.value === 1) {
-                // STEP 1A: The Catch-Up (Missing Transactions)
+                // STEP 1A: The Catch-Up
                 for (const debtId in trueUpState.value.ccCatchUp) {
                     const amount = Number(trueUpState.value.ccCatchUp[debtId]);
                     if (amount > 0) {
@@ -5407,42 +5419,38 @@ const processTrueUpStep = async () => {
                         if (debt) {
                             const newBalance = Number((Number(debt.balance) + amount).toFixed(2));
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
-                            debt.balance = newBalance; // Live update!
+                            debt.balance = newBalance; 
                             
-                            // UPDATED: Fixed floating point math issues to exactly 2 decimals
                             if (forecastSettings) {
-                                if (forecastSettings.currentBalance !== undefined) {
-                                    forecastSettings.currentBalance = Number((Number(forecastSettings.currentBalance) - amount).toFixed(2));
-                                }
-                                if (forecastSettings.current_balance !== undefined) {
-                                    forecastSettings.current_balance = Number((Number(forecastSettings.current_balance) - amount).toFixed(2));
-                                }
+                                if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance -= amount;
+                                if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance -= amount;
                             }
-                            
-                            trueUpState.value.ccCatchUp[debtId] = ''; // Clear input
+                            trueUpState.value.ccCatchUp[debtId] = ''; 
                         }
                     }
                 }
+                sanitizeBalance(); // Force round
                 ccSubStep.value = 2;
-                return; // Stop here so UI transitions to 1B
+                return; 
             } 
             else if (ccSubStep.value === 2) {
-                // STEP 1B: Clear the Float (Payments)
+                // STEP 1B: Clear the Float
                 for (const debtId in trueUpState.value.ccPayments) {
                     const amount = Number(trueUpState.value.ccPayments[debtId]);
                     if (amount > 0) {
                         const debt = debts.value.find(d => d.id === debtId);
                         if (debt) {
-                            await recordCCPayment(debt, amount);
-                            trueUpState.value.ccPayments[debtId] = ''; // Clear input
+                            await recordCCPayment(debt, amount); // This external func causes floating point bugs!
+                            trueUpState.value.ccPayments[debtId] = ''; 
                         }
                     }
                 }
+                sanitizeBalance(); // Force round
                 ccSubStep.value = 3;
-                return; // Stop here so UI transitions to 1C
+                return; 
             }
             else if (ccSubStep.value === 3) {
-                // STEP 1C: Pending Sandbox (Uncleared Transactions)
+                // STEP 1C: Pending Sandbox 
                 for (const debtId in trueUpState.value.ccPending) {
                     const amount = Number(trueUpState.value.ccPending[debtId]);
                     if (amount > 0) {
@@ -5450,23 +5458,18 @@ const processTrueUpStep = async () => {
                         if (debt) {
                             const newBalance = Number((Number(debt.balance) + amount).toFixed(2));
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
-                            debt.balance = newBalance; // Live update!
+                            debt.balance = newBalance; 
                             
-                            // UPDATED: Fixed floating point math issues to exactly 2 decimals
                             if (forecastSettings) {
-                                if (forecastSettings.currentBalance !== undefined) {
-                                    forecastSettings.currentBalance = Number((Number(forecastSettings.currentBalance) - amount).toFixed(2));
-                                }
-                                if (forecastSettings.current_balance !== undefined) {
-                                    forecastSettings.current_balance = Number((Number(forecastSettings.current_balance) - amount).toFixed(2));
-                                }
+                                if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance -= amount;
+                                if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance -= amount;
                             }
-                            
-                            trueUpState.value.ccPending[debtId] = ''; // Clear input
+                            trueUpState.value.ccPending[debtId] = ''; 
                         }
                     }
                 }
-                trueUpStep.value = 2; // Finally done with CCs, move to Action Items!
+                sanitizeBalance(); // Force round
+                trueUpStep.value = 2; 
                 return;
             }
         } 
@@ -5474,29 +5477,24 @@ const processTrueUpStep = async () => {
             // STEP 2: Process Action Items
             const itemsToProcess = trueUpState.value.pendingTransactions.filter(b => trueUpState.value.selectedTransactionIds.includes(b.id));
             for (const bill of itemsToProcess) {
-                await toggleBillPaid(bill, true); 
+                await toggleBillPaid(bill, true); // This external func causes floating point bugs!
             }
         } 
         else if (trueUpStep.value === 3) {
-            // STEP 3: Process Big Wins (Goals)
+            // STEP 3: Process Big Wins
             const goalsToProcess = trueUpState.value.pendingGoals.filter(g => trueUpState.value.selectedGoalIds.includes(g.id));
             for (const goal of goalsToProcess) {
                 await _supabase.from('goals').update({ is_completed: true }).eq('id', goal.id);
                 goal.is_completed = true;
                 
-                // UPDATED: Fixed floating point math issues to exactly 2 decimals
                 if (forecastSettings) {
-                    if (forecastSettings.currentBalance !== undefined) {
-                        forecastSettings.currentBalance = Number((Number(forecastSettings.currentBalance) - Number(goal.target_amount)).toFixed(2));
-                    }
-                    if (forecastSettings.current_balance !== undefined) {
-                        forecastSettings.current_balance = Number((Number(forecastSettings.current_balance) - Number(goal.target_amount)).toFixed(2));
-                    }
+                    if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance -= Number(goal.target_amount);
+                    if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance -= Number(goal.target_amount);
                 }
             }
         }
         else if (trueUpStep.value === 4) {
-            // STEP 4: Extra Principal / Debt Attack
+            // STEP 4: Extra Principal
             const selectedDebtId = trueUpState.value.extraDebtPayment.debtId;
             const extraAmount = Number(trueUpState.value.extraDebtPayment.amount);
             
@@ -5507,20 +5505,15 @@ const processTrueUpStep = async () => {
                     await _supabase.from('debts').update({ balance: newBalance }).eq('id', debtToAttack.id);
                     debtToAttack.balance = newBalance;
                     
-                    // UPDATED: Fixed floating point math issues to exactly 2 decimals
                     if (forecastSettings) {
-                        if (forecastSettings.currentBalance !== undefined) {
-                            forecastSettings.currentBalance = Number((Number(forecastSettings.currentBalance) - extraAmount).toFixed(2));
-                        }
-                        if (forecastSettings.current_balance !== undefined) {
-                            forecastSettings.current_balance = Number((Number(forecastSettings.current_balance) - extraAmount).toFixed(2));
-                        }
+                        if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance -= extraAmount;
+                        if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance -= extraAmount;
                     }
                 }
             }
         }
         else if (trueUpStep.value === 5) {
-            // STEP 5: The Ground Truth (Final Balances)
+            // STEP 5: The Ground Truth
             await saveAllForecastSettings(); 
             showTrueUpModal.value = false;
             runForecast();
@@ -5528,6 +5521,7 @@ const processTrueUpStep = async () => {
             return;
         }
         
+        sanitizeBalance(); // Force round before moving to the next visual step
         trueUpStep.value++;
         
     } catch (err) {
