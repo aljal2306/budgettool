@@ -3746,14 +3746,14 @@
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-slate-600 dark:text-slate-400 font-bold">Starting Balance</span>
                             <span class="font-mono text-slate-700 dark:text-slate-300">
-                                ${{ Number(trueUpState.startingBalance).toLocaleString(undefined, {minimumFractionDigits: 2}) }}
+                                ${{ Number(trueUpState.startingBalance).toFixed(2) }}
                             </span>
                         </div>
                         
                         <div class="flex justify-between items-center text-sm text-red-500 dark:text-red-400">
                             <span class="font-bold">Wizard Deductions</span>
                             <span class="font-mono">
-                                -${{ (Number(trueUpState.startingBalance) - Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}
+                                -${{ Math.abs(Number(trueUpState.startingBalance) - Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0)).toFixed(2) }}
                             </span>
                         </div>
 
