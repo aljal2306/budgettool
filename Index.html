@@ -5374,29 +5374,56 @@ const setBankBalance = (newBal) => {
 
 // --- 1. THE SCANNER ---
 const startTrueUpWizard = () => {
+    
+    // 🧹 1. DEEP SCRUB THE SOURCE IMMEDIATELY
+    // Kills any ghost decimals hiding in the state before the wizard begins
+    if (forecastSettings.value !== undefined) {
+        if (forecastSettings.value.currentBalance !== undefined) {
+            forecastSettings.value.currentBalance = Number(Number(forecastSettings.value.currentBalance).toFixed(2));
+        }
+        if (forecastSettings.value.current_balance !== undefined) {
+            forecastSettings.value.current_balance = Number(Number(forecastSettings.value.current_balance).toFixed(2));
+        }
+    } else {
+        if (forecastSettings.currentBalance !== undefined) {
+            forecastSettings.currentBalance = Number(Number(forecastSettings.currentBalance).toFixed(2));
+        }
+        if (forecastSettings.current_balance !== undefined) {
+            forecastSettings.current_balance = Number(Number(forecastSettings.current_balance).toFixed(2));
+        }
+    }
+
+    // 🧹 2. SCRUB CREDIT CARDS TOO (Just in case!)
+    if (debts && debts.value) {
+        debts.value.forEach(d => {
+            if (d.balance) d.balance = Number(Number(d.balance).toFixed(2));
+        });
+    }
+
+    // 3. INITIALIZE STATE
     trueUpStep.value = 1;
-    ccSubStep.value = 1; // Reset sub-step
+    ccSubStep.value = 1; 
     trueUpState.value = { 
         ccDebts: [], ccCatchUp: {}, ccPayments: {}, ccPending: {}, pendingTransactions: [], 
         selectedTransactionIds: [], pendingGoals: [], selectedGoalIds: [], extraDebtPayment: { debtId: '', amount: '' },
         startingBalance: 0 
     };
 
-    // Capture the true starting balance safely
+    // Capture the clean starting balance
     trueUpState.value.startingBalance = getBankBalance();
 
-    // 1. Scan for Credit Cards ONLY
+    // 4. Scan for Credit Cards ONLY
     trueUpState.value.ccDebts = debts.value.filter(d => {
         if (!d.name) return false;
         return d.name.toLowerCase().includes('credit');
     });
 
     const todayStr = new Date().toISOString().slice(0, 10);
-    // 2. Scan for Action Items
+    // 5. Scan for Action Items
     trueUpState.value.pendingTransactions = bills.value.filter(b => !b.is_paid && b.due_date && b.due_date <= todayStr);
     trueUpState.value.selectedTransactionIds = trueUpState.value.pendingTransactions.map(b => b.id);
 
-    // 3. Scan for Committed Goals
+    // 6. Scan for Committed Goals
     const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const d = new Date();
     const currentMonthName = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
