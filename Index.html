@@ -5354,6 +5354,24 @@ const trueUpState = ref({
     extraDebtPayment: { debtId: '', amount: '' } 
 });
 
+// 🛡️ BULLETPROOF BANK BALANCE HELPERS
+const getBankBalance = () => {
+    if (forecastSettings.value !== undefined) {
+        return Number(forecastSettings.value.currentBalance || forecastSettings.value.current_balance || 0);
+    }
+    return Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0);
+};
+
+const setBankBalance = (newBal) => {
+    if (forecastSettings.value !== undefined) {
+        if (forecastSettings.value.currentBalance !== undefined) forecastSettings.value.currentBalance = newBal;
+        if (forecastSettings.value.current_balance !== undefined) forecastSettings.value.current_balance = newBal;
+    } else {
+        if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance = newBal;
+        if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance = newBal;
+    }
+};
+
 // --- 1. THE SCANNER ---
 const startTrueUpWizard = () => {
     trueUpStep.value = 1;
@@ -5364,9 +5382,8 @@ const startTrueUpWizard = () => {
         startingBalance: 0 
     };
 
-    // FIXED: Scrub the starting balance immediately so it can't hold a ghost fraction!
-    const rawStartBalance = Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0);
-    trueUpState.value.startingBalance = Number(rawStartBalance.toFixed(2));
+    // Capture the true starting balance safely
+    trueUpState.value.startingBalance = getBankBalance();
 
     // 1. Scan for Credit Cards ONLY
     trueUpState.value.ccDebts = debts.value.filter(d => {
@@ -5387,23 +5404,17 @@ const startTrueUpWizard = () => {
 
     showTrueUpModal.value = true;
 };
+
 // --- 2. THE ENGINE ---
 const processTrueUpStep = async () => {
-
-    // 🛡️ BULLETPROOF MATH HELPERS
-    // Converts to pennies, does the math, and converts back to guarantee 0 floating point errors
+    
+    // Penny Math Helpers
     const safeAdd = (a, b) => Math.round((Number(a || 0) * 100) + (Number(b || 0) * 100)) / 100;
     const safeSub = (a, b) => Math.round((Number(a || 0) * 100) - (Number(b || 0) * 100)) / 100;
 
     const deductFromBank = (amount) => {
-        if (forecastSettings) {
-            if (forecastSettings.currentBalance !== undefined) {
-                forecastSettings.currentBalance = safeSub(forecastSettings.currentBalance, amount);
-            }
-            if (forecastSettings.current_balance !== undefined) {
-                forecastSettings.current_balance = safeSub(forecastSettings.current_balance, amount);
-            }
-        }
+        const current = getBankBalance();
+        setBankBalance(safeSub(current, amount));
     };
 
     try {
@@ -5425,7 +5436,6 @@ const processTrueUpStep = async () => {
                             const newBalance = safeAdd(debt.balance, amount);
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
                             debt.balance = newBalance; 
-                            
                             deductFromBank(amount);
                             trueUpState.value.ccCatchUp[debtId] = ''; 
                         }
@@ -5442,7 +5452,7 @@ const processTrueUpStep = async () => {
                         const debt = debts.value.find(d => d.id === debtId);
                         if (debt) {
                             await recordCCPayment(debt, amount);
-                            deductFromBank(0); // Clean up any trailing decimals from the external function
+                            deductFromBank(0); // Scrub decimals from external functions
                             trueUpState.value.ccPayments[debtId] = ''; 
                         }
                     }
@@ -5460,7 +5470,6 @@ const processTrueUpStep = async () => {
                             const newBalance = safeAdd(debt.balance, amount);
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
                             debt.balance = newBalance; 
-                            
                             deductFromBank(amount);
                             trueUpState.value.ccPending[debtId] = ''; 
                         }
@@ -5473,10 +5482,8 @@ const processTrueUpStep = async () => {
         else if (trueUpStep.value === 2) {
             // STEP 2: Process Action Items
             const itemsToProcess = trueUpState.value.pendingTransactions.filter(b => trueUpState.value.selectedTransactionIds.includes(b.id));
-            for (const bill of itemsToProcess) {
-                await toggleBillPaid(bill, true); 
-            }
-            deductFromBank(0); // Clean up trailing decimals from external function
+            for (const bill of itemsToProcess) await toggleBillPaid(bill, true); 
+            deductFromBank(0); 
         } 
         else if (trueUpStep.value === 3) {
             // STEP 3: Process Big Wins
@@ -5491,7 +5498,6 @@ const processTrueUpStep = async () => {
             // STEP 4: Extra Principal
             const selectedDebtId = trueUpState.value.extraDebtPayment.debtId;
             const extraAmount = Number(trueUpState.value.extraDebtPayment.amount);
-            
             if (selectedDebtId && extraAmount > 0) {
                 const debtToAttack = debts.value.find(d => d.id === selectedDebtId);
                 if (debtToAttack) {
@@ -5503,7 +5509,8 @@ const processTrueUpStep = async () => {
             }
         }
         else if (trueUpStep.value === 5) {
-            deductFromBank(0); // Final scrub before saving to the DB
+            // STEP 5: Final Scrub & Lock In
+            deductFromBank(0); 
             await saveAllForecastSettings(); 
             showTrueUpModal.value = false;
             runForecast();
