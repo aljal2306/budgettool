@@ -3736,17 +3736,36 @@
 
                 <div v-if="trueUpStep === 5" class="space-y-6 animate-fade-in">
                     <div class="text-center mb-6">
+                        <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest block mb-1">Final Step</span>
                         <h3 class="text-lg font-bold text-slate-800 dark:text-white">The Ground Truth</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">The dust has settled. Ensure these numbers perfectly match your real-world accounts right now.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Review the math, and ensure these final numbers perfectly match your real-world accounts right now.</p>
+                    </div>
+
+                    <div class="bg-indigo-50 dark:bg-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-slate-700 space-y-3 max-w-sm mx-auto shadow-inner">
+                        
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-600 dark:text-slate-400 font-bold">Starting Balance</span>
+                            <span class="font-mono text-slate-700 dark:text-slate-300">
+                                ${{ Number(trueUpState.startingBalance).toLocaleString(undefined, {minimumFractionDigits: 2}) }}
+                            </span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center text-sm text-red-500 dark:text-red-400">
+                            <span class="font-bold">Wizard Deductions</span>
+                            <span class="font-mono">
+                                -${{ (Number(trueUpState.startingBalance) - Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0)).toLocaleString(undefined, {minimumFractionDigits: 2}) }}
+                            </span>
+                        </div>
+
                     </div>
 
                     <div class="space-y-2 relative">
-                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Current Bank Balance</label>
+                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Final Bank Balance</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold text-xl">$</span>
                             <input type="number" step="0.01" v-model="forecastSettings.currentBalance" class="w-full bg-slate-50 dark:bg-slate-900 border-2 border-emerald-500 rounded-xl pl-8 pr-4 py-3 text-2xl font-black text-slate-900 dark:text-white outline-none shadow-sm focus:ring-4 focus:ring-emerald-500/20 transition">
                         </div>
-                        <p class="text-[10px] text-slate-400 ml-1">Includes all deductions from your previous steps.</p>
+                        <p class="text-[10px] text-slate-400 ml-1">If this doesn't match your actual bank right now, edit it!</p>
                     </div>
 
                     <div class="space-y-2">
