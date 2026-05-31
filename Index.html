@@ -5360,8 +5360,12 @@ const startTrueUpWizard = () => {
     ccSubStep.value = 1; // Reset sub-step
     trueUpState.value = { 
         ccDebts: [], ccCatchUp: {}, ccPayments: {}, ccPending: {}, pendingTransactions: [], 
-        selectedTransactionIds: [], pendingGoals: [], selectedGoalIds: [], extraDebtPayment: { debtId: '', amount: '' } 
+        selectedTransactionIds: [], pendingGoals: [], selectedGoalIds: [], extraDebtPayment: { debtId: '', amount: '' },
+        startingBalance: 0 // NEW: Track the starting point
     };
+
+    // Capture the starting balance (No .value on forecastSettings!)
+    trueUpState.value.startingBalance = Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0);
 
     // 1. Scan for Credit Cards ONLY
     trueUpState.value.ccDebts = debts.value.filter(d => {
@@ -5404,7 +5408,12 @@ const processTrueUpStep = async () => {
                             const newBalance = Number(debt.balance) + amount;
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
                             debt.balance = newBalance; // Live update!
-                            if (forecastSettings.value) forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - amount;
+                            
+                            // UPDATED: No .value on forecastSettings
+                            if (forecastSettings) {
+                                if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance = Number(forecastSettings.currentBalance) - amount;
+                                if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance = Number(forecastSettings.current_balance) - amount;
+                            }
                             
                             trueUpState.value.ccCatchUp[debtId] = ''; // Clear input to prevent double-charging if they go backward
                         }
@@ -5438,7 +5447,12 @@ const processTrueUpStep = async () => {
                             const newBalance = Number(debt.balance) + amount;
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
                             debt.balance = newBalance; // Live update!
-                            if (forecastSettings.value) forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - amount;
+                            
+                            // UPDATED: No .value on forecastSettings
+                            if (forecastSettings) {
+                                if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance = Number(forecastSettings.currentBalance) - amount;
+                                if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance = Number(forecastSettings.current_balance) - amount;
+                            }
                             
                             trueUpState.value.ccPending[debtId] = ''; // Clear input
                         }
@@ -5461,8 +5475,11 @@ const processTrueUpStep = async () => {
             for (const goal of goalsToProcess) {
                 await _supabase.from('goals').update({ is_completed: true }).eq('id', goal.id);
                 goal.is_completed = true;
-                if (forecastSettings.value) {
-                    forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - Number(goal.target_amount);
+                
+                // UPDATED: No .value on forecastSettings
+                if (forecastSettings) {
+                    if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance = Number(forecastSettings.currentBalance) - Number(goal.target_amount);
+                    if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance = Number(forecastSettings.current_balance) - Number(goal.target_amount);
                 }
             }
         }
@@ -5477,8 +5494,11 @@ const processTrueUpStep = async () => {
                     const newBalance = Math.max(0, Number(debtToAttack.balance) - extraAmount);
                     await _supabase.from('debts').update({ balance: newBalance }).eq('id', debtToAttack.id);
                     debtToAttack.balance = newBalance;
-                    if (forecastSettings.value) {
-                        forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - extraAmount;
+                    
+                    // UPDATED: No .value on forecastSettings
+                    if (forecastSettings) {
+                        if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance = Number(forecastSettings.currentBalance) - extraAmount;
+                        if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance = Number(forecastSettings.current_balance) - extraAmount;
                     }
                 }
             }
