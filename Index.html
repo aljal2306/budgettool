@@ -3753,7 +3753,7 @@
                         <div class="flex justify-between items-center text-sm text-red-500 dark:text-red-400">
                             <span class="font-bold">Wizard Deductions</span>
                             <span class="font-mono">
-                                -${{ (Number(trueUpState.startingBalance) - Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0)).toLocaleString(undefined, {minimumFractionDigits: 2}) }}
+                                -${{ (Number(trueUpState.startingBalance) - Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}
                             </span>
                         </div>
 
