@@ -5389,15 +5389,19 @@ const startTrueUpWizard = () => {
 
 // --- 2. THE ENGINE ---
 const processTrueUpStep = async () => {
-    
-    // NEW: The Catch-All Sanitizer
-    const sanitizeBalance = () => {
+
+    // 🛡️ BULLETPROOF MATH HELPERS
+    // Converts to pennies, does the math, and converts back to guarantee 0 floating point errors
+    const safeAdd = (a, b) => Math.round((Number(a || 0) * 100) + (Number(b || 0) * 100)) / 100;
+    const safeSub = (a, b) => Math.round((Number(a || 0) * 100) - (Number(b || 0) * 100)) / 100;
+
+    const deductFromBank = (amount) => {
         if (forecastSettings) {
             if (forecastSettings.currentBalance !== undefined) {
-                forecastSettings.currentBalance = Number(Number(forecastSettings.currentBalance).toFixed(2));
+                forecastSettings.currentBalance = safeSub(forecastSettings.currentBalance, amount);
             }
             if (forecastSettings.current_balance !== undefined) {
-                forecastSettings.current_balance = Number(Number(forecastSettings.current_balance).toFixed(2));
+                forecastSettings.current_balance = safeSub(forecastSettings.current_balance, amount);
             }
         }
     };
@@ -5405,6 +5409,7 @@ const processTrueUpStep = async () => {
     try {
         if (trueUpStep.value === 1) {
             
+            // Bypass if Free User or no cards
             if (!isPremiumUser.value || trueUpState.value.ccDebts.length === 0) {
                 trueUpStep.value = 2;
                 return;
@@ -5417,19 +5422,15 @@ const processTrueUpStep = async () => {
                     if (amount > 0) {
                         const debt = debts.value.find(d => d.id === debtId);
                         if (debt) {
-                            const newBalance = Number((Number(debt.balance) + amount).toFixed(2));
+                            const newBalance = safeAdd(debt.balance, amount);
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
                             debt.balance = newBalance; 
                             
-                            if (forecastSettings) {
-                                if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance -= amount;
-                                if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance -= amount;
-                            }
+                            deductFromBank(amount);
                             trueUpState.value.ccCatchUp[debtId] = ''; 
                         }
                     }
                 }
-                sanitizeBalance(); // Force round
                 ccSubStep.value = 2;
                 return; 
             } 
@@ -5440,12 +5441,12 @@ const processTrueUpStep = async () => {
                     if (amount > 0) {
                         const debt = debts.value.find(d => d.id === debtId);
                         if (debt) {
-                            await recordCCPayment(debt, amount); // This external func causes floating point bugs!
+                            await recordCCPayment(debt, amount);
+                            deductFromBank(0); // Clean up any trailing decimals from the external function
                             trueUpState.value.ccPayments[debtId] = ''; 
                         }
                     }
                 }
-                sanitizeBalance(); // Force round
                 ccSubStep.value = 3;
                 return; 
             }
@@ -5456,19 +5457,15 @@ const processTrueUpStep = async () => {
                     if (amount > 0) {
                         const debt = debts.value.find(d => d.id === debtId);
                         if (debt) {
-                            const newBalance = Number((Number(debt.balance) + amount).toFixed(2));
+                            const newBalance = safeAdd(debt.balance, amount);
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
                             debt.balance = newBalance; 
                             
-                            if (forecastSettings) {
-                                if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance -= amount;
-                                if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance -= amount;
-                            }
+                            deductFromBank(amount);
                             trueUpState.value.ccPending[debtId] = ''; 
                         }
                     }
                 }
-                sanitizeBalance(); // Force round
                 trueUpStep.value = 2; 
                 return;
             }
@@ -5477,8 +5474,9 @@ const processTrueUpStep = async () => {
             // STEP 2: Process Action Items
             const itemsToProcess = trueUpState.value.pendingTransactions.filter(b => trueUpState.value.selectedTransactionIds.includes(b.id));
             for (const bill of itemsToProcess) {
-                await toggleBillPaid(bill, true); // This external func causes floating point bugs!
+                await toggleBillPaid(bill, true); 
             }
+            deductFromBank(0); // Clean up trailing decimals from external function
         } 
         else if (trueUpStep.value === 3) {
             // STEP 3: Process Big Wins
@@ -5486,11 +5484,7 @@ const processTrueUpStep = async () => {
             for (const goal of goalsToProcess) {
                 await _supabase.from('goals').update({ is_completed: true }).eq('id', goal.id);
                 goal.is_completed = true;
-                
-                if (forecastSettings) {
-                    if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance -= Number(goal.target_amount);
-                    if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance -= Number(goal.target_amount);
-                }
+                deductFromBank(goal.target_amount);
             }
         }
         else if (trueUpStep.value === 4) {
@@ -5501,19 +5495,15 @@ const processTrueUpStep = async () => {
             if (selectedDebtId && extraAmount > 0) {
                 const debtToAttack = debts.value.find(d => d.id === selectedDebtId);
                 if (debtToAttack) {
-                    const newBalance = Math.max(0, Number((Number(debtToAttack.balance) - extraAmount).toFixed(2)));
+                    const newBalance = Math.max(0, safeSub(debtToAttack.balance, extraAmount));
                     await _supabase.from('debts').update({ balance: newBalance }).eq('id', debtToAttack.id);
                     debtToAttack.balance = newBalance;
-                    
-                    if (forecastSettings) {
-                        if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance -= extraAmount;
-                        if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance -= extraAmount;
-                    }
+                    deductFromBank(extraAmount);
                 }
             }
         }
         else if (trueUpStep.value === 5) {
-            // STEP 5: The Ground Truth
+            deductFromBank(0); // Final scrub before saving to the DB
             await saveAllForecastSettings(); 
             showTrueUpModal.value = false;
             runForecast();
@@ -5521,7 +5511,6 @@ const processTrueUpStep = async () => {
             return;
         }
         
-        sanitizeBalance(); // Force round before moving to the next visual step
         trueUpStep.value++;
         
     } catch (err) {
@@ -5529,7 +5518,6 @@ const processTrueUpStep = async () => {
         alert("Ran into a hiccup saving that step: " + err.message);
     }
 };
-
 // --- 3. WIZARD CONTROLS (Skip & Back) ---
 const skipTrueUpStep = () => {
     if (trueUpStep.value === 1) {
