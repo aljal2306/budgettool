@@ -5361,11 +5361,12 @@ const startTrueUpWizard = () => {
     trueUpState.value = { 
         ccDebts: [], ccCatchUp: {}, ccPayments: {}, ccPending: {}, pendingTransactions: [], 
         selectedTransactionIds: [], pendingGoals: [], selectedGoalIds: [], extraDebtPayment: { debtId: '', amount: '' },
-        startingBalance: 0 // NEW: Track the starting point
+        startingBalance: 0 
     };
 
-    // Capture the starting balance (No .value on forecastSettings!)
-    trueUpState.value.startingBalance = Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0);
+    // FIXED: Scrub the starting balance immediately so it can't hold a ghost fraction!
+    const rawStartBalance = Number(forecastSettings.currentBalance || forecastSettings.current_balance || 0);
+    trueUpState.value.startingBalance = Number(rawStartBalance.toFixed(2));
 
     // 1. Scan for Credit Cards ONLY
     trueUpState.value.ccDebts = debts.value.filter(d => {
@@ -5386,7 +5387,6 @@ const startTrueUpWizard = () => {
 
     showTrueUpModal.value = true;
 };
-
 // --- 2. THE ENGINE ---
 const processTrueUpStep = async () => {
 
