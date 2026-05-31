@@ -3536,7 +3536,7 @@
     </div>
 </transition>
           
-         <transition name="fade">
+        <transition name="fade">
     <div v-if="showTrueUpModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4" @click.self="showTrueUpModal = false">
         <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700 max-h-[90vh] animate-slide-up">
             
@@ -3553,7 +3553,7 @@
                 </div>
                 <div class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-2 text-center">
                     Step {{ trueUpStep }} of 5: 
-                    <span v-if="trueUpStep === 1">The Float</span>
+                    <span v-if="trueUpStep === 1">Credit Card Sandbox</span>
                     <span v-if="trueUpStep === 2">Action Items</span>
                     <span v-if="trueUpStep === 3">Big Wins</span>
                     <span v-if="trueUpStep === 4">Extra Principal</span>
@@ -3564,16 +3564,12 @@
             <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900 min-h-[300px]">
                 
                 <div v-if="trueUpStep === 1" class="space-y-4 animate-fade-in">
-                    <div class="text-center mb-6">
-                        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Clear the Float</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Want to sweep any cash toward your active credit cards? This lowers debt without reducing your calculated Buying Power.</p>
-                    </div>
                     
-                   <div v-if="!isPremiumUser" class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 p-6 rounded-2xl border border-amber-200 dark:border-amber-700/30 text-center relative overflow-hidden shadow-inner">
+                    <div v-if="!isPremiumUser" class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 p-6 rounded-2xl border border-amber-200 dark:border-amber-700/30 text-center relative overflow-hidden shadow-inner">
                         <div class="absolute -right-6 -top-6 text-7xl opacity-5 grayscale filter">👑</div>
                         <span class="text-3xl mb-2 block drop-shadow-sm">🔒</span>
                         <h4 class="font-bold text-amber-800 dark:text-amber-400 text-lg">Pro Feature Locked</h4>
-                        <p class="text-xs text-amber-700/80 dark:text-amber-500/80 mt-2 mb-5 max-w-sm mx-auto">Track credit card floats, snowball debt, and separate your buying power from your borrowed cash.</p>
+                        <p class="text-xs text-amber-700/80 dark:text-amber-500/80 mt-2 mb-5 max-w-sm mx-auto">Track credit card floats, catch missing transactions, and safely reserve pending charges.</p>
                         <button @click="showPaywallModal = true" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-orange-500/30 transition transform hover:-translate-y-0.5">
                             Upgrade to Unlock
                         </button>
@@ -3584,19 +3580,73 @@
                             No active credit cards found. You're completely clear!
                         </div>
 
-                        <div v-for="debt in trueUpState.ccDebts" :key="debt.id" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-3">
-                            <div>
-                                <div class="font-bold text-slate-700 dark:text-slate-200">{{ debt.name }}</div>
-                                <div class="text-xs text-slate-400 font-mono">Bal: ${{ Number(debt.balance).toLocaleString() }}</div>
+                        <div v-else>
+                            <div class="flex justify-center gap-2 mb-6">
+                                <div class="w-12 h-1 rounded-full transition-colors duration-300" :class="ccSubStep >= 1 ? 'bg-amber-400' : 'bg-slate-200 dark:bg-slate-700'"></div>
+                                <div class="w-12 h-1 rounded-full transition-colors duration-300" :class="ccSubStep >= 2 ? 'bg-indigo-400' : 'bg-slate-200 dark:bg-slate-700'"></div>
+                                <div class="w-12 h-1 rounded-full transition-colors duration-300" :class="ccSubStep >= 3 ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'"></div>
                             </div>
-                            <div class="relative w-32">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                                <input type="number" v-model="trueUpState.ccPayments[debt.id]" placeholder="0.00" class="w-full pl-7 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+
+                            <div v-if="ccSubStep === 1" class="animate-fade-in space-y-4">
+                                <div class="text-center mb-6">
+                                    <span class="text-[10px] font-bold text-amber-500 uppercase tracking-widest block mb-1">Part 1 of 3</span>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">Find the Drift</h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">Did you miss logging any transactions? Enter the difference here to sync your app balance with your real-world credit card balance.</p>
+                                </div>
+
+                                <div v-for="debt in trueUpState.ccDebts" :key="'catchup-'+debt.id" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-3">
+                                    <div>
+                                        <div class="font-bold text-slate-700 dark:text-slate-200">{{ debt.name }}</div>
+                                        <div class="text-xs text-slate-400 font-mono">Current: ${{ Number(debt.balance).toLocaleString() }}</div>
+                                    </div>
+                                    <div class="relative w-32">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                        <input type="number" step="0.01" v-model="trueUpState.ccCatchUp[debt.id]" placeholder="0.00" class="w-full pl-7 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
+                                    </div>
+                                </div>
                             </div>
+
+                            <div v-if="ccSubStep === 2" class="animate-fade-in space-y-4">
+                                <div class="text-center mb-6">
+                                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest block mb-1">Part 2 of 3</span>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">Clear the Float</h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">Now that your balances match perfectly, are you making a payment today to clear out the float?</p>
+                                </div>
+
+                                <div v-for="debt in trueUpState.ccDebts" :key="'pay-'+debt.id" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-3">
+                                    <div>
+                                        <div class="font-bold text-slate-700 dark:text-slate-200">{{ debt.name }}</div>
+                                        <div class="text-xs text-slate-400 font-mono">Synced Bal: ${{ Number(debt.balance).toLocaleString() }}</div>
+                                    </div>
+                                    <div class="relative w-32">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                        <input type="number" step="0.01" v-model="trueUpState.ccPayments[debt.id]" placeholder="0.00" class="w-full pl-7 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="ccSubStep === 3" class="animate-fade-in space-y-4">
+                                <div class="text-center mb-6">
+                                    <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest block mb-1">Part 3 of 3</span>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">The Pending Sandbox</h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">Have an Uber or dinner pending? Log the total here. We'll deduct it from your spending power immediately.</p>
+                                </div>
+
+                                <div v-for="debt in trueUpState.ccDebts" :key="'pending-'+debt.id" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-3">
+                                    <div>
+                                        <div class="font-bold text-slate-700 dark:text-slate-200">{{ debt.name }}</div>
+                                        <div class="text-xs text-slate-400 font-mono">Final Float: ${{ Number(debt.balance).toLocaleString() }}</div>
+                                    </div>
+                                    <div class="relative w-32">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                        <input type="number" step="0.01" v-model="trueUpState.ccPending[debt.id]" placeholder="0.00" class="w-full pl-7 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
-
                 <div v-if="trueUpStep === 2" class="space-y-4 animate-fade-in">
                     <div class="text-center mb-6">
                         <h3 class="text-lg font-bold text-slate-800 dark:text-white">Action Items</h3>
@@ -3710,13 +3760,13 @@
 
             </div>
 
-          <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex gap-2">
+       <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex gap-2">
                 
-                <button v-if="trueUpStep > 1" @click="trueUpStep--" class="px-4 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center">
+                <button v-if="trueUpStep > 1 || (trueUpStep === 1 && ccSubStep > 1)" @click="goBackTrueUpStep" class="px-4 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center">
                     &larr; <span class="hidden sm:inline ml-1">Back</span>
                 </button>
 
-                <button @click="skipTrueUpStep" class="px-4 sm:px-5 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center" :class="trueUpStep === 1 ? 'px-6' : ''">
+                <button @click="skipTrueUpStep" class="px-4 sm:px-5 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center" :class="trueUpStep === 1 && ccSubStep === 1 ? 'px-6' : ''">
                     {{ trueUpStep === 5 ? 'Cancel' : 'Skip' }}
                 </button>
                 
@@ -5381,6 +5431,202 @@ const skipTrueUpStep = () => {
         showTrueUpModal.value = false;
     } else {
         trueUpStep.value++;
+    }
+};// --- TRUE UP WIZARD STATE ---
+const showTrueUpModal = ref(false);
+const trueUpStep = ref(1);
+const ccSubStep = ref(1); // NEW: Tracks 1A, 1B, 1C
+
+const trueUpState = ref({
+    ccDebts: [],                  
+    ccCatchUp: {},                // NEW: Step 1A (Find the Drift)
+    ccPayments: {},               // Step 1B (Clear the Float)
+    ccPending: {},                // NEW: Step 1C (Pending Sandbox)
+    pendingTransactions: [],      
+    selectedTransactionIds: [],   
+    pendingGoals: [],             
+    selectedGoalIds: [],          
+    extraDebtPayment: { debtId: '', amount: '' } 
+});
+
+// --- 1. THE SCANNER ---
+const startTrueUpWizard = () => {
+    trueUpStep.value = 1;
+    ccSubStep.value = 1; // Reset sub-step
+    trueUpState.value = { 
+        ccDebts: [], ccCatchUp: {}, ccPayments: {}, ccPending: {}, pendingTransactions: [], 
+        selectedTransactionIds: [], pendingGoals: [], selectedGoalIds: [], extraDebtPayment: { debtId: '', amount: '' } 
+    };
+
+    // 1. Scan for Credit Cards ONLY
+    trueUpState.value.ccDebts = debts.value.filter(d => {
+        if (!d.name) return false;
+        return d.name.toLowerCase().includes('credit');
+    });
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    // 2. Scan for Action Items
+    trueUpState.value.pendingTransactions = bills.value.filter(b => !b.is_paid && b.due_date && b.due_date <= todayStr);
+    trueUpState.value.selectedTransactionIds = trueUpState.value.pendingTransactions.map(b => b.id);
+
+    // 3. Scan for Committed Goals
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const d = new Date();
+    const currentMonthName = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+    trueUpState.value.pendingGoals = goals.value.filter(g => !g.is_completed && g.committed_month === currentMonthName);
+
+    showTrueUpModal.value = true;
+};
+
+// --- 2. THE ENGINE ---
+const processTrueUpStep = async () => {
+    try {
+        if (trueUpStep.value === 1) {
+            
+            // If they are a Free User or have no cards, bypass the sub-steps entirely!
+            if (!isPremiumUser.value || trueUpState.value.ccDebts.length === 0) {
+                trueUpStep.value = 2;
+                return;
+            }
+
+            if (ccSubStep.value === 1) {
+                // STEP 1A: The Catch-Up (Missing Transactions)
+                for (const debtId in trueUpState.value.ccCatchUp) {
+                    const amount = Number(trueUpState.value.ccCatchUp[debtId]);
+                    if (amount > 0) {
+                        const debt = debts.value.find(d => d.id === debtId);
+                        if (debt) {
+                            const newBalance = Number(debt.balance) + amount;
+                            await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
+                            debt.balance = newBalance; // Live update!
+                            if (forecastSettings.value) forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - amount;
+                            
+                            trueUpState.value.ccCatchUp[debtId] = ''; // Clear input to prevent double-charging if they go backward
+                        }
+                    }
+                }
+                ccSubStep.value = 2;
+                return; // Stop here so UI transitions to 1B
+            } 
+            else if (ccSubStep.value === 2) {
+                // STEP 1B: Clear the Float (Payments)
+                for (const debtId in trueUpState.value.ccPayments) {
+                    const amount = Number(trueUpState.value.ccPayments[debtId]);
+                    if (amount > 0) {
+                        const debt = debts.value.find(d => d.id === debtId);
+                        if (debt) {
+                            await recordCCPayment(debt, amount);
+                            trueUpState.value.ccPayments[debtId] = ''; // Clear input
+                        }
+                    }
+                }
+                ccSubStep.value = 3;
+                return; // Stop here so UI transitions to 1C
+            }
+            else if (ccSubStep.value === 3) {
+                // STEP 1C: Pending Sandbox (Uncleared Transactions)
+                for (const debtId in trueUpState.value.ccPending) {
+                    const amount = Number(trueUpState.value.ccPending[debtId]);
+                    if (amount > 0) {
+                        const debt = debts.value.find(d => d.id === debtId);
+                        if (debt) {
+                            const newBalance = Number(debt.balance) + amount;
+                            await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
+                            debt.balance = newBalance; // Live update!
+                            if (forecastSettings.value) forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - amount;
+                            
+                            trueUpState.value.ccPending[debtId] = ''; // Clear input
+                        }
+                    }
+                }
+                trueUpStep.value = 2; // Finally done with CCs, move to Action Items!
+                return;
+            }
+        } 
+        else if (trueUpStep.value === 2) {
+            // STEP 2: Process Action Items
+            const itemsToProcess = trueUpState.value.pendingTransactions.filter(b => trueUpState.value.selectedTransactionIds.includes(b.id));
+            for (const bill of itemsToProcess) {
+                await toggleBillPaid(bill, true); 
+            }
+        } 
+        else if (trueUpStep.value === 3) {
+            // STEP 3: Process Big Wins (Goals)
+            const goalsToProcess = trueUpState.value.pendingGoals.filter(g => trueUpState.value.selectedGoalIds.includes(g.id));
+            for (const goal of goalsToProcess) {
+                await _supabase.from('goals').update({ is_completed: true }).eq('id', goal.id);
+                goal.is_completed = true;
+                if (forecastSettings.value) {
+                    forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - Number(goal.target_amount);
+                }
+            }
+        }
+        else if (trueUpStep.value === 4) {
+            // STEP 4: Extra Principal / Debt Attack
+            const selectedDebtId = trueUpState.value.extraDebtPayment.debtId;
+            const extraAmount = Number(trueUpState.value.extraDebtPayment.amount);
+            
+            if (selectedDebtId && extraAmount > 0) {
+                const debtToAttack = debts.value.find(d => d.id === selectedDebtId);
+                if (debtToAttack) {
+                    const newBalance = Math.max(0, Number(debtToAttack.balance) - extraAmount);
+                    await _supabase.from('debts').update({ balance: newBalance }).eq('id', debtToAttack.id);
+                    debtToAttack.balance = newBalance;
+                    if (forecastSettings.value) {
+                        forecastSettings.value.currentBalance = Number(forecastSettings.value.currentBalance) - extraAmount;
+                    }
+                }
+            }
+        }
+        else if (trueUpStep.value === 5) {
+            // STEP 5: The Ground Truth (Final Balances)
+            await saveAllForecastSettings(); 
+            showTrueUpModal.value = false;
+            runForecast();
+            alert("✨ True Up Complete! Your forecast is 100% locked in.");
+            return;
+        }
+        
+        trueUpStep.value++;
+        
+    } catch (err) {
+        console.error("True Up Error:", err);
+        alert("Ran into a hiccup saving that step: " + err.message);
+    }
+};
+
+// --- 3. WIZARD CONTROLS (Skip & Back) ---
+const skipTrueUpStep = () => {
+    if (trueUpStep.value === 1) {
+        // If free user or no cards, skip whole step
+        if (!isPremiumUser.value || trueUpState.value.ccDebts.length === 0) {
+            trueUpStep.value++;
+        } 
+        // Otherwise, skip sub-steps
+        else if (ccSubStep.value < 3) {
+            ccSubStep.value++;
+        } else {
+            trueUpStep.value++;
+        }
+    } else if (trueUpStep.value === 5) {
+        showTrueUpModal.value = false;
+    } else {
+        trueUpStep.value++;
+    }
+};
+
+const goBackTrueUpStep = () => {
+    if (trueUpStep.value === 1) {
+        if (ccSubStep.value > 1) ccSubStep.value--;
+    } 
+    else if (trueUpStep.value === 2) {
+        trueUpStep.value = 1;
+        if (isPremiumUser.value && trueUpState.value.ccDebts.length > 0) {
+            ccSubStep.value = 3; // Put them back at the end of the CC wizard
+        }
+    } 
+    else if (trueUpStep.value > 2) {
+        trueUpStep.value--;
     }
 };
           
@@ -7351,7 +7597,7 @@ watch(currentView, async (newView) => {
                 showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit,
 
                 // True Up Wizard
-              showTrueUpModal, trueUpStep, trueUpState, startTrueUpWizard, processTrueUpStep, skipTrueUpStep,
+              showTrueUpModal, trueUpStep, trueUpState, startTrueUpWizard, processTrueUpStep, skipTrueUpStep, ccSubStep, goBackTrueUpStep,
             };
         }
     }).mount('#app');
