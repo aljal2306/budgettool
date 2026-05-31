@@ -5405,17 +5405,21 @@ const processTrueUpStep = async () => {
                     if (amount > 0) {
                         const debt = debts.value.find(d => d.id === debtId);
                         if (debt) {
-                            const newBalance = Number(debt.balance) + amount;
+                            const newBalance = Number((Number(debt.balance) + amount).toFixed(2));
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
                             debt.balance = newBalance; // Live update!
                             
-                            // UPDATED: No .value on forecastSettings
+                            // UPDATED: Fixed floating point math issues to exactly 2 decimals
                             if (forecastSettings) {
-                                if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance = Number(forecastSettings.currentBalance) - amount;
-                                if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance = Number(forecastSettings.current_balance) - amount;
+                                if (forecastSettings.currentBalance !== undefined) {
+                                    forecastSettings.currentBalance = Number((Number(forecastSettings.currentBalance) - amount).toFixed(2));
+                                }
+                                if (forecastSettings.current_balance !== undefined) {
+                                    forecastSettings.current_balance = Number((Number(forecastSettings.current_balance) - amount).toFixed(2));
+                                }
                             }
                             
-                            trueUpState.value.ccCatchUp[debtId] = ''; // Clear input to prevent double-charging if they go backward
+                            trueUpState.value.ccCatchUp[debtId] = ''; // Clear input
                         }
                     }
                 }
@@ -5444,14 +5448,18 @@ const processTrueUpStep = async () => {
                     if (amount > 0) {
                         const debt = debts.value.find(d => d.id === debtId);
                         if (debt) {
-                            const newBalance = Number(debt.balance) + amount;
+                            const newBalance = Number((Number(debt.balance) + amount).toFixed(2));
                             await _supabase.from('debts').update({ balance: newBalance }).eq('id', debt.id);
                             debt.balance = newBalance; // Live update!
                             
-                            // UPDATED: No .value on forecastSettings
+                            // UPDATED: Fixed floating point math issues to exactly 2 decimals
                             if (forecastSettings) {
-                                if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance = Number(forecastSettings.currentBalance) - amount;
-                                if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance = Number(forecastSettings.current_balance) - amount;
+                                if (forecastSettings.currentBalance !== undefined) {
+                                    forecastSettings.currentBalance = Number((Number(forecastSettings.currentBalance) - amount).toFixed(2));
+                                }
+                                if (forecastSettings.current_balance !== undefined) {
+                                    forecastSettings.current_balance = Number((Number(forecastSettings.current_balance) - amount).toFixed(2));
+                                }
                             }
                             
                             trueUpState.value.ccPending[debtId] = ''; // Clear input
@@ -5476,10 +5484,14 @@ const processTrueUpStep = async () => {
                 await _supabase.from('goals').update({ is_completed: true }).eq('id', goal.id);
                 goal.is_completed = true;
                 
-                // UPDATED: No .value on forecastSettings
+                // UPDATED: Fixed floating point math issues to exactly 2 decimals
                 if (forecastSettings) {
-                    if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance = Number(forecastSettings.currentBalance) - Number(goal.target_amount);
-                    if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance = Number(forecastSettings.current_balance) - Number(goal.target_amount);
+                    if (forecastSettings.currentBalance !== undefined) {
+                        forecastSettings.currentBalance = Number((Number(forecastSettings.currentBalance) - Number(goal.target_amount)).toFixed(2));
+                    }
+                    if (forecastSettings.current_balance !== undefined) {
+                        forecastSettings.current_balance = Number((Number(forecastSettings.current_balance) - Number(goal.target_amount)).toFixed(2));
+                    }
                 }
             }
         }
@@ -5491,14 +5503,18 @@ const processTrueUpStep = async () => {
             if (selectedDebtId && extraAmount > 0) {
                 const debtToAttack = debts.value.find(d => d.id === selectedDebtId);
                 if (debtToAttack) {
-                    const newBalance = Math.max(0, Number(debtToAttack.balance) - extraAmount);
+                    const newBalance = Math.max(0, Number((Number(debtToAttack.balance) - extraAmount).toFixed(2)));
                     await _supabase.from('debts').update({ balance: newBalance }).eq('id', debtToAttack.id);
                     debtToAttack.balance = newBalance;
                     
-                    // UPDATED: No .value on forecastSettings
+                    // UPDATED: Fixed floating point math issues to exactly 2 decimals
                     if (forecastSettings) {
-                        if (forecastSettings.currentBalance !== undefined) forecastSettings.currentBalance = Number(forecastSettings.currentBalance) - extraAmount;
-                        if (forecastSettings.current_balance !== undefined) forecastSettings.current_balance = Number(forecastSettings.current_balance) - extraAmount;
+                        if (forecastSettings.currentBalance !== undefined) {
+                            forecastSettings.currentBalance = Number((Number(forecastSettings.currentBalance) - extraAmount).toFixed(2));
+                        }
+                        if (forecastSettings.current_balance !== undefined) {
+                            forecastSettings.current_balance = Number((Number(forecastSettings.current_balance) - extraAmount).toFixed(2));
+                        }
                     }
                 }
             }
