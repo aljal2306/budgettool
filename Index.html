@@ -1173,7 +1173,7 @@
                         <span>
                             {{ inc.frequency }}
                             <span v-if="inc.end_date || inc.endDate" class="text-amber-600 dark:text-amber-400 font-semibold ml-1">
-                                (thru {{ inc.end_date || inc.endDate }})
+                                (thru {{ (inc.end_date || inc.endDate).substring(0, 7) }})
                             </span>
                         </span>
                         <span class="font-mono font-bold text-emerald-600">${{ inc.amount.toLocaleString() }}/check</span>
@@ -5943,7 +5943,8 @@ const removeExpense = (m, index) => {
         name: inc.name, 
         nextPayDate: inc.next_pay_date, 
         payFrequency: inc.frequency, 
-        endDate: inc.end_date || '', // ADDED: Pulls the sunset date back into the form!
+        // FIXED: Chop off the "-01" so the month picker can read it again
+        endDate: inc.end_date ? inc.end_date.substring(0, 7) : '', 
         ...inc.details 
     }; 
     showCalcForm.value = true; 
