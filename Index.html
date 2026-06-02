@@ -6051,7 +6051,7 @@ const calculateAndSave = async (mode) => {
             amount: finalPay, 
             frequency: payFrequency || 'Bi-Weekly', 
             next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], 
-            end_date: endDate || null, // UPDATED: Maps the HTML input directly to Supabase
+            end_date: endDate ? `${endDate}-01` : null, // UPDATED: Maps the HTML input directly to Supabase
             details: { 
                 isManual: isManualMode.value, 
                 manualNetPay: Number(manualNetPay) || 0, 
