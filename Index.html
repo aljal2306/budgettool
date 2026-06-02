@@ -5604,12 +5604,36 @@ const goBackTrueUpStep = () => {
 };
           
             // --- FORECAST LOGIC ---
-            const runForecast = () => {
+const runForecast = () => {
     let balance = round(forecastSettings.value.currentBalance);
     const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const today = new Date();
     const currentMonthStr = today.toISOString().slice(0, 7); 
     
+    // 🛡️ SUNSET CLAUSE HELPER
+    // Evaluates if an income stream is alive for a specific target month string/date
+    const isIncomeActiveForMonth = (inc, targetMonthDate) => {
+        const expiry = inc.end_date || inc.endDate;
+        if (!expiry) return true; // No end date means permanent income
+
+        // Parse HTML Month input (Format: "YYYY-MM") safely
+        const [expYear, expMonth] = expiry.split('-').map(Number);
+        const expirationBaseline = new Date(expYear, expMonth - 1, 1);
+        const projectionBaseline = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), 1);
+
+        // Active if the month being projected is less than or equal to the expiration month
+        return projectionBaseline <= expirationBaseline;
+    };
+
+    // Helper to normalize any single income into a flat monthly value based on frequency
+    const calculateMonthlyValue = (inc) => {
+        let monthlyValue = 0;
+        if (inc.frequency === 'Semi-Monthly') monthlyValue = Number(inc.amount) * 2;
+        else if (inc.frequency === 'Bi-Weekly') monthlyValue = (Number(inc.amount) * 26) / 12;
+        else if (inc.frequency === 'Monthly') monthlyValue = Number(inc.amount);
+        return monthlyValue;
+    };
+
     if (forecastData.value.length !== forecastSettings.value.months) {
         forecastData.value = [];
         for (let i = 0; i < forecastSettings.value.months; i++) {
@@ -5619,11 +5643,11 @@ const goBackTrueUpStep = () => {
     }
     forecastResults.value.affordableMonth = null;
     
-   forecastData.value.forEach((m, idx) => {
+    forecastData.value.forEach((m, idx) => {
         const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1);
         const isCurrentMonth = idx === 0;
         
-// --- 1. INCOME CALCULATION ---
+        // --- 1. INCOME CALCULATION ---
         let monthlyIncome = 0;
         const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
         const daysLeft = Math.max(1, daysInMonth - today.getDate() + 1); 
@@ -5631,6 +5655,9 @@ const goBackTrueUpStep = () => {
         if (isCurrentMonth) {
             let foundSpecificPaychecks = false;
             incomes.value.forEach(inc => {
+                // Skip completely if this temporary income expired in a previous month
+                if (!isIncomeActiveForMonth(inc, mDate)) return;
+
                 let nextPay = new Date(inc.next_pay_date);
                 while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) {
                     foundSpecificPaychecks = true;
@@ -5642,14 +5669,22 @@ const goBackTrueUpStep = () => {
                 }
             });
 
-            // 🟢 FALLBACK: If no specific dates were found, we MUST prorate their standard pay 
-            // based on the days remaining, so we don't double count money already in the bank!
+            // FALLBACK: If no specific dates were found, calculate clean current month active base pay
             if (!foundSpecificPaychecks) {
-                const basePay = useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value;
+                const currentMonthBasePay = incomes.value.reduce((sum, inc) => {
+                    if (!isIncomeActiveForMonth(inc, mDate)) return sum;
+                    return sum + calculateMonthlyValue(inc);
+                }, 0);
+
+                const basePay = useTempPay.value ? tempCalculatedPay.value : currentMonthBasePay;
                 monthlyIncome = (basePay / daysInMonth) * daysLeft;
             }
         } else {
-            monthlyIncome = activeMonthlyPay.value;
+            // UPDATED: Future months dynamically scan and aggregate ONLY active streams
+            monthlyIncome = incomes.value.reduce((sum, inc) => {
+                if (!isIncomeActiveForMonth(inc, mDate)) return sum; // Dropped if expired!
+                return sum + calculateMonthlyValue(inc);
+            }, 0);
         }
         
         // Handle Manual Overrides
@@ -5749,7 +5784,7 @@ const goBackTrueUpStep = () => {
     });
       renderForecastChart();
 
-}; 
+};
 
             const getOverride = (monthName) => { 
     if (!forecastOverrides.value[monthName]) {
