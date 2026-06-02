@@ -947,6 +947,12 @@
                     </div>
                 </div>
 
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Income End Month (Optional)</label>
+                    <input v-model="calcInputs.endDate" type="month" class="w-full h-11 px-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white text-sm focus:border-blue-500 outline-none">
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 italic">Leave blank if this income stream is permanent and ongoing.</p>
+                </div>
+
                 <div v-if="isManualMode" class="space-y-4 animate-fade-in">
                     <div class="p-5 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/50 rounded-xl shadow-sm">
                         <label class="block text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase mb-2">Exact Take-Home Pay</label>
@@ -968,7 +974,7 @@
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Gross Pay Amount</label>
                                 <div class="relative">
                                     <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
-                                    <input v-model="calcInputs.salary" type="number" class="w-full p-2 pl-6 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-blue-500" placeholder="0.00">
+                                    <input v-model="calcInputs.salary" type="number" class="w-full p-2 py-1.5 pl-6 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-blue-500" placeholder="0.00">
                                 </div>
                             </div>
                             <div>
@@ -1155,11 +1161,21 @@
                 <div v-if="incomes.length === 0" class="text-center text-slate-400 text-xs py-4">No incomes added yet.</div>
                 <div v-for="inc in incomes" :key="inc.id" class="p-3 border dark:border-slate-600 rounded-lg mb-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer group" @click="loadIncomeIntoCalculator(inc)">
                     <div class="flex justify-between items-center mb-1">
-                        <div class="font-bold text-sm text-slate-800 dark:text-white">{{ inc.name }}</div>
+                        <div class="flex items-center gap-2">
+                            <div class="font-bold text-sm text-slate-800 dark:text-white">{{ inc.name }}</div>
+                            <span v-if="inc.end_date || inc.endDate" class="bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/50 shadow-sm">
+                                ⏱️ Temp
+                            </span>
+                        </div>
                         <button @click.stop="deleteIncome(inc.id)" class="text-xs text-red-300 hover:text-red-500">✕</button>
                     </div>
                     <div class="flex justify-between text-xs text-slate-500">
-                        <span>{{ inc.frequency }}</span>
+                        <span>
+                            {{ inc.frequency }}
+                            <span v-if="inc.end_date || inc.endDate" class="text-amber-600 dark:text-amber-400 font-semibold ml-1">
+                                (thru {{ inc.end_date || inc.endDate }})
+                            </span>
+                        </span>
                         <span class="font-mono font-bold text-emerald-600">${{ inc.amount.toLocaleString() }}/check</span>
                     </div>
                 </div>
