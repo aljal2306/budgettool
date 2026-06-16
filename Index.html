@@ -4209,6 +4209,31 @@ watch(() => [
 const tripTotal = computed(() => {
     return Object.values(tripPlan.categories).reduce((sum, cat) => sum + (Number(cat.amount) || 0), 0);
 });
+          const showTripSelector = ref(false);
+
+const activateTrip = async (goal) => {
+    try {
+        const { error } = await _supabase
+            .from('goals')
+            .update({ is_active_event: true })
+            .eq('id', goal.id);
+
+        if (error) throw error;
+
+        // Update the local state instantly so the UI snaps into place
+        const index = goals.value.findIndex(g => g.id === goal.id);
+        if (index !== -1) {
+            goals.value[index].is_active_event = true;
+        }
+
+        showTripSelector.value = false;
+        alert(`✈️ ${goal.name} is now active!`);
+        
+    } catch (err) {
+        console.error("Error activating trip:", err);
+        alert("Failed to start trip.");
+    }
+};
 
            // 3. The Bouncer Function
            // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
@@ -7602,7 +7627,7 @@ watch(currentView, async (newView) => {
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory, countBillDue,
                 totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal, fetchGoals, showTripPlanner, openTripCategory, tripPlan, tripTotal, saveTripGoal, deleteGoal, saveStandardGoal, showGoalsHub,
-                showStandardGoalModal, standardGoal, selectedGoalName, wasHubOpen, moveGoalPriority, toggleCommitGoal,
+                showStandardGoalModal, standardGoal, selectedGoalName, wasHubOpen, moveGoalPriority, toggleCommitGoal, showTripSelector,
 
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
