@@ -420,21 +420,21 @@
         <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
             
             <div class="relative">
-                <button @click="showTripSelector = !showTripSelector" class="text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition border border-blue-200 dark:border-blue-800 shadow flex items-center gap-1">
-                    <span>✈️</span> Trip
+                <button @click="showGoalSelector = !showGoalSelector" class="text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition border border-blue-200 dark:border-blue-800 shadow flex items-center gap-1">
+                    <span>🎯</span> Goal
                 </button>
 
-                <div v-if="showTripSelector" class="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
+                <div v-if="showGoalSelector" class="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
                     <div class="p-2 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
-                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Activate Trip</h3>
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Activate Goal</h3>
                     </div>
                     <div class="max-h-48 overflow-y-auto">
-                        <button v-for="g in goals.filter(goal => !goal.is_completed && !goal.is_active_event)" :key="g.id" @click="activateTrip(g)" class="w-full text-left p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition border-b border-slate-100 dark:border-slate-700/50 last:border-0 flex justify-between items-center group">
+                        <button v-for="g in goals.filter(goal => !goal.is_completed && !goal.is_active_event)" :key="g.id" @click="activateGoal(g)" class="w-full text-left p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition border-b border-slate-100 dark:border-slate-700/50 last:border-0 flex justify-between items-center group">
                             <span class="text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate pr-2">{{ g.name }}</span>
                             <span class="text-[10px] font-mono text-slate-400 shrink-0">${{ g.target_amount }}</span>
                         </button>
                         <div v-if="goals.filter(goal => !goal.is_completed && !goal.is_active_event).length === 0" class="p-4 text-center text-xs text-slate-500">
-                            No upcoming goals available.
+                            No inactive goals available.
                         </div>
                     </div>
                 </div>
@@ -449,7 +449,6 @@
             <button @click="showExpenseModal=true" class="text-[10px] bg-slate-900 dark:bg-emerald-600 text-white px-2 py-1 rounded font-bold hover:bg-slate-700 shadow">+ Log</button>
         </div>
     </div>
-
     <transition name="fade">
         <div v-if="showVariableHelp" class="absolute top-14 left-5 right-5 z-50 p-4 bg-slate-900 border border-slate-600 rounded-xl shadow-2xl text-left animate-slide-down cursor-default shadow-black/50" @click.stop>
             <div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
@@ -4210,9 +4209,9 @@ watch(() => [
 const tripTotal = computed(() => {
     return Object.values(tripPlan.categories).reduce((sum, cat) => sum + (Number(cat.amount) || 0), 0);
 });
-          const showTripSelector = ref(false);
+          const showGoalSelector = ref(false);
 
-const activateTrip = async (goal) => {
+const activateGoal = async (goal) => {
     try {
         const { error } = await _supabase
             .from('goals')
@@ -4227,33 +4226,14 @@ const activateTrip = async (goal) => {
             goals.value[index].is_active_event = true;
         }
 
-        showTripSelector.value = false;
-        alert(`✈️ ${goal.name} is now active!`);
+        showGoalSelector.value = false;
+        alert(`🎯 ${goal.name} is now active!`);
         
     } catch (err) {
-        console.error("Error activating trip:", err);
-        alert("Failed to start trip.");
+        console.error("Error activating goal:", err);
+        alert("Failed to activate goal.");
     }
 };
-
-          // This creates a "virtual" list that combines budgets and active trips
-const displayVariables = computed(() => {
-    // 1. Grab your normal variable budgets
-    const standardVariables = variableBudgets.value || [];
-    
-    // 2. Grab any goals marked as an active trip
-    const activeTrips = goals.value
-        .filter(g => g.is_active_event && !g.is_completed)
-        .map(g => ({
-            id: g.id, 
-            name: `✈️ ${g.name}`, // Adds the airplane so it stands out
-            remaining: Number(g.target_amount) - Number(g.amount_spent || 0),
-            is_trip: true // A flag so the app knows this is a trip, not a normal budget
-        }));
-
-    // 3. Combine them into one seamless list
-    return [...standardVariables, ...activeTrips];
-});
           
            // 3. The Bouncer Function
            // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
