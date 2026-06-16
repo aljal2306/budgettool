@@ -470,7 +470,7 @@
         </div>
     </transition>
     
-    <div v-if="variableBudgets.length === 0" class="flex-1 flex items-center justify-center text-center text-slate-400 text-xs py-8 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-600">
+    <div v-if="displayVariables.length === 0" class="flex-1 flex items-center justify-center text-center text-slate-400 text-xs py-8 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-600">
         No variable budgets yet.
     </div>
     
@@ -4240,12 +4240,16 @@ const displayVariables = computed(() => {
     const standardVariables = (variableBudgets.value || []).map(v => {
         const amt = Number(v.budget_items?.amount || v.amount || 0);
         const rem = Number(v.remaining || 0);
+        const spent = amt - rem;
+        const progress = amt > 0 ? (spent / amt) * 100 : 0; // Calculates the exact percentage
+        
         return {
             ...v,
             name: v.budget_items?.name || v.name || 'Unnamed Category',
             amount: amt,
             remaining: rem,
-            spent: amt - rem, // ADDED: Explicit spent calculation
+            spent: spent,
+            progress: progress, // Passes the percentage to your HTML
             is_goal: false
         };
     });
@@ -4256,12 +4260,15 @@ const displayVariables = computed(() => {
         .map(g => {
             const amt = Number(g.target_amount || 0);
             const spent = Number(g.amount_spent || 0);
+            const progress = amt > 0 ? (spent / amt) * 100 : 0; // Calculates the exact percentage
+            
             return {
                 id: g.id,
                 name: `🎯 ${g.name}`,
                 amount: amt,
                 remaining: amt - spent,
-                spent: spent, // ADDED: Explicit spent calculation
+                spent: spent,
+                progress: progress, // Passes the percentage to your HTML
                 is_goal: true
             };
         });
