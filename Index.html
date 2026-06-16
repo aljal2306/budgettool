@@ -4234,6 +4234,24 @@ const activateGoal = async (goal) => {
         alert("Failed to activate goal.");
     }
 };
+          // This creates a "virtual" list that combines budgets and active goals
+const displayVariables = computed(() => {
+    // 1. Grab your normal variable budgets
+    const standardVariables = variableBudgets.value || [];
+    
+    // 2. Grab any goals marked as an active event
+    const activeGoals = goals.value
+        .filter(g => g.is_active_event && !g.is_completed)
+        .map(g => ({
+            id: g.id, 
+            name: `🎯 ${g.name}`, // Swapped the airplane out for a target
+            remaining: Number(g.target_amount) - Number(g.amount_spent || 0),
+            is_goal: true // A flag so the app knows this is a goal, not a normal budget
+        }));
+
+    // 3. Combine them into one seamless list
+    return [...standardVariables, ...activeGoals];
+});
           
            // 3. The Bouncer Function
            // Wraps around any premium action. If they haven't paid, it stops them and shows the modal.
@@ -7627,8 +7645,7 @@ watch(currentView, async (newView) => {
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
                 dashboardMode, setDashboardMode, safeToSpend, burnRate, dashboardBurn, upcomingBills, visibleBills, showPaidBills, deleteBill, toggleBillPaid, quickPay, showChartPercentages, toggleChartMode, showModeHelp, needsNextMonthBills, isToday, groupedPaidHistory, countBillDue,
                 totalBillDue, isUrgent, billsUrgent, viewPaidHistory, bills, showActiveBillHelp, showVariableHelp, showGoalsHub, goals, openNewStandardGoal, openNewTripGoal, openEditGoal, fetchGoals, showTripPlanner, openTripCategory, tripPlan, tripTotal, saveTripGoal, deleteGoal, saveStandardGoal, showGoalsHub,
-                showStandardGoalModal, standardGoal, selectedGoalName, wasHubOpen, moveGoalPriority, toggleCommitGoal, showTripSelector, activateTrip, displayVariables,
-
+                showStandardGoalModal, standardGoal, selectedGoalName, wasHubOpen, moveGoalPriority, toggleCommitGoal, showGoalSelector, activateGoal, displayVariables,
                 // Ledger
                 showGenModal, openGenerateModal, generateMonthOffset, potentialBills, confirmGenerate, 
                 showExpenseModal, expenseData, logExpense, editingExpenseId, 
