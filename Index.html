@@ -4237,24 +4237,34 @@ const activateGoal = async (goal) => {
           // This creates a "virtual" list that combines budgets and active goals
 const displayVariables = computed(() => {
     // 1. Standardize normal variable budgets
-    const standardVariables = (variableBudgets.value || []).map(v => ({
-        ...v, // Keep original data intact
-        name: v.budget_items?.name || v.name || 'Unnamed Category',
-        amount: Number(v.budget_items?.amount || v.amount || 0),
-        remaining: Number(v.remaining || 0),
-        is_goal: false
-    }));
+    const standardVariables = (variableBudgets.value || []).map(v => {
+        const amt = Number(v.budget_items?.amount || v.amount || 0);
+        const rem = Number(v.remaining || 0);
+        return {
+            ...v,
+            name: v.budget_items?.name || v.name || 'Unnamed Category',
+            amount: amt,
+            remaining: rem,
+            spent: amt - rem, // ADDED: Explicit spent calculation
+            is_goal: false
+        };
+    });
     
     // 2. Standardize active goals to match perfectly
     const activeGoals = (goals.value || [])
         .filter(g => g.is_active_event && !g.is_completed)
-        .map(g => ({
-            id: g.id,
-            name: `🎯 ${g.name}`,
-            amount: Number(g.target_amount), // ADDED: Fixes the progress bar math!
-            remaining: Number(g.target_amount) - Number(g.amount_spent || 0),
-            is_goal: true
-        }));
+        .map(g => {
+            const amt = Number(g.target_amount || 0);
+            const spent = Number(g.amount_spent || 0);
+            return {
+                id: g.id,
+                name: `🎯 ${g.name}`,
+                amount: amt,
+                remaining: amt - spent,
+                spent: spent, // ADDED: Explicit spent calculation
+                is_goal: true
+            };
+        });
 
     // 3. Combine into one seamless list
     return [...standardVariables, ...activeGoals];
