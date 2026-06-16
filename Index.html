@@ -6820,10 +6820,18 @@ const openLogModal = (item) => {
     
     // 🎯 Filter ledger for Budgets (Current Month) OR Goals (All Time)
     currentLogEntries.value = bills.value.filter(b => {
-        const matchesId = item.is_goal ? b.goal_id === item.id : b.budget_item_id === item.id;
-        const matchesDate = item.is_goal ? true : b.due_date.startsWith(currentMonthStr);
+        // Bulletproof ID matching using String()
+        const matchesId = item.is_goal 
+            ? b.goal_id && String(b.goal_id) === String(item.id) 
+            : b.budget_item_id && String(b.budget_item_id) === String(item.id);
+            
+        // Goals show all-time history, normal budgets just show this month
+        const matchesDate = item.is_goal 
+            ? true 
+            : (b.due_date && b.due_date.startsWith(currentMonthStr));
+            
         return matchesId && matchesDate;
-    }).sort((a,b) => b.due_date.localeCompare(a.due_date)); 
+    }).sort((a,b) => (b.due_date || '').localeCompare(a.due_date || '')); 
     
     showLogModal.value = true; 
 };
