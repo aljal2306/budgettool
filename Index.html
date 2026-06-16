@@ -6690,7 +6690,8 @@ const deleteGoal = async (id) => {
                     alert('Script Error: ' + e.message);
                 }
             };
-    const logExpense = async () => {
+          
+ const logExpense = async () => {
     // 1. Basic Validation
     if (!expenseData.value.budgetId || !expenseData.value.amount) {
         alert("Please enter an amount.");
@@ -6700,9 +6701,16 @@ const deleteGoal = async (id) => {
     const amount = Math.abs(Number(expenseData.value.amount));
     const method = expenseData.value.method || 'debit';
     
-    // 🚥 THE TRAFFIC COP: Find out if it's a Goal or a Budget
-    const selectedItem = displayVariables.value.find(item => item.id === expenseData.value.budgetId);
-    const isGoal = selectedItem?.is_goal || false;
+    // 🚥 THE TRAFFIC COP (UPGRADED): Forces both IDs into strings so they never fail to match
+    const selectedItem = displayVariables.value.find(item => String(item.id) === String(expenseData.value.budgetId));
+    
+    // Safety check: Don't touch the database if we somehow still can't find the category
+    if (!selectedItem) {
+        alert("Error: Could not identify the selected category or goal.");
+        return;
+    }
+
+    const isGoal = selectedItem.is_goal || false;
 
     // Build the base payload
     const payload = { 
@@ -6716,16 +6724,17 @@ const deleteGoal = async (id) => {
 
     // Route the ID to the correct Database Column
     if (isGoal) {
-        payload.goal_id = expenseData.value.budgetId;
-        payload.budget_item_id = null;
+        payload.goal_id = selectedItem.id;
+        payload.budget_item_id = null; // Explicitly clears the normal budget lane
     } else {
-        payload.budget_item_id = expenseData.value.budgetId;
-        payload.goal_id = null;
+        payload.budget_item_id = selectedItem.id;
+        payload.goal_id = null; // Explicitly clears the goal lane
     }
 
     let error;
 
     try {
+        // ... KEEP YOUR EXISTING TRY/CATCH LOGIC FROM HERE DOWN!
         if (editingExpenseId.value) {
             // --- EDIT LOGIC (Reverse Old, Apply New) ---
             if (originalEntrySnapshot.value) {
