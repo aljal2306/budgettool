@@ -5895,11 +5895,6 @@ const addExpense = (m) => {
     if (m.newExpenseName && m.newExpenseAmount) { 
         const ov = getOverride(m.name); 
         
-        // Lock in the income before rebuilding
-        if (m.income !== undefined && m.income !== null && m.income !== '') {
-            ov.income = Number(m.income);
-        }
-
         ov.extraExpenses.push({ name: m.newExpenseName, amount: Number(m.newExpenseAmount) }); 
         
         // Reset fields
@@ -5922,17 +5917,11 @@ const fillExpense = (m) => {
 
 const removeExpense = (m, index) => { 
     const ov = getOverride(m.name); 
-    
-    // Lock in the income just in case
-    if (m.income !== undefined && m.income !== null && m.income !== '') {
-            ov.income = Number(m.income);
-    }
-    
     ov.extraExpenses.splice(index, 1); 
     runForecast(); 
 };
 
-          const applyGoalToMonth = (m) => {
+const applyGoalToMonth = (m) => {
     // 1. Make sure we actually have an active goal loaded
     if (!project.value || !project.value.cost) {
         alert("Please set a Scenario Goal first!");
@@ -5941,18 +5930,13 @@ const removeExpense = (m, index) => {
 
     const ov = getOverride(m.name);
 
-    // 2. Lock in the income (just like our bug fix from earlier!)
-    if (m.income !== undefined && m.income !== null && m.income !== '') {
-        ov.income = Number(m.income);
-    }
-
-    // 3. Push the goal into the one-off expenses array
+    // 2. Push the goal into the one-off expenses array
     ov.extraExpenses.push({ 
-        name: `🎯 ${project.value.name}`, // Added an icon so it stands out in the list
+        name: `🎯 ${project.value.name}`, 
         amount: Number(project.value.cost) 
     });
 
-    // 4. Rebuild the timeline to show the impact
+    // 3. Rebuild the timeline to show the impact
     runForecast();
 };
             const saveForecastSlot = async (i) => { 
