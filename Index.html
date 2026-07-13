@@ -5781,7 +5781,7 @@ const runForecast = () => {
         
         // Handle Manual Overrides
         const ov = forecastOverrides.value[m.name];
-        if (ov && ov.income !== undefined) {
+        if (ov && ov.income !== undefined && ov.income !== null && ov.income !== '') {
             if (isCurrentMonth) {
                  // Prorate the override so it doesn't dump a full month of fake cash into the last few days
                  monthlyIncome = (Number(ov.income) / daysInMonth) * daysLeft;
