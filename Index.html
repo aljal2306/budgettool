@@ -490,49 +490,85 @@
     </div>
 </div>
 
-<div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden mb-4 transition-all duration-300">
+<!-- YTD Income Hidden Reveal Widget -->
+<div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 border-t-4 border-t-emerald-500 shadow-sm transition-all duration-300 self-start mb-4">
     
-    <div @click="showYtdIncome = !showYtdIncome" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition select-none">
+    <!-- Header / Grand Total -->
+    <div @click="showYtdIncome = !showYtdIncome" class="flex justify-between items-center cursor-pointer group select-none">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-lg group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition">
                 💵
             </div>
             <div>
-                <h3 class="font-bold text-slate-700 dark:text-white text-sm">Year-to-Date Income</h3>
-                <div v-if="!showYtdIncome" class="text-[10px] text-slate-400">Tap to reveal earnings</div>
+                <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    YTD Income 
+                    <span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full text-slate-500 font-bold">{{ new Date().getFullYear() }}</span>
+                </h3>
+                <div class="text-[10px] text-slate-400">{{ showYtdIncome ? 'Tap to close' : 'Tap to expand view' }}</div>
             </div>
         </div>
-        <div class="flex items-center gap-3">
-            <span class="text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full">{{ new Date().getFullYear() }}</span>
+        <div class="text-right flex items-center gap-3">
+            <div class="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                ${{ ytdIncomeStats.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+            </div>
             <div class="text-slate-400 transform transition duration-300" :class="showYtdIncome ? 'rotate-180' : ''">
                 ▼
             </div>
         </div>
     </div>
 
-    <div v-if="showYtdIncome" class="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20 animate-slide-down">
+    <!-- The Nested Breakdown -->
+    <div v-if="showYtdIncome" class="mt-5 space-y-3 pt-5 border-t border-slate-100 dark:border-slate-700 animate-slide-down">
         
-        <div class="mb-5 text-center">
-            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Total Combined YTD</p>
-            <p class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                ${{ ytdIncomeStats.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-            </p>
+        <!-- Structured Income Sources (Jobs) -->
+        <div v-for="source in ytdIncomeStats.sources" :key="source.name" class="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div @click="toggleIncomeBucket(source.name)" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition select-none">
+                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">{{ source.name }}</span>
+                <div class="flex items-center gap-3">
+                    <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        ${{ source.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </span>
+                    <span class="text-slate-400 text-xs transform transition duration-200" :class="expandedIncomeBuckets[source.name] ? 'rotate-180' : ''">▼</span>
+                </div>
+            </div>
+            <!-- Base vs Commission Split -->
+            <div v-if="expandedIncomeBuckets[source.name]" class="px-4 pb-4 pt-2 text-xs space-y-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 animate-slide-down">
+                <div class="flex justify-between items-center mt-1 text-slate-500 dark:text-slate-400 font-medium">
+                    <span>Base Pay</span>
+                    <span class="font-mono">${{ source.base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                </div>
+                <div class="flex justify-between items-center text-slate-500 dark:text-slate-400 font-medium">
+                    <span>Commission / Bonus</span>
+                    <span class="font-mono">${{ source.commission.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                </div>
+            </div>
         </div>
 
-        <div class="space-y-2 max-w-sm mx-auto">
-            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider border-b border-slate-200 dark:border-slate-700 pb-1 mb-2">By Source</p>
-            
-            <div v-for="source in ytdIncomeStats.breakdown" :key="source.name" class="flex justify-between items-center text-sm p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-200 dark:hover:border-emerald-800 transition">
-                <span class="font-medium text-slate-600 dark:text-slate-300">{{ source.name }}</span>
-                <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    ${{ source.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                </span>
+        <!-- The "Other" Bucket -->
+        <div v-if="ytdIncomeStats.other.total > 0" class="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div @click="toggleIncomeBucket('Other')" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition select-none">
+                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">Other / Misc</span>
+                <div class="flex items-center gap-3">
+                    <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        ${{ ytdIncomeStats.other.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </span>
+                    <span class="text-slate-400 text-xs transform transition duration-200" :class="expandedIncomeBuckets['Other'] ? 'rotate-180' : ''">▼</span>
+                </div>
             </div>
-
-            <div v-if="ytdIncomeStats.breakdown.length === 0" class="text-center text-xs text-slate-400 italic py-2">
-                No income logged for this year yet.
+            <!-- Individual Random Deposits List -->
+            <div v-if="expandedIncomeBuckets['Other']" class="px-4 pb-4 pt-3 text-xs space-y-2 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 animate-slide-down">
+                <div v-for="item in ytdIncomeStats.other.details" :key="item.name" class="flex justify-between items-center text-slate-500 dark:text-slate-400 py-1">
+                    <span class="truncate max-w-[200px] font-medium">{{ item.name }}</span>
+                    <span class="font-mono">${{ item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                </div>
             </div>
         </div>
+
+        <!-- Empty State -->
+        <div v-if="ytdIncomeStats.sources.length === 0 && ytdIncomeStats.other.total === 0" class="text-center text-xs text-slate-400 italic py-4">
+            No income logged for this year yet.
+        </div>
+
     </div>
 </div>
                           
@@ -7557,42 +7593,82 @@ const startWizard = () => {
                 depositStep.value = 'amount_input';
                 // Default to base pay initially
                 depositAmount.value = income.amount; 
-            };
-    // The toggle switch for the UI
+            };// The toggle switches for the UI
 const showYtdIncome = ref(false);
+const expandedIncomeBuckets = ref({}); 
 
-// The math engine for YTD income
+const toggleIncomeBucket = (bucketName) => {
+    expandedIncomeBuckets.value[bucketName] = !expandedIncomeBuckets.value[bucketName];
+};
+
+// The upgraded math engine for YTD income
 const ytdIncomeStats = computed(() => {
-    // 1. Get the current year (e.g., "2026")
     const currentYear = new Date().getFullYear().toString(); 
-
-    // 2. Filter for actual income received this year
-    const ytdIncomeLogs = bills.value.filter(b => 
+    
+    // 1. Get all income for the year
+    const ytdLogs = bills.value.filter(b => 
         b.type === 'income' && 
-        b.is_paid === true && // Ensures we only count money actually in the bank
+        b.is_paid === true && 
         (b.paid_date || b.due_date).startsWith(currentYear)
     );
 
-    // 3. Group by source
-    const sources = ytdIncomeLogs.reduce((acc, current) => {
-        const sourceName = current.transaction_name || 'Other Income';
-        if (!acc[sourceName]) acc[sourceName] = 0;
-        acc[sourceName] += Number(current.amount);
-        return acc;
-    }, {});
+    // 2. Identify known jobs (Current jobs + anything that generated a commission)
+    const knownSources = new Set(incomes.value.map(i => i.name));
+    ytdLogs.forEach(b => {
+        const tName = b.transaction_name || 'Other Income';
+        if (tName.endsWith(' - Commission')) {
+            knownSources.add(tName.replace(' - Commission', ''));
+        }
+    });
 
-    // 4. Calculate the grand total
-    const grandTotal = Object.values(sources).reduce((sum, val) => sum + val, 0);
+    const structured = {};
+    let otherTotal = 0;
+    const otherMap = {};
 
-    // 5. Convert to a sorted array for the HTML to loop through
-    const sourcesArray = Object.keys(sources).map(key => ({
-        name: key,
-        amount: sources[key]
+    // 3. Sort into Buckets
+    ytdLogs.forEach(b => {
+        const tName = b.transaction_name || 'Other Income';
+        // Handle amount fallback just in case depending on your DB naming
+        const amount = Number(b.amount_paid || b.amount || 0);
+
+        if (tName.endsWith(' - Commission')) {
+            const baseName = tName.replace(' - Commission', '');
+            if (!structured[baseName]) structured[baseName] = { base: 0, commission: 0, total: 0 };
+            structured[baseName].commission += amount;
+            structured[baseName].total += amount;
+        } else if (knownSources.has(tName)) {
+            if (!structured[tName]) structured[tName] = { base: 0, commission: 0, total: 0 };
+            structured[tName].base += amount;
+            structured[tName].total += amount;
+        } else {
+            otherTotal += amount;
+            if (!otherMap[tName]) otherMap[tName] = 0;
+            otherMap[tName] += amount;
+        }
+    });
+
+    // 4. Format for the HTML
+    const sourcesArray = Object.keys(structured).map(name => ({
+        name: name,
+        total: structured[name].total,
+        base: structured[name].base,
+        commission: structured[name].commission
+    })).sort((a, b) => b.total - a.total);
+
+    const otherArray = Object.keys(otherMap).map(name => ({
+        name: name,
+        amount: otherMap[name]
     })).sort((a, b) => b.amount - a.amount);
+
+    const grandTotal = sourcesArray.reduce((sum, s) => sum + s.total, 0) + otherTotal;
 
     return {
         total: grandTotal,
-        breakdown: sourcesArray
+        sources: sourcesArray,
+        other: {
+            total: otherTotal,
+            details: otherArray
+        }
     };
 });
 
@@ -7898,7 +7974,7 @@ watch(currentView, async (newView) => {
                 isUnpackingTrip, saveManualAsGoal,
               
                 // Deposits
-                showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit, showYtdIncome, ytdIncomeStats,
+                showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit, showYtdIncome, ytdIncomeStats, expandedIncomeBuckets, toggleIncomeBucket,
 
                 // True Up Wizard
               showTrueUpModal, trueUpStep, trueUpState, startTrueUpWizard, processTrueUpStep, skipTrueUpStep, ccSubStep, goBackTrueUpStep,
