@@ -7513,45 +7513,111 @@ const startWizard = () => {
                 depositAmount.value = income.amount; 
             };
 
-            const confirmDeposit = async () => {
-                if (depositAmount.value <= 0) return alert("Please enter a valid amount.");
+           const confirmDeposit = async () => {
+    const totalAmount = Number(depositAmount.value);
+    
+    // 1. Basic Validation
+    if (!totalAmount || totalAmount <= 0) {
+        alert("Please enter a valid deposit amount.");
+        return;
+    }
 
-                try {
-                    // 1. Update Bank Balance
-                    const newBalance = (forecastSettings.value.currentBalance || 0) + parseFloat(depositAmount.value);
-                    
-                    const { error: balanceError } = await _supabase
-                        .from('user_settings')
-                        .update({ current_balance: newBalance })
-                        .eq('user_id', session.value.user.id);
+    let transactionsToLog = [];
+    const todayStr = new Date().toISOString().split('T')[0];
 
-                    if (balanceError) throw balanceError;
+    // --- LOGIC FOR SCHEDULED INCOME ---
+    if (depositStep.value === 'amount_input') {
+        const baseExpected = Number(selectedIncomeSource.value.amount);
 
-                    // 2. Log Transaction in Ledger
-                    const { error: ledgerError } = await _supabase
-                        .from('ledger')
-                        .insert([{
-                            user_id: session.value.user.id,
-                            transaction_name: depositNote.value,
-                            amount_paid: depositAmount.value, // 🟢 FIXED: Changed 'amount' to 'amount_paid'
-                            type: 'income',
-                            due_date: new Date().toISOString().split('T')[0],
-                            is_paid: true,
-                        }]);
+        // 🟢 SPLIT TRANSACTION: If it's a bonus check AND the total is bigger than the base
+        if (isBonus.value && totalAmount > baseExpected) {
+            const commissionAmount = totalAmount - baseExpected;
+            
+            // Push Row 1: The Base Salary
+            transactionsToLog.push({
+                user_id: session.value.user.id,
+                amount_paid: baseExpected,
+                type: 'income',
+                is_paid: true,
+                due_date: todayStr,
+                paid_date: todayStr,
+                transaction_name: selectedIncomeSource.value.name,
+                payment_method: 'deposit'
+            });
 
-                    if (ledgerError) throw ledgerError;
+            // Push Row 2: The Commission
+            transactionsToLog.push({
+                user_id: session.value.user.id,
+                amount_paid: commissionAmount,
+                type: 'income',
+                is_paid: true,
+                due_date: todayStr,
+                paid_date: todayStr,
+                transaction_name: `${selectedIncomeSource.value.name} - Commission`,
+                payment_method: 'deposit'
+            });
+            
+        } else {
+            // 🔵 STANDARD TRANSACTION (Just Base Pay)
+            transactionsToLog.push({
+                user_id: session.value.user.id,
+                amount_paid: totalAmount,
+                type: 'income',
+                is_paid: true,
+                due_date: todayStr,
+                paid_date: todayStr,
+                transaction_name: selectedIncomeSource.value.name,
+                payment_method: 'deposit'
+            });
+        }
+    } 
+    // --- LOGIC FOR OTHER / ONE-TIME INCOME ---
+    else if (depositStep.value === 'other_input') {
+        transactionsToLog.push({
+            user_id: session.value.user.id,
+            amount_paid: totalAmount,
+            type: 'income',
+            is_paid: true,
+            due_date: todayStr,
+            paid_date: todayStr,
+            transaction_name: depositNote.value || 'Other Income', // Captures your custom name!
+            payment_method: 'deposit'
+        });
+    }
 
-                    // 3. Success!
-                    forecastSettings.value.currentBalance = newBalance;
-                    showDepositModal.value = false;
-                    await fetchBills(); 
-                    triggerMoneyRain();
+    try {
+        // 2. Update Bank Balance
+        const newBalance = (forecastSettings.value.currentBalance || 0) + parseFloat(depositAmount.value);
+        
+        const { error: balanceError } = await _supabase
+            .from('user_settings')
+            .update({ current_balance: newBalance })
+            .eq('user_id', session.value.user.id);
 
-                } catch (e) {
-                    console.error(e);
-                    alert("Error processing deposit.");
-                }
-            };
+        if (balanceError) throw balanceError;
+
+        // 3. Log Transactions in Ledger (Bulk Insert)
+        const { error: ledgerError } = await _supabase
+            .from('ledger')
+            .insert(transactionsToLog); // Submits the array we built above
+
+        if (ledgerError) throw ledgerError;
+
+        // 4. Success!
+        forecastSettings.value.currentBalance = newBalance;
+        showDepositModal.value = false;
+        depositAmount.value = ''; // Reset for next time
+        depositNote.value = '';
+        isBonus.value = false;
+        
+        await fetchBills(); 
+        triggerMoneyRain();
+
+    } catch (e) {
+        console.error(e);
+        alert("Error processing deposit.");
+    }
+};
 
             // 💸 MONEY ANIMATION ENGINE
             const triggerMoneyRain = () => {
