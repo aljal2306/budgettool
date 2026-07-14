@@ -1261,7 +1261,7 @@
 
             <div id="tour-active-incomes" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                 <h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Active Income Sources</h3>
-                <div v-if="incomes.length === 0" class="text-center text-slate-400 text-xs py-4">No incomes added yet.</div>
+                <div v-if="activeIncomes.length === 0" class="text-center text-slate-400 text-xs py-4">No incomes added yet.</div>
                 <div v-for="inc in activeIncomes" :key="inc.id" class="p-3 border dark:border-slate-600 rounded-lg mb-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer group" @click="loadIncomeIntoCalculator(inc)">
                     <div class="flex justify-between items-center mb-1">
                         <div class="flex items-center gap-2">
@@ -1270,7 +1270,7 @@
                                 ⏱️ Temp
                             </span>
                         </div>
-                        <button @click.stop="deleteIncome(inc.id)" class="text-xs text-red-300 hover:text-red-500">✕</button>
+                        <button @click.stop="deleteIncome(inc)" class="text-xs text-red-300 hover:text-red-500">✕</button>
                     </div>
                     <div class="flex justify-between text-xs text-slate-500">
                         <span>
