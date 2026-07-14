@@ -4383,6 +4383,7 @@ const displayVariables = computed(() => {
             const depositAmount = ref(0);
             const depositNote = ref('');
             const isBonus = ref(false); // Tracks if they selected "Commission/Bonus"
+            const activeIncomes = computed(() => incomes.value.filter(inc => inc.is_active !== false));
 
             // --- GIFT CARD STATE ---
             const giftCards = ref([]);
@@ -7940,7 +7941,7 @@ watch(currentView, async (newView) => {
                 showOnboarding, onboardingStep, onboardingData, nextOnboardingStep, finishOnboarding, startWizard, resetDemo, 
                 
                 // Paycheck
-                calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, showSessionHelp, isManualMode, runCalculation,
+                calcInputs, calcResult, calculateAndSave, savingBase, incomes, loadIncomeIntoCalculator, deleteIncome, useTempPay, activeMonthlyPay, tempCalculatedPay, showSessionHelp, isManualMode, runCalculation, activeIncomes,
 
                 // Budget
                 budgetItems, standardItems, wishlistItems, variableBudgets, newItem, showPlanner, showAddForm, isEditing, handleSave, startEditing, resetForm, deleteBudgetItem, categories, showPlannerModal,
