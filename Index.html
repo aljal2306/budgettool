@@ -6294,8 +6294,26 @@ const calculateAndSave = async (mode) => {
     
     savingBase.value = false;
 };
-            const deleteIncome = async (id) => { if(!confirm("Delete?")) return; await _supabase.from('incomes').delete().eq('id', id); fetchIncomes(); };
+            const deleteIncome = async (income) => {
+    if (!confirm(`Are you sure you want to remove ${income.name}?\n\nHistorical data will be preserved for your Year-to-Date tracking.`)) return;
 
+    try {
+        // 🟢 THE MAGIC: Update 'is_active' to false instead of deleting the row
+        const { error } = await _supabase
+            .from('incomes')
+            .update({ is_active: false })
+            .eq('id', income.id);
+
+        if (error) throw error;
+
+        // Refresh your main incomes list to update the UI
+        await fetchIncomes(); // Or whatever your fetch function is named
+
+    } catch (e) {
+        console.error("Error archiving income:", e);
+        alert("Could not remove income source.");
+    }
+};
             // --- BUDGET ITEMS & MODALS ---
             const addItem = async () => {
     const finalDueDay = newItem.value.isFlexible ? 0 : (Number(newItem.value.due_day) || 1);
