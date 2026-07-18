@@ -1259,6 +1259,86 @@
                 </div>
             </div>
 
+          <!-- YTD Income Hidden Reveal Widget -->
+<div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 border-t-4 border-t-emerald-500 shadow-sm transition-all duration-300 self-start mb-4">
+    
+    <!-- Header (Discreet) -->
+    <div @click="showYtdIncome = !showYtdIncome" class="flex justify-between items-center cursor-pointer group select-none">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-lg group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition">
+                💵
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    YTD Income 
+                    <span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full text-slate-500 font-bold">{{ new Date().getFullYear() }}</span>
+                </h3>
+                <div class="text-[10px] text-slate-400">{{ showYtdIncome ? 'Tap to close' : 'Tap to expand view' }}</div>
+            </div>
+        </div>
+        <div class="text-slate-400 transform transition duration-300" :class="showYtdIncome ? 'rotate-180' : ''">
+            ▼
+        </div>
+    </div>
+
+    <!-- The Nested Breakdown (Revealed on Click) -->
+    <div v-if="showYtdIncome" class="mt-5 space-y-4 pt-5 border-t border-slate-100 dark:border-slate-700 animate-slide-down">
+        
+        <!-- Grand Total Reveal -->
+        <div class="text-center mb-6">
+            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Total Combined YTD</p>
+            <p class="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                ${{ ytdIncomeStats.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+            </p>
+        </div>
+
+        <!-- Structured Income Sources (Jobs) -->
+        <div v-for="source in ytdIncomeStats.sources" :key="source.name" class="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div @click="toggleIncomeBucket(source.name)" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition select-none">
+                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">{{ source.name }}</span>
+                <div class="flex items-center gap-3">
+                    <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        ${{ source.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </span>
+                    <span class="text-slate-400 text-xs transform transition duration-200" :class="expandedIncomeBuckets[source.name] ? 'rotate-180' : ''">▼</span>
+                </div>
+            </div>
+            <!-- Base vs Commission Split -->
+            <div v-if="expandedIncomeBuckets[source.name]" class="px-4 pb-4 pt-2 text-xs space-y-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 animate-slide-down">
+                <div class="flex justify-between items-center mt-1 text-slate-500 dark:text-slate-400 font-medium">
+                    <span>Base Pay</span>
+                    <span class="font-mono">${{ source.base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                </div>
+                <div class="flex justify-between items-center text-slate-500 dark:text-slate-400 font-medium">
+                    <span>Commission / Bonus</span>
+                    <span class="font-mono">${{ source.commission.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- The "Other" Bucket -->
+        <div v-if="ytdIncomeStats.other.total > 0" class="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div @click="toggleIncomeBucket('Other')" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition select-none">
+                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">Other / Misc</span>
+                <div class="flex items-center gap-3">
+                    <span class="font-mono font-bold text-slate-600 dark:text-slate-400">
+                        ${{ ytdIncomeStats.other.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </span>
+                    <span class="text-slate-400 text-xs transform transition duration-200" :class="expandedIncomeBuckets['Other'] ? 'rotate-180' : ''">▼</span>
+                </div>
+            </div>
+            <!-- Individual Random Deposits List -->
+            <div v-if="expandedIncomeBuckets['Other']" class="px-4 pb-4 pt-3 text-xs space-y-2 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 animate-slide-down">
+                <div v-for="item in ytdIncomeStats.other.details" :key="item.name" class="flex justify-between items-center text-slate-500 dark:text-slate-400 py-1">
+                    <span class="truncate max-w-[200px] font-medium">{{ item.name }}</span>
+                    <span class="font-mono">${{ item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
             <div id="tour-active-incomes" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                 <h3 class="font-bold text-sm text-slate-500 uppercase mb-3">Active Income Sources</h3>
                 <div v-if="activeIncomes.length === 0" class="text-center text-slate-400 text-xs py-4">No incomes added yet.</div>
