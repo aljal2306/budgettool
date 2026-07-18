@@ -4533,8 +4533,7 @@ const displayVariables = computed(() => {
         });
 });
             const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc,i) => acc + getMonthlyCost(i), 0)));
-            const activeMonthlyPay = computed(() => incomes.value.reduce((total, inc) => { let m = Number(inc.amount); if (inc.frequency === 'Bi-Weekly') m *= 2.166; else if (inc.frequency === 'Semi-Monthly') m *= 2; return total + m; }, 0));
-            const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
+            const activeMonthlyPay = computed(() => activeIncomes.value.reduce((total, inc) => total + (Number(inc.amount) * (inc.frequency === 'Bi-Weekly' ? 2.166 : inc.frequency === 'Semi-Monthly' ? 2 : 1)), 0));            const projectedBalance = computed(() => round((useTempPay.value ? tempCalculatedPay.value : activeMonthlyPay.value) - totalMonthlyBurn.value));
             const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
             
             const safeToSpend = computed(() => { if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value); if (dashboardMode.value === 'dream') { let burn = 0; budgetItems.value.forEach(i => { if (i.is_wishlist) { burn += getMonthlyCost(i); } else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i); } }); return round(activeMonthlyPay.value - burn); } const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc,i) => acc + getMonthlyCost(i), 0); return round(activeMonthlyPay.value - standardBurn); });
