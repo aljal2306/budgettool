@@ -6202,15 +6202,16 @@ const calculateAndSave = async (mode) => {
     // UPDATED: Added endDate to the extraction
     const { id, name, payFrequency, nextPayDate, endDate, salary, commission, medical, dental, fsa, postTax, trad401k, roth401k, match401k, filingStatus, stateTaxRate, dependents, extraWithholding, manualNetPay, grossTimeframe } = calcInputs.value;
 
-    if (mode === 'default') {
+    f (mode === 'default') {
         const payload = { 
             user_id: session.value.user.id, 
             name: name || 'New Income', 
             amount: finalPay, 
             frequency: payFrequency || 'Bi-Weekly', 
             next_pay_date: nextPayDate || new Date().toISOString().split('T')[0], 
-            end_date: endDate ? `${endDate}-01` : null, // UPDATED: Maps the HTML input directly to Supabase
-            details: { 
+            end_date: endDate ? `${endDate}-01` : null,
+            is_active: true, // 🟢 ADDED: Explicitly marks new/edited incomes as active
+            details: {
                 isManual: isManualMode.value, 
                 manualNetPay: Number(manualNetPay) || 0, 
                 salary: Number(salary) || 0, 
