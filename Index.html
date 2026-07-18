@@ -4533,7 +4533,11 @@ const displayVariables = computed(() => {
         });
 });
             const coreExpenses = computed(() => round(budgetItems.value.filter(i => i.is_core).reduce((acc,i) => acc + getMonthlyCost(i), 0)));
-            const activeMonthlyPay = computed(() => activeIncomes.value.reduce((total, inc) => total + (inc.frequency === 'Bi-Weekly' ? (Number(inc.amount) * 26) / 12 : inc.frequency === 'Semi-Monthly' ? Number(inc.amount) * 2 : Number(inc.amount)), 0));            const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
+            const activeMonthlyPay = computed(() => activeIncomes.value.reduce((total, inc) => total + (inc.frequency === 'Bi-Weekly' ? (Number(inc.amount) * 26) / 12 : inc.frequency === 'Semi-Monthly' ? Number(inc.amount) * 2 : Number(inc.amount)), 0));  
+            const projectedBalance = computed(() => {
+            return (activeMonthlyPay.value || 0) - (totalMonthlyBurn.value || 0);
+            });
+            const isScenarioActive = computed(() => budgetItems.value.some(i => !i.includedInScenario && i.frequency !== 'One-Time'));
             const safeToSpend = computed(() => { if (dashboardMode.value === 'survival') return round(activeMonthlyPay.value - coreExpenses.value); if (dashboardMode.value === 'dream') { let burn = 0; budgetItems.value.forEach(i => { if (i.is_wishlist) { burn += getMonthlyCost(i); } else { const replacedBy = budgetItems.value.find(w => w.is_wishlist && w.replaces_id === i.id); if (!replacedBy) burn += getMonthlyCost(i); } }); return round(activeMonthlyPay.value - burn); } const standardBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((acc,i) => acc + getMonthlyCost(i), 0); return round(activeMonthlyPay.value - standardBurn); });
             const dashboardBurn = computed(() => round(activeMonthlyPay.value - safeToSpend.value));
             const burnRate = computed(() => activeMonthlyPay.value > 0 ? Math.round((dashboardBurn.value / activeMonthlyPay.value) * 100) : 0);
