@@ -5501,8 +5501,8 @@ const fetchGiftCards = async () => {
     const d = new Date();
     d.setDate(today.getDate() + (index - 1)); 
     
-    // Updates the accurate variable used in your HTML
-    cashFlowLowPoint.value = { 
+    // 🟢 Write directly to the ref, not the read-only computed property!
+    lowPointData.value = { 
         amount: min || 0, 
         date: index <= 0 ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
     };
