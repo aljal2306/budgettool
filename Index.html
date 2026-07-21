@@ -5611,10 +5611,9 @@ const fetchGiftCards = async () => {
     const pointBorderColors = forecastData.value.map((_, i) => i === goalIndex ? '#F59E0B' : '#10B981');
 
     // 🟢 VISUAL UPGRADE: The beautiful transparent emerald gradient
-    const emeraldGradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 200);
-    emeraldGradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); // Tailwind emerald-500
+    const emeraldGradient = ctx.createLinearGradient(0, 0, 0, 600);
+    emeraldGradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); 
     emeraldGradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
-
     chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
