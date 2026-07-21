@@ -5431,7 +5431,7 @@ const fetchGiftCards = async () => {
         freq: inc.frequency
     }));
 
-    const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false);
+    const runImpulse = impulseResult.value !== null || (impulseItem.value?.cost && showImpulseModal.value === false);
     const impulseCost = Number(impulseItem.value.cost);
     const impulseDate = impulseItem.value.date;
 
