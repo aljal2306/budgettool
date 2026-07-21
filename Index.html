@@ -491,7 +491,6 @@
 </div>
                           
                           <div id="tour-due-soon" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 border-t-4 border-t-rose-500 relative overflow-hidden order-2 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-    
     <div class="flex flex-col gap-3 mb-4 relative z-10">
         <div class="flex justify-between items-center">
             <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Due Soon</h3>
@@ -580,8 +579,8 @@
         </div>
     </div>
 </div>
-                            <div id="tour-cash-flow" class="lg:col-span-2 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 border-t-4 border-t-blue-500 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-    
+
+<div id="tour-cash-flow" class="lg:col-span-2 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 border-t-4 border-t-blue-500 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
     <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
         <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase flex items-center gap-2">
             <span class="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 p-1 rounded">📉</span> 30-Day Flow
@@ -621,10 +620,9 @@
         <span>{{ impulseResult.message }}</span>
         <button @click="clearImpulse" class="ml-2 underline opacity-70 hover:opacity-100">Clear</button>
     </div>
-
 </div>
 
-                        <div class="w-full mb-8">
+<div class="w-full mb-8">
     <div id="tour-breakdown" class="w-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 border-t-4 border-t-cyan-500 flex flex-col md:flex-row items-center gap-10 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
         
         <div class="flex-none relative w-44 h-44">
@@ -666,169 +664,151 @@
                     </button>
                 </div>
             </div>
-
-            <div v-if="!showActualSpendMode" class="flex gap-1 bg-slate-50 dark:bg-slate-900/50 p-1 rounded-lg w-full mb-6 border dark:border-slate-700">
-                <button @click.stop="setDashboardMode('survival')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='survival'?'bg-white dark:bg-slate-600 shadow text-orange-600 dark:text-orange-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🛡️ Survival</button>
-                <button @click.stop="setDashboardMode('standard')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='standard'?'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">⚖️ Standard</button>
-                <button @click.stop="setDashboardMode('dream')" class="flex-1 px-2 py-1.5 text-[10px] rounded-md font-bold transition" :class="dashboardMode==='dream'?'bg-white dark:bg-slate-600 shadow text-purple-600 dark:text-purple-300':'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'">🚀 Dream</button>
-            </div>
-
-            <div v-if="showActualSpendMode" class="mb-6 animate-fade-in">
-                <div class="flex justify-between items-center mb-1 text-[10px] font-bold text-slate-500 uppercase">
-                    <span>Overall Budget Progress</span>
-                    <span>{{ totalBudget > 0 ? Math.round((grandTotal / totalBudget) * 100) : 0 }}%</span>
-                </div>
-                <div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden border dark:border-slate-600">
-                    <div class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-1000" 
-                         :style="{ width: Math.min(100, (grandTotal / totalBudget) * 100) + '%' }"></div>
-                </div>
-            </div>
-
-            <div id="cat-legend" class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-1"></div>
         </div>
     </div>
 </div>
-         <div class="col-span-1 md:col-span-2 lg:col-span-4 mb-8">
-                            <div id="tour-gift-wallet" @click="showWalletModal = true" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 border-t-4 border-t-pink-500 cursor-pointer group hover:border-pink-400 relative overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-    <div class="absolute right-0 top-0 w-24 h-24 bg-pink-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-pink-500/20"></div>
-    
-    <div class="relative z-10 flex justify-between items-start">
-        <div>
-            <div class="flex items-center gap-2 mb-2">
-                <div class="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/30 text-pink-500 flex items-center justify-center text-sm">
-                    🎁
-                </div>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Gift Cards</span>
-            </div>
-            <div class="text-2xl font-black text-slate-800 dark:text-white">
-                ${{ (totalGiftCardBalance || 0).toLocaleString() }}
-            </div>
-            <div class="text-xs text-pink-500 font-bold mt-1 flex items-center gap-2">
-                <span>{{ giftCards.length }} Active Cards</span>
-                <span v-if="!isPremiumUser && giftCards.length >= 3" class="text-[9px] bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 px-1.5 rounded-sm font-bold border border-amber-200 dark:border-amber-800">
-                    Max Free
-                </span>
-            </div>
-        </div>
+
+<div class="col-span-1 md:col-span-2 lg:col-span-4 mb-8">
+    <div id="tour-gift-wallet" @click="showWalletModal = true" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 border-t-4 border-t-pink-500 cursor-pointer group hover:border-pink-400 relative overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+        <div class="absolute right-0 top-0 w-24 h-24 bg-pink-500/10 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-pink-500/20"></div>
         
-        <div class="text-slate-300 group-hover:text-pink-500 transition transform group-hover:translate-x-1">
-            →
-        </div>
-    </div>
-</div>
-
-<transition name="fade">
-    <div v-if="showWalletModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showWalletModal = false">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
+        <div class="relative z-10 flex justify-between items-start">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/30 text-pink-500 flex items-center justify-center text-sm">
+                        🎁
+                    </div>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Gift Cards</span>
+                </div>
+                <div class="text-2xl font-black text-slate-800 dark:text-white">
+                    ${{ (totalGiftCardBalance || 0).toLocaleString() }}
+                </div>
+                <div class="text-xs text-pink-500 font-bold mt-1 flex items-center gap-2">
+                    <span>{{ giftCards.length }} Active Cards</span>
+                    <span v-if="!isPremiumUser && giftCards.length >= 3" class="text-[9px] bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 px-1.5 rounded-sm font-bold border border-amber-200 dark:border-amber-800">
+                        Max Free
+                    </span>
+                </div>
+            </div>
             
-            <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center flex-shrink-0">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <span>💳</span> My Wallet
-                    </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Total: ${{ (totalGiftCardBalance || 0).toLocaleString() }}</p>
-                </div>
-                <div class="flex gap-3">
-                    <button v-if="!isPremiumUser && giftCards.length >= 3" 
-                            @click="requirePremium(() => {})" 
-                            class="text-xs bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 border border-amber-200 dark:border-amber-800/50 font-bold px-3 py-2 rounded-lg hover:bg-amber-100 transition hidden sm:flex items-center gap-1 shadow-sm">
-                        👑 Max Limit Reached
-                    </button>
-                    <button v-else 
-                            @click="showGiftCardForm = true; giftCardInput.owner = ''" 
-                            class="text-xs bg-emerald-50 text-emerald-600 font-bold px-3 py-2 rounded-lg hover:bg-emerald-100 transition hidden sm:block">
-                        + Add New Card
-                    </button>
-                    
-                    <button @click="showWalletModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition flex items-center justify-center">
-                        &times;
-                    </button>
-                </div>
+            <div class="text-slate-300 group-hover:text-pink-500 transition transform group-hover:translate-x-1">
+                →
             </div>
+        </div>
+    </div>
 
-            <button v-if="!isPremiumUser && giftCards.length >= 3" 
-                    @click="requirePremium(() => {})" 
-                    class="absolute bottom-6 right-6 bg-amber-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-xl font-bold z-50 sm:hidden border-2 border-white dark:border-slate-800">
-                👑
-            </button>
-            <button v-else 
-                    @click="showGiftCardForm = true; giftCardInput.owner = ''" 
-                    class="absolute bottom-6 right-6 bg-emerald-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-2xl font-bold z-50 sm:hidden">
-                +
-            </button>
-
-            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+    <transition name="fade">
+        <div v-if="showWalletModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showWalletModal = false">
+            <div class="bg-white dark:bg-slate-800 w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-200 dark:border-slate-700">
                 
-                <div v-if="giftCards.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
-                    <div class="text-4xl mb-2">📭</div>
-                    <p>Your wallet is empty.</p>
+                <div class="p-5 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-between items-center flex-shrink-0">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <span>💳</span> My Wallet
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Total: ${{ (totalGiftCardBalance || 0).toLocaleString() }}</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button v-if="!isPremiumUser && giftCards.length >= 3" 
+                                @click="requirePremium(() => {})" 
+                                class="text-xs bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 border border-amber-200 dark:border-amber-800/50 font-bold px-3 py-2 rounded-lg hover:bg-amber-100 transition hidden sm:flex items-center gap-1 shadow-sm">
+                            👑 Max Limit Reached
+                        </button>
+                        <button v-else 
+                                @click="showGiftCardForm = true; giftCardInput.owner = ''" 
+                                class="text-xs bg-emerald-50 text-emerald-600 font-bold px-3 py-2 rounded-lg hover:bg-emerald-100 transition hidden sm:block">
+                            + Add New Card
+                        </button>
+                        
+                        <button @click="showWalletModal = false" class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-8 h-8 rounded-full font-bold hover:bg-slate-300 transition flex items-center justify-center">
+                            &times;
+                        </button>
+                    </div>
                 </div>
 
-                <div v-else class="space-y-3">
-                    <div v-for="(cards, owner) in groupedGiftCards" :key="owner" class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-800">
-                        
-                        <div @click="toggleOwner(owner)" class="p-4 bg-slate-50 dark:bg-slate-700/50 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition select-none group sticky top-0 z-10">
-                            <div class="flex items-center gap-3">
-                                <div class="w-6 h-6 flex items-center justify-center text-slate-400 transition-transform duration-200" :class="openOwners[owner] ? 'rotate-90' : ''">▶</div>
-                                <div>
-                                    <h4 class="font-bold text-sm text-slate-800 dark:text-white">{{ owner }}</h4>
-                                    <p class="text-[10px] text-slate-500 font-medium">{{ cards.length }} Cards</p>
+                <button v-if="!isPremiumUser && giftCards.length >= 3" 
+                        @click="requirePremium(() => {})" 
+                        class="absolute bottom-6 right-6 bg-amber-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-xl font-bold z-50 sm:hidden border-2 border-white dark:border-slate-800">
+                    👑
+                </button>
+                <button v-else 
+                        @click="showGiftCardForm = true; giftCardInput.owner = ''" 
+                        class="absolute bottom-6 right-6 bg-emerald-500 text-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-2xl font-bold z-50 sm:hidden">
+                    +
+                </button>
+
+                <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    
+                    <div v-if="giftCards.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
+                        <div class="text-4xl mb-2">📭</div>
+                        <p>Your wallet is empty.</p>
+                    </div>
+
+                    <div v-else class="space-y-3">
+                        <div v-for="(cards, owner) in groupedGiftCards" :key="owner" class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-800">
+                            
+                            <div @click="toggleOwner(owner)" class="p-4 bg-slate-50 dark:bg-slate-700/50 flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition select-none group sticky top-0 z-10">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-6 h-6 flex items-center justify-center text-slate-400 transition-transform duration-200" :class="openOwners[owner] ? 'rotate-90' : ''">▶</div>
+                                    <div>
+                                        <h4 class="font-bold text-sm text-slate-800 dark:text-white">{{ owner }}</h4>
+                                        <p class="text-[10px] text-slate-500 font-medium">{{ cards.length }} Cards</p>
+                                    </div>
+                                </div>
+                                <div class="font-mono font-bold text-sm text-emerald-600 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-3 py-1 rounded-lg shadow-sm">
+                                    ${{ cards.reduce((sum, c) => sum + Number(c.balance), 0).toFixed(2) }}
                                 </div>
                             </div>
-                            <div class="font-mono font-bold text-sm text-emerald-600 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-3 py-1 rounded-lg shadow-sm">
-                                ${{ cards.reduce((sum, c) => sum + Number(c.balance), 0).toFixed(2) }}
-                            </div>
-                        </div>
 
-                        <transition name="accordion">
-                            <div v-if="openOwners[owner]" class="border-t border-slate-200 dark:border-slate-700">
-                                <div v-for="card in cards" :key="card.id" class="group p-3 flex items-center justify-between border-b dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
-    
-    <div class="flex items-center gap-3 flex-1 min-w-0 mr-2">
-        <div @click="viewCardImage(card)" class="w-10 h-10 flex-shrink-0 rounded-lg bg-slate-100 dark:bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer shadow-sm border border-slate-200 dark:border-slate-500 hover:opacity-80 transition relative">
-            <img v-if="card.image_data" :src="card.image_data" class="w-full h-full object-cover">
-            <span v-else class="text-[10px] text-slate-400">📷</span>
-        </div>
-        <div class="truncate">
-            <div class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ card.name }}</div>
-            <div class="text-[10px] text-slate-400">Upd: {{ formatDate(card.created_at.split('T')[0]) }}</div>
-        </div>
-    </div>
-
-    <div class="flex items-center gap-3 flex-shrink-0">
-        <div class="font-mono font-bold text-slate-700 dark:text-white text-sm bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
-            ${{ Number(card.balance).toFixed(2) }}
-        </div>
+                            <transition name="accordion">
+                                <div v-if="openOwners[owner]" class="border-t border-slate-200 dark:border-slate-700">
+                                    <div v-for="card in cards" :key="card.id" class="group p-3 flex items-center justify-between border-b dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
         
-        <div class="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition duration-200">
-            <button @click="manageCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Log Transaction">📝</button>
-            <button @click="editGiftCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-orange-600 bg-white border border-slate-200 hover:border-orange-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Edit Details">⚙️</button>
-            <button @click="deleteGiftCard(card.id)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 bg-white border border-slate-200 hover:border-red-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Delete Card">🗑️</button>
-        </div>
-    </div>
+                                        <div class="flex items-center gap-3 flex-1 min-w-0 mr-2">
+                                            <div @click="viewCardImage(card)" class="w-10 h-10 flex-shrink-0 rounded-lg bg-slate-100 dark:bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer shadow-sm border border-slate-200 dark:border-slate-500 hover:opacity-80 transition relative">
+                                                <img v-if="card.image_data" :src="card.image_data" class="w-full h-full object-cover">
+                                                <span v-else class="text-[10px] text-slate-400">📷</span>
+                                            </div>
+                                            <div class="truncate">
+                                                <div class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ card.name }}</div>
+                                                <div class="text-[10px] text-slate-400">Upd: {{ formatDate(card.created_at.split('T')[0]) }}</div>
+                                            </div>
+                                        </div>
 
-</div>
-                                <div class="p-2 text-center bg-slate-50 dark:bg-slate-900/30 border-t dark:border-slate-700">
-                                    <button v-if="!isPremiumUser && giftCards.length >= 3" 
-                                            @click="requirePremium(() => {})" 
-                                            class="text-xs font-bold text-amber-500 dark:text-amber-400 py-2 px-4 rounded flex items-center justify-center gap-1 mx-auto bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 shadow-sm transition">
-                                        👑 Premium: Add more for {{ owner }}
-                                    </button>
-                                    <button v-else 
-                                            @click="prepareAddForOwner(owner)" 
-                                            class="text-xs font-bold text-slate-400 hover:text-blue-500 py-2 px-4 rounded transition flex items-center justify-center gap-1 mx-auto hover:bg-white dark:hover:bg-slate-700 shadow-sm border border-transparent hover:border-slate-200">
-                                        <span>+</span> Add another for {{ owner }}
-                                    </button>
+                                        <div class="flex items-center gap-3 flex-shrink-0">
+                                            <div class="font-mono font-bold text-slate-700 dark:text-white text-sm bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
+                                                ${{ Number(card.balance).toFixed(2) }}
+                                            </div>
+                                            
+                                            <div class="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition duration-200">
+                                                <button @click="manageCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Log Transaction">📝</button>
+                                                <button @click="editGiftCard(card)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-orange-600 bg-white border border-slate-200 hover:border-orange-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Edit Details">⚙️</button>
+                                                <button @click="deleteGiftCard(card.id)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 bg-white border border-slate-200 hover:border-red-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg transition shadow-sm" title="Delete Card">🗑️</button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="p-2 text-center bg-slate-50 dark:bg-slate-900/30 border-t dark:border-slate-700">
+                                        <button v-if="!isPremiumUser && giftCards.length >= 3" 
+                                                @click="requirePremium(() => {})" 
+                                                class="text-xs font-bold text-amber-500 dark:text-amber-400 py-2 px-4 rounded flex items-center justify-center gap-1 mx-auto bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 shadow-sm transition">
+                                            👑 Premium: Add more for {{ owner }}
+                                        </button>
+                                        <button v-else 
+                                                @click="prepareAddForOwner(owner)" 
+                                                class="text-xs font-bold text-slate-400 hover:text-blue-500 py-2 px-4 rounded transition flex items-center justify-center gap-1 mx-auto hover:bg-white dark:hover:bg-slate-700 shadow-sm border border-transparent hover:border-slate-200">
+                                            <span>+</span> Add another for {{ owner }}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        </transition>
+                            </transition>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</transition>
-
+    </transition>
+</div>
 <transition name="fade">
     <div v-if="showGiftCardForm" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
         <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
