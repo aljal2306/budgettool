@@ -5452,8 +5452,7 @@ const fetchGiftCards = async () => {
         labels.push(dateLabel);
 
         const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr && !b.budget_items.is_variable);
-        const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0);
-
+        const dailyDrop = billsDue.reduce((sum, b) => sum + (b.amount || 0), 0);
         currentSimBalance -= (dailyDrop + dailyVariableBurn);
         impulseSimBalance -= (dailyDrop + dailyVariableBurn);
 
