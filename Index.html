@@ -5403,125 +5403,199 @@ const fetchGiftCards = async () => {
 
             // --- DASHBOARD CHART ---
             const renderDashboardChart = () => {
-                const ctx = document.getElementById('dashboardChart');
-                if (!ctx) return;
-                if (dashboardChartInstance) dashboardChartInstance.destroy();
+    const canvas = document.getElementById('dashboardChart');
+    if (!canvas) return;
+    
+    // We need the '2d' context to build the gradient
+    const ctx = canvas.getContext('2d');
+    
+    if (dashboardChartInstance) dashboardChartInstance.destroy();
 
-                const labels = [];
-                const dataCurrent = [];
-                const dataImpulse = [];
+    const labels = [];
+    const dataCurrent = [];
+    const dataImpulse = [];
 
-                let currentSimBalance = forecastSettings.value.currentBalance || 0;
-                let impulseSimBalance = currentSimBalance;
+    let currentSimBalance = forecastSettings.value.currentBalance || 0;
+    let impulseSimBalance = currentSimBalance;
 
-                labels.push('Now');
-                dataCurrent.push(currentSimBalance);
-                dataImpulse.push(impulseSimBalance);
+    labels.push('Now');
+    dataCurrent.push(currentSimBalance);
+    dataImpulse.push(impulseSimBalance);
 
-                const today = new Date();
-                let simIncomes = incomes.value.map(inc => ({
-                    amount: Number(inc.amount),
-                    nextDate: new Date(inc.next_pay_date),
-                    freq: inc.frequency
-                }));
+    const today = new Date();
+    
+    // 🟢 BUG FIX: Map over activeIncomes instead of incomes so archived jobs don't break the graph
+    let simIncomes = activeIncomes.value.map(inc => ({
+        amount: Number(inc.amount),
+        nextDate: new Date(inc.next_pay_date),
+        freq: inc.frequency
+    }));
 
-                const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false);
-                const impulseCost = Number(impulseItem.value.cost);
-                const impulseDate = impulseItem.value.date;
+    const runImpulse = impulseResult.value !== null || (impulseItem.value.cost && showImpulseModal.value === false);
+    const impulseCost = Number(impulseItem.value.cost);
+    const impulseDate = impulseItem.value.date;
 
-                const activeVariableItems = budgetItems.value.filter(item => {
-                    if (!item.is_variable) return false;
-                    if (dashboardMode.value === 'survival') return item.is_core;
-                    if (dashboardMode.value === 'standard') return !item.is_wishlist;
-                    return true;
-                });
-                const monthlyVariableTotal = activeVariableItems.reduce((sum, item) => sum + item.amount, 0);
-                const dailyVariableBurn = monthlyVariableTotal / 30;
+    const activeVariableItems = budgetItems.value.filter(item => {
+        if (!item.is_variable) return false;
+        if (dashboardMode.value === 'survival') return item.is_core;
+        if (dashboardMode.value === 'standard') return !item.is_wishlist;
+        return true;
+    });
+    const monthlyVariableTotal = activeVariableItems.reduce((sum, item) => sum + item.amount, 0);
+    const dailyVariableBurn = monthlyVariableTotal / 30;
 
-                for (let i = 0; i < 30; i++) {
-                    const d = new Date();
-                    d.setDate(today.getDate() + i);
-                    const dStr = d.toISOString().split('T')[0];
-                    const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    labels.push(dateLabel);
+    for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() + i);
+        const dStr = d.toISOString().split('T')[0];
+        const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        labels.push(dateLabel);
 
-                    const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr && !b.budget_items.is_variable);
-                    const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0);
+        const billsDue = bills.value.filter(b => !b.is_paid && b.due_date === dStr && !b.budget_items.is_variable);
+        const dailyDrop = billsDue.reduce((sum, b) => sum + b.budget_items.amount, 0);
 
-                    currentSimBalance -= (dailyDrop + dailyVariableBurn);
-                    impulseSimBalance -= (dailyDrop + dailyVariableBurn);
+        currentSimBalance -= (dailyDrop + dailyVariableBurn);
+        impulseSimBalance -= (dailyDrop + dailyVariableBurn);
 
-                    if (useTempPay.value) {
-                        let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null;
-                        const freq = calcInputs.value.payFrequency;
-                        const amt = calcResult.value ? calcResult.value.netPay : 0;
-                        if (nextPay && dStr === nextPay.toISOString().split('T')[0]) {
-                            currentSimBalance += amt;
-                            impulseSimBalance += amt;
-                            if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
-                            else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
-                            else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
+        if (useTempPay.value) {
+            let nextPay = calcInputs.value.nextPayDate ? new Date(calcInputs.value.nextPayDate) : null;
+            const freq = calcInputs.value.payFrequency;
+            const amt = calcResult.value ? calcResult.value.netPay : 0;
+            if (nextPay && dStr === nextPay.toISOString().split('T')[0]) {
+                currentSimBalance += amt;
+                impulseSimBalance += amt;
+                if (freq === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
+                else if (freq === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
+                else if (freq === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
+            }
+        } else {
+            simIncomes.forEach(inc => {
+                if (dStr === inc.nextDate.toISOString().split('T')[0]) {
+                    currentSimBalance += inc.amount;
+                    impulseSimBalance += inc.amount;
+                    if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14);
+                    else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15);
+                    else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1);
+                }
+            });
+        }
+
+        if (runImpulse && dStr === impulseDate) {
+            impulseSimBalance -= impulseCost;
+        }
+
+        dataCurrent.push(currentSimBalance);
+        dataImpulse.push(impulseSimBalance);
+    }
+
+    const activeData = runImpulse ? dataImpulse : dataCurrent;
+    const min = Math.min(...activeData);
+    const index = activeData.indexOf(min);
+    const d = new Date();
+    d.setDate(today.getDate() + (index - 1)); 
+    
+    // We assign this directly to cashFlowLowPoint.value since it seems you renamed the ref
+    cashFlowLowPoint.value = { 
+        amount: min, 
+        date: index === 0 ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
+    };
+
+    // 🟢 VISUAL UPGRADE: Build the beautiful transparent gradients
+    const blueGradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 200);
+    blueGradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); // Tailwind blue-500
+    blueGradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+    const purpleGradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 200);
+    purpleGradient.addColorStop(0, 'rgba(147, 51, 234, 0.4)'); // Tailwind purple-600
+    purpleGradient.addColorStop(1, 'rgba(147, 51, 234, 0.0)');
+
+    dashboardChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Current',
+                data: dataCurrent,
+                borderColor: '#3B82F6',
+                backgroundColor: blueGradient, // Applies the gradient fill
+                borderWidth: 3,
+                pointRadius: 0,
+                pointHoverRadius: 6, // Shows a clean dot only on hover
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#3B82F6',
+                pointBorderWidth: 2,
+                fill: true, // Turns the line into an Area chart!
+                tension: 0.4 // Smooths out the jagged points into flowing curves
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleFont: { size: 11 },
+                    bodyFont: { size: 13, weight: 'bold' },
+                    padding: 10,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
                         }
-                    } else {
-                        simIncomes.forEach(inc => {
-                            if (dStr === inc.nextDate.toISOString().split('T')[0]) {
-                                currentSimBalance += inc.amount;
-                                impulseSimBalance += inc.amount;
-                                if (inc.freq === 'Bi-Weekly') inc.nextDate.setDate(inc.nextDate.getDate() + 14);
-                                else if (inc.freq === 'Semi-Monthly') inc.nextDate.setDate(inc.nextDate.getDate() + 15);
-                                else if (inc.freq === 'Monthly') inc.nextDate.setMonth(inc.nextDate.getMonth() + 1);
-                            }
-                        });
                     }
-
-                    if (runImpulse && dStr === impulseDate) {
-                        impulseSimBalance -= impulseCost;
-                    }
-
-                    dataCurrent.push(currentSimBalance);
-                    dataImpulse.push(impulseSimBalance);
                 }
-
-                const activeData = runImpulse ? dataImpulse : dataCurrent;
-                const min = Math.min(...activeData);
-                const index = activeData.indexOf(min);
-                const d = new Date();
-                d.setDate(today.getDate() + (index - 1)); 
-                lowPointData.value = { 
-                    amount: min, 
-                    date: index === 0 ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
-                };
-
-                dashboardChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Current',
-                            data: dataCurrent,
-                            borderColor: '#3B82F6',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            fill: false,
-                            tension: 0.1
-                        }]
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 10 },
+                        color: '#94a3b8',
+                        maxTicksLimit: 6
                     }
-                });
-
-                if (runImpulse) {
-                    dashboardChartInstance.data.datasets.push({
-                        label: 'With Purchase',
-                        data: dataImpulse,
-                        borderColor: '#9333EA',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0.1
-                    });
+                },
+                y: {
+                    grid: {
+                        color: (context) => context.tick.value === 0 ? 'rgba(148, 163, 184, 0.4)' : 'rgba(0,0,0,0)', // Hides all grid lines except the Zero Line!
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        font: { size: 10 },
+                        color: '#94a3b8',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
                 }
-                dashboardChartInstance.update();
-            };
+            }
+        }
+    });
+
+    if (runImpulse) {
+        dashboardChartInstance.data.datasets.push({
+            label: 'With Purchase',
+            data: dataImpulse,
+            borderColor: '#9333EA',
+            backgroundColor: purpleGradient,
+            borderWidth: 3,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#9333EA',
+            pointBorderWidth: 2,
+            fill: true,
+            tension: 0.4
+        });
+        dashboardChartInstance.update();
+    }
+};
 
             const renderForecastChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
 
