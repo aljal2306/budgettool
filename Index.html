@@ -5495,7 +5495,7 @@ const fetchGiftCards = async () => {
     d.setDate(today.getDate() + (index - 1)); 
     
     // 🟢 REVERTED: Back to the correct variable name your script uses
-    lowPointData.value = { 
+    cashFlowLowPoint.value = { 
         amount: min, 
         date: index === 0 ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
     };
