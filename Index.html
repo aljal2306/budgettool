@@ -5594,7 +5594,95 @@ const fetchGiftCards = async () => {
     }
 };
 
-            const renderForecastChart=()=>{const ctx=document.getElementById('forecastChart');if(!ctx)return;if(chartInstance)chartInstance.destroy();const goalIndex=forecastResults.value.affordableMonth?forecastResults.value.affordableIndex:-1;const pointStyles=forecastData.value.map((_,i)=>i===goalIndex?'star':'circle');const pointRadii=forecastData.value.map((_,i)=>i===goalIndex?10:4);const pointColors=forecastData.value.map((_,i)=>i===goalIndex?'#F59E0B':'#10B981');chartInstance=new Chart(ctx,{type:'line',data:{labels:forecastData.value.map(m=>m.name.split(' ')[0]),datasets:[{label:'Projected Balance',data:forecastData.value.map(m=>m.endBalance),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,pointStyle:pointStyles,pointRadius:pointRadii,pointBackgroundColor:pointColors,pointBorderColor:pointColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});};
+            const renderForecastChart = () => {
+    const canvas = document.getElementById('forecastChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (chartInstance) chartInstance.destroy();
+
+    const goalIndex = forecastResults.value.affordableMonth ? forecastResults.value.affordableIndex : -1;
+    
+    // 🟢 CUSTOM POINT LOGIC: Hides normal dots (0) for a sleek look, but keeps the Gold Star visible (8)!
+    const pointStyles = forecastData.value.map((_, i) => i === goalIndex ? 'star' : 'circle');
+    const pointRadii = forecastData.value.map((_, i) => i === goalIndex ? 8 : 0);
+    const pointHoverRadii = forecastData.value.map((_, i) => i === goalIndex ? 10 : 6);
+    const pointColors = forecastData.value.map((_, i) => i === goalIndex ? '#F59E0B' : '#ffffff');
+    const pointBorderColors = forecastData.value.map((_, i) => i === goalIndex ? '#F59E0B' : '#10B981');
+
+    // 🟢 VISUAL UPGRADE: The beautiful transparent emerald gradient
+    const emeraldGradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 200);
+    emeraldGradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); // Tailwind emerald-500
+    emeraldGradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: forecastData.value.map(m => m.name.split(' ')[0]),
+            datasets: [{
+                label: 'Projected Balance',
+                data: forecastData.value.map(m => m.endBalance),
+                borderColor: '#10B981',
+                backgroundColor: emeraldGradient, // Applies the gradient fill
+                borderWidth: 3,
+                fill: true, // Turns the line into an Area chart
+                tension: 0.4, // Smooth flowing curves
+                pointStyle: pointStyles,
+                pointRadius: pointRadii,
+                pointHoverRadius: pointHoverRadii,
+                pointBackgroundColor: pointColors,
+                pointBorderColor: pointBorderColors,
+                pointBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleFont: { size: 11 },
+                    bodyFont: { size: 13, weight: 'bold' },
+                    padding: 10,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 10 },
+                        color: '#94a3b8'
+                    }
+                },
+                y: {
+                    grid: {
+                        color: (context) => context.tick.value === 0 ? 'rgba(148, 163, 184, 0.4)' : 'rgba(0,0,0,0)', // Hides all grid lines except the Zero Line
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        font: { size: 10 },
+                        color: '#94a3b8',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
 
 
   // --- TRUE UP WIZARD STATE ---
