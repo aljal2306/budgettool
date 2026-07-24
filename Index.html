@@ -6183,6 +6183,7 @@ const addExpense = (m) => {
         m.newExpenseId = ''; 
         
         runForecast(); 
+        saveActiveForecast();
     } 
 };
 
@@ -6199,6 +6200,7 @@ const removeExpense = (m, index) => {
     const ov = getOverride(m.name); 
     ov.extraExpenses.splice(index, 1); 
     runForecast(); 
+    saveActiveForecast();
 };
 
 const applyGoalToMonth = (m) => {
