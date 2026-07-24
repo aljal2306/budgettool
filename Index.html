@@ -8180,7 +8180,14 @@ watch(currentView, async (newView) => {
     }
 }, { immediate: true }); // 🛠️ THE FIX: This forces it to run on page load if they start on the Debt tab!
 
-            fetchForecastSlots();
+            // 🟢 WAKE UP FORECAST & LOAD BASE LAYER
+            fetchForecastSlots().then(() => {
+                loadForecastSlot(0, true);
+            });
+            
+            fetchGiftCards();
+        }
+    });
             fetchGiftCards();
         }
     });
