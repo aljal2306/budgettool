@@ -6223,7 +6223,7 @@ const applyGoalToMonth = (m) => {
     runForecast();
 };
             const saveForecastSlot = async (i) => { 
-                const existing = savedForecasts.value.find(slot => slot.slot_index === i);
+                const existing = savedForecasts.value.find(slot => Number(slot.slot_index) === Number(i));
                 let name = existing ? existing.name : '';
                 
                 if (existing) { 
@@ -6289,7 +6289,7 @@ const applyGoalToMonth = (m) => {
 };
           
           const loadForecastSlot = (i, isSilent = false) => {
-    const s = savedForecasts.value.find(slot => slot.slot_index === i);
+    const s = savedForecasts.value.find(slot => Number(slot.slot_index) === Number(i));
     
     // 🟢 NEW: If the slot isn't in the database yet...
     if (!s) {
