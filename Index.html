@@ -6169,6 +6169,7 @@ const updateMonthIncome = (m) => {
     const ov = getOverride(m.name); 
     ov.income = m.income === '' || m.income === null ? null : Number(m.income); 
     runForecast(); 
+    saveActiveForecast();
 };
 
 const addExpense = (m) => { 
