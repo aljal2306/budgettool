@@ -5425,6 +5425,9 @@ const fetchGiftCards = async () => {
     const ctx = canvas.getContext('2d');
     if (dashboardChartInstance) dashboardChartInstance.destroy();
 
+    // 🟢 ADDED: We define the months here so the bridge can use them
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
     const labels = [];
     const dataCurrent = [];
     const dataImpulse = [];
@@ -5445,7 +5448,6 @@ const fetchGiftCards = async () => {
         freq: inc.frequency || 'Bi-Weekly'
     }));
 
-    // 🟢 SAFETY NET 1: Prevents crashing if the Impulse item is empty
     const runImpulse = impulseResult.value !== null || (impulseItem.value?.cost && showImpulseModal.value === false);
     const impulseCost = Number(impulseItem.value?.cost || 0);
     const impulseDate = impulseItem.value?.date || null;
@@ -5467,7 +5469,6 @@ const fetchGiftCards = async () => {
         const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         labels.push(dateLabel);
 
-        // 🟢 SAFETY NET 2: Bulletproof filtering and flat amount extraction to prevent Goal crashes
         const billsDue = bills.value.filter(b => {
             if (b.is_paid || b.due_date !== dStr) return false;
             const isVar = b.budget_items?.is_variable || false;
@@ -5476,14 +5477,15 @@ const fetchGiftCards = async () => {
         
         let dailyDrop = billsDue.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
 
-        // 🟢 BRIDGE: Grab any manual extra expenses added for the current month in the forecast!
-        if (i === 0) { // If it's today / the current month
+        // 🟢 THE BRIDGE: Grab any manual extra expenses added to the forecast!
+        if (i === 0) { 
             const currentMonthName = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
             const ov = forecastOverrides.value[currentMonthName];
+            
             if (ov && ov.extraExpenses && ov.extraExpenses.length > 0) {
-                // Spread out any manual extra expenses across today so they reflect immediately
+                // Instantly drops the manual expenses onto today's balance
                 const extraTotal = ov.extraExpenses.reduce((acc, ex) => acc + Number(ex.amount || 0), 0);
-                if (i === 0) dailyDrop += extraTotal; // Drops them on day zero (today)
+                dailyDrop += extraTotal; 
             }
         }
 
@@ -5527,7 +5529,6 @@ const fetchGiftCards = async () => {
     const d = new Date();
     d.setDate(today.getDate() + (index - 1)); 
     
-    // 🟢 Write directly to the ref, not the read-only computed property!
     lowPointData.value = { 
         amount: min || 0, 
         date: index <= 0 ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
