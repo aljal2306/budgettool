@@ -6289,10 +6289,18 @@ const applyGoalToMonth = (m) => {
 };
           
           const loadForecastSlot = (i, isSilent = false) => {
-    // 🟢 THE FIX: Search the array for the exact slot_index, instead of just grabbing the first item!
     const s = savedForecasts.value.find(slot => slot.slot_index === i);
     
-    if (!s) return; 
+    // 🟢 NEW: If the slot isn't in the database yet...
+    if (!s) {
+        // ...and we are trying to load the Active layer, build it for the very first time!
+        if (i === 0) {
+            currentLoadedSlotIndex.value = 0;
+            currentScenarioName.value = 'Active Forecast';
+            saveActiveForecast(); 
+        }
+        return; 
+    }
 
     if (!isSilent && !confirm(`Load scenario "${s.name}"?`)) return;
 
