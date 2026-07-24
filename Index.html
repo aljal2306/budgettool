@@ -6255,7 +6255,36 @@ const applyGoalToMonth = (m) => {
                     currentScenarioName.value = name;
                 }
             };
+          
+            const saveActiveForecast = async () => {
+    // Safety check: Don't overwrite your base layer if you are currently viewing a saved scenario (Slots 1, 2, or 3)
+    if (currentLoadedSlotIndex.value !== null && currentLoadedSlotIndex.value !== 0) return;
 
+    const scenarioData = {
+        project: project.value,
+        mode: forecastMode.value,
+        overrides: forecastOverrides.value,
+        months: Number(forecastSettings.value.months) 
+    };
+
+    const payload = { 
+        user_id: session.value.user.id, 
+        slot_index: 0, 
+        name: 'Active Forecast', 
+        data: scenarioData 
+    };
+
+    // Upsert the data silently
+    const { error } = await _supabase.from('forecast_slots').upsert(payload, {onConflict:'user_id,slot_index'});
+    
+    if (!error) {
+        // Silently refresh the slots in the background so the app knows it exists
+        await fetchForecastSlots();
+        currentLoadedSlotIndex.value = 0;
+        currentScenarioName.value = 'Active Forecast';
+    }
+};
+          
             const loadForecastSlot = (i) => {
                 const s = savedForecasts.value[i];
                 if (s && confirm(`Load scenario "${s.name}"?`)) {
