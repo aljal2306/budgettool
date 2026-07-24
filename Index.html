@@ -6094,19 +6094,55 @@ const runForecast = () => {
 
         m.burn = round(monthlyBurn);
 
-        // --- 3. COMMITTED GOALS & FINAL MATH ---
+       // --- 3. COMMITTED GOALS & FINAL MATH ---
         const committedForMonth = goals.value.filter(g => !g.is_completed && g.committed_month === m.name);
 
         committedForMonth.forEach(g => {
-            m.extraExpenses.push({
-                id: g.id,
-                name: `🎯 ${g.name}`, 
-                amount: Number(g.target_amount),
-                isCommittedGoal: true 
-            });
+            // 🟢 FIX 1: Prevent goal double-dipping by subtracting what has already been funded!
+            const target = Number(g.target_amount || 0);
+            
+            // Safely catches standard database naming conventions for funded progress
+            const funded = Number(g.saved_amount || g.current_amount || g.funded_amount || 0); 
+            const remainingToFund = Math.max(0, target - funded);
+
+            // Only push the goal to the forecast if there is still money left to fund
+            if (remainingToFund > 0) {
+                m.extraExpenses.push({
+                    id: g.id,
+                    name: `🎯 ${g.name}`, 
+                    amount: remainingToFund, 
+                    isCommittedGoal: true 
+                });
+            }
         });
 
-        const totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+        let totalExtra = 0;
+
+        if (isCurrentMonth) {
+            // Find all real-world bills/transactions we have ALREADY paid this month
+            const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            const paidThisMonth = bills.value.filter(b => b.is_paid && (b.paid_date?.startsWith(currentMonthStr) || b.due_date?.startsWith(currentMonthStr)));
+
+            m.extraExpenses.forEach(ex => {
+                if (ex.isCommittedGoal) {
+                    totalExtra += ex.amount; // Already netted out the funded amount above
+                } else {
+                    // 🟢 FIX 2: Prevent manual expense double-dipping by checking if we already paid a bill with this name!
+                    const matchedPayments = paidThisMonth.filter(b => 
+                        (b.transaction_name && b.transaction_name.toLowerCase() === ex.name.toLowerCase()) || 
+                        (b.budget_items?.name && b.budget_items.name.toLowerCase() === ex.name.toLowerCase())
+                    );
+                    
+                    const amountAlreadyPaid = matchedPayments.reduce((sum, b) => sum + (Number(b.amount_paid) || Number(b.amount) || 0), 0);
+                    const remainingExpense = Math.max(0, ex.amount - amountAlreadyPaid);
+                    
+                    totalExtra += remainingExpense;
+                }
+            });
+        } else {
+            // Future months assume nothing has been paid yet
+            totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+        }
         
         // Calculate final balance based on EXACT remaining runway
         const monthlyNet = m.income - monthlyBurn - totalExtra;
@@ -6118,8 +6154,8 @@ const runForecast = () => {
             forecastResults.value.affordableIndex = idx;
         }
     });
-      renderForecastChart();
-
+    
+    renderForecastChart();
 };
 
             const getOverride = (monthName) => { 
