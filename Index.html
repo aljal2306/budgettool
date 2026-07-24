@@ -5986,13 +5986,17 @@ const runForecast = () => {
         if (isCurrentMonth) {
             let foundSpecificPaychecks = false;
             
-            // 🟢 FIX 1: Map over activeIncomes instead of all incomes
             activeIncomes.value.forEach(inc => {
                 if (!isIncomeActiveForMonth(inc, mDate)) return;
 
+                // 🟢 FIX: Moved OUTSIDE the loop! 
+                // As long as the job has a valid schedule, trust it and disable the fallback.
+                if (inc.next_pay_date) {
+                    foundSpecificPaychecks = true;
+                }
+
                 let nextPay = new Date(inc.next_pay_date);
                 while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) {
-                    foundSpecificPaychecks = true;
                     if (nextPay >= today) monthlyIncome += Number(inc.amount);
                     if (inc.frequency === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
                     else if (inc.frequency === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
