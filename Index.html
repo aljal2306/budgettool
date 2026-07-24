@@ -8199,15 +8199,21 @@ watch(currentView, async (newView) => {
     }
 }, { immediate: true }); // 🛠️ THE FIX: This forces it to run on page load if they start on the Debt tab!
 
-            // 🟢 WAKE UP FORECAST & LOAD BASE LAYER
+           // 🟢 WAKE UP FORECAST & LOAD BASE LAYER
             fetchForecastSlots().then(() => {
                 loadForecastSlot(0, true);
+                
+                // 🟢 Instantly render the Dashboard Chart with the newly loaded base layer data!
+                nextTick(() => {
+                    if (typeof renderDashboardChart === 'function') {
+                        renderDashboardChart();
+                    }
+                });
             });
             
             fetchGiftCards();
         }
     });
-
     _supabase.auth.onAuthStateChange((_, _session) => {
         session.value = _session;
     });
