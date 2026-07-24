@@ -7899,7 +7899,6 @@ const ytdIncomeStats = computed(() => {
                 due_date: todayStr,
                 paid_date: todayStr,
                 transaction_name: safeName,
-                payment_method: 'deposit'
             });
 
             // Push Row 2: The Commission
@@ -7911,7 +7910,6 @@ const ytdIncomeStats = computed(() => {
                 due_date: todayStr,
                 paid_date: todayStr,
                 transaction_name: `${safeName} - Commission`,
-                payment_method: 'deposit'
             });
             
         } else {
@@ -7924,7 +7922,6 @@ const ytdIncomeStats = computed(() => {
                 due_date: todayStr,
                 paid_date: todayStr,
                 transaction_name: safeName,
-                payment_method: 'deposit'
             });
         }
     } 
@@ -7938,7 +7935,6 @@ const ytdIncomeStats = computed(() => {
             due_date: todayStr,
             paid_date: todayStr,
             transaction_name: depositNote.value || 'Other Income', 
-            payment_method: 'deposit'
         });
     }
 
