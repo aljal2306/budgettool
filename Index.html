@@ -7872,46 +7872,58 @@ const ytdIncomeStats = computed(() => {
 
     // --- LOGIC FOR SCHEDULED INCOME ---
     if (depositStep.value === 'amount_input') {
-        const baseExpected = Number(selectedIncomeSource.value.amount);
+        
+        // 🟢 FIX 1: Safely strip dollar signs/commas in case the new total pay is a formatted string
+        const rawAmount = String(selectedIncomeSource.value.amount || '0').replace(/[^0-9.-]+/g, "");
+        const baseExpected = Number(rawAmount);
 
-        // 🟢 SPLIT TRANSACTION: If it's a bonus check AND the total is bigger than the base
+        // 🟢 FIX 2: Prevent missing name crashes and keep the transaction name clean
+        const safeName = (selectedIncomeSource.value.name || 'Income').replace(/\s?Deposit/i, '').trim();
+        
+        // 🟢 FIX 3: Capture the ID to link it to the ledger
+        const sourceId = selectedIncomeSource.value.id; 
+
+        // SPLIT TRANSACTION: If it's a bonus check AND the total is bigger than the base
         if (isBonus.value && totalAmount > baseExpected) {
             const commissionAmount = totalAmount - baseExpected;
             
             // Push Row 1: The Base Salary
             transactionsToLog.push({
                 user_id: session.value.user.id,
+                budget_item_id: sourceId,
                 amount_paid: baseExpected,
                 type: 'income',
                 is_paid: true,
                 due_date: todayStr,
                 paid_date: todayStr,
-                transaction_name: selectedIncomeSource.value.name.replace(/\s?Deposit/i, '').trim(),
+                transaction_name: safeName,
                 payment_method: 'deposit'
             });
 
             // Push Row 2: The Commission
             transactionsToLog.push({
                 user_id: session.value.user.id,
+                budget_item_id: sourceId,
                 amount_paid: commissionAmount,
                 type: 'income',
                 is_paid: true,
                 due_date: todayStr,
                 paid_date: todayStr,
-                transaction_name: `${selectedIncomeSource.value.name.replace(/\s?Deposit/i, '').trim()} - Commission`,
+                transaction_name: `${safeName} - Commission`,
                 payment_method: 'deposit'
             });
             
         } else {
-            // 🔵 STANDARD TRANSACTION (Just Base Pay)
+            // STANDARD TRANSACTION (Just Base Pay)
             transactionsToLog.push({
                 user_id: session.value.user.id,
+                budget_item_id: sourceId,
                 amount_paid: totalAmount,
                 type: 'income',
                 is_paid: true,
                 due_date: todayStr,
                 paid_date: todayStr,
-                transaction_name: selectedIncomeSource.value.name.replace(/\s?Deposit/i, '').trim(),
+                transaction_name: safeName,
                 payment_method: 'deposit'
             });
         }
@@ -7925,14 +7937,14 @@ const ytdIncomeStats = computed(() => {
             is_paid: true,
             due_date: todayStr,
             paid_date: todayStr,
-            transaction_name: depositNote.value || 'Other Income', // Captures your custom name!
+            transaction_name: depositNote.value || 'Other Income', 
             payment_method: 'deposit'
         });
     }
 
     try {
         // 2. Update Bank Balance
-        const newBalance = (forecastSettings.value.currentBalance || 0) + parseFloat(depositAmount.value);
+        const newBalance = (forecastSettings.value.currentBalance || 0) + parseFloat(totalAmount);
         
         const { error: balanceError } = await _supabase
             .from('user_settings')
@@ -7944,14 +7956,14 @@ const ytdIncomeStats = computed(() => {
         // 3. Log Transactions in Ledger (Bulk Insert)
         const { error: ledgerError } = await _supabase
             .from('ledger')
-            .insert(transactionsToLog); // Submits the array we built above
+            .insert(transactionsToLog); 
 
         if (ledgerError) throw ledgerError;
 
         // 4. Success!
         forecastSettings.value.currentBalance = newBalance;
         showDepositModal.value = false;
-        depositAmount.value = ''; // Reset for next time
+        depositAmount.value = ''; 
         depositNote.value = '';
         isBonus.value = false;
         
@@ -7959,8 +7971,9 @@ const ytdIncomeStats = computed(() => {
         triggerMoneyRain();
 
     } catch (e) {
-        console.error(e);
-        alert("Error processing deposit.");
+        console.error("Database Error:", e);
+        // 🟢 FIX 4: Output the actual database rejection reason to the screen for easy debugging!
+        alert(`Error processing deposit: ${e.message || 'Check console for details.'}`);
     }
 };
 
