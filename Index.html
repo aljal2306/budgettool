@@ -5474,8 +5474,18 @@ const fetchGiftCards = async () => {
             return !isVar;
         });
         
-        // This safely uses the flat amount, catching both standard bills and active goals!
-        const dailyDrop = billsDue.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+        let dailyDrop = billsDue.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+
+        // 🟢 BRIDGE: Grab any manual extra expenses added for the current month in the forecast!
+        if (i === 0) { // If it's today / the current month
+            const currentMonthName = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+            const ov = forecastOverrides.value[currentMonthName];
+            if (ov && ov.extraExpenses && ov.extraExpenses.length > 0) {
+                // Spread out any manual extra expenses across today so they reflect immediately
+                const extraTotal = ov.extraExpenses.reduce((acc, ex) => acc + Number(ex.amount || 0), 0);
+                if (i === 0) dailyDrop += extraTotal; // Drops them on day zero (today)
+            }
+        }
 
         currentSimBalance -= (dailyDrop + dailyVariableBurn);
         impulseSimBalance -= (dailyDrop + dailyVariableBurn);
