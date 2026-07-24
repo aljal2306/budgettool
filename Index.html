@@ -5946,21 +5946,17 @@ const runForecast = () => {
     const currentMonthStr = today.toISOString().slice(0, 7); 
     
     // 🛡️ SUNSET CLAUSE HELPER
-    // Evaluates if an income stream is alive for a specific target month string/date
     const isIncomeActiveForMonth = (inc, targetMonthDate) => {
         const expiry = inc.end_date || inc.endDate;
-        if (!expiry) return true; // No end date means permanent income
+        if (!expiry) return true; 
 
-        // Parse HTML Month input (Format: "YYYY-MM") safely
         const [expYear, expMonth] = expiry.split('-').map(Number);
         const expirationBaseline = new Date(expYear, expMonth - 1, 1);
         const projectionBaseline = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), 1);
 
-        // Active if the month being projected is less than or equal to the expiration month
         return projectionBaseline <= expirationBaseline;
     };
 
-    // Helper to normalize any single income into a flat monthly value based on frequency
     const calculateMonthlyValue = (inc) => {
         let monthlyValue = 0;
         if (inc.frequency === 'Semi-Monthly') monthlyValue = Number(inc.amount) * 2;
@@ -5989,8 +5985,9 @@ const runForecast = () => {
 
         if (isCurrentMonth) {
             let foundSpecificPaychecks = false;
-            incomes.value.forEach(inc => {
-                // Skip completely if this temporary income expired in a previous month
+            
+            // 🟢 FIX 1: Map over activeIncomes instead of all incomes
+            activeIncomes.value.forEach(inc => {
                 if (!isIncomeActiveForMonth(inc, mDate)) return;
 
                 let nextPay = new Date(inc.next_pay_date);
@@ -6004,9 +6001,9 @@ const runForecast = () => {
                 }
             });
 
-            // FALLBACK: If no specific dates were found, calculate clean current month active base pay
             if (!foundSpecificPaychecks) {
-                const currentMonthBasePay = incomes.value.reduce((sum, inc) => {
+                // 🟢 FIX 2: Map over activeIncomes instead of all incomes
+                const currentMonthBasePay = activeIncomes.value.reduce((sum, inc) => {
                     if (!isIncomeActiveForMonth(inc, mDate)) return sum;
                     return sum + calculateMonthlyValue(inc);
                 }, 0);
@@ -6015,9 +6012,9 @@ const runForecast = () => {
                 monthlyIncome = (basePay / daysInMonth) * daysLeft;
             }
         } else {
-            // UPDATED: Future months dynamically scan and aggregate ONLY active streams
-            monthlyIncome = incomes.value.reduce((sum, inc) => {
-                if (!isIncomeActiveForMonth(inc, mDate)) return sum; // Dropped if expired!
+            // 🟢 FIX 3: Map over activeIncomes instead of all incomes
+            monthlyIncome = activeIncomes.value.reduce((sum, inc) => {
+                if (!isIncomeActiveForMonth(inc, mDate)) return sum; 
                 return sum + calculateMonthlyValue(inc);
             }, 0);
         }
@@ -6026,7 +6023,6 @@ const runForecast = () => {
         const ov = forecastOverrides.value[m.name];
         if (ov && ov.income !== undefined && ov.income !== null && ov.income !== '') {
             if (isCurrentMonth) {
-                 // Prorate the override so it doesn't dump a full month of fake cash into the last few days
                  monthlyIncome = (Number(ov.income) / daysInMonth) * daysLeft;
             } else {
                  monthlyIncome = Number(ov.income);
@@ -6035,7 +6031,8 @@ const runForecast = () => {
         
         m.income = round(monthlyIncome); 
         m.extraExpenses = ov && ov.extraExpenses ? [...ov.extraExpenses] : [];
-
+        
+        // The rest of your forecast function continues below...
         // --- 2. BURN RATE (EXPENSES) CALCULATION ---
         let monthlyBurn = 0;
         let fixedBurn = 0;
