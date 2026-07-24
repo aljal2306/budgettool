@@ -6288,25 +6288,29 @@ const applyGoalToMonth = (m) => {
     }
 };
           
-            const loadForecastSlot = (i) => {
-                const s = savedForecasts.value[i];
-                if (s && confirm(`Load scenario "${s.name}"?`)) {
-                    project.value = s.data.project;
-                    setForecastMode(s.data.mode);
-                    forecastOverrides.value = s.data.overrides || {};
-                    
-                    // 🟢 ADDED: Restore the "Look Ahead" months
-                    if (s.data.months) {
-                        forecastSettings.value.months = Number(s.data.months);
-                    }
+            const loadForecastSlot = (i, isSilent = false) => {
+    const s = savedForecasts.value[i];
+    
+    // 1. Safety check: If the slot is completely empty, just stop.
+    if (!s) return; 
 
-                    // Update Active Scenario Trackers
-                    currentLoadedSlotIndex.value = i;
-                    currentScenarioName.value = s.name;
-                    
-                    runForecast();
-                }
-            };
+    // 2. 🟢 Bypass the confirmation popup if this is a silent background load
+    if (!isSilent && !confirm(`Load scenario "${s.name}"?`)) return;
+
+    // 3. Load the saved data into the active state
+    project.value = s.data.project;
+    setForecastMode(s.data.mode);
+    forecastOverrides.value = s.data.overrides || {};
+    
+    if (s.data.months) {
+        forecastSettings.value.months = Number(s.data.months);
+    }
+
+    currentLoadedSlotIndex.value = i;
+    currentScenarioName.value = s.name;
+    
+    runForecast();
+};
             const clearForecastSlot = async (i) => { 
                 if(confirm("Clear this saved slot?")){ 
                     await _supabase.from('forecast_slots').delete().match({user_id:session.value.user.id, slot_index:i}); 
