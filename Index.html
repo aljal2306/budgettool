@@ -7893,7 +7893,6 @@ const ytdIncomeStats = computed(() => {
             // Push Row 1: The Base Salary
             transactionsToLog.push({
                 user_id: session.value.user.id,
-                budget_item_id: sourceId,
                 amount_paid: baseExpected,
                 type: 'income',
                 is_paid: true,
@@ -7906,7 +7905,6 @@ const ytdIncomeStats = computed(() => {
             // Push Row 2: The Commission
             transactionsToLog.push({
                 user_id: session.value.user.id,
-                budget_item_id: sourceId,
                 amount_paid: commissionAmount,
                 type: 'income',
                 is_paid: true,
@@ -7920,7 +7918,6 @@ const ytdIncomeStats = computed(() => {
             // STANDARD TRANSACTION (Just Base Pay)
             transactionsToLog.push({
                 user_id: session.value.user.id,
-                budget_item_id: sourceId,
                 amount_paid: totalAmount,
                 type: 'income',
                 is_paid: true,
