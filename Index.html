@@ -8188,9 +8188,6 @@ watch(currentView, async (newView) => {
             fetchGiftCards();
         }
     });
-            fetchGiftCards();
-        }
-    });
 
     _supabase.auth.onAuthStateChange((_, _session) => {
         session.value = _session;
