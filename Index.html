@@ -7969,7 +7969,7 @@ const ytdIncomeStats = computed(() => {
 });
 
 
-           const confirmDeposit = async () => {
+          const confirmDeposit = async () => {
     const totalAmount = Number(depositAmount.value);
     
     // 1. Basic Validation
@@ -7984,21 +7984,15 @@ const ytdIncomeStats = computed(() => {
     // --- LOGIC FOR SCHEDULED INCOME ---
     if (depositStep.value === 'amount_input') {
         
-        // 🟢 FIX 1: Safely strip dollar signs/commas in case the new total pay is a formatted string
         const rawAmount = String(selectedIncomeSource.value.amount || '0').replace(/[^0-9.-]+/g, "");
         const baseExpected = Number(rawAmount);
-
-        // 🟢 FIX 2: Prevent missing name crashes and keep the transaction name clean
         const safeName = (selectedIncomeSource.value.name || 'Income').replace(/\s?Deposit/i, '').trim();
-        
-        // 🟢 FIX 3: Capture the ID to link it to the ledger
         const sourceId = selectedIncomeSource.value.id; 
 
-        // SPLIT TRANSACTION: If it's a bonus check AND the total is bigger than the base
-        if (isBonus.value && totalAmount > baseExpected) {
+        // MODE 1: BASE + BONUS SPLIT
+        if (depositPayMode.value === 'split' && totalAmount > baseExpected) {
             const commissionAmount = totalAmount - baseExpected;
             
-            // Push Row 1: The Base Salary
             transactionsToLog.push({
                 user_id: session.value.user.id,
                 amount_paid: baseExpected,
@@ -8009,7 +8003,6 @@ const ytdIncomeStats = computed(() => {
                 transaction_name: safeName,
             });
 
-            // Push Row 2: The Commission
             transactionsToLog.push({
                 user_id: session.value.user.id,
                 amount_paid: commissionAmount,
@@ -8020,8 +8013,21 @@ const ytdIncomeStats = computed(() => {
                 transaction_name: `${safeName} - Commission`,
             });
             
-        } else {
-            // STANDARD TRANSACTION (Just Base Pay)
+        } 
+        // MODE 2: 100% BONUS/COMMISSION STANDALONE
+        else if (depositPayMode.value === 'bonus') {
+            transactionsToLog.push({
+                user_id: session.value.user.id,
+                amount_paid: totalAmount,
+                type: 'income',
+                is_paid: true,
+                due_date: todayStr,
+                paid_date: todayStr,
+                transaction_name: `${safeName} - Commission`,
+            });
+        }
+        // MODE 3: STANDARD BASE PAY ONLY
+        else {
             transactionsToLog.push({
                 user_id: session.value.user.id,
                 amount_paid: totalAmount,
@@ -8069,14 +8075,13 @@ const ytdIncomeStats = computed(() => {
         showDepositModal.value = false;
         depositAmount.value = ''; 
         depositNote.value = '';
-        isBonus.value = false;
+        depositPayMode.value = 'base'; // Reset the 3-way toggle
         
         await fetchBills(); 
         triggerMoneyRain();
 
     } catch (e) {
         console.error("Database Error:", e);
-        // 🟢 FIX 4: Output the actual database rejection reason to the screen for easy debugging!
         alert(`Error processing deposit: ${e.message || 'Check console for details.'}`);
     }
 };
