@@ -3374,14 +3374,19 @@
                     <h3 class="text-xl font-bold text-slate-800 dark:text-white">{{ selectedIncomeSource.name }}</h3>
                 </div>
 
-                <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg mb-6">
-                    <button @click="isBonus=false; depositAmount=selectedIncomeSource.amount" class="flex-1 py-2 text-xs font-bold rounded-md transition" 
-                            :class="!isBonus ? 'bg-white dark:bg-slate-600 shadow text-emerald-600 dark:text-white' : 'text-slate-400'">
-                        Base Pay (${{ selectedIncomeSource.amount.toLocaleString() }})
+                <!-- 🟢 THE NEW 3-WAY SWITCH -->
+                <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg mb-6 gap-1">
+                    <button @click="depositPayMode='base'; depositAmount=selectedIncomeSource.amount" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-md transition" 
+                            :class="depositPayMode === 'base' ? 'bg-white dark:bg-slate-600 shadow text-emerald-600 dark:text-white' : 'text-slate-400 hover:text-slate-600'">
+                        Base Only
                     </button>
-                    <button @click="isBonus=true; depositAmount=''" class="flex-1 py-2 text-xs font-bold rounded-md transition" 
-                            :class="isBonus ? 'bg-white dark:bg-slate-600 shadow text-indigo-600 dark:text-white' : 'text-slate-400'">
-                        Bonus / Commission
+                    <button @click="depositPayMode='split'; depositAmount=''" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-md transition" 
+                            :class="depositPayMode === 'split' ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-white' : 'text-slate-400 hover:text-slate-600'">
+                        Base + Bonus
+                    </button>
+                    <button @click="depositPayMode='bonus'; depositAmount=''" class="flex-1 py-2 text-[10px] sm:text-xs font-bold rounded-md transition" 
+                            :class="depositPayMode === 'bonus' ? 'bg-white dark:bg-slate-600 shadow text-indigo-600 dark:text-white' : 'text-slate-400 hover:text-slate-600'">
+                        Bonus Only
                     </button>
                 </div>
 
@@ -3391,8 +3396,11 @@
                         <span class="absolute left-3 top-3 text-slate-400 font-bold">$</span>
                         <input type="number" v-model="depositAmount" class="w-full pl-7 p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-600 rounded-xl font-bold text-lg focus:ring-2 ring-emerald-500 outline-none" placeholder="0.00">
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-1 font-bold">✨ You can manually adjust the final deposit amount here.</p>
-                    <p v-if="isBonus" class="text-[10px] text-indigo-500 mt-1 font-bold">✨ Enter the total amount of this check.</p>
+                    
+                    <!-- Dynamic Helper Text -->
+                    <p v-if="depositPayMode === 'base'" class="text-[10px] text-slate-400 mt-1 font-bold">✨ Standard paycheck. You can manually adjust the final amount.</p>
+                    <p v-if="depositPayMode === 'split'" class="text-[10px] text-blue-500 mt-1 font-bold">✨ Enter the TOTAL check amount. We will split the bonus out for you.</p>
+                    <p v-if="depositPayMode === 'bonus'" class="text-[10px] text-indigo-500 mt-1 font-bold">✨ Standalone check. 100% of this will be tracked as a bonus.</p>
                 </div>
 
                 <button @click="confirmDeposit" class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-lg shadow-emerald-500/30 text-lg transition transform hover:scale-[1.02]">
