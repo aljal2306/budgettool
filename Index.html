@@ -4382,6 +4382,7 @@ const displayVariables = computed(() => {
             const depositNote = ref('');
             const isBonus = ref(false); // Tracks if they selected "Commission/Bonus"
             const activeIncomes = computed(() => incomes.value.filter(inc => inc.is_active !== false));
+            const depositPayMode = ref('base');
 
             // --- GIFT CARD STATE ---
             const giftCards = ref([]);
@@ -8278,7 +8279,7 @@ watch(currentView, async (newView) => {
                 isUnpackingTrip, saveManualAsGoal,
               
                 // Deposits
-                showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit, showYtdIncome, ytdIncomeStats, expandedIncomeBuckets, toggleIncomeBucket,
+                showDepositModal, depositStep, selectedIncomeSource, depositAmount, depositNote, isBonus, openDepositModal, selectIncome, confirmDeposit, deleteDeposit, showYtdIncome, ytdIncomeStats, expandedIncomeBuckets, toggleIncomeBucket, depositPayMode,
 
                 // True Up Wizard
               showTrueUpModal, trueUpStep, trueUpState, startTrueUpWizard, processTrueUpStep, skipTrueUpStep, ccSubStep, goBackTrueUpStep,
