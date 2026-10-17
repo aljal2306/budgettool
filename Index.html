@@ -5986,12 +5986,50 @@ const runForecast = () => {
         return projectionBaseline <= expirationBaseline;
     };
 
-    const calculateMonthlyValue = (inc) => {
-        let monthlyValue = 0;
-        if (inc.frequency === 'Semi-Monthly') monthlyValue = Number(inc.amount) * 2;
-        else if (inc.frequency === 'Bi-Weekly') monthlyValue = (Number(inc.amount) * 26) / 12;
-        else if (inc.frequency === 'Monthly') monthlyValue = Number(inc.amount);
-        return monthlyValue;
+    // 🟢 NEW FORECAST ENGINE: Exact Date Income Simulator
+    const calculateExactMonthlyIncome = (incomes, targetYear, targetMonth, targetMonthDate) => {
+        let monthTotal = 0;
+
+        incomes.forEach(inc => {
+            if (!isIncomeActiveForMonth(inc, targetMonthDate)) return;
+            if (!inc.next_pay_date) return;
+            
+            // Add T12:00:00 to prevent timezone drift
+            let payDate = new Date(inc.next_pay_date + 'T12:00:00'); 
+            const amount = Number(inc.amount) || 0;
+            const freq = inc.frequency || 'Bi-Weekly';
+
+            for (let i = 0; i < 100; i++) {
+                const payYear = payDate.getFullYear();
+                const payMonth = payDate.getMonth();
+
+                if (payYear > targetYear || (payYear === targetYear && payMonth > targetMonth)) {
+                    break;
+                }
+
+                if (payYear === targetYear && payMonth === targetMonth) {
+                    // For the current month, only count paychecks that happen today or in the future
+                    const todayAtNoon = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0);
+                    if (payYear !== today.getFullYear() || payMonth !== today.getMonth() || payDate >= todayAtNoon) {
+                        monthTotal += amount;
+                    }
+                }
+
+                if (freq === 'Bi-Weekly') {
+                    payDate.setDate(payDate.getDate() + 14);
+                } else if (freq === 'Weekly') {
+                    payDate.setDate(payDate.getDate() + 7);
+                } else if (freq === 'Monthly') {
+                    payDate.setMonth(payDate.getMonth() + 1);
+                } else if (freq === 'Semi-Monthly') {
+                    payDate.setDate(payDate.getDate() + 15); 
+                } else {
+                    break; 
+                }
+            }
+        });
+        
+        return monthTotal;
     };
 
     if (forecastData.value.length !== forecastSettings.value.months) {
@@ -6006,50 +6044,20 @@ const runForecast = () => {
     forecastData.value.forEach((m, idx) => {
         const mDate = new Date(today.getFullYear(), today.getMonth() + idx, 1);
         const isCurrentMonth = idx === 0;
+        const targetYear = mDate.getFullYear();
+        const targetMonth = mDate.getMonth();
         
         // --- 1. INCOME CALCULATION ---
         let monthlyIncome = 0;
         const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
         const daysLeft = Math.max(1, daysInMonth - today.getDate() + 1); 
 
-        if (isCurrentMonth) {
-            let foundSpecificPaychecks = false;
-            
-            activeIncomes.value.forEach(inc => {
-                if (!isIncomeActiveForMonth(inc, mDate)) return;
-
-                // 🟢 FIX: Moved OUTSIDE the loop! 
-                // As long as the job has a valid schedule, trust it and disable the fallback.
-                if (inc.next_pay_date) {
-                    foundSpecificPaychecks = true;
-                }
-
-                let nextPay = new Date(inc.next_pay_date);
-                while (nextPay.getMonth() === mDate.getMonth() && nextPay.getFullYear() === mDate.getFullYear()) {
-                    if (nextPay >= today) monthlyIncome += Number(inc.amount);
-                    if (inc.frequency === 'Bi-Weekly') nextPay.setDate(nextPay.getDate() + 14);
-                    else if (inc.frequency === 'Semi-Monthly') nextPay.setDate(nextPay.getDate() + 15);
-                    else if (inc.frequency === 'Monthly') nextPay.setMonth(nextPay.getMonth() + 1);
-                    else break; 
-                }
-            });
-
-            if (!foundSpecificPaychecks) {
-                // 🟢 FIX 2: Map over activeIncomes instead of all incomes
-                const currentMonthBasePay = activeIncomes.value.reduce((sum, inc) => {
-                    if (!isIncomeActiveForMonth(inc, mDate)) return sum;
-                    return sum + calculateMonthlyValue(inc);
-                }, 0);
-
-                const basePay = useTempPay.value ? tempCalculatedPay.value : currentMonthBasePay;
-                monthlyIncome = (basePay / daysInMonth) * daysLeft;
-            }
+        // 🟢 FIX: We now use the Exact Date Engine for ALL months (current and future!)
+        if (useTempPay.value && isCurrentMonth) {
+            // Respect the calculator override if active for the current month
+            monthlyIncome = (tempCalculatedPay.value / daysInMonth) * daysLeft;
         } else {
-            // 🟢 FIX 3: Map over activeIncomes instead of all incomes
-            monthlyIncome = activeIncomes.value.reduce((sum, inc) => {
-                if (!isIncomeActiveForMonth(inc, mDate)) return sum; 
-                return sum + calculateMonthlyValue(inc);
-            }, 0);
+            monthlyIncome = calculateExactMonthlyIncome(activeIncomes.value, targetYear, targetMonth, mDate);
         }
         
         // Handle Manual Overrides
@@ -6065,14 +6073,12 @@ const runForecast = () => {
         m.income = round(monthlyIncome); 
         m.extraExpenses = ov && ov.extraExpenses ? [...ov.extraExpenses] : [];
         
-        // The rest of your forecast function continues below...
         // --- 2. BURN RATE (EXPENSES) CALCULATION ---
         let monthlyBurn = 0;
         let fixedBurn = 0;
         let variableBurn = 0;
         
         if (isCurrentMonth) {
-            // 🟢 THE BULLETPROOF DATE MATH
             const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
             const firstDayOfThisMonth = `${currentMonthStr}-01`;
             
@@ -6080,11 +6086,10 @@ const runForecast = () => {
             const unpaidBills = bills.value.filter(b => {
                 if (b.type === 'income' || b.is_paid) return false; 
                 
-                // Keep it if it belongs to this month OR if it's a past overdue bill
                 const isThisMonth = b.due_date && b.due_date.startsWith(currentMonthStr);
                 const isOverdue = b.due_date && b.due_date < firstDayOfThisMonth;
                 
-                if (!isThisMonth && !isOverdue) return false; // Ignore future months!
+                if (!isThisMonth && !isOverdue) return false; 
                 
                 const item = b.budget_items || {}; 
                 if (item.is_variable) return false; 
@@ -6106,15 +6111,6 @@ const runForecast = () => {
             variableBurn = activeVariables.reduce((sum, v) => sum + Math.max(0, Number(v.remaining || 0)), 0);
             monthlyBurn = fixedBurn + variableBurn;
 
-            // 🛠️ DEBUG LOGGER: Let's see the math! 🛠️
-            console.log(`\n--- CURRENT MONTH (${m.name}) MATH ENGINE ---`);
-            console.log(`1. Starting Bank Balance: $${balance}`);
-            console.log(`2. Incoming Money (${daysLeft} days left): +$${m.income}`);
-            console.log(`3. Unpaid Fixed Bills: -$${fixedBurn}`);
-            console.log(`4. Remaining Variable Budget: -$${variableBurn}`);
-            console.log(`Projected End Balance = $${balance + m.income - monthlyBurn}`);
-            console.log(`-------------------------------------------\n`);
-
         } else {
             if (forecastMode.value === 'survival') monthlyBurn = budgetItems.value.filter(i => i.is_core).reduce((a, b) => a + getMonthlyCost(b), 0);
             else if (forecastMode.value === 'standard') monthlyBurn = budgetItems.value.filter(i => !i.is_wishlist).reduce((a, b) => a + getMonthlyCost(b), 0);
@@ -6127,14 +6123,10 @@ const runForecast = () => {
         const committedForMonth = goals.value.filter(g => !g.is_completed && g.committed_month === m.name);
 
         committedForMonth.forEach(g => {
-            // 🟢 FIX 1: Prevent goal double-dipping by subtracting what has already been funded!
             const target = Number(g.target_amount || 0);
-            
-            // Safely catches standard database naming conventions for funded progress
             const funded = Number(g.saved_amount || g.current_amount || g.funded_amount || 0); 
             const remainingToFund = Math.max(0, target - funded);
 
-            // Only push the goal to the forecast if there is still money left to fund
             if (remainingToFund > 0) {
                 m.extraExpenses.push({
                     id: g.id,
@@ -6148,15 +6140,13 @@ const runForecast = () => {
         let totalExtra = 0;
 
         if (isCurrentMonth) {
-            // Find all real-world bills/transactions we have ALREADY paid this month
             const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
             const paidThisMonth = bills.value.filter(b => b.is_paid && (b.paid_date?.startsWith(currentMonthStr) || b.due_date?.startsWith(currentMonthStr)));
 
             m.extraExpenses.forEach(ex => {
                 if (ex.isCommittedGoal) {
-                    totalExtra += ex.amount; // Already netted out the funded amount above
+                    totalExtra += ex.amount; 
                 } else {
-                    // 🟢 FIX 2: Prevent manual expense double-dipping by checking if we already paid a bill with this name!
                     const matchedPayments = paidThisMonth.filter(b => 
                         (b.transaction_name && b.transaction_name.toLowerCase() === ex.name.toLowerCase()) || 
                         (b.budget_items?.name && b.budget_items.name.toLowerCase() === ex.name.toLowerCase())
@@ -6169,11 +6159,9 @@ const runForecast = () => {
                 }
             });
         } else {
-            // Future months assume nothing has been paid yet
             totalExtra = m.extraExpenses.reduce((acc, curr) => acc + curr.amount, 0);
         }
         
-        // Calculate final balance based on EXACT remaining runway
         const monthlyNet = m.income - monthlyBurn - totalExtra;
         balance = round(balance + monthlyNet);
         m.endBalance = balance;
@@ -6186,7 +6174,6 @@ const runForecast = () => {
     
     renderForecastChart();
 };
-
             const getOverride = (monthName) => { 
     if (!forecastOverrides.value[monthName]) {
         forecastOverrides.value[monthName] = { income: null, extraExpenses: [] }; 
@@ -6458,6 +6445,51 @@ const runCalculation = () => {
     }
 };
 
+// 🟢 FORECAST ENGINE: Exact Date Income Simulator
+const calculateExactMonthlyIncome = (incomes, targetYear, targetMonth) => {
+    let monthTotal = 0;
+
+    incomes.forEach(inc => {
+        if (!inc.next_pay_date) return;
+        
+        // Add T12:00:00 to prevent timezone drift (days shifting backwards by 1 hr)
+        let payDate = new Date(inc.next_pay_date + 'T12:00:00'); 
+        const amount = Number(inc.amount) || 0;
+        const freq = inc.frequency || 'Bi-Weekly';
+
+        // Roll time forward (up to 100 cycles to be safe)
+        for (let i = 0; i < 100; i++) {
+            const payYear = payDate.getFullYear();
+            const payMonth = payDate.getMonth();
+
+            // If the simulated date goes past our target month, stop calculating this income
+            if (payYear > targetYear || (payYear === targetYear && payMonth > targetMonth)) {
+                break;
+            }
+
+            // If the paycheck lands exactly inside our target month, add it to the pile!
+            if (payYear === targetYear && payMonth === targetMonth) {
+                monthTotal += amount;
+            }
+
+            // Step forward to the next paycheck
+            if (freq === 'Bi-Weekly') {
+                payDate.setDate(payDate.getDate() + 14);
+            } else if (freq === 'Weekly') {
+                payDate.setDate(payDate.getDate() + 7);
+            } else if (freq === 'Monthly') {
+                payDate.setMonth(payDate.getMonth() + 1);
+            } else if (freq === 'Semi-Monthly') {
+                payDate.setDate(payDate.getDate() + 15); 
+            } else {
+                break; // Fallback
+            }
+        }
+    });
+    
+    return monthTotal;
+};
+          
 // 2. THE SAVING LOGIC (Commits to Database or Session)
 // 2. THE SAVING LOGIC (Commits to Database or Session)
 const calculateAndSave = async (mode) => {
